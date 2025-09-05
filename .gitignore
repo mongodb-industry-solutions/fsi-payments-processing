@@ -6,12 +6,16 @@
 
 # Environments
 .env
+.env*
 .venv
 env/
 venv/
 ENV/
 env.bak/
 venv.bak/
+help-for-me/
+backend/requirements/
+backend/data/
 
 # Config
 **/config.yml
@@ -222,3 +226,20 @@ frontend/next-env.d.ts
 
 # Misc
 *.pem
+claude.md
+BACKEND_IMPLEMENTATION_PLAN.md
+
+# Test scripts and temporary files
+backend/test_*.py
+backend/check_*.py
+backend/verify_*.py
+backend/*_test.py
+backend/*_check.py
+backend/*_verify.py
+backend/temp_*.py
+backend/tmp_*.py
+backend/debug_*.py
+format-convert-payment-vision.md
+.gitignore
+backend/IMPLEMENTATION_STEPS.md
+backend/AI_LANE_PLAN.md
