@@ -1,0 +1,186 @@
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.subtitle {
+  margin-top: 0.5rem;
+  color: #5e6c84;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.card {
+  width: 100%;
+  padding: 0;
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.cardContent {
+  padding: 2rem;
+}
+
+.cardContent h2 {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  font-size: 1.5rem;
+  color: #13aa52; /* MongoDB green */
+}
+
+.cardContent p {
+  color: #5e6c84;
+  margin-bottom: 1.5rem;
+}
+
+.formatSelectors {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.buttonContainer {
+  margin-top: 2rem;
+  display: flex;
+  justify-content: center;
+}
+
+.success {
+  color: #13aa52;
+  font-size: 1.1rem;
+  padding: 1rem;
+  background: rgba(19, 170, 82, 0.1);
+  border-radius: 4px;
+}
+
+.error {
+  color: #d32f2f;
+  font-size: 1.1rem;
+  padding: 1rem;
+  background: rgba(211, 47, 47, 0.1);
+  border-radius: 4px;
+}
+
+.lanesContainer {
+  margin: 1.5rem 0;
+}
+
+.lanesContainer h3 {
+  font-size: 1rem;
+  margin-bottom: 0.75rem;
+  color: #333;
+}
+
+.lanes {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.messageContainer {
+  margin: 1.5rem 0;
+}
+
+.messageContainer h3 {
+  font-size: 1rem;
+  margin-bottom: 0.75rem;
+  color: #333;
+}
+
+.codeBlock {
+  background: #f4f4f4;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 1rem;
+  overflow-x: auto;
+  font-family: 'Courier New', monospace;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.metadata {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e0e0e0;
+  color: #666;
+}
+
+.errorDetails {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background: rgba(211, 47, 47, 0.05);
+  border-radius: 4px;
+}
+
+/* Preview Section */
+.previewSection {
+  margin-top: 2rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.previewColumn {
+  min-width: 0; /* Prevent overflow */
+}
+
+.previewTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.previewTitle::before {
+  content: '';
+  width: 4px;
+  height: 20px;
+  background: #13aa52;
+  border-radius: 2px;
+}
+
+/* Tabs container */
+.tabsContainer {
+  margin-top: 2rem;
+}
+
+.tabContent {
+  padding: 1.5rem 0;
+  min-height: 400px;
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 1rem;
+  }
+  
+  .formatSelectors {
+    grid-template-columns: 1fr;
+  }
+  
+  .previewSection {
+    grid-template-columns: 1fr;
+  }
+  
+  .tabContent {
+    padding: 1rem 0;
+  }
+}

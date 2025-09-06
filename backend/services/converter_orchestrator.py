@@ -131,10 +131,14 @@ class ConverterOrchestrator:
             logger.info("🤖 Processing AI fields...")
             ai_enhanced_fields = self._process_with_ai(parsed_fields, converted_fields)
             
-            # Merge AI results with rules results
+            # Transform AI fields into flat structure for builder
+            self._transform_ai_fields(ai_enhanced_fields, converted_fields)
+            
+            # Also keep original AI fields for tracking (but not for building)
             for field_id, field_data in ai_enhanced_fields.items():
                 if field_id not in converted_fields:
-                    converted_fields[field_id] = field_data
+                    # Store original AI field with metadata for audit
+                    converted_fields[f"_ai_{field_id}"] = field_data
             
             logger.info(f"✅ AI processor handled {self.processing_stats['ai_lane']['count']} fields")
             
@@ -157,7 +161,8 @@ class ConverterOrchestrator:
             }
             
             output_data = self.builder.build_with_metadata(converted_fields, build_metadata)
-            target_message = output_data.get("message", "")
+            # Handle both "message" and "message_output" keys for compatibility
+            target_message = output_data.get("message_output") or output_data.get("message", "")
             
             logger.info(f"✅ Successfully built {self.target_format} message")
             
@@ -233,10 +238,13 @@ class ConverterOrchestrator:
         for field_id, field_content in parsed_fields.items():
             # Skip if already handled by rules
             if field_id in converted_fields:
+                logger.debug(f"  Field {field_id}: already in converted_fields, skipping AI")
                 continue
             
             # Check if field should use AI
-            if self.ai_processor.should_use_ai(field_id):
+            should_use = self.ai_processor.should_use_ai(field_id)
+            logger.debug(f"  Field {field_id}: should_use_ai = {should_use}")
+            if should_use:
                 fields_to_process.append((field_id, field_content))
         
         if not fields_to_process:
@@ -298,6 +306,70 @@ class ConverterOrchestrator:
                     # Continue with next field
         
         return ai_fields
+    
+    def _transform_ai_fields(self, ai_fields: Dict[str, Any], converted_fields: Dict[str, Any]) -> None:
+        """
+        Transform AI-extracted complex fields into flat fields expected by the builder.
+        
+        This method takes AI fields like 50K, 59, 70 which contain structured data
+        and flattens them into individual fields like DebtorName, CreditorName, etc.
+        
+        Args:
+            ai_fields: Dictionary of AI-processed fields with complex structures
+            converted_fields: Target dictionary to add flattened fields to
+        """
+        # Transform field 50K (Ordering Customer/Debtor)
+        if '50K' in ai_fields:
+            debtor_data = ai_fields['50K']
+            if isinstance(debtor_data, dict):
+                # Extract the value from AI field structure
+                if 'value' in debtor_data and isinstance(debtor_data['value'], dict):
+                    debtor_info = debtor_data['value']
+                    converted_fields['DebtorName'] = debtor_info.get('name', '')
+                    
+                    # Combine address lines
+                    address_lines = debtor_info.get('addressLines', [])
+                    if address_lines:
+                        converted_fields['DebtorAddress'] = ', '.join(address_lines)
+                    
+                    converted_fields['DebtorAccount'] = debtor_info.get('accountNumber', '')
+        
+        # Transform field 59 (Beneficiary/Creditor)
+        if '59' in ai_fields:
+            creditor_data = ai_fields['59']
+            if isinstance(creditor_data, dict):
+                # Extract the value from AI field structure
+                if 'value' in creditor_data and isinstance(creditor_data['value'], dict):
+                    creditor_info = creditor_data['value']
+                    converted_fields['CreditorName'] = creditor_info.get('name', '')
+                    
+                    # Combine address lines
+                    address_lines = creditor_info.get('addressLines', [])
+                    city = creditor_info.get('city', '')
+                    state = creditor_info.get('state', '')
+                    postal = creditor_info.get('postalCode', '')
+                    
+                    full_address = ', '.join(address_lines)
+                    if city and state and postal:
+                        full_address += f', {city}, {state} {postal}'
+                    converted_fields['CreditorAddress'] = full_address
+                    
+                    converted_fields['CreditorAccount'] = creditor_info.get('accountNumber', '')
+        
+        # Transform field 70 (Remittance Information)
+        if '70' in ai_fields:
+            remittance_data = ai_fields['70']
+            if isinstance(remittance_data, dict):
+                # Extract the value from AI field structure
+                if 'value' in remittance_data and isinstance(remittance_data['value'], dict):
+                    remittance_info = remittance_data['value']
+                    # Build remittance info string
+                    parts = []
+                    if remittance_info.get('description'):
+                        parts.append(remittance_info['description'])
+                    if remittance_info.get('invoiceNumber'):
+                        parts.append(remittance_info['invoiceNumber'])
+                    converted_fields['RemittanceInfo'] = ' '.join(parts)
     
     def _process_single_ai_field(self, field_id: str, field_content: str) -> Optional[Dict]:
         """

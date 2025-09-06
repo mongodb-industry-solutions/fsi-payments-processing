@@ -4,10 +4,23 @@ from fastapi import APIRouter
 from datetime import datetime
 from db.mdb import MongoDBConnector
 from api import formats, rules, input, conversion
+import logging
+import os
 
 from dotenv import load_dotenv
 
 load_dotenv()
+
+# Configure logging
+log_level = os.getenv("LOG_LEVEL", "INFO").upper()
+logging.basicConfig(
+    level=getattr(logging, log_level, logging.INFO),
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+
+# Set specific loggers to DEBUG level for debugging
+logging.getLogger("services.ai_field_processor").setLevel(logging.DEBUG)
+logging.getLogger("services.converter_orchestrator").setLevel(logging.DEBUG)
 
 app = FastAPI(
     title="Payment Format Conversion API",

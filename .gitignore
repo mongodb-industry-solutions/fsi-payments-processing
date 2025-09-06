@@ -246,3 +246,14 @@ backend/IMPLEMENTATION_STEPS.md
 backend/AI_LANE_PLAN.md
 backend/test_results_20250906_123547.json
 backend/GENERIC_PARSER_PLAN.md
+backend/IMPLEMENTATION_PROGRESS.md
+.gitignore
+frontend/IMPLEMENTATION_PLAN.md
+.gitignore
+frontend/FRONTEND_DESIGN_ESSENCE.md
+
+# Documentation and analysis files
+MT103_TO_PACS008_CONVERSION_ANALYSIS.md
+backend/to_add_new_format.md
+backend/load_*.py
+frontend/FRONTEND_ENHANCEMENT_PLAN.md

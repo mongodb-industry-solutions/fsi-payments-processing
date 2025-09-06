@@ -66,13 +66,21 @@ class AIFieldProcessor:
     
     def _load_field_routing(self) -> Dict:
         """Load field-to-model routing from MongoDB for the source format."""
+        logger.debug(f"Loading field routing for source_format: {self.source_format}")
         routing_docs = self.db.find("field_model_routing", {
             "source_format": self.source_format
         })
         
-        if routing_docs:
-            return routing_docs[0]
+        logger.debug(f"Found {len(routing_docs) if routing_docs else 0} routing documents")
         
+        if routing_docs and len(routing_docs) > 0:
+            routing = routing_docs[0]
+            logger.debug(f"Loaded routing with {len(routing.get('field_strategies', []))} strategies")
+            for strategy in routing.get('field_strategies', []):
+                logger.debug(f"  - Field {strategy.get('field')}: model={strategy.get('model')}")
+            return routing
+        
+        logger.warning(f"No field routing found for {self.source_format}")
         # Return empty routing if not found
         return {"source_format": self.source_format, "field_strategies": []}
     
@@ -388,11 +396,12 @@ Return the structured data as JSON."""
             "timestamp": datetime.now(UTC)
         }
         
-        try:
-            self.db.insert_one("ai_processing_errors", error_record)
-        except:
-            # Don't fail if logging fails
-            pass
+        # Commented out - unnecessary database write
+        # try:
+        #     self.db.insert_one("ai_processing_errors", error_record)
+        # except:
+        #     # Don't fail if logging fails
+        #     pass
     
     def _track_processing(self, field_id: str, model: str, confidence: float, 
                          success: bool, error: Optional[str], strategy: str) -> Dict:
@@ -413,12 +422,12 @@ Return the structured data as JSON."""
         # Add to session history
         self.processing_history.append(processing_record)
         
-        # Store in MongoDB
-        try:
-            self.db.insert_one("ai_processing_history", processing_record)
-        except:
-            # Don't fail if tracking fails
-            pass
+        # Store in MongoDB - Commented out unnecessary database write
+        # try:
+        #     self.db.insert_one("ai_processing_history", processing_record)
+        # except:
+        #     # Don't fail if tracking fails
+        #     pass
         
         return processing_record
     

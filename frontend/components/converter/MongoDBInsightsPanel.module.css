@@ -1,0 +1,287 @@
+.container {
+  padding: 1.5rem;
+  background: white;
+  border-radius: 8px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.title {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #13aa52;
+  font-size: 1.25rem;
+}
+
+/* Summary Grid */
+.summaryGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.summaryCard {
+  padding: 1rem;
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.summaryValue {
+  font-size: 1.75rem;
+  font-weight: bold;
+  color: #13aa52;
+  margin: 0.5rem 0;
+}
+
+.summarySubtext {
+  font-size: 0.75rem;
+  color: #888;
+}
+
+/* Operations Timeline */
+.operations {
+  margin-bottom: 2rem;
+}
+
+.sectionTitle {
+  display: block;
+  margin-bottom: 1rem;
+  color: #666;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.5px;
+}
+
+.operation {
+  margin-bottom: 1rem;
+  background: #f8f9fa;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.operation:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.operationHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+}
+
+.operationInfo {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.operationNumber {
+  width: 32px;
+  height: 32px;
+  background: #13aa52;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 0.875rem;
+}
+
+.operationName {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.collection {
+  color: #13aa52;
+}
+
+.separator {
+  color: #666;
+}
+
+.method {
+  color: #0969da;
+}
+
+.stage {
+  color: #888;
+  margin-top: 0.25rem;
+}
+
+.operationMetrics {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Query Details */
+.queryDetails {
+  padding: 0 1rem 1rem 1rem;
+  border-top: 1px solid #e0e0e0;
+  animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.queryHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 1rem 0 0.5rem 0;
+}
+
+.queryCode {
+  background: #2e3440;
+  color: #d8dee9;
+  padding: 1rem;
+  border-radius: 8px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  overflow-x: auto;
+  margin: 0.5rem 0;
+}
+
+.queryMetrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background: white;
+  border-radius: 4px;
+}
+
+.metric {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.metric span {
+  font-weight: 600;
+  color: #333;
+}
+
+.indexName {
+  color: #13aa52;
+  font-family: 'Courier New', monospace;
+}
+
+/* Collections Grid */
+.collections {
+  margin-bottom: 2rem;
+}
+
+.collectionGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.collectionCard {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.collectionCard:hover {
+  border-color: #13aa52;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(19, 170, 82, 0.15);
+}
+
+.collectionIcon {
+  color: #13aa52;
+  font-size: 1.25rem;
+}
+
+.collectionName {
+  font-weight: 600;
+  color: #333;
+  font-size: 0.9rem;
+}
+
+.collectionOps {
+  color: #888;
+  margin-top: 0.125rem;
+}
+
+/* Features */
+.features {
+  padding: 1.5rem;
+  background: linear-gradient(135deg, rgba(19, 170, 82, 0.05) 0%, rgba(19, 170, 82, 0.02) 100%);
+  border-radius: 8px;
+  border: 1px solid rgba(19, 170, 82, 0.2);
+}
+
+.featuresList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .summaryGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .summaryGrid {
+    grid-template-columns: 1fr;
+  }
+  
+  .operationHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .queryMetrics {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .collectionGrid {
+    grid-template-columns: 1fr;
+  }
+}

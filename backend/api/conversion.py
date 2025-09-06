@@ -14,9 +14,14 @@ import json
 from models.payment_schemas import PaymentStatus, ConversionResponse as BaseConversionResponse
 from services.converter_orchestrator import ConverterOrchestrator
 from utils.parsers.mt103_parser import MT103Parser
+from utils.parsers.mongodb_parser import MongoDBDrivenParser
 from utils.builders.pacs008_builder import Pacs008Builder
+from utils.builders.mongodb_builder import MongoDBDrivenBuilder
 from db.mdb import MongoDBConnector
+import logging
 
+# Set up logging
+logger = logging.getLogger(__name__)
 
 # Create router
 router = APIRouter(
@@ -93,14 +98,29 @@ def get_converter(source_format: str, target_format: str) -> ConverterOrchestrat
         # Create new orchestrator
         orchestrator = ConverterOrchestrator(db, source_format, target_format)
         
-        # Set up parser and builder based on formats
-        if source_format == "MT103":
+        # Set up parser - use MongoDB-driven if config exists, otherwise use specific parser
+        parser_config = db.find("parser_configs", {"format": source_format, "is_active": True})
+        if parser_config:
+            # Use MongoDB-driven parser
+            orchestrator.set_parser(MongoDBDrivenParser(db, source_format))
+            logger.info(f"Using MongoDB-driven parser for {source_format}")
+        elif source_format == "MT103":
+            # Fallback to hardcoded parser
             orchestrator.set_parser(MT103Parser(db))
+            logger.info(f"Using hardcoded MT103Parser")
         else:
             raise ValueError(f"Parser not implemented for format: {source_format}")
         
-        if target_format == "pacs.008":
+        # Set up builder - use MongoDB-driven if config exists, otherwise use specific builder
+        builder_config = db.find("builder_configs", {"format": target_format, "is_active": True})
+        if builder_config:
+            # Use MongoDB-driven builder
+            orchestrator.set_builder(MongoDBDrivenBuilder(db, target_format))
+            logger.info(f"Using MongoDB-driven builder for {target_format}")
+        elif target_format == "pacs.008":
+            # Fallback to hardcoded builder
             orchestrator.set_builder(Pacs008Builder(db))
+            logger.info(f"Using hardcoded Pacs008Builder")
         else:
             raise ValueError(f"Builder not implemented for format: {target_format}")
         
@@ -169,14 +189,18 @@ async def convert_message(request: ConversionRequest) -> ConversionResponse:
         )
         
     except Exception as e:
-        # Log error to MongoDB
-        error_id = db.insert_one("conversion_errors", {
-            "source_format": request.source_format,
-            "target_format": request.target_format,
-            "error": str(e),
-            "trace_id": request.trace_id,
-            "timestamp": datetime.now(UTC)
-        })
+        # Log error to MongoDB - Commented out unnecessary database write
+        # error_id = db.insert_one("conversion_errors", {
+        #     "source_format": request.source_format,
+        #     "target_format": request.target_format,
+        #     "error": str(e),
+        #     "trace_id": request.trace_id,
+        #     "timestamp": datetime.now(UTC)
+        # })
+        
+        # Generate a simple error ID without database
+        import uuid
+        error_id = str(uuid.uuid4())[:8]
         
         raise HTTPException(
             status_code=500,

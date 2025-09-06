@@ -105,11 +105,16 @@ async def parse_input_format(
             },
             "estimated_ai_cost": result.get("estimated_ai_cost", 0)
         }
-        doc_id = db.insert_one("parsed_messages", parse_record)
+        # Commented out - unnecessary database write
+        # doc_id = db.insert_one("parsed_messages", parse_record)
+        
+        # Generate a simple ID without database
+        import uuid
+        doc_id = str(uuid.uuid4())
         
         return {
             "format_type": format_type,
-            "message_id": str(doc_id),
+            "message_id": doc_id,
             "parsing_result": {
                 "success": True,
                 "field_count": result["field_count"],
@@ -500,8 +505,9 @@ async def get_recent_parses(
     if format_type:
         query["format_type"] = format_type.upper()
     
-    # Get recent parses from MongoDB
-    recent = db.find("parsed_messages", query)
+    # Get recent parses from MongoDB - Commented out, return empty list
+    # recent = db.find("parsed_messages", query)
+    recent = []  # Return empty list since we're not storing parsed messages
     
     # Sort by timestamp (most recent first) and limit
     recent = sorted(recent, key=lambda x: x.get("parsed_at", ""), reverse=True)[:limit]
