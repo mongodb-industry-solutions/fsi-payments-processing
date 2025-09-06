@@ -1,6 +1,10 @@
 from typing import Dict, List, Any, Optional
 from datetime import datetime, UTC
+import logging
 from db.mdb import MongoDBConnector
+
+# Configure logging
+logger = logging.getLogger(__name__)
 
 
 class RulesEngine:
@@ -82,15 +86,17 @@ class RulesEngine:
                 })
         
         # Store rules processing in MongoDB for demo
-        if rules_applied_count > 0:
-            rules_record = {
-                "operation": "rules_processing",
-                "source_format": self.source_format,
-                "target_format": self.target_format,
-                "fields_processed": rules_applied_count,
-                "timestamp": datetime.now(UTC)
-            }
-            self.db.insert_one("rules_operations", rules_record)
+        # NOTE: Commented out for performance optimization in demo
+        # Can be re-enabled for detailed audit logging if needed
+        # if rules_applied_count > 0:
+        #     rules_record = {
+        #         "operation": "rules_processing",
+        #         "source_format": self.source_format,
+        #         "target_format": self.target_format,
+        #         "fields_processed": rules_applied_count,
+        #         "timestamp": datetime.now(UTC)
+        #     }
+        #     self.db.insert_one("rules_operations", rules_record)
         
         return {
             "mapped_fields": mapped_fields,

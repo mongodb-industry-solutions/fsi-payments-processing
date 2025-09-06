@@ -1,0 +1,446 @@
+"""
+Conversion API endpoints for payment format conversion
+
+This module provides REST API endpoints for converting payment messages
+between different formats using the MongoDB-powered conversion pipeline.
+"""
+
+from fastapi import APIRouter, HTTPException, Query
+from typing import Dict, List, Optional, Any
+from datetime import datetime, UTC
+from pydantic import BaseModel, Field
+import json
+
+from models.payment_schemas import PaymentStatus, ConversionResponse as BaseConversionResponse
+from services.converter_orchestrator import ConverterOrchestrator
+from utils.parsers.mt103_parser import MT103Parser
+from utils.builders.pacs008_builder import Pacs008Builder
+from db.mdb import MongoDBConnector
+
+
+# Create router
+router = APIRouter(
+    prefix="/api/v1/convert",
+    tags=["Conversion"],
+    responses={404: {"description": "Not found"}}
+)
+
+# Initialize MongoDB connection
+db = MongoDBConnector()
+
+
+# Request/Response models specific to conversion API
+class ConversionRequest(BaseModel):
+    """Request model for message conversion"""
+    source_format: str = Field(..., description="Source format code (e.g., MT103)")
+    target_format: str = Field(..., description="Target format code (e.g., pacs.008)")
+    message: str = Field(..., description="Raw message content to convert")
+    trace_id: Optional[str] = Field(None, description="Optional trace ID for tracking")
+    options: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Additional conversion options")
+
+
+class ConversionResponse(BaseModel):
+    """Response model for message conversion"""
+    conversion_id: str
+    source_format: str
+    target_format: str
+    status: str
+    success: bool
+    converted_message: Optional[str] = None
+    confidence_score: Optional[float] = None
+    processing_time: float
+    processing_metadata: Dict[str, Any]
+    statistics: Dict[str, Any]
+    human_review_required: bool = False
+    human_review_fields: List[str] = Field(default_factory=list)
+    error: Optional[str] = None
+
+
+class ConversionDetails(BaseModel):
+    """Detailed conversion information"""
+    conversion_id: str
+    source_format: str
+    target_format: str
+    source_message: str
+    converted_message: Optional[str]
+    status: str
+    confidence_score: Optional[float]
+    processing_details: Dict[str, Any]
+    field_level_details: List[Dict[str, Any]]
+    mongodb_metadata: Dict[str, Any]
+    created_at: datetime
+    updated_at: Optional[datetime]
+
+
+# Converter instances cache (created on demand)
+_converters = {}
+
+
+def get_converter(source_format: str, target_format: str) -> ConverterOrchestrator:
+    """
+    Get or create a converter orchestrator for the specified format pair.
+    
+    Args:
+        source_format: Source format code
+        target_format: Target format code
+        
+    Returns:
+        ConverterOrchestrator instance
+    """
+    cache_key = f"{source_format}->{target_format}"
+    
+    if cache_key not in _converters:
+        # Create new orchestrator
+        orchestrator = ConverterOrchestrator(db, source_format, target_format)
+        
+        # Set up parser and builder based on formats
+        if source_format == "MT103":
+            orchestrator.set_parser(MT103Parser(db))
+        else:
+            raise ValueError(f"Parser not implemented for format: {source_format}")
+        
+        if target_format == "pacs.008":
+            orchestrator.set_builder(Pacs008Builder(db))
+        else:
+            raise ValueError(f"Builder not implemented for format: {target_format}")
+        
+        _converters[cache_key] = orchestrator
+    
+    return _converters[cache_key]
+
+
+@router.post("/", response_model=ConversionResponse)
+async def convert_message(request: ConversionRequest) -> ConversionResponse:
+    """
+    Convert a payment message from one format to another.
+    
+    This endpoint orchestrates the complete conversion pipeline:
+    1. Validates source and target formats
+    2. Parses the source message
+    3. Applies rules-based mappings
+    4. Processes complex fields with AI
+    5. Builds the target format message
+    6. Stores everything in MongoDB
+    
+    Returns conversion ID for tracking and retrieval.
+    """
+    
+    # Validate formats are supported
+    source_formats = db.find("source_formats", {"is_active": True})
+    target_formats = db.find("target_formats", {"is_active": True})
+    
+    supported_sources = [f["format_code"] for f in source_formats]
+    supported_targets = [f["format_code"] for f in target_formats]
+    
+    if request.source_format not in supported_sources:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported source format: {request.source_format}. Supported: {supported_sources}"
+        )
+    
+    if request.target_format not in supported_targets:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported target format: {request.target_format}. Supported: {supported_targets}"
+        )
+    
+    try:
+        # Get or create converter
+        converter = get_converter(request.source_format, request.target_format)
+        
+        # Perform conversion
+        result = converter.convert(request.message, trace_id=request.trace_id)
+        
+        # Build response
+        return ConversionResponse(
+            conversion_id=result["conversion_id"],
+            source_format=request.source_format,
+            target_format=request.target_format,
+            status="completed" if result["success"] else "failed",
+            success=result["success"],
+            converted_message=result.get("converted_message"),
+            confidence_score=result["statistics"].get("average_confidence"),
+            processing_time=result["processing_metadata"]["processing_time"],
+            processing_metadata=result["processing_metadata"],
+            statistics=result["statistics"],
+            human_review_required=result.get("human_review_required", False),
+            human_review_fields=result.get("human_review_fields", []),
+            error=result.get("error")
+        )
+        
+    except Exception as e:
+        # Log error to MongoDB
+        error_id = db.insert_one("conversion_errors", {
+            "source_format": request.source_format,
+            "target_format": request.target_format,
+            "error": str(e),
+            "trace_id": request.trace_id,
+            "timestamp": datetime.now(UTC)
+        })
+        
+        raise HTTPException(
+            status_code=500,
+            detail=f"Conversion failed: {str(e)}. Error ID: {error_id}"
+        )
+
+
+@router.get("/{conversion_id}", response_model=ConversionDetails)
+async def get_conversion(conversion_id: str) -> ConversionDetails:
+    """
+    Retrieve a specific conversion by ID.
+    
+    Returns both the source and converted messages along with
+    complete processing details and MongoDB metadata.
+    """
+    
+    # Retrieve from MongoDB
+    from bson import ObjectId
+    
+    # Try to get the conversion document using ObjectId
+    try:
+        conversions = db.find("conversions", {"_id": ObjectId(conversion_id)})
+    except:
+        # If conversion_id is not a valid ObjectId, try as string
+        conversions = db.find("conversions", {"conversion_id": conversion_id})
+    
+    if not conversions:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Conversion {conversion_id} not found"
+        )
+    
+    record = conversions[0] if conversions else None
+    if not record:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Conversion {conversion_id} not found"
+        )
+    
+    # Build detailed response
+    return ConversionDetails(
+        conversion_id=str(record.get("_id", conversion_id)),
+        source_format=record["source_format"],
+        target_format=record["target_format"],
+        source_message=record.get("raw_message", ""),
+        converted_message=record.get("target_message"),
+        status=record.get("status", "unknown"),
+        confidence_score=record.get("confidence_score"),
+        processing_details=record.get("processing_stats", {}),
+        field_level_details=record.get("converted_fields", []),
+        mongodb_metadata={
+            "collection": "conversions",
+            "document_id": str(record.get("_id", "")),
+            "created_at": record.get("created_at"),
+            "updated_at": record.get("updated_at")
+        },
+        created_at=record.get("created_at", datetime.now(UTC)),
+        updated_at=record.get("updated_at")
+    )
+
+
+@router.get("/{conversion_id}/details")
+async def get_conversion_details(conversion_id: str) -> Dict[str, Any]:
+    """
+    Get detailed field-by-field processing information for a conversion.
+    
+    Shows which processing lane handled each field, confidence scores,
+    and any AI models used.
+    """
+    
+    # Retrieve conversion
+    from bson import ObjectId
+    
+    # Try to get the conversion document using ObjectId
+    try:
+        conversions = db.find("conversions", {"_id": ObjectId(conversion_id)})
+    except:
+        # If conversion_id is not a valid ObjectId, try as string
+        conversions = db.find("conversions", {"conversion_id": conversion_id})
+    
+    if not conversions:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Conversion {conversion_id} not found"
+        )
+    
+    record = conversions[0] if conversions else None
+    if not record:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Conversion {conversion_id} not found"
+        )
+    
+    # Extract field-level details
+    field_details = []
+    
+    # Get converted fields
+    converted_fields = record.get("converted_fields", {})
+    processing_stats = record.get("processing_stats", {})
+    
+    # Build field-by-field breakdown
+    for field_id, field_data in converted_fields.items():
+        detail = {
+            "field_id": field_id,
+            "value": field_data.get("value") if isinstance(field_data, dict) else field_data,
+            "processing_lane": "UNKNOWN",
+            "confidence": 1.0,
+            "model_used": None
+        }
+        
+        # Determine processing lane
+        if field_id in processing_stats.get("rules_lane", {}).get("fields", []):
+            detail["processing_lane"] = "RULES"
+        elif field_id in processing_stats.get("ai_lane", {}).get("fields", []):
+            detail["processing_lane"] = "AI"
+            if isinstance(field_data, dict):
+                detail["confidence"] = field_data.get("confidence", 0.85)
+                detail["model_used"] = field_data.get("model_used")
+        elif field_id in processing_stats.get("human_lane", {}).get("fields", []):
+            detail["processing_lane"] = "HUMAN_REVIEW"
+            detail["confidence"] = 0.0
+        
+        field_details.append(detail)
+    
+    return {
+        "conversion_id": conversion_id,
+        "field_count": len(field_details),
+        "processing_summary": {
+            "rules_fields": processing_stats.get("rules_lane", {}).get("count", 0),
+            "ai_fields": processing_stats.get("ai_lane", {}).get("count", 0),
+            "human_review_fields": processing_stats.get("human_lane", {}).get("count", 0)
+        },
+        "field_details": field_details,
+        "processing_time": record.get("processing_time"),
+        "overall_confidence": sum(f["confidence"] for f in field_details) / len(field_details) if field_details else 0.0
+    }
+
+
+@router.get("/history/recent")
+async def get_conversion_history(
+    limit: int = Query(10, ge=1, le=100),
+    source_format: Optional[str] = None,
+    target_format: Optional[str] = None,
+    status: Optional[str] = None
+) -> Dict[str, Any]:
+    """
+    Get recent conversion history with optional filters.
+    
+    Query parameters:
+    - limit: Number of records to return (1-100, default 10)
+    - source_format: Filter by source format
+    - target_format: Filter by target format
+    - status: Filter by status (completed, failed, in_progress)
+    """
+    
+    # Build query
+    query = {}
+    if source_format:
+        query["source_format"] = source_format
+    if target_format:
+        query["target_format"] = target_format
+    if status:
+        query["status"] = status
+    
+    # Retrieve from MongoDB (db.find returns a list)
+    conversions = db.find("conversions", query)
+    
+    # Sort by created_at descending and limit
+    conversions = sorted(conversions, key=lambda x: x.get("created_at", datetime.now(UTC)), reverse=True)[:limit]
+    
+    # Format results
+    history = []
+    for conv in conversions:
+        history.append({
+            "conversion_id": str(conv.get("_id", "")),
+            "source_format": conv["source_format"],
+            "target_format": conv["target_format"],
+            "status": conv.get("status", "unknown"),
+            "processing_time": conv.get("processing_time"),
+            "confidence_score": conv.get("confidence_score"),
+            "created_at": conv.get("created_at"),
+            "trace_id": conv.get("trace_id")
+        })
+    
+    return {
+        "total": len(history),
+        "limit": limit,
+        "filters": {
+            "source_format": source_format,
+            "target_format": target_format,
+            "status": status
+        },
+        "conversions": history
+    }
+
+
+@router.get("/statistics/summary")
+async def get_conversion_statistics() -> Dict[str, Any]:
+    """
+    Get conversion statistics and performance metrics.
+    
+    Returns aggregate statistics about conversions including
+    success rates, average processing times, and lane distribution.
+    """
+    
+    # Get all conversions for statistics
+    all_conversions = db.find("conversions", {})
+    
+    if not all_conversions:
+        return {
+            "total_conversions": 0,
+            "success_rate": 0.0,
+            "average_processing_time": 0.0,
+            "format_pairs": [],
+            "lane_distribution": {}
+        }
+    
+    # Calculate statistics
+    total = len(all_conversions)
+    successful = len([c for c in all_conversions if c.get("status") == "completed"])
+    
+    # Processing times
+    times = []
+    for conv in all_conversions:
+        if "processing_time" in conv:
+            times.append(conv["processing_time"])
+    
+    avg_time = sum(times) / len(times) if times else 0.0
+    
+    # Format pairs
+    format_pairs = {}
+    for conv in all_conversions:
+        pair = f"{conv['source_format']}->{conv['target_format']}"
+        format_pairs[pair] = format_pairs.get(pair, 0) + 1
+    
+    # Lane distribution
+    total_rules = 0
+    total_ai = 0
+    total_human = 0
+    
+    for conv in all_conversions:
+        stats = conv.get("processing_stats", {})
+        total_rules += stats.get("rules_lane", {}).get("count", 0)
+        total_ai += stats.get("ai_lane", {}).get("count", 0)
+        total_human += stats.get("human_lane", {}).get("count", 0)
+    
+    return {
+        "total_conversions": total,
+        "success_rate": (successful / total * 100) if total > 0 else 0.0,
+        "average_processing_time": round(avg_time, 2),
+        "format_pairs": [
+            {"pair": pair, "count": count}
+            for pair, count in format_pairs.items()
+        ],
+        "lane_distribution": {
+            "rules": total_rules,
+            "ai": total_ai,
+            "human_review": total_human
+        },
+        "mongodb_collections": [
+            "conversions",
+            "conversion_rules",
+            "field_model_routing",
+            "prompt_templates",
+            "ai_processing_history"
+        ]
+    }

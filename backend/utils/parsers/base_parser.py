@@ -87,13 +87,15 @@ class BaseParser(ABC):
         }
         
         # Store parsing result in MongoDB for demo visibility
-        parse_record = {
-            "operation": "parse_with_routing",
-            "format_type": self.format_type,
-            "result": result,
-            "timestamp": datetime.now(UTC)
-        }
-        self.db.insert_one("parsing_operations", parse_record)
+        # NOTE: Commented out for performance optimization in demo
+        # Can be re-enabled for detailed audit logging if needed
+        # parse_record = {
+        #     "operation": "parse_with_routing",
+        #     "format_type": self.format_type,
+        #     "result": result,
+        #     "timestamp": datetime.now(UTC)
+        # }
+        # self.db.insert_one("parsing_operations", parse_record)
         
         return result
     

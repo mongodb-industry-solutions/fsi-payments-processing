@@ -85,17 +85,19 @@ class BaseBuilder(ABC):
         }
         
         # Store build operation in MongoDB for demo visibility
-        build_record = {
-            "operation": "build_message",
-            "format_type": self.format_type,
-            "result_summary": {
-                "field_count": result["field_count"],
-                "overall_confidence": result["overall_confidence"],
-                "ai_fields": len([f for f in field_sources.values() if f["lane"] == "AI"])
-            },
-            "timestamp": datetime.now(UTC)
-        }
-        self.db.insert_one("builder_operations", build_record)
+        # NOTE: Commented out for performance optimization in demo
+        # Can be re-enabled for detailed audit logging if needed
+        # build_record = {
+        #     "operation": "build_message",
+        #     "format_type": self.format_type,
+        #     "result_summary": {
+        #         "field_count": result["field_count"],
+        #         "overall_confidence": result["overall_confidence"],
+        #         "ai_fields": len([f for f in field_sources.values() if f["lane"] == "AI"])
+        #     },
+        #     "timestamp": datetime.now(UTC)
+        # }
+        # self.db.insert_one("builder_operations", build_record)
         
         return result
     

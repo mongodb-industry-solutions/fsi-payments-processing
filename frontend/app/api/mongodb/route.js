@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import { connectToDatabase, closeDatabase } from "@/lib/mongodb";
 
 export async function GET() {
-  const dbName = process.env.DB_NAME || "testdb";
-  const collectionName = process.env.COLLECTION_NAME || "testcollection";
+  const dbName = process.env.DB_NAME || "fsi_payments";
+  const collectionName = process.env.COLLECTION_NAME || "conversions";
 
   if (!process.env.MONGODB_URI) {
     return NextResponse.json({ error: "MONGODB_URI not configured" }, { status: 500 });

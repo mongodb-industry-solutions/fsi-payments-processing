@@ -340,7 +340,9 @@ async def validate_message_format(
         "warnings": validation_result["warnings"],
         "field_analysis": validation_result["field_analysis"]
     }
-    db.insert_one("validation_results", validation_record)
+    # NOTE: Commented out for performance optimization in demo
+    # Can be re-enabled for detailed audit logging if needed
+    # db.insert_one("validation_results", validation_record)
     
     return validation_result
 

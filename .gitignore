@@ -11,6 +11,7 @@
 env/
 venv/
 ENV/
+backend/tests/
 env.bak/
 venv.bak/
 help-for-me/
@@ -243,3 +244,5 @@ format-convert-payment-vision.md
 .gitignore
 backend/IMPLEMENTATION_STEPS.md
 backend/AI_LANE_PLAN.md
+backend/test_results_20250906_123547.json
+backend/GENERIC_PARSER_PLAN.md
