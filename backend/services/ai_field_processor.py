@@ -14,6 +14,7 @@ import threading
 import logging
 
 from db.mdb import MongoDBConnector
+from db.cache import get_cache
 from services.simple_bedrock_service import SimpleBedrock, get_bedrock_service
 
 # Configure logging
@@ -44,8 +45,9 @@ class AIFieldProcessor:
         self.db = db_connector
         self.source_format = source_format
         self.target_format = target_format
+        self.cache = get_cache()
         
-        # Load configurations from MongoDB
+        # Load configurations from cache or MongoDB
         self.field_routing = self._load_field_routing()
         self.prompt_templates = self._load_prompt_templates()
         
@@ -65,40 +67,49 @@ class AIFieldProcessor:
         }
     
     def _load_field_routing(self) -> Dict:
-        """Load field-to-model routing from MongoDB for the source format."""
-        logger.debug(f"Loading field routing for source_format: {self.source_format}")
-        routing_docs = self.db.find("field_model_routing", {
-            "source_format": self.source_format
-        })
+        """Load field-to-model routing from cache or MongoDB."""
+        logger.debug(f"Loading field routing for {self.source_format} → {self.target_format}")
+        config_doc = self.cache.get_conversion_config(
+            self.db,
+            self.source_format,
+            self.target_format
+        )
+        config_docs = [config_doc] if config_doc else []
         
-        logger.debug(f"Found {len(routing_docs) if routing_docs else 0} routing documents")
+        logger.debug(f"Found {len(config_docs) if config_docs else 0} config documents")
         
-        if routing_docs and len(routing_docs) > 0:
-            routing = routing_docs[0]
-            logger.debug(f"Loaded routing with {len(routing.get('field_strategies', []))} strategies")
-            for strategy in routing.get('field_strategies', []):
+        if config_docs and len(config_docs) > 0:
+            config = config_docs[0]
+            ai_fields = config.get('ai_fields', [])
+            # Convert to old format for compatibility
+            field_strategies = ai_fields  # ai_fields already has the right structure
+            routing = {"source_format": self.source_format, "field_strategies": field_strategies}
+            logger.debug(f"Loaded routing with {len(field_strategies)} strategies")
+            for strategy in field_strategies:
                 logger.debug(f"  - Field {strategy.get('field')}: model={strategy.get('model')}")
             return routing
         
-        logger.warning(f"No field routing found for {self.source_format}")
+        logger.warning(f"No conversion config found for {self.source_format} → {self.target_format}")
         # Return empty routing if not found
         return {"source_format": self.source_format, "field_strategies": []}
     
     def _load_prompt_templates(self) -> Dict[str, Dict]:
-        """Load prompt templates for this specific format pair."""
-        templates = self.db.find("prompt_templates", {
-            "source_format": self.source_format,
-            "target_format": self.target_format
-        })
+        """Load prompt templates from cache or MongoDB."""
+        config_doc = self.cache.get_conversion_config(
+            self.db,
+            self.source_format,
+            self.target_format
+        )
+        config_docs = [config_doc] if config_doc else []
         
-        # Index by field for quick lookup
-        template_dict = {}
-        for template in templates:
-            field = template.get("field")
-            if field:
-                template_dict[field] = template
+        if config_docs and len(config_docs) > 0:
+            config = config_docs[0]
+            prompts = config.get('prompts', {})
+            # prompts is already a dict keyed by field
+            return prompts
         
-        return template_dict
+        # Return empty dict if no config found
+        return {}
     
     def get_field_strategy(self, field_id: str) -> Optional[Dict]:
         """
@@ -548,10 +559,7 @@ Return the structured data as JSON."""
             "success_rate": len(successful) / len(self.processing_history),
             "average_confidence": sum(h["confidence"] for h in successful) / len(successful) if successful else 0.0,
             "mongodb_collections_used": [
-                "field_model_routing",
-                "prompt_templates",
-                "ai_processing_history",
-                "ai_processing_errors"
+                "conversion_configs"
             ]
         }
     

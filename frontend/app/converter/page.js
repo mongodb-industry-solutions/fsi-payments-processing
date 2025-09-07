@@ -27,7 +27,7 @@ export default function ConverterPage() {
   
   // Format previews cache
   const [formatPreviews, setFormatPreviews] = useState({});
-  const [previewsLoaded, setPreviewsLoaded] = useState(false);
+  const [loadingPreviews, setLoadingPreviews] = useState({});
   
   // Conversion states
   const [isLoading, setIsLoading] = useState(false);
@@ -38,6 +38,19 @@ export default function ConverterPage() {
   useEffect(() => {
     fetchFormatsAndPreviews();
   }, []);
+  
+  // Fetch preview when format is selected
+  useEffect(() => {
+    if (sourceFormat && !formatPreviews[sourceFormat]) {
+      fetchFormatPreview(sourceFormat, 'source');
+    }
+  }, [sourceFormat]);
+  
+  useEffect(() => {
+    if (targetFormat && !formatPreviews[targetFormat]) {
+      fetchFormatPreview(targetFormat, 'target');
+    }
+  }, [targetFormat]);
 
   const fetchFormatsAndPreviews = async () => {
     setFormatsLoading(true);
@@ -61,28 +74,14 @@ export default function ConverterPage() {
         return;
       }
       
-      // Fetch formats and previews in parallel
-      const [formatsResponse, previewsResponse] = await Promise.all([
-        fetch('/api/formats'),
-        fetch('/api/formats/preview?preloadAll=true')
-      ]);
+      // Fetch formats only (previews will load on-demand)
+      const formatsResponse = await fetch('/api/formats');
       
       if (!formatsResponse.ok) {
         throw new Error('Failed to fetch formats');
       }
       
       const formatsData = await formatsResponse.json();
-      let previewsData = {};
-      
-      // Load previews if available
-      if (previewsResponse.ok) {
-        const previewResult = await previewsResponse.json();
-        if (previewResult.success && previewResult.previews) {
-          previewsData = previewResult.previews;
-          setFormatPreviews(previewsData);
-          setPreviewsLoaded(true);
-        }
-      }
       
       // Transform data for dropdowns
       const sourceOptions = formatOptionsForDropdown(formatsData.source_formats);
@@ -91,12 +90,8 @@ export default function ConverterPage() {
       setSourceFormats(sourceOptions);
       setTargetFormats(targetOptions);
       
-      // Cache the data with previews
-      const cacheData = {
-        ...formatsData,
-        previews: previewsData
-      };
-      sessionStorage.setItem(cacheKey, JSON.stringify(cacheData));
+      // Cache the data
+      sessionStorage.setItem(cacheKey, JSON.stringify(formatsData));
       sessionStorage.setItem(`${cacheKey}_expiry`, (new Date().getTime() + 5 * 60 * 1000).toString());
       
     } catch (error) {
@@ -129,12 +124,30 @@ export default function ConverterPage() {
     }));
   };
 
+  const fetchFormatPreview = async (formatCode, formatType) => {
+    // Don't fetch if already loading
+    if (loadingPreviews[formatCode]) return;
+    
+    setLoadingPreviews(prev => ({ ...prev, [formatCode]: true }));
+    
+    try {
+      const response = await fetch(`/api/formats/preview?format=${formatCode}&type=${formatType}`);
+      if (response.ok) {
+        const data = await response.json();
+        setFormatPreviews(prev => ({ ...prev, [formatCode]: data }));
+      }
+    } catch (error) {
+      console.error(`Failed to fetch preview for ${formatCode}:`, error);
+    } finally {
+      setLoadingPreviews(prev => ({ ...prev, [formatCode]: false }));
+    }
+  };
+  
   const refreshFormats = () => {
     // Clear cache and re-fetch
     sessionStorage.removeItem('payment_formats_with_previews');
     sessionStorage.removeItem('payment_formats_with_previews_expiry');
     setFormatPreviews({});
-    setPreviewsLoaded(false);
     fetchFormatsAndPreviews();
   };
 
@@ -244,7 +257,7 @@ export default function ConverterPage() {
                   type="source"
                   isExpanded={sourceFormat !== ""}
                   previewData={formatPreviews[sourceFormat]}
-                  isLoading={sourceFormat && !previewsLoaded && !formatPreviews[sourceFormat]}
+                  isLoading={loadingPreviews[sourceFormat] || false}
                 />
               </div>
               <div className={styles.previewColumn}>
@@ -254,7 +267,7 @@ export default function ConverterPage() {
                   type="target"
                   isExpanded={targetFormat !== ""}
                   previewData={formatPreviews[targetFormat]}
-                  isLoading={targetFormat && !previewsLoaded && !formatPreviews[targetFormat]}
+                  isLoading={loadingPreviews[targetFormat] || false}
                 />
               </div>
             </div>

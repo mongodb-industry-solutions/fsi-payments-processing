@@ -36,6 +36,22 @@ export async function POST(request) {
 
     const result = await response.json();
 
+    // Fetch conversion details to get processing summary with unique counts
+    let processingSummary = null;
+    if (result.conversion_id) {
+      try {
+        const detailsResponse = await fetch(
+          `${BACKEND_API_URL}/api/v1/convert/${result.conversion_id}/details`
+        );
+        if (detailsResponse.ok) {
+          const detailsData = await detailsResponse.json();
+          processingSummary = detailsData.processing_summary;
+        }
+      } catch (error) {
+        console.warn("Failed to fetch conversion details:", error);
+      }
+    }
+
     // Return the conversion result
     return NextResponse.json({
       success: true,
@@ -46,9 +62,9 @@ export async function POST(request) {
       conversionId: result.conversion_id,
       statistics: result.statistics,
       processingLanes: {
-        rules: result.statistics?.rules_lane?.count || 0,
-        ai: result.statistics?.ai_lane?.count || 0,
-        human: result.statistics?.human_lane?.count || 0,
+        rules: processingSummary?.rules_fields || result.statistics?.rules_lane?.count || 0,
+        ai: processingSummary?.ai_fields || result.statistics?.ai_lane?.count || 0,
+        human: processingSummary?.human_review_fields || result.statistics?.human_lane?.count || 0,
       },
     });
 
@@ -99,16 +115,35 @@ NEW YORK, NY 10013
 :71A:OUR
 -}`,
     
-    MT202: `:20:REF456
-:21:RELATED789
-:32A:240315USD100000,00
-:52A:BANKUSAA
-:53A:BANKUSBB
-:54A:BANKUSCC
-:56A:BANKUSDD
-:57A:BANKUSEE
-:58A:BANKUSFF
-:72:/INS/URGENT PAYMENT`,
+    MT202: `{1:F01CHASUS33XXXX0000000000}{2:I202DEUTDEFFXXXXN}{3:{108:ILOVESEPA}}{4:
+:20:FT24326789012345
+:21:REF24326789012345
+:32A:241215USD500000,00
+:52D:/12345678
+ACME BANK NEW YORK
+100 WALL STREET
+NEW YORK, NY 10005
+USA
+:56D:/GB98765432
+MIDLAND BANK PLC
+25 OLD BROAD STREET
+LONDON EC2N 1HN
+UNITED KINGDOM
+:57A:DEUTDEFFXXX
+:58D:/DE89370400440532013000
+BARCLAYS BANK FRANKFURT
+TAUNUSANLAGE 12
+60325 FRANKFURT AM MAIN
+GERMANY
+:70:/INV/2024-11-3847 DATED 15.11.2024
+/PO/8934567 QTY 5000 UNITS
+/RFB/CONTRACT TRD-2024-ACME-789
+/ROC/QUARTERLY SETTLEMENT Q4-2024
+:72:/INS/URGENT - SAME DAY VALUE
+/BNF/BENEFICIARY REF: ABC-123
+/ACC/ACCOUNT VERIFICATION REQUIRED
+/REC/NOTIFY: payments@example.com
+-}`,
     
     MT900: `:20:DEBIT789
 :21:REFERENCE456

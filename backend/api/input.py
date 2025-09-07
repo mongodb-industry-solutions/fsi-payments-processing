@@ -35,11 +35,15 @@ async def parse_input_format(
     content = request.content
     
     if request.sample_id and not content:
-        # Load sample from database
-        sample = db.find("sample_messages", {"_id": request.sample_id})
-        if not sample:
+        # Load sample from formats collection (embedded samples)
+        format_docs = db.find("formats", {"format_code": format_type.upper()})
+        if format_docs and format_docs[0].get("samples"):
+            for sample in format_docs[0]["samples"]:
+                if sample.get("name") == request.sample_id:
+                    content = sample.get("message", "")
+                    break
+        if not content:
             raise HTTPException(status_code=404, detail=f"Sample {request.sample_id} not found")
-        content = sample[0].get("content", "")
     
     if not content:
         raise HTTPException(status_code=400, detail="Either content or sample_id must be provided")
@@ -92,22 +96,6 @@ async def parse_input_format(
             else:
                 fields_by_lane["rules"].append(field_info)
         
-        # Store parsed message in MongoDB for visibility
-        parse_record = {
-            "format_type": format_type,
-            "parsed_at": datetime.now(UTC),
-            "field_count": result["field_count"],
-            "fields": result["parsed_fields"],
-            "processing_summary": {
-                "rules_fields": len(fields_by_lane["rules"]),
-                "ai_fields": len(fields_by_lane["ai"]),
-                "regex_fields": len(fields_by_lane["regex"])
-            },
-            "estimated_ai_cost": result.get("estimated_ai_cost", 0)
-        }
-        # Commented out - unnecessary database write
-        # doc_id = db.insert_one("parsed_messages", parse_record)
-        
         # Generate a simple ID without database
         import uuid
         doc_id = str(uuid.uuid4())
@@ -122,8 +110,7 @@ async def parse_input_format(
                 "estimated_ai_cost": result.get("estimated_ai_cost", 0),
                 "confidence": result.get("average_confidence", 0)
             },
-            "raw_fields": result["parsed_fields"],
-            "mongodb_collection": "parsed_messages"
+            "raw_fields": result["parsed_fields"]
         }
     
     except Exception as e:
@@ -254,11 +241,15 @@ async def validate_message_format(
     content = request.content
     
     if request.sample_id and not content:
-        # Load sample from database
-        sample = db.find("sample_messages", {"_id": request.sample_id})
-        if not sample:
+        # Load sample from formats collection (embedded samples)
+        format_docs = db.find("formats", {"format_code": format_type.upper()})
+        if format_docs and format_docs[0].get("samples"):
+            for sample in format_docs[0]["samples"]:
+                if sample.get("name") == request.sample_id:
+                    content = sample.get("message", "")
+                    break
+        if not content:
             raise HTTPException(status_code=404, detail=f"Sample {request.sample_id} not found")
-        content = sample[0].get("content", "")
     
     if not content:
         raise HTTPException(status_code=400, detail="Either content or sample_id must be provided")
@@ -336,18 +327,7 @@ async def validate_message_format(
         validation_result["is_valid"] = False
         validation_result["errors"].append(f"Failed to parse message: {str(e)}")
     
-    # Store validation result
-    validation_record = {
-        "format_type": format_type,
-        "validated_at": datetime.now(UTC),
-        "is_valid": validation_result["is_valid"],
-        "errors": validation_result["errors"],
-        "warnings": validation_result["warnings"],
-        "field_analysis": validation_result["field_analysis"]
-    }
-    # NOTE: Commented out for performance optimization in demo
-    # Can be re-enabled for detailed audit logging if needed
-    # db.insert_one("validation_results", validation_record)
+    # Validation results not stored for performance optimization
     
     return validation_result
 
@@ -505,9 +485,8 @@ async def get_recent_parses(
     if format_type:
         query["format_type"] = format_type.upper()
     
-    # Get recent parses from MongoDB - Commented out, return empty list
-    # recent = db.find("parsed_messages", query)
-    recent = []  # Return empty list since we're not storing parsed messages
+    # Not storing parsed messages anymore - return empty list
+    recent = []
     
     # Sort by timestamp (most recent first) and limit
     recent = sorted(recent, key=lambda x: x.get("parsed_at", ""), reverse=True)[:limit]

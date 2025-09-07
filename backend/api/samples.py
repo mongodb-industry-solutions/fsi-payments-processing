@@ -42,32 +42,28 @@ async def get_payment_samples(
             # Only include samples that have free text fields highlighted
             query["fields_highlight"] = {"$exists": True, "$ne": []}
         
-        # Fetch samples
-        samples = db.find("payment_samples", query)
+        # Fetch formats with embedded samples
+        formats = db.find("formats", query)
         
-        # Transform samples for response
+        # Extract samples from formats
         result = []
-        for sample in samples:
-            # Remove MongoDB internal fields
-            sample.pop("_id", None)
-            
-            # Add format metadata if available
-            if sample.get("format_type") == "source":
-                format_results = db.find("source_formats", {"format_code": sample["format_code"]})
-                format_info = format_results[0] if format_results else None
-            else:
-                format_results = db.find("target_formats", {"format_code": sample["format_code"]})
-                format_info = format_results[0] if format_results else None
-            
-            if format_info:
-                sample["format_metadata"] = {
-                    "name": format_info.get("format_name"),
-                    "version": format_info.get("version"),
-                    "free_text_fields": format_info.get("free_text_fields", []),
-                    "ai_suitable_fields": format_info.get("ai_suitable_fields", [])
+        for format_doc in formats:
+            for sample in format_doc.get("samples", []):
+                sample_data = {
+                    "format_code": format_doc["format_code"],
+                    "format_type": format_doc["type"],
+                    "sample_name": sample.get("name", ""),
+                    "description": sample.get("description", ""),
+                    "sample_data": sample.get("message", ""),
+                    "is_default": sample.get("is_default", False),
+                    "format_metadata": {
+                        "name": format_doc.get("name", format_doc["format_code"]),
+                        "version": format_doc.get("metadata", {}).get("version", "latest"),
+                        "free_text_fields": format_doc.get("free_text_fields", []),
+                        "ai_suitable_fields": format_doc.get("ai_suitable_fields", [])
+                    }
                 }
-            
-            result.append(sample)
+                result.append(sample_data)
         
         return {
             "success": True,
@@ -98,13 +94,26 @@ async def get_sample_by_format(
     try:
         db = MongoDBConnector()
         
-        query = {"format_code": format_code}
-        if sample_name:
-            query["sample_name"] = sample_name
+        # Get format with embedded samples
+        formats = db.find("formats", {"format_code": format_code})
+        format_doc = formats[0] if formats else None
         
-        # Get the first matching sample or specific sample
-        samples = db.find("payment_samples", query)
-        sample = samples[0] if samples else None
+        sample = None
+        if format_doc and format_doc.get("samples"):
+            if sample_name:
+                # Find specific sample by name
+                for s in format_doc["samples"]:
+                    if s.get("name") == sample_name:
+                        sample = s
+                        break
+            else:
+                # Get first sample or default
+                for s in format_doc["samples"]:
+                    if s.get("is_default", False):
+                        sample = s
+                        break
+                if not sample:
+                    sample = format_doc["samples"][0]
         
         if not sample:
             # If no sample in DB, return a basic template
@@ -117,26 +126,24 @@ async def get_sample_by_format(
                 "message": "Using template as no sample exists in database"
             }
         
-        # Remove MongoDB internal fields
-        sample.pop("_id", None)
-        
-        # Get format metadata
-        format_info = None
-        if sample.get("format_type") == "source":
-            format_results = db.find("source_formats", {"format_code": format_code})
-            format_info = format_results[0] if format_results else None
-        else:
-            format_results = db.find("target_formats", {"format_code": format_code})
-            format_info = format_results[0] if format_results else None
+        # Build sample response
+        sample_data = {
+            "format_code": format_code,
+            "format_type": format_doc["type"] if format_doc else "unknown",
+            "sample_name": sample.get("name", ""),
+            "description": sample.get("description", ""),
+            "sample_data": sample.get("message", ""),
+            "is_default": sample.get("is_default", False)
+        }
         
         return {
             "success": True,
             "format_code": format_code,
-            "sample": sample,
+            "sample": sample_data,
             "format_info": {
-                "name": format_info.get("format_name") if format_info else None,
-                "free_text_fields": format_info.get("free_text_fields", []) if format_info else [],
-                "ai_suitable_fields": format_info.get("ai_suitable_fields", []) if format_info else []
+                "name": format_doc.get("name", format_code) if format_doc else None,
+                "free_text_fields": format_doc.get("free_text_fields", []) if format_doc else [],
+                "ai_suitable_fields": format_doc.get("ai_suitable_fields", []) if format_doc else []
             }
         }
         
@@ -181,15 +188,19 @@ async def get_sample_preview(format_code: str):
     try:
         db = MongoDBConnector()
         
-        # Get the most recent sample for this format
-        # Note: MongoDB connector's find() doesn't support sort, so we'll get all and sort in Python
-        samples = db.find("payment_samples", {"format_code": format_code})
-        if samples:
-            # Sort by created_at descending and take the first
-            samples.sort(key=lambda x: x.get("created_at", ""), reverse=True)
-            sample = samples[0]
-        else:
-            sample = None
+        # Get format with embedded samples
+        formats = db.find("formats", {"format_code": format_code})
+        format_doc = formats[0] if formats else None
+        
+        sample = None
+        if format_doc and format_doc.get("samples"):
+            # Get default or first sample
+            for s in format_doc["samples"]:
+                if s.get("is_default", False):
+                    sample = s
+                    break
+            if not sample and format_doc["samples"]:
+                sample = format_doc["samples"][0]
         
         if not sample:
             result = {
@@ -206,8 +217,8 @@ async def get_sample_preview(format_code: str):
         result = {
             "success": True,
             "format_code": format_code,
-            "preview": sample.get("sample_data", ""),
-            "sample_name": sample.get("sample_name", ""),
+            "preview": sample.get("message", ""),
+            "sample_name": sample.get("name", ""),
             "has_free_text": bool(sample.get("fields_highlight")),
             "free_text_fields": sample.get("fields_highlight", [])
         }

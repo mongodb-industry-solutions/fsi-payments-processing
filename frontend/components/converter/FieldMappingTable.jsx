@@ -123,83 +123,6 @@ export default function FieldMappingTable({ conversionId, sourceFormat, targetFo
     );
   }
 
-  // Simulate field mappings for demo (since backend doesn't return detailed mappings yet)
-  const demoMappings = [
-    {
-      id: "1",
-      sourceField: ":20",
-      sourceValue: "REF123456789",
-      targetField: "MsgId",
-      targetValue: "MSG123456789",
-      processingLane: "RULES",
-      confidence: 1.0,
-      mongoRule: "conversion_rules.mt103_to_pacs008.reference_mapping"
-    },
-    {
-      id: "2",
-      sourceField: ":32A",
-      sourceValue: "241215USD50000,00",
-      targetField: "IntrBkSttlmAmt",
-      targetValue: "50000.00",
-      processingLane: "RULES",
-      confidence: 1.0,
-      mongoRule: "conversion_rules.mt103_to_pacs008.amount_mapping"
-    },
-    {
-      id: "3",
-      sourceField: ":50K",
-      sourceValue: "JOHN DOE\n123 MAIN STREET\nNEW YORK",
-      targetField: "Dbtr.Nm",
-      targetValue: "John Doe",
-      processingLane: "AI",
-      confidence: 0.92,
-      modelUsed: "Claude 3",
-      mongoRule: "field_model_routing.unstructured_name_extraction"
-    },
-    {
-      id: "4",
-      sourceField: ":59",
-      sourceValue: "JANE SMITH\n456 PARK AVENUE\nLOS ANGELES",
-      targetField: "Cdtr.Nm",
-      targetValue: "Jane Smith",
-      processingLane: "AI",
-      confidence: 0.88,
-      modelUsed: "Claude 3",
-      mongoRule: "field_model_routing.unstructured_name_extraction"
-    },
-    {
-      id: "5",
-      sourceField: ":71A",
-      sourceValue: "OUR",
-      targetField: "ChrgBr",
-      targetValue: "DEBT",
-      processingLane: "RULES",
-      confidence: 1.0,
-      mongoRule: "conversion_rules.mt103_to_pacs008.charge_bearer_mapping"
-    },
-    {
-      id: "6",
-      sourceField: ":23B",
-      sourceValue: "CRED",
-      targetField: "PmtTpInf.InstrPrty",
-      targetValue: "NORM",
-      processingLane: "RULES",
-      confidence: 1.0,
-      mongoRule: "conversion_rules.mt103_to_pacs008.payment_type_mapping"
-    },
-    {
-      id: "7",
-      sourceField: ":70",
-      sourceValue: "PAYMENT FOR INVOICE INV-2024-11-3847",
-      targetField: "RmtInf.Ustrd",
-      targetValue: "PAYMENT FOR INVOICE INV-2024-11-3847",
-      processingLane: "RULES",
-      confidence: 1.0,
-      mongoRule: "conversion_rules.mt103_to_pacs008.remittance_info_mapping"
-    }
-  ];
-
-  const mappingsToShow = fieldMappings.length > 0 ? fieldMappings : demoMappings;
 
   return (
     <div className={styles.container}>
@@ -217,7 +140,7 @@ export default function FieldMappingTable({ conversionId, sourceFormat, targetFo
           </tr>
         </thead>
         <tbody>
-          {mappingsToShow.map((mapping) => (
+          {fieldMappings.map((mapping) => (
             <React.Fragment key={mapping.id}>
               <tr className={styles.mappingRow}>
                 <td className={styles.fieldCell}>
@@ -319,10 +242,10 @@ export default function FieldMappingTable({ conversionId, sourceFormat, targetFo
       
       <div className={styles.summary}>
         <Overline>
-          Total fields mapped: {mappingsToShow.length} | 
-          Rules: {mappingsToShow.filter(m => m.processingLane === 'RULES').length} | 
-          AI: {mappingsToShow.filter(m => m.processingLane === 'AI').length} | 
-          Human Review: {mappingsToShow.filter(m => m.processingLane === 'HUMAN_REVIEW').length}
+          Total fields mapped: {fieldMappings.length} | 
+          Rules: {fieldMappings.filter(m => m.processingLane === 'RULES').length} | 
+          AI: {fieldMappings.filter(m => m.processingLane === 'AI').length} | 
+          Human Review: {fieldMappings.filter(m => m.processingLane === 'HUMAN_REVIEW').length}
         </Overline>
       </div>
     </div>

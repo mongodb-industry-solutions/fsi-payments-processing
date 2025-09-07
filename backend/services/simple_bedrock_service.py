@@ -227,56 +227,160 @@ class SimpleBedrock:
         if not fields_data:
             return {}
         
+        # Log field IDs being processed
+        field_ids = [field_id for field_id, _, _ in fields_data]
+        logger.info(f"   Batch processing fields: {field_ids}")
+        
         # Build batch prompt
         batch_prompt = self._build_batch_prompt(fields_data)
         
         # Make single AI call
         try:
             start_time = time.time()
-            response = self.invoke_claude(batch_prompt, model=model, **kwargs)
+            
+            # Enhanced debug logging
+            logger.debug(f"   Batch prompt length: {len(batch_prompt)} chars")
+            logger.debug(f"   Processing {len(fields_data)} fields: {field_ids}")
+            
+            # Log more of the prompt for debugging
+            if len(batch_prompt) < 2000:
+                logger.debug(f"   Full batch prompt:\n{batch_prompt}")
+            else:
+                logger.debug(f"   Batch prompt preview (first 1000 chars):\n{batch_prompt[:1000]}...")
+                logger.debug(f"   Batch prompt end (last 500 chars):\n...{batch_prompt[-500:]}")
+            
+            # Increase max_tokens for batch processing
+            batch_kwargs = kwargs.copy()
+            batch_kwargs['max_tokens'] = max(kwargs.get('max_tokens', 512), 1024)
+            
+            response = self.invoke_claude(batch_prompt, model=model, **batch_kwargs)
             elapsed = time.time() - start_time
             
-            logger.debug(f"   Batch AI call ({model}) processed {len(fields_data)} fields in {elapsed:.1f}s")
+            logger.info(f"   Batch AI call ({model}) completed in {elapsed:.1f}s")
+            logger.debug(f"   Response length: {len(response)} chars")
+            
+            # Log full response for debugging
+            if len(response) < 1000:
+                logger.debug(f"   Full response:\n{response}")
+            else:
+                logger.debug(f"   Response preview (first 500 chars):\n{response[:500]}...")
+                logger.debug(f"   Response end (last 500 chars):\n...{response[-500:]}")
             
             # Parse batch response
             results = self._parse_batch_response(response, fields_data)
+            
+            # Log parsing results
+            logger.info(f"   Parsed {len(results)}/{len(fields_data)} fields successfully")
+            for field_id in field_ids:
+                if field_id in results:
+                    logger.debug(f"    ✓ Field {field_id}: parsed successfully")
+                else:
+                    logger.warning(f"    ✗ Field {field_id}: NOT found in response")
+            
             return results
             
         except Exception as e:
-            logger.error(f"Batch AI processing failed: {str(e)[:200]}")
+            logger.error(f"Batch AI processing failed: {str(e)}")
+            logger.debug(f"   Exception details: {repr(e)}")
             # Fallback to empty results - let caller handle individual processing
             return {}
     
     def _build_batch_prompt(self, fields_data: list) -> str:
         """Build a prompt that processes multiple fields at once."""
-        prompt_parts = [
-            "Process the following payment fields and return structured JSON for each.",
-            "Return your response as a JSON object with field IDs as keys.",
-            "",
-            "Fields to process:"
-        ]
+        # Check if we have pre-built prompts (from AIFieldProcessor) or templates
+        has_prebuilt_prompts = any(
+            prompt and "{field_content}" not in prompt 
+            for _, _, prompt in fields_data
+        )
         
-        for field_id, field_content, prompt_template in fields_data:
-            prompt_parts.append(f"\n--- Field {field_id} ---")
-            if prompt_template:
-                # Use custom prompt template if provided
-                prompt_parts.append(prompt_template.replace("{field_content}", field_content))
-            else:
-                # Default prompt
-                prompt_parts.append(f"Content: {field_content}")
-                prompt_parts.append("Extract and structure this field's information.")
-        
-        prompt_parts.extend([
-            "",
-            "Return as JSON in this format:",
-            "{",
-            '  "field_id": {',
-            '    "extracted_data": {...},',
-            '    "confidence": 0.85',
-            "  },",
-            "  ...",
-            "}"
-        ])
+        if has_prebuilt_prompts:
+            # Handle pre-built prompts from AIFieldProcessor
+            # Build a unified batch prompt that overrides individual output formats
+            prompt_parts = [
+                "You are processing multiple payment fields for format conversion.",
+                "Process each field independently using the instructions provided.",
+                "IMPORTANT: Ignore any output format instructions in individual field prompts.",
+                "Return ALL results as a SINGLE JSON object with field IDs as keys.",
+                "",
+                "Fields to process:",
+                ""
+            ]
+            
+            for field_id, field_content, prompt_template in fields_data:
+                prompt_parts.append(f"=== Field {field_id} ===")
+                
+                if prompt_template:
+                    # Extract core instructions from pre-built prompt
+                    # Remove JSON output format instructions that might conflict
+                    clean_prompt = prompt_template
+                    
+                    # Remove common JSON output format instructions
+                    clean_prompt = clean_prompt.replace("Output ONLY valid JSON", "Process")
+                    clean_prompt = clean_prompt.replace("Return as JSON", "Extract")
+                    clean_prompt = clean_prompt.replace("Return JSON", "Extract")
+                    clean_prompt = clean_prompt.replace("Output JSON", "Extract")
+                    
+                    # Add the cleaned prompt
+                    prompt_parts.append(clean_prompt)
+                else:
+                    # Fallback to simple extraction
+                    prompt_parts.append(f"Content: {field_content}")
+                    prompt_parts.append("Extract and structure this field's information.")
+                
+                prompt_parts.append("")  # Add spacing between fields
+            
+            # Clear, unified output instructions
+            prompt_parts.extend([
+                "=== FINAL OUTPUT INSTRUCTIONS ===",
+                "Combine ALL field results into a SINGLE JSON response.",
+                "Use the exact field IDs as keys (e.g., '20', '23B', '50K', '59', '70', '71A', '72').",
+                "Each field must have 'extracted_data' and 'confidence' keys.",
+                "",
+                "Required format:",
+                "{",
+                '  "20": {',
+                '    "extracted_data": <processed field 20 data>,',
+                '    "confidence": 0.95',
+                '  },',
+                '  "23B": {',
+                '    "extracted_data": <processed field 23B data>,',
+                '    "confidence": 0.95',
+                '  },',
+                '  // ... continue for all fields',
+                "}",
+                "",
+                "IMPORTANT: Return ONLY the JSON object, no additional text."
+            ])
+        else:
+            # Original logic for template-based prompts
+            prompt_parts = [
+                "Process the following payment fields and return structured JSON for each.",
+                "Return your response as a JSON object with field IDs as keys.",
+                "",
+                "Fields to process:"
+            ]
+            
+            for field_id, field_content, prompt_template in fields_data:
+                prompt_parts.append(f"\n--- Field {field_id} ---")
+                if prompt_template:
+                    # Template with placeholder - replace it
+                    prompt_parts.append(prompt_template.replace("{field_content}", field_content))
+                else:
+                    # Default prompt
+                    prompt_parts.append(f"Content: {field_content}")
+                    prompt_parts.append("Extract and structure this field's information.")
+            
+            prompt_parts.extend([
+                "",
+                "Return as JSON in this format:",
+                "{",
+                '  "field_id": {',
+                '    "extracted_data": {...},',
+                '    "confidence": 0.85',
+                "  },",
+                "  ...",
+                "}"
+            ])
         
         return "\n".join(prompt_parts)
     
@@ -287,37 +391,107 @@ class SimpleBedrock:
         results = {}
         
         try:
+            # Clean the response - remove markdown code blocks if present
+            clean_response = response.strip()
+            if clean_response.startswith("```json"):
+                clean_response = clean_response[7:]
+            elif clean_response.startswith("```"):
+                clean_response = clean_response[3:]
+            if clean_response.endswith("```"):
+                clean_response = clean_response[:-3]
+            clean_response = clean_response.strip()
+            
             # Try to parse as JSON first
-            json_match = re.search(r'\{.*\}', response, re.DOTALL)
+            json_match = re.search(r'\{.*\}', clean_response, re.DOTALL)
             if json_match:
                 parsed = json.loads(json_match.group())
                 
+                # Debug: Log parsed keys
+                logger.debug(f"   Parsed JSON keys: {list(parsed.keys())}")
+                
                 # Map parsed results to field IDs
                 for field_id, _, _ in fields_data:
-                    if field_id in parsed:
-                        results[field_id] = parsed[field_id]
-                    elif str(field_id) in parsed:
-                        results[field_id] = parsed[str(field_id)]
-                    else:
-                        # Try to find field in various formats
+                    field_id_str = str(field_id)
+                    
+                    # Try different key variations
+                    found = False
+                    
+                    # Direct match
+                    if field_id_str in parsed:
+                        results[field_id] = parsed[field_id_str]
+                        found = True
+                        logger.debug(f"    ✓ Found field {field_id} (direct match)")
+                    
+                    # With "field_" prefix
+                    elif f"field_{field_id}" in parsed:
+                        results[field_id] = parsed[f"field_{field_id}"]
+                        found = True
+                        logger.debug(f"    ✓ Found field {field_id} (with field_ prefix)")
+                    
+                    # Case variations for special fields like "23B"
+                    elif field_id != field_id_str:  # For non-string field IDs
+                        if field_id in parsed:
+                            results[field_id] = parsed[field_id]
+                            found = True
+                            logger.debug(f"    ✓ Found field {field_id} (original type)")
+                    
+                    # Check all keys for partial matches
+                    if not found:
                         for key in parsed:
-                            if field_id in key or key in field_id:
+                            if key == field_id or key == field_id_str or key == f"field_{field_id}":
                                 results[field_id] = parsed[key]
+                                found = True
+                                logger.debug(f"    ✓ Found field {field_id} (key: {key})")
                                 break
+                    
+                    if not found:
+                        logger.debug(f"    ⚠️ Field {field_id} not found in response")
                 
+                # Validate the results have correct structure
+                for field_id, value in results.items():
+                    if isinstance(value, dict):
+                        # Ensure extracted_data and confidence exist
+                        if "extracted_data" not in value and "confidence" not in value:
+                            # Wrap the entire value as extracted_data
+                            results[field_id] = {
+                                "extracted_data": value,
+                                "confidence": 0.85
+                            }
+                    else:
+                        # Wrap non-dict values
+                        results[field_id] = {
+                            "extracted_data": value,
+                            "confidence": 0.85
+                        }
+                
+                logger.debug(f"   Successfully parsed {len(results)}/{len(fields_data)} fields from batch response")
                 return results
                 
         except (json.JSONDecodeError, AttributeError) as e:
-            logger.debug(f"   Failed to parse batch response as JSON: {str(e)[:100]}")
+            logger.error(f"   Failed to parse batch response as JSON: {str(e)[:100]}")
+            logger.debug(f"   Response preview: {response[:500]}...")
         
         # Fallback: Try to extract individual field responses
+        logger.debug("   Attempting fallback parsing...")
         for field_id, _, _ in fields_data:
             # Look for field-specific sections in response
-            field_pattern = rf"(?:Field |^){re.escape(str(field_id))}[:\s]+(.+?)(?=Field \w+:|$)"
-            match = re.search(field_pattern, response, re.MULTILINE | re.DOTALL)
+            field_pattern = rf"(?:Field |field_|=== Field ){re.escape(str(field_id))}.*?[:\s]+(.+?)(?=(?:Field |field_|=== Field )\w+|$)"
+            match = re.search(field_pattern, response, re.MULTILINE | re.DOTALL | re.IGNORECASE)
             if match:
-                results[field_id] = {"extracted_data": match.group(1).strip(), "confidence": 0.7}
+                try:
+                    # Try to parse the extracted part as JSON
+                    field_json = re.search(r'\{.*?\}', match.group(1), re.DOTALL)
+                    if field_json:
+                        results[field_id] = json.loads(field_json.group())
+                        logger.debug(f"    ✓ Extracted field {field_id} via fallback")
+                    else:
+                        results[field_id] = {"extracted_data": match.group(1).strip(), "confidence": 0.7}
+                        logger.debug(f"    ✓ Extracted field {field_id} as text via fallback")
+                except:
+                    results[field_id] = {"extracted_data": match.group(1).strip(), "confidence": 0.7}
+                    logger.debug(f"    ✓ Extracted field {field_id} with error handling")
         
+        logger.debug(f"   Fallback parsing recovered {len(results)}/{len(fields_data)} fields")
         return results
     
     def health_check(self) -> bool:

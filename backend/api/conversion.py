@@ -108,6 +108,11 @@ def get_converter(source_format: str, target_format: str) -> ConverterOrchestrat
             # Fallback to hardcoded parser
             orchestrator.set_parser(MT103Parser(db))
             logger.info(f"Using hardcoded MT103Parser")
+        elif source_format == "MT202":
+            # Use MT202 parser
+            from utils.parsers.mt202_parser import MT202Parser
+            orchestrator.set_parser(MT202Parser(db))
+            logger.info(f"Using MT202Parser")
         else:
             raise ValueError(f"Parser not implemented for format: {source_format}")
         
@@ -121,6 +126,10 @@ def get_converter(source_format: str, target_format: str) -> ConverterOrchestrat
             # Fallback to hardcoded builder
             orchestrator.set_builder(Pacs008Builder(db))
             logger.info(f"Using hardcoded Pacs008Builder")
+        elif target_format == "pacs.009":
+            from utils.builders.pacs009_builder import Pacs009Builder
+            orchestrator.set_builder(Pacs009Builder(db))
+            logger.info(f"Using Pacs009Builder")
         else:
             raise ValueError(f"Builder not implemented for format: {target_format}")
         
@@ -146,11 +155,10 @@ async def convert_message(request: ConversionRequest) -> ConversionResponse:
     """
     
     # Validate formats are supported
-    source_formats = db.find("source_formats", {"is_active": True})
-    target_formats = db.find("target_formats", {"is_active": True})
+    all_formats = db.find("formats", {"is_active": True})
     
-    supported_sources = [f["format_code"] for f in source_formats]
-    supported_targets = [f["format_code"] for f in target_formats]
+    supported_sources = [f["format_code"] for f in all_formats if f.get("type") == "source"]
+    supported_targets = [f["format_code"] for f in all_formats if f.get("type") == "target"]
     
     if request.source_format not in supported_sources:
         raise HTTPException(
@@ -166,6 +174,7 @@ async def convert_message(request: ConversionRequest) -> ConversionResponse:
     
     try:
         # Get or create converter
+        logger.info(f"Converting {request.source_format} to {request.target_format}")
         converter = get_converter(request.source_format, request.target_format)
         
         # Perform conversion
@@ -189,6 +198,9 @@ async def convert_message(request: ConversionRequest) -> ConversionResponse:
         )
         
     except Exception as e:
+        # Log the actual error for debugging
+        logger.error(f"Conversion error: {str(e)}", exc_info=True)
+        
         # Log error to MongoDB - Commented out unnecessary database write
         # error_id = db.insert_one("conversion_errors", {
         #     "source_format": request.source_format,

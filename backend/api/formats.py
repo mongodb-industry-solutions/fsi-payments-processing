@@ -14,15 +14,18 @@ async def list_formats() -> Dict[str, List[Dict]]:
     Returns both source and target formats available in the system.
     This helps users understand what conversions are possible.
     """
-    target_formats = db.find("target_formats", {"is_active": True})
-    source_formats = db.find("source_formats", {"is_active": True})
+    # Use unified formats collection
+    all_formats = db.find("formats", {"is_active": True})
+    
+    source_formats = [fmt for fmt in all_formats if fmt.get("type") == "source"]
+    target_formats = [fmt for fmt in all_formats if fmt.get("type") == "target"]
     
     return {
         "source_formats": [
             {
                 "format_code": fmt["format_code"],
-                "format_name": fmt["format_name"],
-                "version": fmt.get("version", "latest"),
+                "format_name": fmt.get("name", fmt["format_code"]),  # Changed from format_name to name
+                "version": fmt.get("metadata", {}).get("version", "latest"),
                 "description": fmt.get("description", "")
             }
             for fmt in source_formats
@@ -30,8 +33,8 @@ async def list_formats() -> Dict[str, List[Dict]]:
         "target_formats": [
             {
                 "format_code": fmt["format_code"],
-                "format_name": fmt["format_name"],
-                "version": fmt.get("version", "latest"),
+                "format_name": fmt.get("name", fmt["format_code"]),  # Changed from format_name to name
+                "version": fmt.get("metadata", {}).get("version", "latest"),
                 "description": fmt.get("description", "")
             }
             for fmt in target_formats
@@ -42,24 +45,26 @@ async def list_formats() -> Dict[str, List[Dict]]:
 @router.get("/source/{format_code}")
 async def get_source_format_details(format_code: str) -> Dict:
     """Get detailed information about a specific source format"""
-    format_docs = db.find("source_formats", {"format_code": format_code})
+    format_docs = db.find("formats", {"format_code": format_code, "type": "source"})
     
     if not format_docs:
         raise HTTPException(status_code=404, detail=f"Source format {format_code} not found")
     
     format_doc = format_docs[0]
     
-    # Get field routing information
-    routing_docs = db.find("field_model_routing", {"source_format": format_code})
+    # Get field routing information from conversion_configs
+    config_docs = db.find("conversion_configs", {"source_format": format_code})
     field_strategies = []
-    if routing_docs:
-        field_strategies = routing_docs[0].get("field_strategies", [])
+    if config_docs:
+        # Extract AI fields from conversion config
+        ai_fields = config_docs[0].get("ai_fields", [])
+        field_strategies = ai_fields
     
     # Categorize fields by processing lane
     ai_fields = []
     regex_fields = []
     for strategy in field_strategies:
-        if strategy["model"] == "REGEX_FIRST":
+        if strategy.get("model") == "REGEX_FIRST":
             regex_fields.append({
                 "field": strategy["field"],
                 "description": strategy.get("description", "")
@@ -67,14 +72,14 @@ async def get_source_format_details(format_code: str) -> Dict:
         else:
             ai_fields.append({
                 "field": strategy["field"],
-                "model": strategy["model"],
+                "model": strategy.get("model", "CLAUDE_HAIKU"),
                 "description": strategy.get("description", "")
             })
     
     return {
         "format_code": format_doc["format_code"],
-        "format_name": format_doc["format_name"],
-        "version": format_doc.get("version", "latest"),
+        "format_name": format_doc.get("name", format_doc["format_code"]),  # Changed from format_name to name
+        "version": format_doc.get("metadata", {}).get("version", "latest"),
         "description": format_doc.get("description", ""),
         "is_active": format_doc.get("is_active", True),
         "processing_lanes": {
@@ -82,23 +87,23 @@ async def get_source_format_details(format_code: str) -> Dict:
             "regex_fields": regex_fields,
             "rules_fields": "All other fields use rules-based processing"
         },
-        "created_at": format_doc.get("created_at", ""),
-        "mongodb_collection": "source_formats"
+        "created_at": format_doc.get("metadata", {}).get("migrated_at", ""),
+        "mongodb_collection": "formats"
     }
 
 
 @router.get("/target/{format_code}")
 async def get_target_format_details(format_code: str) -> Dict:
     """Get detailed information about a specific target format"""
-    format_docs = db.find("target_formats", {"format_code": format_code})
+    format_docs = db.find("formats", {"format_code": format_code, "type": "target"})
     
     if not format_docs:
         raise HTTPException(status_code=404, detail=f"Target format {format_code} not found")
     
     format_doc = format_docs[0]
     
-    # Get conversion rules to this target
-    rules_docs = db.find("conversion_rules", {
+    # Get conversion rules to this target from conversion_configs
+    rules_docs = db.find("conversion_configs", {
         "target_format": format_code,
         "is_active": True
     })
@@ -113,14 +118,14 @@ async def get_target_format_details(format_code: str) -> Dict:
     
     return {
         "format_code": format_doc["format_code"],
-        "format_name": format_doc["format_name"],
-        "version": format_doc.get("version", "latest"),
+        "format_name": format_doc.get("name", format_doc["format_code"]),  # Changed from format_name to name
+        "version": format_doc.get("metadata", {}).get("version", "latest"),
         "description": format_doc.get("description", ""),
-        "namespace": format_doc.get("namespace", ""),
+        "namespace": format_doc.get("metadata", {}).get("xml_namespace", ""),
         "is_active": format_doc.get("is_active", True),
         "available_conversions": available_conversions,
-        "created_at": format_doc.get("created_at", ""),
-        "mongodb_collection": "target_formats"
+        "created_at": format_doc.get("metadata", {}).get("migrated_at", ""),
+        "mongodb_collection": "formats"
     }
 
 
@@ -132,8 +137,8 @@ async def get_mapping_preview(source_format: str, target_format: str) -> Dict:
     and which processing lane (Rules/AI/Regex) will handle each field.
     """
     
-    # Get conversion rules
-    rules_docs = db.find("conversion_rules", {
+    # Get conversion rules from conversion_configs
+    rules_docs = db.find("conversion_configs", {
         "source_format": source_format,
         "target_format": target_format,
         "is_active": True
@@ -147,16 +152,15 @@ async def get_mapping_preview(source_format: str, target_format: str) -> Dict:
     
     rules = rules_docs[0].get("rules", [])
     
-    # Get field routing for AI fields
-    routing_docs = db.find("field_model_routing", {"source_format": source_format})
+    # Get field routing for AI fields from conversion_configs
     ai_fields = set()
     regex_fields = set()
     field_strategies = {}
     
-    if routing_docs:
-        for strategy in routing_docs[0].get("field_strategies", []):
+    if rules_docs:
+        for strategy in rules_docs[0].get("ai_fields", []):
             field = strategy["field"]
-            if strategy["model"] == "REGEX_FIRST":
+            if strategy.get("model") == "REGEX_FIRST":
                 regex_fields.add(field)
             else:
                 ai_fields.add(field)
@@ -228,8 +232,7 @@ async def get_mapping_preview(source_format: str, target_format: str) -> Dict:
             }
         },
         "mongodb_collections_used": [
-            "conversion_rules",
-            "field_model_routing"
+            "conversion_configs"
         ],
         "created_at": rules_docs[0].get("created_at", datetime.now(UTC))
     }
@@ -243,14 +246,15 @@ async def get_system_capabilities() -> Dict:
     available conversions, and processing statistics.
     """
     
-    # Count documents in each collection
-    source_count = len(db.find("source_formats", {"is_active": True}))
-    target_count = len(db.find("target_formats", {"is_active": True}))
-    rules_count = len(db.find("conversion_rules", {"is_active": True}))
+    # Count documents in unified formats collection
+    all_formats = db.find("formats", {"is_active": True})
+    source_count = len([f for f in all_formats if f.get("type") == "source"])
+    target_count = len([f for f in all_formats if f.get("type") == "target"])
+    rules_count = len(db.find("conversion_configs", {"is_active": True}))
     
     # Get all available conversion pairs
     conversion_pairs = []
-    rules_docs = db.find("conversion_rules", {"is_active": True})
+    rules_docs = db.find("conversion_configs", {"is_active": True})
     for rule_doc in rules_docs:
         conversion_pairs.append({
             "from": rule_doc["source_format"],
@@ -258,11 +262,8 @@ async def get_system_capabilities() -> Dict:
             "rule_count": len(rule_doc.get("rules", []))
         })
     
-    # Get processing statistics if available
-    rules_ops = db.find("rules_operations", {})
-    ai_ops = db.find("ai_operations", {})
-    
-    total_conversions = len(rules_ops) + len(ai_ops)
+    # Processing statistics not tracked in demo
+    total_conversions = 0
     
     return {
         "system_name": "Generic Payment Format Converter",
@@ -287,14 +288,10 @@ async def get_system_capabilities() -> Dict:
         "statistics": {
             "total_conversions_processed": total_conversions,
             "mongodb_collections": [
-                "source_formats",
-                "target_formats", 
-                "conversion_rules",
-                "field_model_routing",
-                "prompt_templates",
-                "rules_operations",
-                "ai_operations",
-                "builder_operations"
+                "formats",  # Unified collection for source and target formats
+                "conversion_configs",  # Unified conversion configurations
+                "conversions",  # Conversion history
+                "format_processors"  # Parser and builder configs
             ]
         },
         "api_endpoints": {

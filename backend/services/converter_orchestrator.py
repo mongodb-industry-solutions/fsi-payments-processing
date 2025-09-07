@@ -216,6 +216,8 @@ class ConverterOrchestrator:
         except Exception as e:
             # Log error and update record
             self.processing_stats["end_time"] = datetime.now(UTC)
+            processing_time = (self.processing_stats["end_time"] - self.processing_stats["start_time"]).total_seconds()
+            
             self._update_conversion_record(
                 error=str(e),
                 success=False
@@ -229,7 +231,9 @@ class ConverterOrchestrator:
                 "error": str(e),
                 "processing_metadata": {
                     "source_format": self.source_format,
-                    "target_format": self.target_format
+                    "target_format": self.target_format,
+                    "processing_time": processing_time,
+                    "lanes_used": self._get_lanes_summary()
                 },
                 "statistics": self.processing_stats
             }
@@ -248,8 +252,28 @@ class ConverterOrchestrator:
         """
         fields_to_process = []
         
-        # Identify fields that need AI processing (all fields not handled by rules)
+        # Check field_transformations configuration to determine which fields need AI
+        ai_required_fields = set()
+        configs = self.db.find("conversion_configs", {
+            "source_format": self.source_format,
+            "target_format": self.target_format,
+            "is_active": True
+        })
+        
+        if configs and "field_transformations" in configs[0]:
+            for field_config in configs[0]["field_transformations"]:
+                if field_config.get("source_type") == "ai":
+                    ai_required_fields.add(field_config["source_field"])
+                    logger.debug(f"  Field {field_config['source_field']}: marked for AI processing in config")
+        
+        # Identify fields that need AI processing
         for field_id, field_content in parsed_fields.items():
+            # Check if field is explicitly marked for AI in configuration
+            if field_id in ai_required_fields:
+                logger.debug(f"  Field {field_id}: sending to AI (marked in config)")
+                fields_to_process.append((field_id, field_content))
+                continue
+                
             # Skip if already handled by rules
             if field_id in converted_fields:
                 logger.debug(f"  Field {field_id}: already handled by rules, skipping AI")
@@ -283,6 +307,257 @@ class ConverterOrchestrator:
         return ai_fields
     
     def _transform_ai_fields(self, ai_fields: Dict[str, Any], converted_fields: Dict[str, Any]) -> None:
+        """
+        Generic field transformation based on MongoDB configuration.
+        Works for any source/target format pair.
+        
+        Args:
+            ai_fields: Dictionary of AI-processed fields with complex structures
+            converted_fields: Target dictionary to add flattened fields to
+        """
+        # Load transformation rules from MongoDB
+        configs = self.db.find("conversion_configs", {
+            "source_format": self.source_format,
+            "target_format": self.target_format,
+            "is_active": True
+        })
+        
+        config = configs[0] if configs else None
+        
+        if not config or "field_transformations" not in config:
+            # Fallback to legacy hardcoded logic for backward compatibility
+            logger.debug("No field_transformations found, using legacy transformation")
+            self._legacy_transform_ai_fields(ai_fields, converted_fields)
+            return
+        
+        # Process each field transformation rule
+        for field_config in config["field_transformations"]:
+            source_field = field_config["source_field"]
+            source_type = field_config.get("source_type", "rules")
+            
+            # Only process AI-type fields here
+            if source_type != "ai":
+                continue
+                
+            # Skip if field not in AI results
+            if source_field not in ai_fields:
+                logger.debug(f"  Field {source_field} marked for AI but not in AI results")
+                continue
+                
+            field_data = ai_fields[source_field]
+            
+            # Process each transformation for this field
+            for transform in field_config.get("transformations", []):
+                try:
+                    # Extract value using path
+                    source_path = transform.get("source_path", "")
+                    logger.debug(f"    Processing transform for {source_field}: path={repr(source_path)}")
+                    
+                    # Backward-compatible extraction:
+                    # - If path starts with "value.", extract from field_data directly (MT103 style)
+                    # - Otherwise, extract from field_data["value"] (MT202 style)
+                    if source_path.startswith("value."):
+                        # MT103 style: paths like "value.name" expect the wrapper
+                        value = self._extract_value_by_path(field_data, source_path)
+                    else:
+                        # MT202 style: paths like "field52.accountOwner" expect the inner value
+                        # Also handles empty paths for fields 70, 72
+                        if "value" in field_data:
+                            value = self._extract_value_by_path(field_data["value"], source_path)
+                        else:
+                            # Fallback if no "value" wrapper
+                            value = self._extract_value_by_path(field_data, source_path)
+                    
+                    if value is None:
+                        continue
+                    
+                    # Apply transformation based on type
+                    transformed_value = self._apply_transformation(
+                        value, 
+                        transform.get("transform_type", "direct"),
+                        transform
+                    )
+                    
+                    if transformed_value is None or transformed_value == "":
+                        continue
+                    
+                    # Store in converted_fields
+                    target_field = transform["target_field"]
+                    converted_fields[target_field] = transformed_value
+                    
+                    # Track mapping for audit
+                    self._track_field_mapping(
+                        source_field,
+                        target_field,
+                        transformed_value,
+                        field_data.get("confidence", 0.85),
+                        field_data.get("model_used", "AI")
+                    )
+                    
+                except Exception as e:
+                    logger.warning(f"Transform failed for {source_field}: {e}")
+                    continue
+    
+    def _extract_value_by_path(self, data: Any, path: str) -> Any:
+        """
+        Extract value from nested structure using dot notation.
+        Examples: "value.name", "value.address.street"
+        
+        Args:
+            data: The data structure to extract from
+            path: Dot-notation path to the value
+            
+        Returns:
+            The extracted value or None if not found
+        """
+        if not path:
+            return data
+        
+        # Add type checking for path
+        if not isinstance(path, str):
+            logger.error(f"ERROR: path is not a string! Type: {type(path)}, Value: {path}")
+            return None
+            
+        parts = path.split(".")
+        current = data
+        
+        for part in parts:
+            if isinstance(current, dict):
+                current = current.get(part)
+                if current is None:
+                    return None
+            else:
+                return None
+                
+        return current
+    
+    def _apply_transformation(self, value: Any, transform_type: str, config: Dict) -> Any:
+        """
+        Apply transformation based on type.
+        
+        Args:
+            value: The value to transform
+            transform_type: Type of transformation to apply
+            config: Transformation configuration
+            
+        Returns:
+            Transformed value
+        """
+        if transform_type == "direct":
+            return value
+            
+        elif transform_type == "address_format":
+            # Format address from structured data
+            if isinstance(value, dict):
+                template = config.get("format_template", "{street}, {city}")
+                # Safe formatting with missing keys
+                format_dict = {
+                    "street": value.get("street", ""),
+                    "city": value.get("city", ""),
+                    "state": value.get("state", ""),
+                    "postal_code": value.get("postal_code", ""),
+                    "country": value.get("country", "")
+                }
+                # Remove empty values
+                format_dict = {k: v for k, v in format_dict.items() if v}
+                
+                # Build address string
+                parts = []
+                if format_dict.get("street"):
+                    parts.append(str(format_dict["street"]))
+                if format_dict.get("city"):
+                    city_part = str(format_dict["city"])
+                    if format_dict.get("state"):
+                        city_part += f" {str(format_dict['state'])}"
+                    if format_dict.get("postal_code"):
+                        city_part += f" {str(format_dict['postal_code'])}"
+                    parts.append(city_part)
+                if format_dict.get("country"):
+                    parts.append(str(format_dict["country"]))
+                    
+                return ", ".join(parts) if parts else ""
+            return str(value) if value else ""
+            
+        elif transform_type == "remittance_format":
+            # Handle remittance with field mapping
+            if isinstance(value, dict):
+                # Apply field mappings (e.g., invoice_number -> invoiceNumber)
+                field_mappings = config.get("field_mappings", {})
+                
+                # Build remittance string from available fields
+                parts = []
+                
+                # Check for payment purpose/description
+                if value.get("payment_purpose"):
+                    parts.append(value["payment_purpose"])
+                elif value.get("description"):
+                    parts.append(value["description"])
+                
+                # Check for invoice number
+                if value.get("invoice_number"):
+                    parts.append(value["invoice_number"])
+                elif value.get("invoiceNumber"):
+                    parts.append(value["invoiceNumber"])
+                    
+                # Add other relevant fields
+                if value.get("purchase_order"):
+                    parts.append(f"PO: {value['purchase_order']}")
+                if value.get("contract_reference"):
+                    parts.append(f"Contract: {value['contract_reference']}")
+                    
+                return " ".join(parts) if parts else str(value)
+            return str(value) if value else ""
+            
+        elif transform_type == "json_to_string":
+            # Convert JSON/dict to string representation
+            if isinstance(value, dict):
+                # Convert dict to key-value string
+                parts = []
+                for k, v in value.items():
+                    if v:
+                        parts.append(f"{k}: {v}")
+                return " | ".join(parts) if parts else ""
+            return str(value) if value else ""
+            
+        elif transform_type == "join_array":
+            # Join array elements
+            if isinstance(value, list):
+                separator = config.get("separator", ", ")
+                return separator.join(str(v) for v in value if v)
+            return str(value) if value else ""
+            
+        else:
+            # Unknown transformation - return as is
+            return value
+    
+    def _track_field_mapping(self, source_field: str, target_field: str, 
+                             value: Any, confidence: float, model_used: str):
+        """
+        Track field mapping for audit and statistics.
+        
+        Args:
+            source_field: Source field identifier
+            target_field: Target field name
+            value: The transformed value
+            confidence: AI confidence score
+            model_used: Which model was used
+        """
+        mapping_key = f"{source_field}_{target_field}"
+        self.field_mappings[mapping_key] = {
+            "source_field": source_field,
+            "target_field": target_field,
+            "value": value,
+            "processing_lane": "AI",
+            "confidence": confidence,
+            "model_used": model_used
+        }
+        
+        # Update statistics
+        if mapping_key not in self.processing_stats["ai_lane"]["fields"]:
+            self.processing_stats["ai_lane"]["count"] += 1
+            self.processing_stats["ai_lane"]["fields"].append(mapping_key)
+    
+    def _legacy_transform_ai_fields(self, ai_fields: Dict[str, Any], converted_fields: Dict[str, Any]) -> None:
         """
         Transform AI-extracted complex fields into flat fields expected by the builder.
         

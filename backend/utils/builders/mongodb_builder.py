@@ -35,6 +35,26 @@ class MongoDBDrivenBuilder(BaseBuilder):
     
     def _load_builder_config(self) -> Optional[Dict]:
         """Load builder configuration from MongoDB"""
+        # Try new format_processors collection first
+        processors = self.db.find("format_processors", {
+            "format": self._format_type,
+            "type": "builder",
+            "is_active": True
+        })
+        
+        if processors:
+            # Extract config from unified format
+            processor = processors[0]
+            return {
+                "format": processor["format"],
+                "format_name": processor.get("format_name", ""),
+                "format_type": processor.get("format_type", ""),
+                "description": processor.get("description", ""),
+                "is_active": processor.get("is_active", True),
+                **processor.get("config", {})
+            }
+        
+        # Fallback to old builder_configs collection for backward compatibility
         configs = self.db.find("builder_configs", {
             "format": self._format_type,
             "is_active": True

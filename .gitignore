@@ -50,6 +50,7 @@ share/python-wheels/
 *.egg
 MANIFEST
 
+test*.py
 # PyInstaller
 #  Usually these files are written by a python script from a template
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
@@ -240,19 +241,30 @@ backend/*_verify.py
 backend/temp_*.py
 backend/tmp_*.py
 backend/debug_*.py
+
+# Redundant/Debug scripts from MT202 implementation
+backend/scripts/debug_*.py
+backend/scripts/fix_*.py
+backend/scripts/check_*.py
+backend/scripts/analyze_*.py
+backend/scripts/enhance_*.py
+backend/scripts/restore_*.py
+backend/scripts/migrate_*.py
+backend/scripts/cleanup_*.py
+backend/scripts/test_mt202_conversion.py
+backend/scripts/add_field_transformations.py
+backend/scripts/add_pacs009_format_config.py
+backend/scripts/SCRIPTS_ANALYSIS.md
+
+# Documentation and analysis files (temporary)
 format-convert-payment-vision.md
-.gitignore
 backend/IMPLEMENTATION_STEPS.md
 backend/AI_LANE_PLAN.md
-backend/test_results_20250906_123547.json
+backend/test_results_*.json
 backend/GENERIC_PARSER_PLAN.md
 backend/IMPLEMENTATION_PROGRESS.md
-.gitignore
 frontend/IMPLEMENTATION_PLAN.md
-.gitignore
 frontend/FRONTEND_DESIGN_ESSENCE.md
-
-# Documentation and analysis files
 MT103_TO_PACS008_CONVERSION_ANALYSIS.md
 backend/to_add_new_format.md
 backend/load_*.py
@@ -260,7 +272,11 @@ frontend/FRONTEND_ENHANCEMENT_PLAN.md
 killer_idea_self_learning.md
 dyanmic_prompt_composition.md
 AI_SELF_ADAPTIVE_SYSTEM.md
-.gitignore
 ADD_NEW_FORMAT_GUIDE.md
 SEMANTIC_PAYMENT_INTELLIGENCE_PLAN.md
 BOTTLENECKS_ANALYSIS.md
+backend/HAIKU_BATCH_ISSUE.md
+backend/FRONTEND_BACKEND_ANALYSIS.md
+backend/GENERIC_CONVERSION_IMPLEMENTATION.md
+backend/docs/MT202_COMPLEX_FIELDS.md
+pitfalls.md

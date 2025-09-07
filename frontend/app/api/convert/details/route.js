@@ -95,9 +95,9 @@ function mapToTargetField(sourceField) {
 // Helper function to get MongoDB rule path
 function getMongoRule(fieldId, processingLane) {
   if (processingLane === 'RULES') {
-    return `conversion_rules.mt103_to_pacs008.${fieldId.replace(':', '')}`;
+    return `conversion_configs.rules.${fieldId.replace(':', '')}`;
   } else if (processingLane === 'AI') {
-    return `field_model_routing.unstructured_extraction.${fieldId.replace(':', '')}`;
+    return `conversion_configs.ai_fields.${fieldId.replace(':', '')}`;
   }
   return null;
 }
@@ -113,7 +113,7 @@ function generateMockFieldMappings() {
       targetValue: "MSG123456789",
       processingLane: "RULES",
       confidence: 1.0,
-      mongoRule: "conversion_rules.mt103_to_pacs008.reference_mapping"
+      mongoRule: "conversion_configs.rules.reference_mapping"
     },
     {
       id: "2",
@@ -123,7 +123,7 @@ function generateMockFieldMappings() {
       targetValue: "50000.00",
       processingLane: "RULES",
       confidence: 1.0,
-      mongoRule: "conversion_rules.mt103_to_pacs008.amount_mapping"
+      mongoRule: "conversion_configs.rules.amount_mapping"
     },
     {
       id: "3",
@@ -134,7 +134,7 @@ function generateMockFieldMappings() {
       processingLane: "AI",
       confidence: 0.92,
       modelUsed: "Claude 3",
-      mongoRule: "field_model_routing.unstructured_name_extraction"
+      mongoRule: "conversion_configs.ai_fields.unstructured_name_extraction"
     },
     {
       id: "4",
@@ -145,7 +145,7 @@ function generateMockFieldMappings() {
       processingLane: "AI",
       confidence: 0.88,
       modelUsed: "Claude 3",
-      mongoRule: "field_model_routing.unstructured_name_extraction"
+      mongoRule: "conversion_configs.ai_fields.unstructured_name_extraction"
     },
     {
       id: "5",
@@ -155,7 +155,7 @@ function generateMockFieldMappings() {
       targetValue: "DEBT",
       processingLane: "RULES",
       confidence: 1.0,
-      mongoRule: "conversion_rules.mt103_to_pacs008.charge_bearer_mapping"
+      mongoRule: "conversion_configs.rules.charge_bearer_mapping"
     },
     {
       id: "6",
@@ -165,7 +165,7 @@ function generateMockFieldMappings() {
       targetValue: "NORM",
       processingLane: "RULES",
       confidence: 1.0,
-      mongoRule: "conversion_rules.mt103_to_pacs008.payment_type_mapping"
+      mongoRule: "conversion_configs.rules.payment_type_mapping"
     },
     {
       id: "7",
@@ -175,7 +175,7 @@ function generateMockFieldMappings() {
       targetValue: "PAYMENT FOR INVOICE INV-2024-11-3847",
       processingLane: "RULES",
       confidence: 1.0,
-      mongoRule: "conversion_rules.mt103_to_pacs008.remittance_info_mapping"
+      mongoRule: "conversion_configs.rules.remittance_info_mapping"
     },
     {
       id: "8",
@@ -185,7 +185,7 @@ function generateMockFieldMappings() {
       targetValue: "CHASUS33XXX",
       processingLane: "RULES",
       confidence: 1.0,
-      mongoRule: "conversion_rules.mt103_to_pacs008.debtor_agent_mapping"
+      mongoRule: "conversion_configs.rules.debtor_agent_mapping"
     },
     {
       id: "9",
@@ -195,7 +195,7 @@ function generateMockFieldMappings() {
       targetValue: "CITIUS33XXX",
       processingLane: "RULES",
       confidence: 1.0,
-      mongoRule: "conversion_rules.mt103_to_pacs008.creditor_agent_mapping"
+      mongoRule: "conversion_configs.rules.creditor_agent_mapping"
     },
     {
       id: "10",
@@ -206,7 +206,7 @@ function generateMockFieldMappings() {
       processingLane: "AI",
       confidence: 0.95,
       modelUsed: "Claude 3",
-      mongoRule: "field_model_routing.account_extraction"
+      mongoRule: "conversion_configs.ai_fields.account_extraction"
     },
     {
       id: "11",
@@ -217,7 +217,7 @@ function generateMockFieldMappings() {
       processingLane: "AI",
       confidence: 0.93,
       modelUsed: "Claude 3",
-      mongoRule: "field_model_routing.account_extraction"
+      mongoRule: "conversion_configs.ai_fields.account_extraction"
     },
     {
       id: "12",
@@ -227,7 +227,7 @@ function generateMockFieldMappings() {
       targetValue: "2024-12-15",
       processingLane: "RULES",
       confidence: 1.0,
-      mongoRule: "conversion_rules.mt103_to_pacs008.date_formatting"
+      mongoRule: "conversion_configs.rules.date_formatting"
     }
   ];
 }

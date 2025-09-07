@@ -32,6 +32,26 @@ class MongoDBDrivenParser(BaseParser):
     
     def _load_parser_config(self) -> Optional[Dict]:
         """Load parser configuration from MongoDB"""
+        # Try new format_processors collection first
+        processors = self.db.find("format_processors", {
+            "format": self._format_type,
+            "type": "parser",
+            "is_active": True
+        })
+        
+        if processors:
+            # Extract config from unified format
+            processor = processors[0]
+            return {
+                "format": processor["format"],
+                "format_name": processor.get("format_name", ""),
+                "format_type": processor.get("format_type", ""),
+                "description": processor.get("description", ""),
+                "is_active": processor.get("is_active", True),
+                **processor.get("config", {})
+            }
+        
+        # Fallback to old parser_configs collection for backward compatibility
         configs = self.db.find("parser_configs", {
             "format": self._format_type,
             "is_active": True

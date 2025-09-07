@@ -15,7 +15,7 @@ const formatMetadata = {
     type: "source",
     fields: 15,
     characteristics: ["Bank-to-Bank", "International", "Tagged Format"],
-    mongoCollection: "source_formats",
+    mongoCollection: "formats",
     icon: "🏦",
     description: "Customer credit transfer for international wire payments"
   },
@@ -25,7 +25,7 @@ const formatMetadata = {
     type: "source",
     fields: 10,
     characteristics: ["Financial Institution", "Cover Payment", "Tagged Format"],
-    mongoCollection: "source_formats",
+    mongoCollection: "formats",
     icon: "🏛️",
     description: "General financial institution transfer between banks"
   },
@@ -35,7 +35,7 @@ const formatMetadata = {
     type: "source",
     fields: 6,
     characteristics: ["Debit Confirmation", "Account Statement", "Tagged Format"],
-    mongoCollection: "source_formats",
+    mongoCollection: "formats",
     icon: "📝",
     description: "Confirmation of debit to account servicing institution"
   },
@@ -45,7 +45,7 @@ const formatMetadata = {
     type: "source",
     fields: 8,
     characteristics: ["Generic Format", "Flexible", "Tagged Format"],
-    mongoCollection: "source_formats",
+    mongoCollection: "formats",
     icon: "📨",
     description: "Generic SWIFT message format for various payment types"
   },
@@ -57,7 +57,7 @@ const formatMetadata = {
     type: "target",
     fields: 25,
     characteristics: ["XML Format", "Structured", "Modern Standard"],
-    mongoCollection: "target_formats",
+    mongoCollection: "formats",
     icon: "📄",
     description: "ISO 20022 customer credit transfer initiation"
   },
@@ -67,9 +67,19 @@ const formatMetadata = {
     type: "target",
     fields: 20,
     characteristics: ["XML Format", "Return/Reversal", "Structured"],
-    mongoCollection: "target_formats",
+    mongoCollection: "formats",
     icon: "↩️",
     description: "ISO 20022 payment return message"
+  },
+  "pacs.009": {
+    name: "FI Credit Transfer",
+    standard: "ISO 20022",
+    type: "target",
+    fields: 18,
+    characteristics: ["XML Format", "Bank-to-Bank", "Financial Institution"],
+    mongoCollection: "formats",
+    icon: "🏛️",
+    description: "ISO 20022 financial institution credit transfer"
   },
   ISO8583: {
     name: "Card Payment",
@@ -77,7 +87,7 @@ const formatMetadata = {
     type: "target",
     fields: 30,
     characteristics: ["Binary/ASCII", "Card Networks", "Real-time"],
-    mongoCollection: "target_formats",
+    mongoCollection: "formats",
     icon: "💳",
     description: "Standard for card payment transactions"
   },
@@ -87,7 +97,7 @@ const formatMetadata = {
     type: "target",
     fields: 12,
     characteristics: ["JSON Format", "Blockchain", "Digital Assets"],
-    mongoCollection: "target_formats",
+    mongoCollection: "formats",
     icon: "🪙",
     description: "Cryptocurrency/stablecoin transfer format"
   }
@@ -111,16 +121,35 @@ NEW YORK, NY 10013
 :71A:OUR
 -}`,
   
-  MT202: `:20:REF456
-:21:RELATED789
-:32A:240315USD100000,00
-:52A:BANKUSAA
-:53A:BANKUSBB
-:54A:BANKUSCC
-:56A:BANKUSDD
-:57A:BANKUSEE
-:58A:BANKUSFF
-:72:/INS/URGENT PAYMENT`,
+  MT202: `{1:F01CHASUS33XXXX0000000000}{2:I202DEUTDEFFXXXXN}{3:{108:ILOVESEPA}}{4:
+:20:FT24326789012345
+:21:REF24326789012345
+:32A:241215USD500000,00
+:52D:/12345678
+ACME BANK NEW YORK
+100 WALL STREET
+NEW YORK, NY 10005
+USA
+:56D:/GB98765432
+MIDLAND BANK PLC
+25 OLD BROAD STREET
+LONDON EC2N 1HN
+UNITED KINGDOM
+:57A:DEUTDEFFXXX
+:58D:/DE89370400440532013000
+BARCLAYS BANK FRANKFURT
+TAUNUSANLAGE 12
+60325 FRANKFURT AM MAIN
+GERMANY
+:70:/INV/2024-11-3847 DATED 15.11.2024
+/PO/8934567 QTY 5000 UNITS
+/RFB/CONTRACT TRD-2024-ACME-789
+/ROC/QUARTERLY SETTLEMENT Q4-2024
+:72:/INS/URGENT - SAME DAY VALUE
+/BNF/BENEFICIARY REF: ABC-123
+/ACC/ACCOUNT VERIFICATION REQUIRED
+/REC/NOTIFY: payments@example.com
+-}`,
   
   MT900: `:20:DEBIT789
 :21:REFERENCE456
@@ -197,6 +226,59 @@ const targetTemplates = {
       <RtrdIntrBkSttlmAmt Ccy="{Currency}">{Amount}</RtrdIntrBkSttlmAmt>
     </TxInf>
   </PmtRtr>
+</Document>`,
+
+  "pacs.009": `<?xml version="1.0" encoding="UTF-8"?>
+<Document xmlns="urn:iso:std:iso:20022:tech:xsd:pacs.009.001.08">
+  <FICdtTrf>
+    <GrpHdr>
+      <MsgId>{Message ID}</MsgId>
+      <CreDtTm>{Creation DateTime}</CreDtTm>
+      <NbOfTxs>1</NbOfTxs>
+      <SttlmInf>
+        <SttlmMtd>INDA</SttlmMtd>
+      </SttlmInf>
+    </GrpHdr>
+    <CdtTrfTxInf>
+      <PmtId>
+        <EndToEndId>{End-to-End ID}</EndToEndId>
+      </PmtId>
+      <IntrBkSttlmAmt Ccy="{Currency}">{Amount}</IntrBkSttlmAmt>
+      <IntrBkSttlmDt>{Settlement Date}</IntrBkSttlmDt>
+      <InstgAgt>
+        <FinInstnId>
+          <BIC>{Instructing Agent BIC}</BIC>
+        </FinInstnId>
+      </InstgAgt>
+      <InstdAgt>
+        <FinInstnId>
+          <BIC>{Instructed Agent BIC}</BIC>
+        </FinInstnId>
+      </InstdAgt>
+      <IntrmyAgt1>
+        <FinInstnId>
+          <BIC>{Intermediary BIC}</BIC>
+        </FinInstnId>
+      </IntrmyAgt1>
+      <CdtrAgt>
+        <FinInstnId>
+          <BIC>{Creditor Agent BIC}</BIC>
+        </FinInstnId>
+      </CdtrAgt>
+      <Cdtr>
+        <FinInstnId>
+          <BIC>{Creditor BIC}</BIC>
+          <Nm>{Creditor Name}</Nm>
+        </FinInstnId>
+      </Cdtr>
+      <RmtInf>
+        <Ustrd>{Remittance Information}</Ustrd>
+      </RmtInf>
+      <InstrForNxtAgt>
+        <InstrInf>{Instructions}</InstrInf>
+      </InstrForNxtAgt>
+    </CdtTrfTxInf>
+  </FICdtTrf>
 </Document>`,
 
   ISO8583: `{
@@ -407,10 +489,10 @@ export async function GET(request) {
     preview: preview,
     sampleInfo: sampleInfo,
     mongoInfo: {
-      collection: metadata.mongoCollection,
+      collection: metadata.mongoCollection + (metadata.mongoCollection === "formats" ? ` (${metadata.type})` : ""),
       fromMongoDB: isFromMongoDB,
       message: isFromMongoDB 
-        ? `Sample dynamically loaded from MongoDB ${metadata.mongoCollection} collection`
+        ? `Sample dynamically loaded from MongoDB ${metadata.mongoCollection} collection (${metadata.type})`
         : `Using fallback template (MongoDB sample not available)`
     }
   };

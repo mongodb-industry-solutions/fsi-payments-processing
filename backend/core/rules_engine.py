@@ -2,6 +2,7 @@ from typing import Dict, List, Any, Optional
 from datetime import datetime, UTC
 import logging
 from db.mdb import MongoDBConnector
+from db.cache import get_cache
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -18,16 +19,18 @@ class RulesEngine:
         self.db = db_connector
         self.source_format = source_format  # Demo: "MT103"
         self.target_format = target_format  # Demo: "pacs.008"
+        self.cache = get_cache()
         self.rules = self._load_rules()
     
     def _load_rules(self) -> List[Dict]:
-        """Load conversion rules from MongoDB for specific format pair"""
-        rules_doc = self.db.find("conversion_rules", {
-            "source_format": self.source_format,
-            "target_format": self.target_format,
-            "is_active": True
-        })
-        return rules_doc[0]["rules"] if rules_doc else []
+        """Load conversion rules from cache or MongoDB"""
+        # Try cache first
+        config_doc = self.cache.get_conversion_config(
+            self.db, 
+            self.source_format, 
+            self.target_format
+        )
+        return config_doc["rules"] if config_doc else []
     
     def apply_rules(self, parsed_fields: Dict[str, Any]) -> Dict[str, Any]:
         """Apply direct mapping rules to parsed fields"""
@@ -88,7 +91,7 @@ class RulesEngine:
             "mapped_fields": mapped_fields,
             "processing_details": processing_details,
             "rules_applied": rules_applied_count,
-            "mongodb_collections_used": ["conversion_rules"]
+            "mongodb_collections_used": ["conversion_configs"]
         }
     
     def _flatten_structured_fields(self, fields: Dict) -> Dict:
@@ -190,11 +193,21 @@ class RulesEngine:
                 "target": rule.get("target_field")
             })
         
+        # Load AI fields from conversion_configs
+        config_doc = self.db.find("conversion_configs", {
+            "source_format": self.source_format,
+            "target_format": self.target_format,
+            "is_active": True
+        })
+        ai_fields = []
+        if config_doc:
+            ai_fields = [f["field"] for f in config_doc[0].get("ai_fields", [])]
+        
         return {
             "source_format": self.source_format,
             "target_format": self.target_format,
             "total_rules": len(self.rules),
-            "ai_fields": list(self.field_routing.get("ai_fields", [])),
+            "ai_fields": ai_fields,
             "rules_by_transformation": rules_by_type
         }
     
@@ -203,11 +216,21 @@ class RulesEngine:
         applicable_rules = []
         missing_source_fields = []
         
+        # Load AI fields from conversion_configs
+        config_doc = self.db.find("conversion_configs", {
+            "source_format": self.source_format,
+            "target_format": self.target_format,
+            "is_active": True
+        })
+        ai_fields = []
+        if config_doc:
+            ai_fields = [f["field"] for f in config_doc[0].get("ai_fields", [])]
+        
         for rule in self.rules:
             source_field = rule.get("source_field")
             
             # Skip AI fields
-            if source_field in self.field_routing["ai_fields"]:
+            if source_field in ai_fields:
                 continue
             
             field_value = self._get_field_value(parsed_fields, source_field)
