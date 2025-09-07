@@ -13,8 +13,8 @@ export async function POST(request) {
       );
     }
 
-    // Get sample data for the source format
-    const sampleData = getSampleData(sourceFormat);
+    // Get sample data for the source format (try MongoDB first, then fallback)
+    const sampleData = await getSampleData(sourceFormat);
 
     // Call backend conversion API
     const response = await fetch(`${BACKEND_API_URL}/api/v1/convert/`, {
@@ -65,8 +65,23 @@ export async function POST(request) {
   }
 }
 
-// Sample data for different formats
-function getSampleData(format) {
+// Get sample data for different formats (try MongoDB first, then fallback)
+async function getSampleData(format) {
+  try {
+    // Try to fetch from MongoDB via backend
+    const response = await fetch(`${BACKEND_API_URL}/api/v1/samples/preview/${format}`);
+    
+    if (response.ok) {
+      const data = await response.json();
+      if (data.success && data.preview) {
+        return data.preview;
+      }
+    }
+  } catch (error) {
+    console.warn(`Failed to fetch sample from backend for ${format}:`, error);
+  }
+  
+  // Fallback to hardcoded samples
   const samples = {
     MT103: `{1:F01BANKUSAAAXXX0000000000}{2:I103BANKUSBBXXXXN}{3:{108:1234567890123456}}{4:
 :20:CORP-2024-11-3847
@@ -108,7 +123,9 @@ NEW YORK, NY 10013
 :50:ORDERING CUSTOMER
 :59:BENEFICIARY CUSTOMER
 :70:PAYMENT DETAILS
-:71A:SHA`
+:71A:SHA`,
+    
+    ISO8583: `0200B23A800128C180020000000000000000161234567890123456120150120150120111300000001000012345612345606051105511092700`
   };
   
   return samples[format] || samples.MT103;

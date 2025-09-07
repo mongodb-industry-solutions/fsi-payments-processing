@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@leafygreen-ui/badge": "^10.1.1",
+    "@leafygreen-ui/banner": "^10.0.5",
     "@leafygreen-ui/button": "^25.0.3",
     "@leafygreen-ui/card": "^13.0.4",
     "@leafygreen-ui/emotion": "^5.0.1",

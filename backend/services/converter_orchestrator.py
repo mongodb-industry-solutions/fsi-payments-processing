@@ -67,6 +67,8 @@ class ConverterOrchestrator:
             "start_time": None,
             "end_time": None
         }
+        # Track field mappings: source_field -> {target_field, value, lane, confidence}
+        self.field_mappings = {}
     
     def set_parser(self, parser: BaseParser):
         """Set the parser for source format."""
@@ -120,10 +122,20 @@ class ConverterOrchestrator:
             converted_fields = rules_output.get("mapped_fields", {})
             rules_applied = rules_output.get("processing_details", [])
             
-            # Track rules lane fields
+            # Track rules lane fields and mappings
             for rule in rules_applied:
                 self.processing_stats["rules_lane"]["count"] += 1
                 self.processing_stats["rules_lane"]["fields"].append(rule.get("target_field"))
+                # Store field mapping
+                source_field = rule.get("source_field")
+                if source_field:
+                    self.field_mappings[source_field] = {
+                        "source_field": source_field,  # Include source field in mapping
+                        "target_field": rule.get("target_field"),
+                        "value": rule.get("value"),
+                        "processing_lane": rule.get("processing_lane", "RULES"),
+                        "confidence": rule.get("confidence", 1.0)
+                    }
             
             logger.info(f"✅ Rules engine processed {self.processing_stats['rules_lane']['count']} fields")
             
@@ -171,7 +183,9 @@ class ConverterOrchestrator:
             processing_time = (self.processing_stats["end_time"] - self.processing_stats["start_time"]).total_seconds()
             
             self._update_conversion_record(
+                parsed_fields=parsed_fields,  # Store original parsed fields
                 converted_fields=converted_fields,
+                field_mappings=self.field_mappings,  # Store field mappings for traceability
                 target_message=target_message,
                 processing_stats=self.processing_stats,
                 success=True
@@ -234,18 +248,16 @@ class ConverterOrchestrator:
         ai_fields = {}
         fields_to_process = []
         
-        # Identify fields that need AI processing
+        # Identify fields that need AI processing (all fields not handled by rules)
         for field_id, field_content in parsed_fields.items():
             # Skip if already handled by rules
             if field_id in converted_fields:
-                logger.debug(f"  Field {field_id}: already in converted_fields, skipping AI")
+                logger.debug(f"  Field {field_id}: already handled by rules, skipping AI")
                 continue
             
-            # Check if field should use AI
-            should_use = self.ai_processor.should_use_ai(field_id)
-            logger.debug(f"  Field {field_id}: should_use_ai = {should_use}")
-            if should_use:
-                fields_to_process.append((field_id, field_content))
+            # All unmapped fields go to AI for processing
+            logger.debug(f"  Field {field_id}: no rule found, sending to AI")
+            fields_to_process.append((field_id, field_content))
         
         if not fields_to_process:
             return ai_fields
@@ -325,14 +337,47 @@ class ConverterOrchestrator:
                 # Extract the value from AI field structure
                 if 'value' in debtor_data and isinstance(debtor_data['value'], dict):
                     debtor_info = debtor_data['value']
-                    converted_fields['DebtorName'] = debtor_info.get('name', '')
+                    confidence = debtor_data.get('confidence', 0.85)
+                    model_used = debtor_data.get('model_used')
                     
-                    # Combine address lines
+                    # Track DebtorName mapping
+                    debtor_name = debtor_info.get('name', '')
+                    converted_fields['DebtorName'] = debtor_name
+                    self.field_mappings['50K_name'] = {
+                        "source_field": "50K",
+                        "target_field": "DebtorName",
+                        "value": debtor_name,
+                        "processing_lane": "AI",
+                        "confidence": confidence,
+                        "model_used": model_used
+                    }
+                    
+                    # Track DebtorAddress mapping
                     address_lines = debtor_info.get('addressLines', [])
                     if address_lines:
-                        converted_fields['DebtorAddress'] = ', '.join(address_lines)
+                        address = ', '.join(address_lines)
+                        converted_fields['DebtorAddress'] = address
+                        self.field_mappings['50K_address'] = {
+                            "source_field": "50K",
+                            "target_field": "DebtorAddress",
+                            "value": address,
+                            "processing_lane": "AI",
+                            "confidence": confidence,
+                            "model_used": model_used
+                        }
                     
-                    converted_fields['DebtorAccount'] = debtor_info.get('accountNumber', '')
+                    # Track DebtorAccount mapping
+                    account = debtor_info.get('accountNumber', '')
+                    if account:
+                        converted_fields['DebtorAccount'] = account
+                        self.field_mappings['50K_account'] = {
+                            "source_field": "50K",
+                            "target_field": "DebtorAccount",
+                            "value": account,
+                            "processing_lane": "AI",
+                            "confidence": confidence,
+                            "model_used": model_used
+                        }
         
         # Transform field 59 (Beneficiary/Creditor)
         if '59' in ai_fields:
@@ -341,9 +386,22 @@ class ConverterOrchestrator:
                 # Extract the value from AI field structure
                 if 'value' in creditor_data and isinstance(creditor_data['value'], dict):
                     creditor_info = creditor_data['value']
-                    converted_fields['CreditorName'] = creditor_info.get('name', '')
+                    confidence = creditor_data.get('confidence', 0.85)
+                    model_used = creditor_data.get('model_used')
                     
-                    # Combine address lines
+                    # Track CreditorName mapping
+                    creditor_name = creditor_info.get('name', '')
+                    converted_fields['CreditorName'] = creditor_name
+                    self.field_mappings['59_name'] = {
+                        "source_field": "59",
+                        "target_field": "CreditorName",
+                        "value": creditor_name,
+                        "processing_lane": "AI",
+                        "confidence": confidence,
+                        "model_used": model_used
+                    }
+                    
+                    # Track CreditorAddress mapping
                     address_lines = creditor_info.get('addressLines', [])
                     city = creditor_info.get('city', '')
                     state = creditor_info.get('state', '')
@@ -352,9 +410,30 @@ class ConverterOrchestrator:
                     full_address = ', '.join(address_lines)
                     if city and state and postal:
                         full_address += f', {city}, {state} {postal}'
-                    converted_fields['CreditorAddress'] = full_address
                     
-                    converted_fields['CreditorAccount'] = creditor_info.get('accountNumber', '')
+                    if full_address:
+                        converted_fields['CreditorAddress'] = full_address
+                        self.field_mappings['59_address'] = {
+                            "source_field": "59",
+                            "target_field": "CreditorAddress",
+                            "value": full_address,
+                            "processing_lane": "AI",
+                            "confidence": confidence,
+                            "model_used": model_used
+                        }
+                    
+                    # Track CreditorAccount mapping
+                    account = creditor_info.get('accountNumber', '')
+                    if account:
+                        converted_fields['CreditorAccount'] = account
+                        self.field_mappings['59_account'] = {
+                            "source_field": "59",
+                            "target_field": "CreditorAccount",
+                            "value": account,
+                            "processing_lane": "AI",
+                            "confidence": confidence,
+                            "model_used": model_used
+                        }
         
         # Transform field 70 (Remittance Information)
         if '70' in ai_fields:
@@ -363,13 +442,27 @@ class ConverterOrchestrator:
                 # Extract the value from AI field structure
                 if 'value' in remittance_data and isinstance(remittance_data['value'], dict):
                     remittance_info = remittance_data['value']
+                    confidence = remittance_data.get('confidence', 0.85)
+                    model_used = remittance_data.get('model_used')
+                    
                     # Build remittance info string
                     parts = []
                     if remittance_info.get('description'):
                         parts.append(remittance_info['description'])
                     if remittance_info.get('invoiceNumber'):
                         parts.append(remittance_info['invoiceNumber'])
-                    converted_fields['RemittanceInfo'] = ' '.join(parts)
+                    
+                    remittance_text = ' '.join(parts)
+                    if remittance_text:
+                        converted_fields['RemittanceInfo'] = remittance_text
+                        self.field_mappings['70'] = {
+                            "source_field": "70",
+                            "target_field": "RemittanceInfo",
+                            "value": remittance_text,
+                            "processing_lane": "AI",
+                            "confidence": confidence,
+                            "model_used": model_used
+                        }
     
     def _process_single_ai_field(self, field_id: str, field_content: str) -> Optional[Dict]:
         """

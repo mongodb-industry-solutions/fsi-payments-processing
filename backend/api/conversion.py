@@ -297,33 +297,73 @@ async def get_conversion_details(conversion_id: str) -> Dict[str, Any]:
     # Extract field-level details
     field_details = []
     
-    # Get converted fields
+    # Get parsed and converted fields
+    parsed_fields = record.get("parsed_fields", {})
     converted_fields = record.get("converted_fields", {})
+    field_mappings = record.get("field_mappings", {})
     processing_stats = record.get("processing_stats", {})
     
-    # Build field-by-field breakdown
-    for field_id, field_data in converted_fields.items():
-        detail = {
-            "field_id": field_id,
-            "value": field_data.get("value") if isinstance(field_data, dict) else field_data,
-            "processing_lane": "UNKNOWN",
-            "confidence": 1.0,
-            "model_used": None
-        }
-        
-        # Determine processing lane
-        if field_id in processing_stats.get("rules_lane", {}).get("fields", []):
-            detail["processing_lane"] = "RULES"
-        elif field_id in processing_stats.get("ai_lane", {}).get("fields", []):
-            detail["processing_lane"] = "AI"
-            if isinstance(field_data, dict):
-                detail["confidence"] = field_data.get("confidence", 0.85)
-                detail["model_used"] = field_data.get("model_used")
-        elif field_id in processing_stats.get("human_lane", {}).get("fields", []):
-            detail["processing_lane"] = "HUMAN_REVIEW"
-            detail["confidence"] = 0.0
-        
-        field_details.append(detail)
+    # Use field_mappings if available (new approach)
+    if field_mappings:
+        # Build field-by-field breakdown from field_mappings
+        for mapping_key, mapping_data in field_mappings.items():
+            source_field = mapping_data.get("source_field")
+            target_field = mapping_data.get("target_field")
+            
+            detail = {
+                "field_id": source_field,  # Use source field ID for consistency
+                "source_value": parsed_fields.get(source_field, ""),  # Get original value
+                "target_field": target_field,
+                "value": mapping_data.get("value", ""),  # Converted value
+                "processing_lane": mapping_data.get("processing_lane", "UNKNOWN"),
+                "confidence": mapping_data.get("confidence", 1.0),
+                "model_used": mapping_data.get("model_used")
+            }
+            field_details.append(detail)
+    
+    else:
+        # Fallback to old approach for backward compatibility
+        for field_id, field_data in converted_fields.items():
+            # Skip internal AI tracking fields
+            if field_id.startswith("_ai_"):
+                continue
+                
+            detail = {
+                "field_id": field_id,
+                "source_value": parsed_fields.get(field_id, ""),  # Original parsed value
+                "value": field_data.get("value") if isinstance(field_data, dict) else field_data,
+                "processing_lane": "UNKNOWN",
+                "confidence": 1.0,
+                "model_used": None
+            }
+            
+            # Determine processing lane
+            if field_id in processing_stats.get("rules_lane", {}).get("fields", []):
+                detail["processing_lane"] = "RULES"
+            elif field_id in processing_stats.get("ai_lane", {}).get("fields", []):
+                detail["processing_lane"] = "AI"
+                if isinstance(field_data, dict):
+                    detail["confidence"] = field_data.get("confidence", 0.85)
+                    detail["model_used"] = field_data.get("model_used")
+            elif field_id in processing_stats.get("human_lane", {}).get("fields", []):
+                detail["processing_lane"] = "HUMAN_REVIEW"
+                detail["confidence"] = 0.0
+            
+            field_details.append(detail)
+    
+    # Add human review fields that might not be in field_mappings/converted_fields
+    human_fields = processing_stats.get("human_lane", {}).get("fields", [])
+    for field_id in human_fields:
+        # Check if this field is already in our details
+        if not any(f["field_id"] == field_id for f in field_details):
+            field_details.append({
+                "field_id": field_id,
+                "source_value": parsed_fields.get(field_id, ""),
+                "value": None,  # No converted value for human review
+                "processing_lane": "HUMAN_REVIEW",
+                "confidence": 0.0,
+                "model_used": None
+            })
     
     return {
         "conversion_id": conversion_id,
@@ -335,7 +375,7 @@ async def get_conversion_details(conversion_id: str) -> Dict[str, Any]:
         },
         "field_details": field_details,
         "processing_time": record.get("processing_time"),
-        "overall_confidence": sum(f["confidence"] for f in field_details) / len(field_details) if field_details else 0.0
+        "overall_confidence": sum(f["confidence"] for f in field_details if f["confidence"] > 0) / max(1, len([f for f in field_details if f["confidence"] > 0]))
     }
 
 

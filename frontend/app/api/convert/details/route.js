@@ -14,31 +14,38 @@ export async function GET(request) {
   try {
     // Fetch details from backend
     const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000';
-    const response = await fetch(`${backendUrl}/api/v1/conversion/details/${conversionId}`);
+    const response = await fetch(`${backendUrl}/api/v1/convert/${conversionId}/details`);
     
     if (!response.ok) {
-      // For demo, return mock data even if backend call fails
+      // Return error if backend call fails
       return NextResponse.json({
-        success: true,
+        success: false,
+        error: `Backend returned ${response.status}`,
         conversionId: conversionId,
-        fieldMappings: generateMockFieldMappings()
+        fieldMappings: []
       });
     }
 
     const data = await response.json();
     
     // Transform backend data to frontend format
-    const fieldMappings = data.field_details?.map(field => ({
-      id: field.field_id,
-      sourceField: field.field_id,
-      sourceValue: field.source_value || field.value,
-      targetField: mapToTargetField(field.field_id),
-      targetValue: field.value,
-      processingLane: field.processing_lane,
-      confidence: field.confidence,
-      modelUsed: field.model_used,
-      mongoRule: getMongoRule(field.field_id, field.processing_lane)
-    })) || generateMockFieldMappings();
+    const fieldMappings = data.field_details?.map((field, index) => {
+      // Add colon prefix for MT103 fields if not present
+      const sourceFieldId = field.field_id.startsWith(':') ? field.field_id : `:${field.field_id}`;
+      
+      return {
+        // Create unique ID by combining field_id with target_field or index
+        id: `${field.field_id}_${field.target_field || index}`,
+        sourceField: sourceFieldId,
+        sourceValue: field.source_value || "",  // Use actual source value from backend
+        targetField: field.target_field || mapToTargetField(sourceFieldId),  // Use target_field from backend if available
+        targetValue: field.value || "",
+        processingLane: field.processing_lane,
+        confidence: field.confidence,
+        modelUsed: field.model_used,
+        mongoRule: getMongoRule(sourceFieldId, field.processing_lane)
+      };
+    }) || [];
 
     return NextResponse.json({
       success: true,
@@ -52,18 +59,18 @@ export async function GET(request) {
   } catch (error) {
     console.error('Error fetching conversion details:', error);
     
-    // Return mock data for demo purposes
+    // Only return mock data if backend is truly unavailable
     return NextResponse.json({
-      success: true,
-      conversionId: conversionId,
-      fieldMappings: generateMockFieldMappings(),
+      success: false,
+      error: 'Failed to fetch conversion details',
+      fieldMappings: [],  // Return empty array instead of mock data
       processingStats: {
-        rules_fields: 12,
-        ai_fields: 5,
+        rules_fields: 0,
+        ai_fields: 0,
         human_review_fields: 0
       },
-      processingTime: 245,
-      overallConfidence: 0.92
+      processingTime: 0,
+      overallConfidence: 0
     });
   }
 }

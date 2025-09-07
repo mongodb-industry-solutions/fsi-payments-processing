@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 
+const BACKEND_API_URL = process.env.BACKEND_API_URL || "http://localhost:8000";
+
 // Format metadata with characteristics
 const formatMetadata = {
   // Source formats
@@ -87,7 +89,7 @@ const formatMetadata = {
   }
 };
 
-// Sample data for source formats
+// Fallback sample data for source formats (used if backend is unavailable)
 const sourceSamples = {
   MT103: `{1:F01BANKUSAAAXXX0000000000}{2:I103BANKUSBBXXXXN}{3:{108:1234567890123456}}{4:
 :20:CORP-2024-11-3847
@@ -129,7 +131,9 @@ NEW YORK, NY 10013
 :50:ORDERING CUSTOMER
 :59:BENEFICIARY CUSTOMER
 :70:PAYMENT DETAILS
-:71A:SHA`
+:71A:SHA`,
+  
+  ISO8583: `0200B23A800128C180020000000000000000161234567890123456120150120150120111300000001000012345612345606051105511092700`
 };
 
 // Template previews for target formats
@@ -255,12 +259,39 @@ export async function GET(request) {
     );
   }
   
-  // Get appropriate sample/template
+  // Try to fetch sample from backend MongoDB
   let preview = "";
-  if (metadata.type === "source" || type === "source") {
-    preview = sourceSamples[format] || "";
-  } else {
-    preview = targetTemplates[format] || "";
+  let sampleInfo = null;
+  let isFromMongoDB = false;
+  
+  try {
+    // Fetch sample from backend API
+    const sampleResponse = await fetch(`${BACKEND_API_URL}/api/v1/samples/preview/${format}`);
+    
+    if (sampleResponse.ok) {
+      const sampleData = await sampleResponse.json();
+      if (sampleData.success && sampleData.preview) {
+        preview = sampleData.preview;
+        sampleInfo = {
+          sample_name: sampleData.sample_name,
+          has_free_text: sampleData.has_free_text,
+          free_text_fields: sampleData.free_text_fields,
+          is_template: sampleData.is_template
+        };
+        isFromMongoDB = !sampleData.is_template;
+      }
+    }
+  } catch (error) {
+    console.warn(`Failed to fetch sample from backend for ${format}:`, error);
+  }
+  
+  // Fallback to hardcoded samples if backend fetch failed
+  if (!preview) {
+    if (metadata.type === "source" || type === "source") {
+      preview = sourceSamples[format] || "";
+    } else {
+      preview = targetTemplates[format] || "";
+    }
   }
   
   return NextResponse.json({
@@ -268,9 +299,13 @@ export async function GET(request) {
     format: format,
     metadata: metadata,
     preview: preview,
+    sampleInfo: sampleInfo,
     mongoInfo: {
       collection: metadata.mongoCollection,
-      message: `Template dynamically loaded from MongoDB ${metadata.mongoCollection} collection`
+      fromMongoDB: isFromMongoDB,
+      message: isFromMongoDB 
+        ? `Sample dynamically loaded from MongoDB ${metadata.mongoCollection} collection`
+        : `Using fallback template (MongoDB sample not available)`
     }
   });
 }

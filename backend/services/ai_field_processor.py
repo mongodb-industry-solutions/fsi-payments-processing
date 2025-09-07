@@ -117,23 +117,18 @@ class AIFieldProcessor:
     
     def should_use_ai(self, field_id: str) -> bool:
         """
-        Check if field should be processed with AI based on model assignment.
+        Check if field should be processed with AI.
+        Now returns True for all fields (simplified approach).
+        Strategy is only used for model selection, not gating.
         
         Args:
             field_id: Field identifier
             
         Returns:
-            True if AI processing needed, False otherwise
+            True (always - all unmapped fields use AI)
         """
-        strategy = self.get_field_strategy(field_id)
-        
-        if not strategy:
-            return False
-        
-        model = strategy.get("model", "")
-        
-        # Use AI if model is specified and not REGEX_FIRST
-        return model and model != "REGEX_FIRST"
+        # Simplified: All fields not handled by rules should use AI
+        return True
     
     def pre_initialize_clients(self):
         """Pre-initialize Bedrock service (now just ensures it's ready)."""
@@ -199,16 +194,8 @@ class AIFieldProcessor:
         Returns:
             Tuple of (processed_data, confidence_score, metadata)
         """
-        # Get field strategy
+        # Get field strategy (now optional - used only for model selection)
         strategy = self.get_field_strategy(field_id)
-        
-        # If no AI needed, return original content
-        if not strategy or not self.should_use_ai(field_id):
-            return field_content, 1.0, {
-                "lane": "RULES",
-                "field": field_id,
-                "processed": False
-            }
         
         # Build prompt
         template = self.prompt_templates.get(field_id)
@@ -229,8 +216,8 @@ class AIFieldProcessor:
                 "success": False
             }
         
-        # Get model name from strategy
-        model_name = strategy.get("model", "CLAUDE_HAIKU")
+        # Get model name from strategy (default to HAIKU if no strategy)
+        model_name = strategy.get("model", "CLAUDE_HAIKU") if strategy else "CLAUDE_HAIKU"
         
         # Call LLM and process response
         try:
@@ -316,9 +303,9 @@ class AIFieldProcessor:
         
         return "\n\n".join(parts)
     
-    def _build_default_prompt(self, field_id: str, field_content: str, strategy: Dict) -> str:
+    def _build_default_prompt(self, field_id: str, field_content: str, strategy: Optional[Dict]) -> str:
         """Build a default prompt when no template is available."""
-        strategy_type = strategy.get("strategy", "EXTRACTION")
+        strategy_type = strategy.get("strategy", "EXTRACTION") if strategy else "EXTRACTION"
         
         if strategy_type == "ADDRESS_EXTRACTION":
             prompt = f"""Extract and structure the address information from this {self.source_format} field {field_id}.

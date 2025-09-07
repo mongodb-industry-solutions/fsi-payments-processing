@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import FormatSelector from "@/components/converter/FormatSelector";
 import FormatPreview from "@/components/converter/FormatPreview";
 import FieldMappingTable from "@/components/converter/FieldMappingTable";
@@ -10,30 +10,105 @@ import Button from "@leafygreen-ui/button";
 import Card from "@leafygreen-ui/card";
 import { Tabs, Tab } from "@leafygreen-ui/tabs";
 import { H1, Body } from "@leafygreen-ui/typography";
+import Banner from "@leafygreen-ui/banner";
 import LeafyGreenProvider from "@leafygreen-ui/leafygreen-provider";
 import styles from "./converter.module.css";
 
-// Available formats - in production these would come from MongoDB
-const sourceFormats = [
-  { value: "MT103", label: "MT103 - Wire Transfer" },
-  { value: "MT202", label: "MT202 - Bank to Bank" },
-  { value: "MT900", label: "MT900 - Confirmation of Debit" },
-  { value: "SWIFT_MT", label: "Generic SWIFT MT" }
-];
-
-const targetFormats = [
-  { value: "pacs.008", label: "pacs.008 - ISO 20022 Credit Transfer" },
-  { value: "pacs.004", label: "pacs.004 - Payment Return" },
-  { value: "ISO8583", label: "ISO 8583 - Card Payments" },
-  { value: "crypto", label: "Crypto/Stablecoin API" }
-];
-
 export default function ConverterPage() {
+  // Format selection states
   const [sourceFormat, setSourceFormat] = useState("");
   const [targetFormat, setTargetFormat] = useState("");
+  
+  // Format loading states
+  const [sourceFormats, setSourceFormats] = useState([]);
+  const [targetFormats, setTargetFormats] = useState([]);
+  const [formatsLoading, setFormatsLoading] = useState(true);
+  const [formatsError, setFormatsError] = useState(null);
+  
+  // Conversion states
   const [isLoading, setIsLoading] = useState(false);
   const [conversionResult, setConversionResult] = useState(null);
   const [selectedTab, setSelectedTab] = useState(0);
+
+  // Fetch formats on component mount
+  useEffect(() => {
+    fetchFormats();
+  }, []);
+
+  const fetchFormats = async () => {
+    setFormatsLoading(true);
+    setFormatsError(null);
+    
+    try {
+      // Check sessionStorage cache first (5 minute TTL)
+      const cacheKey = 'payment_formats';
+      const cached = sessionStorage.getItem(cacheKey);
+      const cacheExpiry = sessionStorage.getItem(`${cacheKey}_expiry`);
+      
+      if (cached && cacheExpiry && new Date().getTime() < parseInt(cacheExpiry)) {
+        const cachedData = JSON.parse(cached);
+        setSourceFormats(formatOptionsForDropdown(cachedData.source_formats));
+        setTargetFormats(formatOptionsForDropdown(cachedData.target_formats));
+        setFormatsLoading(false);
+        return;
+      }
+      
+      // Fetch from API
+      const response = await fetch('/api/formats');
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch formats');
+      }
+      
+      const data = await response.json();
+      
+      // Transform data for dropdowns
+      const sourceOptions = formatOptionsForDropdown(data.source_formats);
+      const targetOptions = formatOptionsForDropdown(data.target_formats);
+      
+      setSourceFormats(sourceOptions);
+      setTargetFormats(targetOptions);
+      
+      // Cache the data with 5 minute expiry
+      sessionStorage.setItem(cacheKey, JSON.stringify(data));
+      sessionStorage.setItem(`${cacheKey}_expiry`, (new Date().getTime() + 5 * 60 * 1000).toString());
+      
+    } catch (error) {
+      console.error('Error fetching formats:', error);
+      setFormatsError('Failed to load payment formats. Using defaults.');
+      
+      // Use fallback formats
+      setSourceFormats([
+        { value: "MT103", label: "MT103 - Wire Transfer" },
+        { value: "MT202", label: "MT202 - Bank to Bank" },
+        { value: "MT900", label: "MT900 - Confirmation of Debit" },
+        { value: "ISO8583", label: "ISO 8583 - Card Payments" }
+      ]);
+      setTargetFormats([
+        { value: "pacs.008", label: "pacs.008 - ISO 20022 Credit Transfer" },
+        { value: "pacs.004", label: "pacs.004 - Payment Return" },
+        { value: "pacs.009", label: "pacs.009 - FI Credit Transfer" },
+        { value: "ISO8583", label: "ISO 8583 - Card Payments" }
+      ]);
+    } finally {
+      setFormatsLoading(false);
+    }
+  };
+
+  const formatOptionsForDropdown = (formats) => {
+    if (!formats || !Array.isArray(formats)) return [];
+    return formats.map(fmt => ({
+      value: fmt.format_code,
+      label: `${fmt.format_code} - ${fmt.format_name}`
+    }));
+  };
+
+  const refreshFormats = () => {
+    // Clear cache and re-fetch
+    sessionStorage.removeItem('payment_formats');
+    sessionStorage.removeItem('payment_formats_expiry');
+    fetchFormats();
+  };
 
   const handleConvert = async () => {
     if (!sourceFormat || !targetFormat) {
@@ -98,6 +173,16 @@ export default function ConverterPage() {
         </div>
 
         <div className={styles.content}>
+          {/* Show error banner if formats failed to load */}
+          {formatsError && (
+            <Banner variant="warning" dismissible={false}>
+              {formatsError}
+              <Button size="small" variant="default" onClick={refreshFormats} style={{ marginLeft: '10px' }}>
+                Retry
+              </Button>
+            </Banner>
+          )}
+          
           <Card className={styles.card}>
             <div className={styles.cardContent}>
               <h2>Select Formats</h2>
@@ -109,14 +194,16 @@ export default function ConverterPage() {
                 value={sourceFormat}
                 onChange={setSourceFormat}
                 options={sourceFormats}
-                placeholder="Select source format..."
+                placeholder={formatsLoading ? "Loading formats..." : "Select source format..."}
+                disabled={formatsLoading}
               />
               <FormatSelector
                 label="Target Format"
                 value={targetFormat}
                 onChange={setTargetFormat}
                 options={targetFormats}
-                placeholder="Select target format..."
+                placeholder={formatsLoading ? "Loading formats..." : "Select target format..."}
+                disabled={formatsLoading}
               />
             </div>
             

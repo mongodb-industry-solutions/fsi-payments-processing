@@ -19,7 +19,6 @@ class RulesEngine:
         self.source_format = source_format  # Demo: "MT103"
         self.target_format = target_format  # Demo: "pacs.008"
         self.rules = self._load_rules()
-        self.field_routing = self._load_field_routing()
     
     def _load_rules(self) -> List[Dict]:
         """Load conversion rules from MongoDB for specific format pair"""
@@ -30,20 +29,6 @@ class RulesEngine:
         })
         return rules_doc[0]["rules"] if rules_doc else []
     
-    def _load_field_routing(self) -> Dict:
-        """Load field routing to identify which fields are rules-based"""
-        routing = self.db.find("field_model_routing", {
-            "source_format": self.source_format
-        })
-        if routing:
-            # Create set of AI fields for quick lookup
-            ai_fields = set()
-            for strategy in routing[0].get("field_strategies", []):
-                if strategy["model"] != "REGEX_FIRST":
-                    ai_fields.add(strategy["field"])
-            return {"ai_fields": ai_fields}
-        return {"ai_fields": set()}
-    
     def apply_rules(self, parsed_fields: Dict[str, Any]) -> Dict[str, Any]:
         """Apply direct mapping rules to parsed fields"""
         
@@ -53,10 +38,6 @@ class RulesEngine:
         
         for rule in self.rules:
             source_field = rule.get("source_field")
-            
-            # Skip if this is an AI field
-            if source_field in self.field_routing["ai_fields"]:
-                continue
             
             # Check if field exists in parsed data
             field_value = self._get_field_value(parsed_fields, source_field)
@@ -81,7 +62,7 @@ class RulesEngine:
                     "target_field": target_field,
                     "transformation": rule.get("transformation"),
                     "value": transformed,
-                    "lane": "RULES",
+                    "processing_lane": "RULES",  # Use consistent naming
                     "confidence": 1.0  # Rules have perfect confidence
                 })
         
@@ -102,7 +83,7 @@ class RulesEngine:
             "mapped_fields": mapped_fields,
             "processing_details": processing_details,
             "rules_applied": rules_applied_count,
-            "mongodb_collections_used": ["conversion_rules", "field_model_routing", "rules_operations"]
+            "mongodb_collections_used": ["conversion_rules"]
         }
     
     def _get_field_value(self, fields: Dict, field_key: str) -> Optional[Any]:

@@ -199,7 +199,7 @@ export default function FieldMappingTable({ conversionId, sourceFormat, targetFo
     }
   ];
 
-  const mappingsToShow = demoMappings; // Use demo mappings for now
+  const mappingsToShow = fieldMappings.length > 0 ? fieldMappings : demoMappings;
 
   return (
     <div className={styles.container}>

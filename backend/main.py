@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi import APIRouter
 from datetime import datetime
 from db.mdb import MongoDBConnector
-from api import formats, rules, input, conversion
+from api import formats, rules, input, conversion, samples
 import logging
 import os
 
@@ -43,6 +43,7 @@ app.include_router(formats.router, prefix="/api/v1/formats", tags=["formats"])
 app.include_router(rules.router, prefix="/api/v1/rules", tags=["rules"])
 app.include_router(input.router, prefix="/api/v1/input", tags=["input"])
 app.include_router(conversion.router, tags=["conversion"])
+app.include_router(samples.router, prefix="/api/v1/samples", tags=["samples"])
 
 @app.get("/")
 async def read_root(request: Request):
