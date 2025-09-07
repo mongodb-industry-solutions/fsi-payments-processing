@@ -183,6 +183,113 @@ class AIFieldProcessor:
             cb["is_open"] = True
             logger.debug(f"   ⚠️ Circuit breaker opened after {cb['failure_count']} failures")
     
+    def process_fields_batch(self, fields_to_process: List[Tuple[str, str]]) -> Dict[str, Any]:
+        """
+        Process multiple fields in batch by grouping them by model type.
+        This reduces the number of AI calls significantly.
+        
+        Args:
+            fields_to_process: List of tuples (field_id, field_content)
+            
+        Returns:
+            Dictionary mapping field_id to processed result
+        """
+        if not fields_to_process:
+            return {}
+        
+        # Group fields by model type
+        haiku_fields = []
+        sonnet_fields = []
+        
+        for field_id, field_content in fields_to_process:
+            strategy = self.get_field_strategy(field_id)
+            model_name = strategy.get("model", "CLAUDE_HAIKU") if strategy else "CLAUDE_HAIKU"
+            
+            # Get prompt template for this field
+            template = self.prompt_templates.get(field_id)
+            if template:
+                prompt = self._build_prompt(template, field_content)
+            else:
+                prompt = self._build_default_prompt(field_id, field_content, strategy)
+            
+            # Group by model
+            if model_name == "CLAUDE_SONNET":
+                sonnet_fields.append((field_id, field_content, prompt))
+            else:
+                haiku_fields.append((field_id, field_content, prompt))
+        
+        results = {}
+        
+        # Process SONNET batch if any
+        if sonnet_fields:
+            logger.debug(f"   Processing {len(sonnet_fields)} fields with SONNET in batch...")
+            try:
+                batch_results = self.bedrock.invoke_batch(sonnet_fields, model="CLAUDE_SONNET")
+                for field_id, _, _ in sonnet_fields:
+                    if field_id in batch_results:
+                        # Format result to match expected structure
+                        extracted = batch_results[field_id]
+                        results[field_id] = {
+                            "value": extracted.get("extracted_data", extracted),
+                            "confidence": extracted.get("confidence", 0.85),
+                            "processing_lane": "AI",
+                            "model_used": "CLAUDE_SONNET"
+                        }
+                        logger.debug(f"    ✓ Field {field_id} processed via SONNET batch")
+                    else:
+                        logger.debug(f"    ⚠️ Field {field_id} not in SONNET batch response")
+            except Exception as e:
+                logger.error(f"   SONNET batch processing failed: {str(e)[:100]}")
+                # Fall back to individual processing for these fields
+                for field_id, field_content, _ in sonnet_fields:
+                    try:
+                        result, confidence, metadata = self.process_field(field_id, field_content)
+                        if metadata.get("success"):
+                            results[field_id] = {
+                                "value": result,
+                                "confidence": confidence,
+                                "processing_lane": "AI",
+                                "model_used": "CLAUDE_SONNET"
+                            }
+                    except:
+                        pass
+        
+        # Process HAIKU batch if any
+        if haiku_fields:
+            logger.debug(f"   Processing {len(haiku_fields)} fields with HAIKU in batch...")
+            try:
+                batch_results = self.bedrock.invoke_batch(haiku_fields, model="CLAUDE_HAIKU")
+                for field_id, _, _ in haiku_fields:
+                    if field_id in batch_results:
+                        # Format result to match expected structure
+                        extracted = batch_results[field_id]
+                        results[field_id] = {
+                            "value": extracted.get("extracted_data", extracted),
+                            "confidence": extracted.get("confidence", 0.85),
+                            "processing_lane": "AI",
+                            "model_used": "CLAUDE_HAIKU"
+                        }
+                        logger.debug(f"    ✓ Field {field_id} processed via HAIKU batch")
+                    else:
+                        logger.debug(f"    ⚠️ Field {field_id} not in HAIKU batch response")
+            except Exception as e:
+                logger.error(f"   HAIKU batch processing failed: {str(e)[:100]}")
+                # Fall back to individual processing for these fields
+                for field_id, field_content, _ in haiku_fields:
+                    try:
+                        result, confidence, metadata = self.process_field(field_id, field_content)
+                        if metadata.get("success"):
+                            results[field_id] = {
+                                "value": result,
+                                "confidence": confidence,
+                                "processing_lane": "AI",
+                                "model_used": "CLAUDE_HAIKU"
+                            }
+                    except:
+                        pass
+        
+        return results
+    
     def process_field(self, field_id: str, field_content: str) -> Tuple[Any, float, Dict]:
         """
         Process a field using AI - works for any format.

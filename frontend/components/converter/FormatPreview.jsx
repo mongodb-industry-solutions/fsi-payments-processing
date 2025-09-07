@@ -7,39 +7,15 @@ import { Body, Subtitle, InlineCode } from "@leafygreen-ui/typography";
 import Icon from "@leafygreen-ui/icon";
 import styles from "./FormatPreview.module.css";
 
-export default function FormatPreview({ format, type, isExpanded = false }) {
-  const [preview, setPreview] = useState(null);
-  const [metadata, setMetadata] = useState(null);
-  const [loading, setLoading] = useState(false);
+export default function FormatPreview({ format, type, isExpanded = false, previewData, isLoading = false }) {
   const [expanded, setExpanded] = useState(isExpanded);
+  
+  // Use previewData if provided, otherwise default to null
+  const preview = previewData?.preview || null;
+  const metadata = previewData?.metadata || null;
+  const loading = isLoading;
 
-  useEffect(() => {
-    if (format) {
-      fetchPreview();
-    } else {
-      setPreview(null);
-      setMetadata(null);
-    }
-  }, [format]);
-
-  const fetchPreview = async () => {
-    setLoading(true);
-    try {
-      const response = await fetch(`/api/formats/preview?format=${format}&type=${type}`);
-      const data = await response.json();
-      
-      if (data.success) {
-        setPreview(data.preview);
-        setMetadata(data.metadata);
-      }
-    } catch (error) {
-      console.error("Failed to fetch preview:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (!format) {
+  if (!format || (!previewData && !isLoading)) {
     return (
       <div className={styles.emptyState}>
         <Icon glyph="File" size="large" />

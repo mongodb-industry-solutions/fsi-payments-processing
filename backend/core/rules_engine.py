@@ -32,6 +32,9 @@ class RulesEngine:
     def apply_rules(self, parsed_fields: Dict[str, Any]) -> Dict[str, Any]:
         """Apply direct mapping rules to parsed fields"""
         
+        # First, flatten any structured fields into virtual fields
+        flattened_fields = self._flatten_structured_fields(parsed_fields)
+        
         mapped_fields = {}
         processing_details = []
         rules_applied_count = 0
@@ -39,8 +42,10 @@ class RulesEngine:
         for rule in self.rules:
             source_field = rule.get("source_field")
             
-            # Check if field exists in parsed data
-            field_value = self._get_field_value(parsed_fields, source_field)
+            # Check if field exists in flattened data first, then original
+            field_value = flattened_fields.get(source_field)
+            if field_value is None:
+                field_value = self._get_field_value(parsed_fields, source_field)
             if field_value is None:
                 continue
             
@@ -86,13 +91,38 @@ class RulesEngine:
             "mongodb_collections_used": ["conversion_rules"]
         }
     
+    def _flatten_structured_fields(self, fields: Dict) -> Dict:
+        """Flatten structured fields into virtual fields for rule matching
+        
+        Example: {"32A": {"value_date": "241215", "currency": "USD", "amount": "10000"}}
+        Becomes: {"32A_date": "241215", "32A_currency": "USD", "32A_amount": "10000"}
+        """
+        flattened = {}
+        
+        for field_key, field_value in fields.items():
+            if isinstance(field_value, dict):
+                # This is a structured field, flatten it
+                for sub_key, sub_value in field_value.items():
+                    # Handle special naming conventions
+                    if sub_key == "value_date":
+                        flattened_key = f"{field_key}_date"
+                    elif sub_key == "raw_value":
+                        # Skip raw_value as it's just for reference
+                        continue
+                    else:
+                        flattened_key = f"{field_key}_{sub_key}"
+                    
+                    flattened[flattened_key] = sub_value
+        
+        return flattened
+    
     def _get_field_value(self, fields: Dict, field_key: str) -> Optional[Any]:
         """Get field value, handling nested structures"""
         # Handle simple field lookup
         if field_key in fields:
             return fields[field_key]
         
-        # Handle structured fields like 32A components
+        # Handle structured fields like 32A components (backward compatibility)
         if "32A" in field_key and "32A" in fields:
             if isinstance(fields["32A"], dict):
                 if "currency" in field_key.lower():

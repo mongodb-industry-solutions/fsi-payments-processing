@@ -212,6 +212,114 @@ class SimpleBedrock:
         """
         return self.invoke_claude(prompt, model="CLAUDE_SONNET", **kwargs)
     
+    def invoke_batch(self, fields_data: list, model: str = "CLAUDE_HAIKU", **kwargs) -> dict:
+        """
+        Process multiple fields in a single AI call for efficiency.
+        
+        Args:
+            fields_data: List of tuples (field_id, field_content, prompt_template)
+            model: Model to use (CLAUDE_HAIKU or CLAUDE_SONNET)
+            **kwargs: Additional parameters for the model
+            
+        Returns:
+            Dictionary mapping field_id to processed result
+        """
+        if not fields_data:
+            return {}
+        
+        # Build batch prompt
+        batch_prompt = self._build_batch_prompt(fields_data)
+        
+        # Make single AI call
+        try:
+            start_time = time.time()
+            response = self.invoke_claude(batch_prompt, model=model, **kwargs)
+            elapsed = time.time() - start_time
+            
+            logger.debug(f"   Batch AI call ({model}) processed {len(fields_data)} fields in {elapsed:.1f}s")
+            
+            # Parse batch response
+            results = self._parse_batch_response(response, fields_data)
+            return results
+            
+        except Exception as e:
+            logger.error(f"Batch AI processing failed: {str(e)[:200]}")
+            # Fallback to empty results - let caller handle individual processing
+            return {}
+    
+    def _build_batch_prompt(self, fields_data: list) -> str:
+        """Build a prompt that processes multiple fields at once."""
+        prompt_parts = [
+            "Process the following payment fields and return structured JSON for each.",
+            "Return your response as a JSON object with field IDs as keys.",
+            "",
+            "Fields to process:"
+        ]
+        
+        for field_id, field_content, prompt_template in fields_data:
+            prompt_parts.append(f"\n--- Field {field_id} ---")
+            if prompt_template:
+                # Use custom prompt template if provided
+                prompt_parts.append(prompt_template.replace("{field_content}", field_content))
+            else:
+                # Default prompt
+                prompt_parts.append(f"Content: {field_content}")
+                prompt_parts.append("Extract and structure this field's information.")
+        
+        prompt_parts.extend([
+            "",
+            "Return as JSON in this format:",
+            "{",
+            '  "field_id": {',
+            '    "extracted_data": {...},',
+            '    "confidence": 0.85',
+            "  },",
+            "  ...",
+            "}"
+        ])
+        
+        return "\n".join(prompt_parts)
+    
+    def _parse_batch_response(self, response: str, fields_data: list) -> dict:
+        """Parse batch AI response into individual field results."""
+        import re
+        
+        results = {}
+        
+        try:
+            # Try to parse as JSON first
+            json_match = re.search(r'\{.*\}', response, re.DOTALL)
+            if json_match:
+                parsed = json.loads(json_match.group())
+                
+                # Map parsed results to field IDs
+                for field_id, _, _ in fields_data:
+                    if field_id in parsed:
+                        results[field_id] = parsed[field_id]
+                    elif str(field_id) in parsed:
+                        results[field_id] = parsed[str(field_id)]
+                    else:
+                        # Try to find field in various formats
+                        for key in parsed:
+                            if field_id in key or key in field_id:
+                                results[field_id] = parsed[key]
+                                break
+                
+                return results
+                
+        except (json.JSONDecodeError, AttributeError) as e:
+            logger.debug(f"   Failed to parse batch response as JSON: {str(e)[:100]}")
+        
+        # Fallback: Try to extract individual field responses
+        for field_id, _, _ in fields_data:
+            # Look for field-specific sections in response
+            field_pattern = rf"(?:Field |^){re.escape(str(field_id))}[:\s]+(.+?)(?=Field \w+:|$)"
+            match = re.search(field_pattern, response, re.MULTILINE | re.DOTALL)
+            if match:
+                results[field_id] = {"extracted_data": match.group(1).strip(), "confidence": 0.7}
+        
+        return results
+    
     def health_check(self) -> bool:
         """
         Check if Bedrock service is accessible.

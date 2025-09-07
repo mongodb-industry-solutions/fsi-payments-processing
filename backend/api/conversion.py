@@ -310,9 +310,32 @@ async def get_conversion_details(conversion_id: str) -> Dict[str, Any]:
             source_field = mapping_data.get("source_field")
             target_field = mapping_data.get("target_field")
             
+            # Get source value, handling structured fields
+            source_value = ""
+            if source_field in parsed_fields:
+                source_value = parsed_fields.get(source_field, "")
+            else:
+                # Check if this is a subfield of a structured field
+                # e.g., "32A_amount" -> look for "32A" dict with "amount" key
+                if "_" in source_field:
+                    parts = source_field.split("_", 1)
+                    parent_field = parts[0]
+                    sub_field = parts[1]
+                    
+                    if parent_field in parsed_fields and isinstance(parsed_fields[parent_field], dict):
+                        # Map common naming variations
+                        if sub_field == "date":
+                            source_value = parsed_fields[parent_field].get("value_date", "")
+                        else:
+                            source_value = parsed_fields[parent_field].get(sub_field, "")
+                        
+                        # If still empty, show the whole dict as string
+                        if not source_value and parsed_fields[parent_field]:
+                            source_value = str(parsed_fields[parent_field])
+            
             detail = {
                 "field_id": source_field,  # Use source field ID for consistency
-                "source_value": parsed_fields.get(source_field, ""),  # Get original value
+                "source_value": source_value,  # Get original value with structured field support
                 "target_field": target_field,
                 "value": mapping_data.get("value", ""),  # Converted value
                 "processing_lane": mapping_data.get("processing_lane", "UNKNOWN"),
@@ -356,6 +379,17 @@ async def get_conversion_details(conversion_id: str) -> Dict[str, Any]:
     for field_id in human_fields:
         # Check if this field is already in our details
         if not any(f["field_id"] == field_id for f in field_details):
+            # Skip structured fields if their subfields have been processed
+            field_value = parsed_fields.get(field_id)
+            if isinstance(field_value, dict):
+                # Check if any subfields of this structured field have been processed
+                has_processed_subfields = any(
+                    f["field_id"].startswith(f"{field_id}_")
+                    for f in field_details
+                )
+                if has_processed_subfields:
+                    continue  # Skip the parent structured field
+            
             field_details.append({
                 "field_id": field_id,
                 "source_value": parsed_fields.get(field_id, ""),
@@ -365,13 +399,18 @@ async def get_conversion_details(conversion_id: str) -> Dict[str, Any]:
                 "model_used": None
             })
     
+    # Recalculate accurate counts based on actual field_details
+    rules_count = len([f for f in field_details if f.get("processing_lane") == "RULES"])
+    ai_count = len([f for f in field_details if f.get("processing_lane") == "AI"])
+    human_count = len([f for f in field_details if f.get("processing_lane") == "HUMAN_REVIEW"])
+    
     return {
         "conversion_id": conversion_id,
         "field_count": len(field_details),
         "processing_summary": {
-            "rules_fields": processing_stats.get("rules_lane", {}).get("count", 0),
-            "ai_fields": processing_stats.get("ai_lane", {}).get("count", 0),
-            "human_review_fields": processing_stats.get("human_lane", {}).get("count", 0)
+            "rules_fields": rules_count,
+            "ai_fields": ai_count,
+            "human_review_fields": human_count
         },
         "field_details": field_details,
         "processing_time": record.get("processing_time"),

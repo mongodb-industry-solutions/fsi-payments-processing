@@ -5,6 +5,8 @@ Payment samples API endpoints
 from fastapi import APIRouter, HTTPException, Query
 from typing import List, Optional, Dict, Any
 from db.mdb import MongoDBConnector
+from functools import lru_cache
+import time
 import logging
 
 logger = logging.getLogger(__name__)
@@ -143,6 +145,22 @@ async def get_sample_by_format(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# In-memory cache for format previews (TTL: 5 minutes)
+_preview_cache = {}
+_cache_ttl = 300  # 5 minutes
+
+def get_cached_preview(format_code: str) -> Optional[Dict]:
+    """Get preview from cache if not expired"""
+    if format_code in _preview_cache:
+        cached_data, timestamp = _preview_cache[format_code]
+        if time.time() - timestamp < _cache_ttl:
+            return cached_data
+    return None
+
+def set_cached_preview(format_code: str, data: Dict):
+    """Store preview in cache with timestamp"""
+    _preview_cache[format_code] = (data, time.time())
+
 @router.get("/preview/{format_code}")
 async def get_sample_preview(format_code: str):
     """
@@ -154,6 +172,12 @@ async def get_sample_preview(format_code: str):
     Returns:
         Preview-formatted sample data
     """
+    # Check cache first
+    cached = get_cached_preview(format_code)
+    if cached:
+        logger.debug(f"Returning cached preview for {format_code}")
+        return cached
+    
     try:
         db = MongoDBConnector()
         
@@ -168,15 +192,18 @@ async def get_sample_preview(format_code: str):
             sample = None
         
         if not sample:
-            return {
+            result = {
                 "success": True,
                 "format_code": format_code,
                 "preview": get_fallback_sample(format_code),
                 "is_template": True
             }
+            # Cache the template result too
+            set_cached_preview(format_code, result)
+            return result
         
         # Return just the sample data for preview
-        return {
+        result = {
             "success": True,
             "format_code": format_code,
             "preview": sample.get("sample_data", ""),
@@ -184,6 +211,10 @@ async def get_sample_preview(format_code: str):
             "has_free_text": bool(sample.get("fields_highlight")),
             "free_text_fields": sample.get("fields_highlight", [])
         }
+        
+        # Cache the result
+        set_cached_preview(format_code, result)
+        return result
         
     except Exception as e:
         logger.error(f"Error getting sample preview for {format_code}: {e}")

@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 
 const BACKEND_API_URL = process.env.BACKEND_API_URL || "http://localhost:8000";
 
+// Cache for format previews
+const previewCache = new Map();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
 // Format metadata with characteristics
 const formatMetadata = {
   // Source formats
@@ -241,6 +245,90 @@ export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const format = searchParams.get("format");
   const type = searchParams.get("type"); // 'source' or 'target'
+  const preloadAll = searchParams.get("preloadAll") === "true";
+  
+  // If preloadAll is true, return all format previews at once
+  if (preloadAll) {
+    const allPreviews = {};
+    const promises = [];
+    
+    // Preload all source formats
+    Object.keys(formatMetadata).forEach(formatCode => {
+      const metadata = formatMetadata[formatCode];
+      if (metadata.type === "source" || metadata.type === "target") {
+        // Check cache first
+        const cacheKey = `${formatCode}_preview`;
+        const cached = previewCache.get(cacheKey);
+        
+        if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+          allPreviews[formatCode] = cached.data;
+        } else {
+          // Fetch from backend or use fallback
+          if (metadata.type === "source") {
+            promises.push(
+              fetch(`${BACKEND_API_URL}/api/v1/samples/preview/${formatCode}`)
+                .then(res => res.json())
+                .then(data => {
+                  const preview = {
+                    format: formatCode,
+                    metadata: metadata,
+                    preview: data.preview || sourceSamples[formatCode] || "",
+                    sampleInfo: data.sample_name ? {
+                      sample_name: data.sample_name,
+                      has_free_text: data.has_free_text,
+                      free_text_fields: data.free_text_fields
+                    } : null
+                  };
+                  
+                  // Cache it
+                  previewCache.set(cacheKey, {
+                    data: preview,
+                    timestamp: Date.now()
+                  });
+                  
+                  allPreviews[formatCode] = preview;
+                })
+                .catch(() => {
+                  // Use fallback on error
+                  const preview = {
+                    format: formatCode,
+                    metadata: metadata,
+                    preview: sourceSamples[formatCode] || "",
+                    sampleInfo: null
+                  };
+                  allPreviews[formatCode] = preview;
+                })
+            );
+          } else {
+            // For target formats, use templates
+            const preview = {
+              format: formatCode,
+              metadata: metadata,
+              preview: targetTemplates[formatCode] || "",
+              sampleInfo: null
+            };
+            
+            // Cache it
+            previewCache.set(cacheKey, {
+              data: preview,
+              timestamp: Date.now()
+            });
+            
+            allPreviews[formatCode] = preview;
+          }
+        }
+      }
+    });
+    
+    // Wait for all fetches to complete
+    await Promise.all(promises);
+    
+    return NextResponse.json({
+      success: true,
+      previews: allPreviews,
+      cached: promises.length === 0
+    });
+  }
   
   // If no format specified, return all metadata
   if (!format) {
@@ -259,14 +347,32 @@ export async function GET(request) {
     );
   }
   
+  // Check cache first
+  const cacheKey = `${format}_preview`;
+  const cached = previewCache.get(cacheKey);
+  
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return NextResponse.json({
+      ...cached.data,
+      cached: true
+    });
+  }
+  
   // Try to fetch sample from backend MongoDB
   let preview = "";
   let sampleInfo = null;
   let isFromMongoDB = false;
   
   try {
-    // Fetch sample from backend API
-    const sampleResponse = await fetch(`${BACKEND_API_URL}/api/v1/samples/preview/${format}`);
+    // Fetch sample from backend API with timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 2000); // 2 second timeout
+    
+    const sampleResponse = await fetch(`${BACKEND_API_URL}/api/v1/samples/preview/${format}`, {
+      signal: controller.signal
+    });
+    
+    clearTimeout(timeoutId);
     
     if (sampleResponse.ok) {
       const sampleData = await sampleResponse.json();
@@ -294,7 +400,7 @@ export async function GET(request) {
     }
   }
   
-  return NextResponse.json({
+  const result = {
     success: true,
     format: format,
     metadata: metadata,
@@ -307,5 +413,13 @@ export async function GET(request) {
         ? `Sample dynamically loaded from MongoDB ${metadata.mongoCollection} collection`
         : `Using fallback template (MongoDB sample not available)`
     }
+  };
+  
+  // Cache the result
+  previewCache.set(cacheKey, {
+    data: result,
+    timestamp: Date.now()
   });
+  
+  return NextResponse.json(result);
 }

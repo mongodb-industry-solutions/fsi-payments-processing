@@ -13,8 +13,7 @@ Designed for MongoDB technical demo showcasing innovative approaches.
 from typing import Dict, Any, Tuple, Optional, List
 from datetime import datetime, UTC
 import json
-from concurrent.futures import ThreadPoolExecutor, as_completed
-import time
+# Removed ThreadPoolExecutor and as_completed - using batch processing instead
 import logging
 
 from db.mdb import MongoDBConnector
@@ -129,7 +128,9 @@ class ConverterOrchestrator:
                 # Store field mapping
                 source_field = rule.get("source_field")
                 if source_field:
-                    self.field_mappings[source_field] = {
+                    # Create a unique mapping key for display purposes
+                    mapping_key = f"{source_field}_{rule.get('target_field')}"
+                    self.field_mappings[mapping_key] = {
                         "source_field": source_field,  # Include source field in mapping
                         "target_field": rule.get("target_field"),
                         "value": rule.get("value"),
@@ -235,8 +236,8 @@ class ConverterOrchestrator:
     
     def _process_with_ai(self, parsed_fields: Dict, converted_fields: Dict) -> Dict[str, Any]:
         """
-        Process fields that need AI enhancement using parallel processing.
-        Falls back to sequential processing if parallel fails.
+        Process fields that need AI enhancement using BATCH processing.
+        Groups fields by model type to minimize AI calls.
         
         Args:
             parsed_fields: Original parsed fields
@@ -245,7 +246,6 @@ class ConverterOrchestrator:
         Returns:
             Dictionary of AI-processed fields
         """
-        ai_fields = {}
         fields_to_process = []
         
         # Identify fields that need AI processing (all fields not handled by rules)
@@ -255,67 +255,30 @@ class ConverterOrchestrator:
                 logger.debug(f"  Field {field_id}: already handled by rules, skipping AI")
                 continue
             
-            # All unmapped fields go to AI for processing
+            # Skip structured dict fields - they should be handled by rules via flattening
+            if isinstance(field_content, dict):
+                logger.debug(f"  Field {field_id}: is structured dict, should be handled by rules")
+                continue
+            
+            # All unmapped non-dict fields go to AI for processing
             logger.debug(f"  Field {field_id}: no rule found, sending to AI")
             fields_to_process.append((field_id, field_content))
         
         if not fields_to_process:
-            return ai_fields
+            return {}
         
-        # Try parallel processing first
-        try:
-            logger.debug(f"  Processing {len(fields_to_process)} fields with AI in parallel...")
-            
-            # Pre-initialize Bedrock clients to avoid race conditions
-            self.ai_processor.pre_initialize_clients()
-            
-            # Process AI fields in parallel with timeout
-            with ThreadPoolExecutor(max_workers=3) as executor:
-                # Submit all AI processing tasks
-                future_to_field = {}
-                for field_id, field_content in fields_to_process:
-                    future = executor.submit(
-                        self._process_single_ai_field,
-                        field_id,
-                        field_content
-                    )
-                    future_to_field[future] = field_id
-                
-                # Collect results with timeout
-                for future in as_completed(future_to_field, timeout=45):
-                    field_id = future_to_field[future]
-                    try:
-                        result = future.result(timeout=10)
-                        if result:
-                            ai_fields[field_id] = result
-                            self.processing_stats["ai_lane"]["count"] += 1
-                            self.processing_stats["ai_lane"]["fields"].append(field_id)
-                            logger.debug(f"    ✓ Field {field_id} processed (confidence: {result['confidence']:.2f})")
-                    except Exception as e:
-                        logger.debug(f"    ✗ Field {field_id} failed: {str(e)[:50]}")
-                        # Continue processing other fields even if one fails
-            
-        except Exception as parallel_error:
-            # Parallel processing failed - fallback to sequential
-            logger.debug(f"  ⚠️ Parallel processing failed: {str(parallel_error)[:100]}")
-            logger.debug(f"  Falling back to sequential processing...")
-            
-            # Reset stats since we're retrying
-            ai_fields = {}
-            
-            # Process fields sequentially
-            for field_id, field_content in fields_to_process:
-                logger.debug(f"  Processing field {field_id} with AI (sequential)...")
-                try:
-                    result = self._process_single_ai_field(field_id, field_content)
-                    if result:
-                        ai_fields[field_id] = result
-                        self.processing_stats["ai_lane"]["count"] += 1
-                        self.processing_stats["ai_lane"]["fields"].append(field_id)
-                        logger.debug(f"    ✓ Field {field_id} processed (confidence: {result['confidence']:.2f})")
-                except Exception as e:
-                    logger.debug(f"    ✗ Field {field_id} failed: {str(e)[:50]}")
-                    # Continue with next field
+        logger.debug(f"  Processing {len(fields_to_process)} fields with AI using batch calls...")
+        
+        # Pre-initialize Bedrock clients
+        self.ai_processor.pre_initialize_clients()
+        
+        # Use batch processing - this will group by model and make only 2 AI calls
+        ai_fields = self.ai_processor.process_fields_batch(fields_to_process)
+        
+        # Log results
+        for field_id in ai_fields:
+            result = ai_fields[field_id]
+            logger.debug(f"    ✓ Field {field_id} processed via {result.get('model_used', 'AI')} (confidence: {result.get('confidence', 0):.2f})")
         
         return ai_fields
     
@@ -351,6 +314,8 @@ class ConverterOrchestrator:
                         "confidence": confidence,
                         "model_used": model_used
                     }
+                    self.processing_stats["ai_lane"]["count"] += 1
+                    self.processing_stats["ai_lane"]["fields"].append("50K_name")
                     
                     # Track DebtorAddress mapping
                     address_lines = debtor_info.get('addressLines', [])
@@ -365,6 +330,8 @@ class ConverterOrchestrator:
                             "confidence": confidence,
                             "model_used": model_used
                         }
+                        self.processing_stats["ai_lane"]["count"] += 1
+                        self.processing_stats["ai_lane"]["fields"].append("50K_address")
                     
                     # Track DebtorAccount mapping
                     account = debtor_info.get('accountNumber', '')
@@ -378,6 +345,8 @@ class ConverterOrchestrator:
                             "confidence": confidence,
                             "model_used": model_used
                         }
+                        self.processing_stats["ai_lane"]["count"] += 1
+                        self.processing_stats["ai_lane"]["fields"].append("50K_account")
         
         # Transform field 59 (Beneficiary/Creditor)
         if '59' in ai_fields:
@@ -400,6 +369,8 @@ class ConverterOrchestrator:
                         "confidence": confidence,
                         "model_used": model_used
                     }
+                    self.processing_stats["ai_lane"]["count"] += 1
+                    self.processing_stats["ai_lane"]["fields"].append("59_name")
                     
                     # Track CreditorAddress mapping
                     address_lines = creditor_info.get('addressLines', [])
@@ -421,6 +392,8 @@ class ConverterOrchestrator:
                             "confidence": confidence,
                             "model_used": model_used
                         }
+                        self.processing_stats["ai_lane"]["count"] += 1
+                        self.processing_stats["ai_lane"]["fields"].append("59_address")
                     
                     # Track CreditorAccount mapping
                     account = creditor_info.get('accountNumber', '')
@@ -434,6 +407,8 @@ class ConverterOrchestrator:
                             "confidence": confidence,
                             "model_used": model_used
                         }
+                        self.processing_stats["ai_lane"]["count"] += 1
+                        self.processing_stats["ai_lane"]["fields"].append("59_account")
         
         # Transform field 70 (Remittance Information)
         if '70' in ai_fields:
@@ -463,35 +438,32 @@ class ConverterOrchestrator:
                             "confidence": confidence,
                             "model_used": model_used
                         }
+                        self.processing_stats["ai_lane"]["count"] += 1
+                        self.processing_stats["ai_lane"]["fields"].append("70")
+        
+        # Transform field 72 (Sender to Receiver Information)
+        if '72' in ai_fields:
+            sender_info_data = ai_fields['72']
+            if isinstance(sender_info_data, dict):
+                # Extract the value from AI field structure
+                if 'value' in sender_info_data:
+                    sender_info = sender_info_data['value']
+                    confidence = sender_info_data.get('confidence', 0.85)
+                    model_used = sender_info_data.get('model_used')
+                    
+                    # Map to InstructionInformation or similar field
+                    converted_fields['InstructionInformation'] = sender_info
+                    self.field_mappings['72'] = {
+                        "source_field": "72",
+                        "target_field": "InstructionInformation",
+                        "value": sender_info,
+                        "processing_lane": "AI",
+                        "confidence": confidence,
+                        "model_used": model_used
+                    }
+                    self.processing_stats["ai_lane"]["count"] += 1
+                    self.processing_stats["ai_lane"]["fields"].append("72")
     
-    def _process_single_ai_field(self, field_id: str, field_content: str) -> Optional[Dict]:
-        """
-        Process a single field with AI (used for parallel processing).
-        
-        Args:
-            field_id: Field identifier
-            field_content: Field content to process
-            
-        Returns:
-            Processed field data or None if failed
-        """
-        try:
-            start_time = time.time()
-            result, confidence, metadata = self.ai_processor.process_field(field_id, field_content)
-            elapsed = time.time() - start_time
-            
-            if metadata.get("success"):
-                return {
-                    "value": result,
-                    "confidence": confidence,
-                    "processing_lane": "AI",
-                    "model_used": metadata.get("model"),
-                    "processing_time": elapsed
-                }
-        except Exception as e:
-            logger.debug(f"      Error processing field {field_id}: {str(e)[:100]}")
-        
-        return None
     
     def _identify_human_review(self, converted_fields: Dict, original_fields: Dict) -> List[str]:
         """
@@ -513,6 +485,9 @@ class ConverterOrchestrator:
         
         # Check for low confidence AI fields
         for field_id, field_data in converted_fields.items():
+            # Skip internal AI tracking fields
+            if field_id.startswith("_ai_"):
+                continue
             if isinstance(field_data, dict):
                 confidence = field_data.get("confidence", 1.0)
                 if confidence < 0.7:
@@ -520,9 +495,35 @@ class ConverterOrchestrator:
         
         # Check for unconverted fields
         for field_id in original_fields:
-            if field_id not in converted_fields:
-                # Field wasn't processed by rules or AI
-                review_fields.append(field_id)
+            # Skip if field is in converted_fields (processed by rules)
+            if field_id in converted_fields:
+                continue
+            
+            # Skip if field was processed by AI (stored with _ai_ prefix)
+            if f"_ai_{field_id}" in converted_fields:
+                continue
+                
+            # Skip structured fields if their subfields have been processed
+            if isinstance(original_fields[field_id], dict):
+                # Check if any subfield was processed via field_mappings
+                has_processed_subfields = any(
+                    mapping_key.startswith(f"{field_id}_")
+                    for mapping_key in self.field_mappings
+                )
+                if has_processed_subfields:
+                    continue  # Don't add parent structured field to human review
+            
+            # Also check if this field was processed as source field in any mapping
+            # (handles cases where AI fields are transformed to different target names)
+            field_was_processed = any(
+                mapping_data.get("source_field") == field_id
+                for mapping_data in self.field_mappings.values()
+            )
+            if field_was_processed:
+                continue
+            
+            # Field wasn't processed by rules or AI
+            review_fields.append(field_id)
         
         return review_fields
     
