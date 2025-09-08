@@ -102,7 +102,9 @@ class ConverterOrchestrator:
         
         # Start tracking
         self.processing_stats["start_time"] = datetime.now(UTC)
-        self.conversion_id = self._create_conversion_record(raw_message, trace_id)
+        # Store as string to avoid ObjectId serialization issues
+        conversion_id_obj = self._create_conversion_record(raw_message, trace_id)
+        self.conversion_id = str(conversion_id_obj)
         
         try:
             # Step 1: Parse source message
@@ -165,7 +167,20 @@ class ConverterOrchestrator:
             
             # Step 5: Build target format message
             logger.info(f"🏗️ Building {self.target_format} message...")
-            logger.info(f"   Fields being sent to builder: {list(converted_fields.keys())}")
+            
+            # Filter out internal fields (starting with _)
+            fields_for_builder = {k: v for k, v in converted_fields.items() if not k.startswith('_')}
+            
+            # Add standard header fields if not present
+            if self.target_format.startswith("pacs"):
+                if "GrpHdr/CreDtTm" not in fields_for_builder:
+                    fields_for_builder["GrpHdr/CreDtTm"] = datetime.now().isoformat()
+                if "GrpHdr/NbOfTxs" not in fields_for_builder:
+                    fields_for_builder["GrpHdr/NbOfTxs"] = "1"
+                if "GrpHdr/SttlmInf/SttlmMtd" not in fields_for_builder:
+                    fields_for_builder["GrpHdr/SttlmInf/SttlmMtd"] = "INDA"
+            
+            logger.info(f"   Fields being sent to builder: {list(fields_for_builder.keys())[:10]}...")
             if self.source_format == "MT202":
                 # Debug what we're sending to the builder
                 for key, value in converted_fields.items():
@@ -181,7 +196,7 @@ class ConverterOrchestrator:
                 "human_review": self.processing_stats["human_lane"]["count"]
             }
             
-            output_data = self.builder.build_with_metadata(converted_fields, build_metadata)
+            output_data = self.builder.build_with_metadata(fields_for_builder, build_metadata)
             # Handle both "message" and "message_output" keys for compatibility
             target_message = output_data.get("message_output") or output_data.get("message", "")
             
@@ -328,12 +343,41 @@ class ConverterOrchestrator:
     
     def _transform_ai_fields(self, ai_fields: Dict[str, Any], converted_fields: Dict[str, Any]) -> None:
         """
-        Generic field transformation based on MongoDB configuration.
-        Works for any source/target format pair.
+        Transform AI fields that return target paths directly.
+        With PathBuilder, AI returns exact target paths like "CdtTrfTxInf/Dbtr/Nm".
         
         Args:
-            ai_fields: Dictionary of AI-processed fields with complex structures
-            converted_fields: Target dictionary to add flattened fields to
+            ai_fields: Dictionary of AI-processed fields with target paths
+            converted_fields: Target dictionary to add transformed fields to
+        """
+        # With PathBuilder approach, AI returns target paths directly
+        for field_id, ai_result in ai_fields.items():
+            if not isinstance(ai_result, dict):
+                continue
+                
+            # Extract the value from AI result
+            value = ai_result.get('value')
+            if not value:
+                continue
+            
+            # If AI returned target paths (new format), add them directly
+            if isinstance(value, dict):
+                # Check if this looks like target paths (contains / or @)
+                has_paths = any('/' in str(k) or '@' in str(k) for k in value.keys())
+                
+                if has_paths:
+                    # AI returned target paths directly - perfect for PathBuilder
+                    converted_fields.update(value)
+                    logger.debug(f"  Field {field_id}: Added {len(value)} target paths")
+                    continue
+            
+        # Fallback to legacy transformation if no target paths found
+        self._legacy_transform_ai_fields(ai_fields, converted_fields)
+    
+    def _legacy_transform_ai_fields(self, ai_fields: Dict[str, Any], converted_fields: Dict[str, Any]) -> None:
+        """
+        Legacy transformation for backward compatibility.
+        Used when AI doesn't return target paths.
         """
         # Load transformation rules from MongoDB
         configs = list(self.db.find("conversion_configs", {
@@ -345,13 +389,11 @@ class ConverterOrchestrator:
         config = configs[0] if configs else None
         
         if not config:
-            logger.debug("No config found for MT202 to pacs.009")
-            self._legacy_transform_ai_fields(ai_fields, converted_fields)
+            logger.debug("No config found for transformation")
             return
             
         if "field_transformations" not in config:
-            logger.debug("No field_transformations in config, using legacy transformation")
-            self._legacy_transform_ai_fields(ai_fields, converted_fields)
+            logger.debug("No field_transformations in config")
             return
             
         # Check if field_transformations is a list or dict
@@ -581,215 +623,6 @@ class ConverterOrchestrator:
             # Unknown transformation - return as is
             return value
     
-    def _track_field_mapping(self, source_field: str, target_field: str, 
-                             value: Any, confidence: float, model_used: str):
-        """
-        Track field mapping for audit and statistics.
-        
-        Args:
-            source_field: Source field identifier
-            target_field: Target field name
-            value: The transformed value
-            confidence: AI confidence score
-            model_used: Which model was used
-        """
-        mapping_key = f"{source_field}_{target_field}"
-        self.field_mappings[mapping_key] = {
-            "source_field": source_field,
-            "target_field": target_field,
-            "value": value,
-            "processing_lane": "AI",
-            "confidence": confidence,
-            "model_used": model_used
-        }
-        
-        # Update statistics
-        if mapping_key not in self.processing_stats["ai_lane"]["fields"]:
-            self.processing_stats["ai_lane"]["count"] += 1
-            self.processing_stats["ai_lane"]["fields"].append(mapping_key)
-    
-    def _legacy_transform_ai_fields(self, ai_fields: Dict[str, Any], converted_fields: Dict[str, Any]) -> None:
-        """
-        Transform AI-extracted complex fields into flat fields expected by the builder.
-        
-        This method takes AI fields like 50K, 59, 70 which contain structured data
-        and flattens them into individual fields like DebtorName, CreditorName, etc.
-        
-        Args:
-            ai_fields: Dictionary of AI-processed fields with complex structures
-            converted_fields: Target dictionary to add flattened fields to
-        """
-        # Transform field 50K (Ordering Customer/Debtor)
-        if '50K' in ai_fields:
-            debtor_data = ai_fields['50K']
-            if isinstance(debtor_data, dict):
-                # Extract the value from AI field structure
-                if 'value' in debtor_data and isinstance(debtor_data['value'], dict):
-                    debtor_info = debtor_data['value']
-                    confidence = debtor_data.get('confidence', 0.85)
-                    model_used = debtor_data.get('model_used')
-                    
-                    # Track DebtorName mapping
-                    debtor_name = debtor_info.get('name', '')
-                    converted_fields['DebtorName'] = debtor_name
-                    self.field_mappings['50K_name'] = {
-                        "source_field": "50K",
-                        "target_field": "DebtorName",
-                        "value": debtor_name,
-                        "processing_lane": "AI",
-                        "confidence": confidence,
-                        "model_used": model_used
-                    }
-                    self.processing_stats["ai_lane"]["count"] += 1
-                    self.processing_stats["ai_lane"]["fields"].append("50K_name")
-                    
-                    # Track DebtorAddress mapping
-                    address_lines = debtor_info.get('addressLines', [])
-                    if address_lines:
-                        address = ', '.join(address_lines)
-                        converted_fields['DebtorAddress'] = address
-                        self.field_mappings['50K_address'] = {
-                            "source_field": "50K",
-                            "target_field": "DebtorAddress",
-                            "value": address,
-                            "processing_lane": "AI",
-                            "confidence": confidence,
-                            "model_used": model_used
-                        }
-                        self.processing_stats["ai_lane"]["count"] += 1
-                        self.processing_stats["ai_lane"]["fields"].append("50K_address")
-                    
-                    # Track DebtorAccount mapping
-                    account = debtor_info.get('accountNumber', '')
-                    if account:
-                        converted_fields['DebtorAccount'] = account
-                        self.field_mappings['50K_account'] = {
-                            "source_field": "50K",
-                            "target_field": "DebtorAccount",
-                            "value": account,
-                            "processing_lane": "AI",
-                            "confidence": confidence,
-                            "model_used": model_used
-                        }
-                        self.processing_stats["ai_lane"]["count"] += 1
-                        self.processing_stats["ai_lane"]["fields"].append("50K_account")
-        
-        # Transform field 59 (Beneficiary/Creditor)
-        if '59' in ai_fields:
-            creditor_data = ai_fields['59']
-            if isinstance(creditor_data, dict):
-                # Extract the value from AI field structure
-                if 'value' in creditor_data and isinstance(creditor_data['value'], dict):
-                    creditor_info = creditor_data['value']
-                    confidence = creditor_data.get('confidence', 0.85)
-                    model_used = creditor_data.get('model_used')
-                    
-                    # Track CreditorName mapping
-                    creditor_name = creditor_info.get('name', '')
-                    converted_fields['CreditorName'] = creditor_name
-                    self.field_mappings['59_name'] = {
-                        "source_field": "59",
-                        "target_field": "CreditorName",
-                        "value": creditor_name,
-                        "processing_lane": "AI",
-                        "confidence": confidence,
-                        "model_used": model_used
-                    }
-                    self.processing_stats["ai_lane"]["count"] += 1
-                    self.processing_stats["ai_lane"]["fields"].append("59_name")
-                    
-                    # Track CreditorAddress mapping
-                    address_lines = creditor_info.get('addressLines', [])
-                    city = creditor_info.get('city', '')
-                    state = creditor_info.get('state', '')
-                    postal = creditor_info.get('postalCode', '')
-                    
-                    full_address = ', '.join(address_lines)
-                    if city and state and postal:
-                        full_address += f', {city}, {state} {postal}'
-                    
-                    if full_address:
-                        converted_fields['CreditorAddress'] = full_address
-                        self.field_mappings['59_address'] = {
-                            "source_field": "59",
-                            "target_field": "CreditorAddress",
-                            "value": full_address,
-                            "processing_lane": "AI",
-                            "confidence": confidence,
-                            "model_used": model_used
-                        }
-                        self.processing_stats["ai_lane"]["count"] += 1
-                        self.processing_stats["ai_lane"]["fields"].append("59_address")
-                    
-                    # Track CreditorAccount mapping
-                    account = creditor_info.get('accountNumber', '')
-                    if account:
-                        converted_fields['CreditorAccount'] = account
-                        self.field_mappings['59_account'] = {
-                            "source_field": "59",
-                            "target_field": "CreditorAccount",
-                            "value": account,
-                            "processing_lane": "AI",
-                            "confidence": confidence,
-                            "model_used": model_used
-                        }
-                        self.processing_stats["ai_lane"]["count"] += 1
-                        self.processing_stats["ai_lane"]["fields"].append("59_account")
-        
-        # Transform field 70 (Remittance Information)
-        if '70' in ai_fields:
-            remittance_data = ai_fields['70']
-            if isinstance(remittance_data, dict):
-                # Extract the value from AI field structure
-                if 'value' in remittance_data and isinstance(remittance_data['value'], dict):
-                    remittance_info = remittance_data['value']
-                    confidence = remittance_data.get('confidence', 0.85)
-                    model_used = remittance_data.get('model_used')
-                    
-                    # Build remittance info string
-                    parts = []
-                    if remittance_info.get('description'):
-                        parts.append(remittance_info['description'])
-                    if remittance_info.get('invoiceNumber'):
-                        parts.append(remittance_info['invoiceNumber'])
-                    
-                    remittance_text = ' '.join(parts)
-                    if remittance_text:
-                        converted_fields['RemittanceInfo'] = remittance_text
-                        self.field_mappings['70'] = {
-                            "source_field": "70",
-                            "target_field": "RemittanceInfo",
-                            "value": remittance_text,
-                            "processing_lane": "AI",
-                            "confidence": confidence,
-                            "model_used": model_used
-                        }
-                        self.processing_stats["ai_lane"]["count"] += 1
-                        self.processing_stats["ai_lane"]["fields"].append("70")
-        
-        # Transform field 72 (Sender to Receiver Information)
-        if '72' in ai_fields:
-            sender_info_data = ai_fields['72']
-            if isinstance(sender_info_data, dict):
-                # Extract the value from AI field structure
-                if 'value' in sender_info_data:
-                    sender_info = sender_info_data['value']
-                    confidence = sender_info_data.get('confidence', 0.85)
-                    model_used = sender_info_data.get('model_used')
-                    
-                    # Map to InstructionInformation or similar field
-                    converted_fields['InstructionInformation'] = sender_info
-                    self.field_mappings['72'] = {
-                        "source_field": "72",
-                        "target_field": "InstructionInformation",
-                        "value": sender_info,
-                        "processing_lane": "AI",
-                        "confidence": confidence,
-                        "model_used": model_used
-                    }
-                    self.processing_stats["ai_lane"]["count"] += 1
-                    self.processing_stats["ai_lane"]["fields"].append("72")
-    
     
     def _identify_human_review(self, converted_fields: Dict, original_fields: Dict) -> List[str]:
         """
@@ -874,14 +707,15 @@ class ConverterOrchestrator:
             "updated_at": datetime.now(UTC)
         }
         
-        # Add all provided fields
+        # Add all provided fields except success flag
         for key, value in kwargs.items():
             if key != "success":
                 update_data[key] = value
         
+        from bson import ObjectId
         self.db.update_one(
             "conversions",
-            {"_id": self.conversion_id},
+            {"_id": ObjectId(self.conversion_id)},
             {"$set": update_data}
         )
     

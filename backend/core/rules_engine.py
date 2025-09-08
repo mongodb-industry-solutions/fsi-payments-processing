@@ -2,7 +2,6 @@ from typing import Dict, List, Any, Optional
 from datetime import datetime, UTC
 import logging
 from db.mdb import MongoDBConnector
-from db.cache import get_cache
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -19,18 +18,29 @@ class RulesEngine:
         self.db = db_connector
         self.source_format = source_format  # Demo: "MT103"
         self.target_format = target_format  # Demo: "pacs.008"
-        self.cache = get_cache()
+        # Cache removed for simplification
+        self.cache = None
         self.rules = self._load_rules()
     
     def _load_rules(self) -> List[Dict]:
-        """Load conversion rules from cache or MongoDB"""
-        # Try cache first
-        config_doc = self.cache.get_conversion_config(
-            self.db, 
-            self.source_format, 
-            self.target_format
-        )
-        return config_doc["rules"] if config_doc else []
+        """Load conversion rules from MongoDB conversion_rules collection"""
+        # Look for path-based rules first
+        conversion_type = f"{self.source_format}_to_{self.target_format}"
+        rules_doc = self.db.find_one("conversion_rules", {
+            "conversion_type": conversion_type,
+            "is_active": True
+        })
+        
+        if rules_doc and "field_mappings" in rules_doc:
+            return rules_doc["field_mappings"]
+        
+        # Fallback to old format in conversion_configs
+        config_doc = self.db.find_one("conversion_configs", {
+            "source_format": self.source_format,
+            "target_format": self.target_format,
+            "is_active": True
+        })
+        return config_doc.get("rules", []) if config_doc else []
     
     def apply_rules(self, parsed_fields: Dict[str, Any]) -> Dict[str, Any]:
         """Apply direct mapping rules to parsed fields"""
@@ -98,7 +108,7 @@ class RulesEngine:
         """Flatten structured fields into virtual fields for rule matching
         
         Example: {"32A": {"value_date": "241215", "currency": "USD", "amount": "10000"}}
-        Becomes: {"32A_date": "241215", "32A_currency": "USD", "32A_amount": "10000"}
+        Becomes: {"32A.value_date": "241215", "32A.currency": "USD", "32A.amount": "10000"}
         """
         flattened = {}
         
@@ -106,15 +116,11 @@ class RulesEngine:
             if isinstance(field_value, dict):
                 # This is a structured field, flatten it
                 for sub_key, sub_value in field_value.items():
-                    # Handle special naming conventions
-                    if sub_key == "value_date":
-                        flattened_key = f"{field_key}_date"
-                    elif sub_key == "raw_value":
+                    if sub_key == "raw_value":
                         # Skip raw_value as it's just for reference
                         continue
-                    else:
-                        flattened_key = f"{field_key}_{sub_key}"
-                    
+                    # Use dot notation to match our rules format
+                    flattened_key = f"{field_key}.{sub_key}"
                     flattened[flattened_key] = sub_value
         
         return flattened
@@ -140,7 +146,12 @@ class RulesEngine:
     def _apply_transformation(self, value: Any, transform_type: str, rule: Dict) -> Any:
         """Apply transformation to field value"""
         
-        if transform_type == "direct_copy":
+        # Handle dictionary-based transformation directly
+        if isinstance(transform_type, dict):
+            # This is a value mapping dictionary (e.g., {"SHA": "SHAR", "OUR": "DEBT"})
+            return transform_type.get(str(value), value)
+        
+        if transform_type == "direct_copy" or transform_type is None:
             return value
         
         elif transform_type == "map_value":

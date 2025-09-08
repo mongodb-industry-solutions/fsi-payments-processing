@@ -1,6 +1,10 @@
 # claude
 **/.claude
 
+# Claude's temporary files and testing
+by_claude/
+**/by_claude/
+
 # task-def.json
 **/task-def.json
 

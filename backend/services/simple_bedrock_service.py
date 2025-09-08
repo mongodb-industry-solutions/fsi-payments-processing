@@ -186,32 +186,6 @@ class SimpleBedrock:
         
         raise RuntimeError("Failed to get response from Bedrock")
     
-    def invoke_haiku(self, prompt: str, **kwargs) -> str:
-        """
-        Invoke Claude 3 Haiku (fast, cost-optimized).
-        
-        Args:
-            prompt: The prompt text
-            **kwargs: Additional parameters for invoke_claude
-            
-        Returns:
-            Model response text
-        """
-        return self.invoke_claude(prompt, model="CLAUDE_HAIKU", **kwargs)
-    
-    def invoke_sonnet(self, prompt: str, **kwargs) -> str:
-        """
-        Invoke Claude 3 Sonnet (balanced performance).
-        
-        Args:
-            prompt: The prompt text
-            **kwargs: Additional parameters for invoke_claude
-            
-        Returns:
-            Model response text
-        """
-        return self.invoke_claude(prompt, model="CLAUDE_SONNET", **kwargs)
-    
     def invoke_batch(self, fields_data: list, model: str = "CLAUDE_HAIKU", **kwargs) -> dict:
         """
         Process multiple fields in a single AI call for efficiency.
@@ -560,8 +534,9 @@ class SimpleBedrock:
         """
         try:
             # Try a minimal invocation
-            response = self.invoke_haiku(
+            response = self.invoke_claude(
                 "Respond with just 'OK'",
+                model="CLAUDE_HAIKU",
                 max_tokens=10,
                 temperature=0
             )

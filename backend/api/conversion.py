@@ -14,9 +14,6 @@ import json
 from models.payment_schemas import PaymentStatus, ConversionResponse as BaseConversionResponse
 from services.converter_orchestrator import ConverterOrchestrator
 from utils.parsers.mt103_parser import MT103Parser
-from utils.parsers.mongodb_parser import MongoDBDrivenParser
-from utils.builders.pacs008_builder import Pacs008Builder
-from utils.builders.mongodb_builder import MongoDBDrivenBuilder
 from db.mdb import MongoDBConnector
 import logging
 
@@ -98,40 +95,21 @@ def get_converter(source_format: str, target_format: str) -> ConverterOrchestrat
         # Create new orchestrator
         orchestrator = ConverterOrchestrator(db, source_format, target_format)
         
-        # Set up parser - use MongoDB-driven if config exists, otherwise use specific parser
-        parser_config = db.find("parser_configs", {"format": source_format, "is_active": True})
-        if parser_config:
-            # Use MongoDB-driven parser
-            orchestrator.set_parser(MongoDBDrivenParser(db, source_format))
-            logger.info(f"Using MongoDB-driven parser for {source_format}")
-        elif source_format == "MT103":
-            # Fallback to hardcoded parser
+        # Set up parser based on source format
+        if source_format == "MT103":
             orchestrator.set_parser(MT103Parser(db))
-            logger.info(f"Using hardcoded MT103Parser")
+            logger.info(f"Using MT103Parser")
         elif source_format == "MT202":
-            # Use MT202 parser
             from utils.parsers.mt202_parser import MT202Parser
             orchestrator.set_parser(MT202Parser(db))
             logger.info(f"Using MT202Parser")
         else:
             raise ValueError(f"Parser not implemented for format: {source_format}")
         
-        # Set up builder - use MongoDB-driven if config exists, otherwise use specific builder
-        builder_config = db.find("builder_configs", {"format": target_format, "is_active": True})
-        if builder_config:
-            # Use MongoDB-driven builder
-            orchestrator.set_builder(MongoDBDrivenBuilder(db, target_format))
-            logger.info(f"Using MongoDB-driven builder for {target_format}")
-        elif target_format == "pacs.008":
-            # Fallback to hardcoded builder
-            orchestrator.set_builder(Pacs008Builder(db))
-            logger.info(f"Using hardcoded Pacs008Builder")
-        elif target_format == "pacs.009":
-            from utils.builders.pacs009_builder import Pacs009Builder
-            orchestrator.set_builder(Pacs009Builder(db))
-            logger.info(f"Using Pacs009Builder")
-        else:
-            raise ValueError(f"Builder not implemented for format: {target_format}")
+        # Use PathBuilder for all formats - it's generic!
+        from utils.builders.path_builder import PathBuilder
+        orchestrator.set_builder(PathBuilder(target_format, db))
+        logger.info(f"Using PathBuilder for {target_format}")
         
         _converters[cache_key] = orchestrator
     

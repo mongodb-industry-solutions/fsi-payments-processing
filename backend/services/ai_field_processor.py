@@ -8,14 +8,12 @@ It integrates with MongoDB for configuration and uses AWS Bedrock for LLM calls.
 import json
 import re
 from typing import Dict, Tuple, Any, Optional, List
-from datetime import datetime, UTC, timedelta
+from datetime import datetime, UTC
 import time
-import threading
 import logging
 
 from db.mdb import MongoDBConnector
-from db.cache import get_cache
-from services.simple_bedrock_service import SimpleBedrock, get_bedrock_service
+from services.simple_bedrock_service import get_bedrock_service
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -45,7 +43,6 @@ class AIFieldProcessor:
         self.db = db_connector
         self.source_format = source_format
         self.target_format = target_format
-        self.cache = get_cache()
         
         # Load configurations from cache or MongoDB
         self.field_routing = self._load_field_routing()
@@ -56,24 +53,15 @@ class AIFieldProcessor:
         
         # Initialize single Bedrock service (shared, thread-safe)
         self.bedrock = get_bedrock_service()
-        
-        # Circuit breaker state
-        self._circuit_breaker = {
-            "failure_count": 0,
-            "last_failure_time": None,
-            "is_open": False,
-            "threshold": 3,  # Open circuit after 3 consecutive failures
-            "reset_timeout": 60  # Try again after 60 seconds
-        }
     
     def _load_field_routing(self) -> Dict:
         """Load field-to-model routing from cache or MongoDB."""
         logger.debug(f"Loading field routing for {self.source_format} → {self.target_format}")
-        config_doc = self.cache.get_conversion_config(
-            self.db,
-            self.source_format,
-            self.target_format
-        )
+        config_doc = self.db.find_one("conversion_configs", {
+            "source_format": self.source_format,
+            "target_format": self.target_format,
+            "is_active": True
+        })
         config_docs = [config_doc] if config_doc else []
         
         logger.debug(f"Found {len(config_docs) if config_docs else 0} config documents")
@@ -95,11 +83,11 @@ class AIFieldProcessor:
     
     def _load_prompt_templates(self) -> Dict[str, Dict]:
         """Load prompt templates from cache or MongoDB."""
-        config_doc = self.cache.get_conversion_config(
-            self.db,
-            self.source_format,
-            self.target_format
-        )
+        config_doc = self.db.find_one("conversion_configs", {
+            "source_format": self.source_format,
+            "target_format": self.target_format,
+            "is_active": True
+        })
         config_docs = [config_doc] if config_doc else []
         
         if config_docs and len(config_docs) > 0:
@@ -159,40 +147,6 @@ class AIFieldProcessor:
         except Exception as e:
             logger.debug(f"   ⚠️ Bedrock initialization warning: {str(e)[:100]}")
     
-    
-    def _check_circuit_breaker(self) -> bool:
-        """Check if circuit breaker is open (should block requests)."""
-        cb = self._circuit_breaker
-        
-        if not cb["is_open"]:
-            return False  # Circuit is closed, allow requests
-        
-        # Check if enough time has passed to try again
-        if cb["last_failure_time"]:
-            elapsed = (datetime.now(UTC) - cb["last_failure_time"]).total_seconds()
-            if elapsed > cb["reset_timeout"]:
-                # Try to reset circuit
-                cb["is_open"] = False
-                cb["failure_count"] = 0
-                logger.debug(f"   Circuit breaker reset after {elapsed:.1f}s")
-                return False
-        
-        return True  # Circuit is still open, block requests
-    
-    def _record_success(self):
-        """Record successful AI call."""
-        self._circuit_breaker["failure_count"] = 0
-        self._circuit_breaker["is_open"] = False
-    
-    def _record_failure(self):
-        """Record failed AI call and potentially open circuit."""
-        cb = self._circuit_breaker
-        cb["failure_count"] += 1
-        cb["last_failure_time"] = datetime.now(UTC)
-        
-        if cb["failure_count"] >= cb["threshold"]:
-            cb["is_open"] = True
-            logger.debug(f"   ⚠️ Circuit breaker opened after {cb['failure_count']} failures")
     
     def process_fields_batch(self, fields_to_process: List[Tuple[str, str]]) -> Dict[str, Any]:
         """
@@ -343,17 +297,6 @@ class AIFieldProcessor:
             # Create default prompt if template missing
             prompt = self._build_default_prompt(field_id, field_content, strategy)
         
-        # Check circuit breaker before attempting AI call
-        if self._check_circuit_breaker():
-            logger.debug(f"   ⚠️ Circuit breaker is open, skipping AI for field {field_id}")
-            return field_content, 0.0, {
-                "lane": "AI",
-                "field": field_id,
-                "processed": False,
-                "error": "Circuit breaker open - too many AI failures",
-                "success": False
-            }
-        
         # Get model name from strategy (default to HAIKU if no strategy)
         model_name = strategy.get("model", "CLAUDE_HAIKU") if strategy else "CLAUDE_HAIKU"
         
@@ -383,19 +326,12 @@ class AIFieldProcessor:
             success = True
             error_msg = None
             
-            # Record success for circuit breaker
-            self._record_success()
-            
         except Exception as e:
             # On error, fallback to original content
             processed_data = field_content
             confidence = 0.0
             success = False
             error_msg = str(e)
-            
-            # Record failure for circuit breaker
-            self._record_failure()
-            
             # Log error to MongoDB
             self._log_error(field_id, error_msg)
         

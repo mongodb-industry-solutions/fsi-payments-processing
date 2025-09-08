@@ -45,6 +45,11 @@ class MongoDBConnector:
         """Retrieve documents from a collection."""
         collection = self.get_collection(collection_name)
         return list(collection.find(query, projection))
+    
+    def find_one(self, collection_name, query={}, projection=None):
+        """Retrieve a single document from a collection."""
+        collection = self.get_collection(collection_name)
+        return collection.find_one(query, projection)
 
     def update_one(self, collection_name, query, update, upsert=False):
         """Update a single document in a collection."""
