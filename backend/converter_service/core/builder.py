@@ -83,7 +83,31 @@ class GenericBuilder:
                     parent.text = str(value)
                 continue
             
-            # Create element
+            # Special handling for arrays that should create multiple elements
+            if isinstance(value, list):
+                # Create multiple elements with the same tag name
+                for item in value:
+                    if parent is None:
+                        # Root element case (shouldn't happen with arrays)
+                        if self.namespace:
+                            element = ET.Element(key, xmlns=self.namespace)
+                        else:
+                            element = ET.Element(key)
+                        parent = element
+                    else:
+                        element = ET.SubElement(parent, key)
+                    
+                    if isinstance(item, dict):
+                        self._dict_to_xml(item, element)
+                    else:
+                        # Simple value - set as text
+                        element.text = str(item) if item else ''
+                continue
+            
+            # Note: Strings with newlines should be handled by transformer/AI
+            # Builder should receive arrays if multiple elements are needed
+            
+            # Create single element
             if parent is None:
                 # Root element
                 if self.namespace:
@@ -97,13 +121,6 @@ class GenericBuilder:
             # Process value
             if isinstance(value, dict):
                 self._dict_to_xml(value, element)
-            elif isinstance(value, list):
-                # Handle multiple elements with same name
-                for item in value:
-                    if isinstance(item, dict):
-                        self._dict_to_xml(item, element)
-                    else:
-                        element.text = str(item) if item else ''
             else:
                 element.text = str(value) if value else ''
         
@@ -125,7 +142,30 @@ class GenericBuilder:
             return [self._process_template(item, fields) for item in template]
             
         elif isinstance(template, str):
-            return self._substitute_variables(template, fields)
+            # Check if this is a simple variable substitution
+            if template.startswith('{{') and template.endswith('}}'):
+                var_name = template[2:-2]
+                # Return the actual value (could be array) instead of stringified
+                if '.' in var_name:
+                    parts = var_name.split('.')
+                    value = fields
+                    for part in parts:
+                        if isinstance(value, dict) and part in value:
+                            value = value[part]
+                        else:
+                            return self._get_default_value(var_name)
+                    return value  # Return as-is, don't stringify
+                elif var_name in fields:
+                    return fields[var_name]  # Return as-is, don't stringify
+                elif var_name == 'current_time':
+                    return datetime.utcnow().isoformat()
+                elif var_name == 'namespace':
+                    return self.namespace
+                else:
+                    return self._get_default_value(var_name)
+            else:
+                # Complex string with multiple variables - use substitution
+                return self._substitute_variables(template, fields)
             
         else:
             return template

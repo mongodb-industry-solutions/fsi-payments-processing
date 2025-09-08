@@ -153,13 +153,10 @@ class Transformer:
                 # Update cost tracking
                 self.processing_stats['ai_lane']['cost'] += 0.0001  # Estimate
                 
-                # For remittance, return the summary for Ustrd field
-                if ai_config.get('field_type') == 'remittance':
-                    return {
-                        'Ustrd': data.get('summary', str(value)),
-                        'Structured': json.dumps(data)  # Store structured data too
-                    }, confidence
+                # Debug: Log AI response
+                logger.info(f"AI returned for field {field_name}: {json.dumps(data)[:500]}")
                 
+                # Return AI response as-is - let AI return properly named fields
                 return data, confidence
             else:
                 logger.error(f"AI extraction failed for field {field_name}")
@@ -295,6 +292,26 @@ class Transformer:
                 if len(lines) > start_idx:
                     return ', '.join(lines[start_idx:])
             return ''
+            
+        elif transform_type == 'extract_lines':
+            # Generic line extraction - configurable via MongoDB
+            config = mapping.get('transform_config', {})
+            start_line = config.get('start_line', 0)
+            end_line = config.get('end_line', None)
+            skip_pattern = config.get('skip_pattern', None)
+            
+            lines = []
+            if isinstance(value, dict) and 'lines' in value:
+                lines = value['lines'][start_line:end_line]
+            elif isinstance(value, str):
+                lines = value.split('\n')[start_line:end_line]
+            
+            # Apply skip pattern if configured
+            if skip_pattern and lines:
+                import re
+                lines = [l for l in lines if not re.match(skip_pattern, l)]
+            
+            return lines if lines else []
             
         elif transform_type == 'ai_extract':
             # This should be handled by _process_ai_lane

@@ -160,7 +160,10 @@ def create_mt103_to_pacs008_3lane_config():
             {
                 "source": "50K",
                 "targets": ["DbtrAdr"],
-                "transform": "extract_address",
+                "transform": "extract_lines",
+                "transform_config": {
+                    "start_line": 2  # Skip account (line 0) and name (line 1)
+                },
                 "processing_lane": "RULES",
                 "confidence": 0.90
             },
@@ -181,7 +184,10 @@ def create_mt103_to_pacs008_3lane_config():
             {
                 "source": "59",
                 "targets": ["CdtrAdr"],
-                "transform": "extract_address",
+                "transform": "extract_lines",
+                "transform_config": {
+                    "start_line": 2  # Skip account (line 0) and name (line 1)
+                },
                 "processing_lane": "RULES",
                 "confidence": 0.90
             },
@@ -194,32 +200,8 @@ def create_mt103_to_pacs008_3lane_config():
                 "processing_lane": "AI",
                 "confidence_threshold": 0.8,  # Below this goes to human review
                 "ai_config": {
-                    "model": "claude-3-haiku",
-                    "field_type": "remittance",
-                    "prompt_template": """Analyze this payment remittance information and extract structured data:
-
-Field 70 (Remittance Information):
-{{field_value}}
-
-Extract and return as JSON:
-1. invoice_number: Any invoice number mentioned
-2. payment_purpose: Brief description of what payment is for
-3. reference_numbers: List of any PO, contract, order numbers
-4. amounts: Any specific amounts mentioned
-5. dates: Any dates mentioned
-6. summary: Concise one-line summary (max 140 chars)
-
-Example response:
-{
-  "invoice_number": "INV-2024-11-3847",
-  "payment_purpose": "Electronic components purchase",
-  "reference_numbers": ["PO-8934567", "CONTRACT-789"],
-  "amounts": ["125,750.50 USD"],
-  "dates": ["2024-11-15"],
-  "summary": "Payment for electronic components, invoice INV-2024-11-3847"
-}
-
-Be precise and only extract what is clearly present in the text."""
+                    "field_type": "remittance"
+                    # model selection is automatic based on complexity
                 }
             },
             
@@ -231,30 +213,8 @@ Be precise and only extract what is clearly present in the text."""
                 "processing_lane": "AI",
                 "confidence_threshold": 0.75,  # Below this goes to human review
                 "ai_config": {
-                    "model": "claude-3-haiku",
-                    "field_type": "sender_receiver_info",
-                    "prompt_template": """Analyze this sender-to-receiver information and extract structured instructions:
-
-Field 72 (Sender to Receiver Information):
-{{field_value}}
-
-Extract and return as JSON:
-1. instruction_codes: List of instruction codes (e.g., /ACC/, /REC/, /INS/)
-2. account_info: Any account-related instructions
-3. receiver_info: Instructions for the receiver
-4. regulatory_info: Any regulatory or compliance instructions
-5. special_instructions: Other special processing instructions
-6. summary: Brief summary of all instructions
-
-Ensure all instructions are preserved for regulatory compliance.""",
-                    "expected_fields": [
-                        "instruction_codes",
-                        "account_info", 
-                        "receiver_info",
-                        "regulatory_info",
-                        "special_instructions",
-                        "summary"
-                    ]
+                    "field_type": "sender_receiver_info"
+                    # model selection is automatic based on complexity
                 }
             }
         ],
@@ -266,50 +226,71 @@ Ensure all instructions are preserved for regulatory compliance.""",
             "models": {
                 "claude-3-haiku": {
                     "model_id": "anthropic.claude-3-haiku-20240307-v1:0",
-                    "max_tokens": 500,
+                    "max_tokens": 1000,
                     "temperature": 0.1,
                     "cost_per_1k_input": 0.00025,
-                    "cost_per_1k_output": 0.00125
+                    "cost_per_1k_output": 0.00125,
+                    "complexity_threshold": {
+                        "lines": 6,
+                        "chars": 600
+                    }
+                },
+                "claude-3-sonnet": {
+                    "model_id": "anthropic.claude-3-sonnet-20240229-v1:0",
+                    "max_tokens": 2000,
+                    "temperature": 0.1,
+                    "cost_per_1k_input": 0.003,
+                    "cost_per_1k_output": 0.015,
+                    "complexity_threshold": {
+                        "lines": 999,
+                        "chars": 9999
+                    }
                 }
             },
             "prompt_templates": {
-                "remittance": """Extract structured information from this payment remittance text:
+                "remittance": """Extract and preserve remittance information line-by-line:
 
 {{field_value}}
 
-Return ONLY a valid JSON object with NO other text. The JSON must have these exact fields:
-1. invoice_number: The invoice number if present (or null)
-2. payment_purpose: Brief description of what the payment is for
-3. amount: Any amount mentioned (or null)
-4. reference_numbers: List of any reference numbers (PO, contract, etc.) or empty array
-5. summary: One-line summary (max 140 chars)
-6. confidence_scores: REQUIRED object with confidence (0.0-1.0) for each field above PLUS an 'overall' score
+Return ONLY a valid JSON object with NO other text. Split the remittance text into individual lines (max 140 chars each).
 
-The confidence_scores object MUST include:
-- "invoice_number": confidence score (0.0-1.0)
-- "payment_purpose": confidence score (0.0-1.0)
-- "amount": confidence score (0.0-1.0)
-- "reference_numbers": confidence score (0.0-1.0)
-- "summary": confidence score (0.0-1.0)
-- "overall": overall extraction confidence (0.0-1.0)
+CRITICAL: Preserve the original line structure. Each line of the input should become a separate array element in the Ustrd field.
 
-Use 1.0 when certain, 0.7-0.9 when reasonably confident, 0.5 when guessing, <0.5 when very uncertain.
+Return JSON with these exact fields:
+1. Ustrd: Array of strings, each line from the original text (preserve order)
+2. invoice_number: The invoice number if found (optional)
+3. payment_purpose: Brief description if identifiable (optional)
+4. confidence_scores: Your confidence (0.0-1.0) for extraction quality
 
-CRITICAL: Return ONLY the JSON object below. Do not include any explanatory text before or after the JSON.
+For confidence scores:
+- Use 1.0 when certain
+- Use 0.7-0.9 when reasonably confident
+- Use 0.5 when guessing
+- Use <0.5 when very uncertain
 
+Example input:
+INV-2024-11-3847 DATED 15.11.2024
+PAYMENT FOR ELECTRONIC COMPONENTS
+ORDER PO-8934567 QTY 5000 UNITS
+
+Example output:
 {
-  "invoice_number": "INV-2024-001",
+  "Ustrd": [
+    "INV-2024-11-3847 DATED 15.11.2024",
+    "PAYMENT FOR ELECTRONIC COMPONENTS",
+    "ORDER PO-8934567 QTY 5000 UNITS"
+  ],
+  "invoice_number": "INV-2024-11-3847",
   "payment_purpose": "Electronic components",
-  "reference_numbers": ["PO-12345"],
-  "summary": "Payment for electronic components, INV-2024-001",
   "confidence_scores": {
+    "Ustrd": 1.0,
     "invoice_number": 0.95,
-    "payment_purpose": 0.88,
-    "reference_numbers": 0.92,
-    "summary": 0.90,
-    "overall": 0.91
+    "payment_purpose": 0.90,
+    "overall": 0.95
   }
-}""",
+}
+
+Return ONLY the JSON object, no other text.""",
                 
                 "party_details": """Extract party information from this SWIFT field:
 
@@ -339,39 +320,54 @@ Example output:
   }
 }""",
                 
-                "sender_receiver_info": """Extract sender-to-receiver instructions from field 72:
+                "sender_receiver_info": """Extract and map sender-to-receiver instructions from field 72:
 
 {{field_value}}
 
-Return ONLY a valid JSON object with NO other text. Parse and extract:
-- instruction_codes: List of codes like /ACC/, /REC/, /INS/
-- account_info: Account-related instructions after /ACC/
-- receiver_info: Receiver instructions after /REC/
-- regulatory_info: Regulatory/compliance instructions
-- special_instructions: Other processing instructions after /INS/
-- summary: Brief summary of all instructions
-- confidence_scores: Your confidence (0.0-1.0) for each field plus overall
+Return ONLY a valid JSON object with NO other text. Map each instruction line to the appropriate target field.
 
-CRITICAL: You MUST include confidence_scores with a score for each field and an 'overall' score.
-Return ONLY the JSON below with no additional text.
+Instructions should be mapped as follows:
+- /ACC/, /INS/, /REC/, /CUST/ -> InstrForCdtrAgt (Instructions for Creditor Agent)
+- /INTA/, /INTC/ -> InstrForNxtAgt (Instructions for Next Agent)  
+- /DEBIT/, /DBTR/ -> InstrForDbtrAgt (Instructions for Debtor Agent)
+- Others -> Unmapped
 
+Return JSON with these exact fields:
 {
-  "instruction_codes": ["/ACC/", "/REC/"],
-  "account_info": "URGENT PROCESSING REQUIRED",
-  "receiver_info": "NOTIFY ACCOUNTS@GLOBALSUPPLIES.DE",
-  "regulatory_info": null,
-  "special_instructions": null,
-  "summary": "Urgent processing with receiver notification",
+  "InstrForCdtrAgt": ["full instruction line 1", "full instruction line 2"],
+  "InstrForNxtAgt": ["full instruction line if any"],
+  "InstrForDbtrAgt": [],
+  "Unmapped": [],
   "confidence_scores": {
-    "instruction_codes": 1.0,
-    "account_info": 0.95,
-    "receiver_info": 0.95,
-    "regulatory_info": 0.0,
-    "special_instructions": 0.0,
-    "summary": 0.9,
-    "overall": 0.85
+    "overall": (0.0-1.0 based on your confidence)
   }
-}""",
+}
+
+For confidence scores:
+- Use 1.0 when mapping is certain
+- Use 0.7-0.9 when reasonably confident
+- Use 0.5 when unsure about mapping
+- Use <0.5 when very uncertain
+
+Example input:
+/ACC/URGENT PROCESSING REQUIRED
+/REC/NOTIFY ACCOUNTS@GLOBALSUPPLIES.DE
+
+Example output:
+{
+  "InstrForCdtrAgt": [
+    "/ACC/URGENT PROCESSING REQUIRED",
+    "/REC/NOTIFY ACCOUNTS@GLOBALSUPPLIES.DE"
+  ],
+  "InstrForNxtAgt": [],
+  "InstrForDbtrAgt": [],
+  "Unmapped": [],
+  "confidence_scores": {
+    "overall": 0.95
+  }
+}
+
+Return ONLY the JSON object, no other text.""",
                 
                 "default": """Extract key information from this field:
 

@@ -30,6 +30,7 @@ class BedrockService:
         self.hybrid_model = self.confidence_config.get('hybrid_model', {})
         self.validation_rules = self.confidence_config.get('validation_rules', {})
         self.fallback_confidence = self.confidence_config.get('fallback_confidence', {})
+        self.models = self.ai_config.get('models', {})
         self.client = None
         self._initialize_client()
     
@@ -45,6 +46,59 @@ class BedrockService:
         except Exception as e:
             logger.error(f"Failed to initialize Bedrock client: {e}")
             self.client = None
+    
+    def _select_model_for_field(self, field_value: str, field_type: str) -> tuple:
+        """
+        Select the appropriate model based on field complexity.
+        
+        Args:
+            field_value: The field content to analyze
+            field_type: Type of field for logging
+            
+        Returns:
+            Tuple of (model_name, model_config)
+        """
+        # Calculate complexity metrics
+        lines = len(field_value.split('\n'))
+        chars = len(field_value)
+        
+        logger.info(f"Field {field_type} complexity: {lines} lines, {chars} chars")
+        
+        # If no models configured, use defaults
+        if not self.models:
+            logger.warning("No models configured, using hardcoded defaults")
+            return "claude-3-haiku", {
+                "model_id": "anthropic.claude-3-haiku-20240307-v1:0",
+                "max_tokens": 1000,
+                "temperature": 0.1
+            }
+        
+        # Check each model's complexity threshold (ordered by preference)
+        for model_name in ["claude-3-haiku", "claude-3-sonnet"]:
+            if model_name not in self.models:
+                continue
+                
+            config = self.models[model_name]
+            threshold = config.get('complexity_threshold', {})
+            max_lines = threshold.get('lines', 999)
+            max_chars = threshold.get('chars', 9999)
+            
+            if lines <= max_lines and chars <= max_chars:
+                logger.info(f"Selected {model_name} for field {field_type}")
+                return model_name, config
+        
+        # Default to most capable model if available
+        if "claude-3-sonnet" in self.models:
+            logger.info(f"Defaulting to claude-3-sonnet for complex field {field_type}")
+            return "claude-3-sonnet", self.models["claude-3-sonnet"]
+        
+        # Fallback to haiku if nothing else
+        logger.warning(f"No suitable model found, using haiku for field {field_type}")
+        return "claude-3-haiku", self.models.get("claude-3-haiku", {
+            "model_id": "anthropic.claude-3-haiku-20240307-v1:0",
+            "max_tokens": 1000,
+            "temperature": 0.1
+        })
     
     def extract_field_data(self, field_value: str, field_type: str, prompt_template: str = None) -> Dict[str, Any]:
         """
@@ -63,17 +117,20 @@ class BedrockService:
             # Fallback if Bedrock not available
             return self._fallback_extraction(field_value, field_type)
         
+        # Select model based on field complexity
+        model_name, model_config = self._select_model_for_field(field_value, field_type)
+        
         # Build prompt based on field type
         prompt = self._build_prompt(field_value, field_type, prompt_template)
         
         try:
-            # Call Claude Haiku for fast, cheap extraction
+            # Call selected model with its configuration
             response = self.client.invoke_model(
-                modelId="anthropic.claude-3-haiku-20240307-v1:0",
+                modelId=model_config.get("model_id", "anthropic.claude-3-haiku-20240307-v1:0"),
                 body=json.dumps({
                     "anthropic_version": "bedrock-2023-05-31",
-                    "max_tokens": 500,
-                    "temperature": 0.1,  # Low temperature for consistent extraction
+                    "max_tokens": model_config.get("max_tokens", 1000),
+                    "temperature": model_config.get("temperature", 0.1),
                     "messages": [
                         {
                             "role": "user",
@@ -108,6 +165,49 @@ class BedrockService:
             # Store field-level confidence if provided by AI
             field_confidences = extracted_data.get('confidence_scores', {})
             
+            # If confidence is low and we're not already using the best model, retry
+            if confidence < 0.7 and model_name == "claude-3-haiku" and "claude-3-sonnet" in self.models:
+                logger.info(f"Low confidence {confidence:.2f} with {model_name}, retrying with claude-3-sonnet")
+                # Force selection of Sonnet
+                better_model = "claude-3-sonnet"
+                better_config = self.models["claude-3-sonnet"]
+                
+                # Retry with better model
+                retry_response = self.client.invoke_model(
+                    modelId=better_config.get("model_id"),
+                    body=json.dumps({
+                        "anthropic_version": "bedrock-2023-05-31",
+                        "max_tokens": better_config.get("max_tokens", 2000),
+                        "temperature": better_config.get("temperature", 0.1),
+                        "messages": [
+                            {
+                                "role": "user",
+                                "content": prompt
+                            }
+                        ]
+                    })
+                )
+                
+                retry_body = json.loads(retry_response['body'].read())
+                retry_ai_response = retry_body.get('content', [{}])[0].get('text', '{}')
+                
+                # Try to parse retry response
+                try:
+                    json_match = re.search(r'[{\[].*[}\]]', retry_ai_response, re.DOTALL)
+                    if json_match:
+                        cleaned_retry = json_match.group(0)
+                    else:
+                        cleaned_retry = retry_ai_response
+                    
+                    extracted_data = json.loads(cleaned_retry)
+                    confidence = self._calculate_hybrid_confidence(extracted_data, field_type)
+                    field_confidences = extracted_data.get('confidence_scores', {})
+                    model_name = better_model
+                    logger.info(f"Retry with {model_name} achieved confidence: {confidence:.2f}")
+                except:
+                    # If retry fails, keep original result
+                    logger.warning(f"Retry with {better_model} failed to parse, keeping original")
+            
             # Clean the data (remove confidence_scores from actual data)
             clean_data = {k: v for k, v in extracted_data.items() 
                           if k != 'confidence_scores'}
@@ -117,7 +217,7 @@ class BedrockService:
                 "data": clean_data,
                 "confidence": confidence,
                 "field_confidences": field_confidences,  # Individual field confidences
-                "model": "claude-3-haiku",
+                "model": model_name,
                 "processing_lane": "AI"
             }
             
