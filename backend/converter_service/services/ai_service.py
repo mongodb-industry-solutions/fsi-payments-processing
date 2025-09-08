@@ -26,6 +26,10 @@ class BedrockService:
         self.region = region
         self.ai_config = ai_config or {}
         self.prompt_templates = self.ai_config.get('prompt_templates', {})
+        self.confidence_config = self.ai_config.get('confidence_config', {})
+        self.hybrid_model = self.confidence_config.get('hybrid_model', {})
+        self.validation_rules = self.confidence_config.get('validation_rules', {})
+        self.fallback_confidence = self.confidence_config.get('fallback_confidence', {})
         self.client = None
         self._initialize_client()
     
@@ -90,13 +94,21 @@ class BedrockService:
                 # If not JSON, treat as plain text
                 extracted_data = {"extracted_text": ai_response}
             
-            # Add confidence score (would be calculated based on model's confidence)
-            confidence = self._calculate_confidence(extracted_data, field_type)
+            # Use hybrid confidence calculation
+            confidence = self._calculate_hybrid_confidence(extracted_data, field_type)
+            
+            # Store field-level confidence if provided by AI
+            field_confidences = extracted_data.get('confidence_scores', {})
+            
+            # Clean the data (remove confidence_scores from actual data)
+            clean_data = {k: v for k, v in extracted_data.items() 
+                          if k != 'confidence_scores'}
             
             return {
                 "success": True,
-                "data": extracted_data,
+                "data": clean_data,
                 "confidence": confidence,
+                "field_confidences": field_confidences,  # Individual field confidences
                 "model": "claude-3-haiku",
                 "processing_lane": "AI"
             }
@@ -129,26 +141,77 @@ class BedrockService:
 
 Return a JSON object with the main data elements you can identify."""
     
-    def _calculate_confidence(self, extracted_data: Dict, field_type: str) -> float:
+    def _calculate_hybrid_confidence(self, extracted_data: Dict, field_type: str) -> float:
         """
-        Calculate confidence score for extracted data.
-        
-        Simple heuristic: Check if expected fields are present and non-empty.
+        Calculate hybrid confidence combining AI and validation scores
         """
+        # 1. Get AI's self-reported confidence
+        ai_confidence_scores = extracted_data.get('confidence_scores', {})
+        ai_overall_confidence = ai_confidence_scores.get('overall', None)
         
-        if field_type == "remittance":
-            expected_fields = ["invoice_number", "payment_purpose", "summary"]
-            present_fields = sum(1 for f in expected_fields if extracted_data.get(f))
-            confidence = present_fields / len(expected_fields)
-        elif field_type == "party_details":
-            expected_fields = ["account", "name", "address"]
-            present_fields = sum(1 for f in expected_fields if extracted_data.get(f))
-            confidence = present_fields / len(expected_fields)
+        # 2. Calculate validation confidence
+        # Remove confidence_scores for validation
+        extracted_data_clean = {k: v for k, v in extracted_data.items() 
+                               if k != 'confidence_scores'}
+        validation_confidence = self._calculate_validation_confidence(
+            extracted_data_clean, field_type
+        )
+        
+        # 3. Combine using configured weights
+        if self.hybrid_model.get('enabled', False) and ai_overall_confidence is not None:
+            weights = self.hybrid_model.get('weights', {})
+            ai_weight = weights.get('ai_confidence', 0.7)
+            val_weight = weights.get('validation_confidence', 0.3)
+            
+            final_confidence = (
+                ai_overall_confidence * ai_weight + 
+                validation_confidence * val_weight
+            )
         else:
-            # Default: if we got any data, 0.7 confidence
-            confidence = 0.7 if extracted_data else 0.3
+            # Fallback to validation-only if no AI confidence
+            final_confidence = validation_confidence
         
-        return round(confidence, 2)
+        return round(final_confidence, 2)
+    
+    def _calculate_validation_confidence(self, extracted_data: Dict, field_type: str) -> float:
+        """
+        Calculate confidence based on validation rules from MongoDB
+        """
+        import re
+        
+        if field_type not in self.validation_rules:
+            # Use simple presence check
+            return self.fallback_confidence.get('no_ai_confidence', 0.5) if extracted_data else self.fallback_confidence.get('extraction_failed', 0.3)
+        
+        rules = self.validation_rules[field_type]
+        expected_fields = rules.get('expected_fields', [])
+        field_patterns = rules.get('field_patterns', {})
+        
+        if not expected_fields:
+            return self.fallback_confidence.get('no_ai_confidence', 0.5) if extracted_data else self.fallback_confidence.get('extraction_failed', 0.3)
+        
+        # Base confidence from field presence
+        present_fields = sum(1 for f in expected_fields if extracted_data.get(f))
+        base_confidence = present_fields / len(expected_fields) if expected_fields else 0.5
+        
+        # Apply pattern matching boosts/penalties
+        pattern_boost = 0
+        for field, pattern in field_patterns.items():
+            if field in extracted_data:
+                try:
+                    if re.match(pattern, str(extracted_data[field])):
+                        pattern_boost += rules.get('boost_if_matches', 0.1)
+                except:
+                    pass  # Skip if pattern matching fails
+        
+        # Apply missing field penalties
+        missing_penalty = 0
+        missing_count = len(expected_fields) - present_fields
+        if missing_count > 0:
+            missing_penalty = missing_count * rules.get('penalty_if_missing', 0.2) / len(expected_fields)
+        
+        final_confidence = base_confidence + pattern_boost - missing_penalty
+        return max(0.0, min(1.0, final_confidence))
     
     def _fallback_extraction(self, field_value: str, field_type: str) -> Dict[str, Any]:
         """

@@ -230,15 +230,38 @@ Be precise and only extract what is clearly present in the text."""
 
 {{field_value}}
 
-Return a JSON object with these fields:
-- invoice_number: The invoice number if present
-- payment_purpose: Brief description of what the payment is for
-- amount: Any amount mentioned
-- reference_numbers: List of any reference numbers (PO, contract, etc.)
-- summary: One-line summary (max 140 chars)
+You MUST return a valid JSON object with these exact fields:
+1. invoice_number: The invoice number if present (or null)
+2. payment_purpose: Brief description of what the payment is for
+3. amount: Any amount mentioned (or null)
+4. reference_numbers: List of any reference numbers (PO, contract, etc.) or empty array
+5. summary: One-line summary (max 140 chars)
+6. confidence_scores: REQUIRED object with confidence (0.0-1.0) for each field above PLUS an 'overall' score
+
+The confidence_scores object MUST include:
+- "invoice_number": confidence score (0.0-1.0)
+- "payment_purpose": confidence score (0.0-1.0)
+- "amount": confidence score (0.0-1.0)
+- "reference_numbers": confidence score (0.0-1.0)
+- "summary": confidence score (0.0-1.0)
+- "overall": overall extraction confidence (0.0-1.0)
+
+Use 1.0 when certain, 0.7-0.9 when reasonably confident, 0.5 when guessing, <0.5 when very uncertain.
 
 Example output:
-{"invoice_number": "INV-2024-001", "payment_purpose": "Electronic components", "reference_numbers": ["PO-12345"], "summary": "Payment for electronic components, INV-2024-001"}""",
+{
+  "invoice_number": "INV-2024-001",
+  "payment_purpose": "Electronic components",
+  "reference_numbers": ["PO-12345"],
+  "summary": "Payment for electronic components, INV-2024-001",
+  "confidence_scores": {
+    "invoice_number": 0.95,
+    "payment_purpose": 0.88,
+    "reference_numbers": 0.92,
+    "summary": 0.90,
+    "overall": 0.91
+  }
+}""",
                 
                 "party_details": """Extract party information from this SWIFT field:
 
@@ -249,14 +272,69 @@ Return a JSON object with:
 - name: Party name
 - address: Full address as single string
 - country: Country if identifiable
+- confidence_scores: Your confidence level (0.0-1.0) for each field and overall
 
-Be precise and extract only what's clearly present.""",
+Be precise and extract only what's clearly present.
+
+Example output:
+{
+  "account": "US64209876543210987654",
+  "name": "ACME TECHNOLOGIES INC",
+  "address": "1234 INNOVATION DRIVE, SILICON VALLEY CA 94025",
+  "country": "USA",
+  "confidence_scores": {
+    "account": 0.98,
+    "name": 1.0,
+    "address": 0.95,
+    "country": 0.99,
+    "overall": 0.98
+  }
+}""",
                 
                 "default": """Extract key information from this field:
 
 {{field_value}}
 
-Return a JSON object with the main data elements you can identify."""
+Return a JSON object with the main data elements you can identify.
+Include a 'confidence_scores' object with your confidence (0.0-1.0) for each field and an 'overall' score."""
+            },
+            "confidence_config": {
+                "hybrid_model": {
+                    "enabled": True,
+                    "weights": {
+                        "ai_confidence": 0.7,      # 70% weight to AI's self-assessment
+                        "validation_confidence": 0.3  # 30% weight to our validation
+                    }
+                },
+                "validation_rules": {
+                    "remittance": {
+                        "expected_fields": ["invoice_number", "payment_purpose", "summary"],
+                        "field_patterns": {
+                            "invoice_number": "^(INV-|Invoice#?|Inv#?)\\d+",
+                            "payment_purpose": ".{5,}",
+                            "summary": ".{10,140}"
+                        },
+                        "boost_if_matches": 0.1,
+                        "penalty_if_missing": 0.2
+                    },
+                    "party_details": {
+                        "expected_fields": ["account", "name", "address"],
+                        "field_patterns": {
+                            "account": "^[A-Z0-9]{8,34}$",
+                            "name": ".{2,}"
+                        },
+                        "boost_if_matches": 0.05,
+                        "penalty_if_missing": 0.15
+                    },
+                    "default": {
+                        "expected_fields": [],
+                        "field_patterns": {}
+                    }
+                },
+                "fallback_confidence": {
+                    "no_ai_confidence": 0.5,
+                    "extraction_failed": 0.3
+                }
             },
             "fallback_to_rules": True,  # If AI fails, use rules
             "cache_responses": True,
