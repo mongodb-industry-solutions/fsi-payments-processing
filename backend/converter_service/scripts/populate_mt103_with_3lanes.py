@@ -73,6 +73,11 @@ def create_mt103_to_pacs008_3lane_config():
                 "71A": {
                     "pattern": r":71A:([^\n:]+)",
                     "name": "details_of_charges"
+                },
+                "72": {
+                    "pattern": r":72:([\s\S]+?)(?=\n:|$|\n-})",
+                    "name": "sender_to_receiver_info",
+                    "multiline": True
                 }
             }
         },
@@ -209,6 +214,41 @@ Example response:
 
 Be precise and only extract what is clearly present in the text."""
                 }
+            },
+            
+            # AI LANE - Field 72 (Sender to Receiver Information)
+            {
+                "source": "72",
+                "targets": ["InstrForCdtrAgt"],
+                "transform": "ai_extract",
+                "processing_lane": "AI",
+                "confidence_threshold": 0.75,  # Below this goes to human review
+                "ai_config": {
+                    "model": "claude-3-haiku",
+                    "field_type": "sender_receiver_info",
+                    "prompt_template": """Analyze this sender-to-receiver information and extract structured instructions:
+
+Field 72 (Sender to Receiver Information):
+{{field_value}}
+
+Extract and return as JSON:
+1. instruction_codes: List of instruction codes (e.g., /ACC/, /REC/, /INS/)
+2. account_info: Any account-related instructions
+3. receiver_info: Instructions for the receiver
+4. regulatory_info: Any regulatory or compliance instructions
+5. special_instructions: Other special processing instructions
+6. summary: Brief summary of all instructions
+
+Ensure all instructions are preserved for regulatory compliance.""",
+                    "expected_fields": [
+                        "instruction_codes",
+                        "account_info", 
+                        "receiver_info",
+                        "regulatory_info",
+                        "special_instructions",
+                        "summary"
+                    ]
+                }
             }
         ],
         
@@ -230,7 +270,7 @@ Be precise and only extract what is clearly present in the text."""
 
 {{field_value}}
 
-You MUST return a valid JSON object with these exact fields:
+Return ONLY a valid JSON object with NO other text. The JSON must have these exact fields:
 1. invoice_number: The invoice number if present (or null)
 2. payment_purpose: Brief description of what the payment is for
 3. amount: Any amount mentioned (or null)
@@ -248,7 +288,8 @@ The confidence_scores object MUST include:
 
 Use 1.0 when certain, 0.7-0.9 when reasonably confident, 0.5 when guessing, <0.5 when very uncertain.
 
-Example output:
+CRITICAL: Return ONLY the JSON object below. Do not include any explanatory text before or after the JSON.
+
 {
   "invoice_number": "INV-2024-001",
   "payment_purpose": "Electronic components",
@@ -291,6 +332,40 @@ Example output:
   }
 }""",
                 
+                "sender_receiver_info": """Extract sender-to-receiver instructions from field 72:
+
+{{field_value}}
+
+Return ONLY a valid JSON object with NO other text. Parse and extract:
+- instruction_codes: List of codes like /ACC/, /REC/, /INS/
+- account_info: Account-related instructions after /ACC/
+- receiver_info: Receiver instructions after /REC/
+- regulatory_info: Regulatory/compliance instructions
+- special_instructions: Other processing instructions after /INS/
+- summary: Brief summary of all instructions
+- confidence_scores: Your confidence (0.0-1.0) for each field plus overall
+
+CRITICAL: You MUST include confidence_scores with a score for each field and an 'overall' score.
+Return ONLY the JSON below with no additional text.
+
+{
+  "instruction_codes": ["/ACC/", "/REC/"],
+  "account_info": "URGENT PROCESSING REQUIRED",
+  "receiver_info": "NOTIFY ACCOUNTS@GLOBALSUPPLIES.DE",
+  "regulatory_info": null,
+  "special_instructions": null,
+  "summary": "Urgent processing with receiver notification",
+  "confidence_scores": {
+    "instruction_codes": 1.0,
+    "account_info": 0.95,
+    "receiver_info": 0.95,
+    "regulatory_info": 0.0,
+    "special_instructions": 0.0,
+    "summary": 0.9,
+    "overall": 0.85
+  }
+}""",
+                
                 "default": """Extract key information from this field:
 
 {{field_value}}
@@ -316,6 +391,15 @@ Include a 'confidence_scores' object with your confidence (0.0-1.0) for each fie
                         },
                         "boost_if_matches": 0.1,
                         "penalty_if_missing": 0.2
+                    },
+                    "sender_receiver_info": {
+                        "expected_fields": ["instruction_codes", "summary"],
+                        "field_patterns": {
+                            "instruction_codes": "^\\[.*\\]$",  # Should be an array
+                            "summary": ".{5,}"
+                        },
+                        "boost_if_matches": 0.1,
+                        "penalty_if_missing": 0.15
                     },
                     "party_details": {
                         "expected_fields": ["account", "name", "address"],
@@ -448,6 +532,9 @@ Include a 'confidence_scores' object with your confidence (0.0-1.0) for each fie
                             },
                             "RmtInf": {
                                 "Ustrd": "{{RmtInf.Ustrd}}"
+                            },
+                            "InstrForCdtrAgt": {
+                                "InstrInf": "{{InstrForCdtrAgt}}"
                             }
                         }
                     }

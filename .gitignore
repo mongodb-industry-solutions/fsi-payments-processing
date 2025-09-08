@@ -301,3 +301,5 @@ backend/docs/ADD_NEW_FORMAT_CONVERSION.md
 backend/converter_service/HARDCODING_ANALYSIS.md
 .gitignore
 backend/converter_service/PROJECT_PLAN_HANDOVER.md
+backend/converter_service/services/ai_service.py
+backend/converter_service/XML_OUTPUT_ANALYSIS.md

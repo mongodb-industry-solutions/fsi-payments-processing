@@ -89,7 +89,15 @@ class BedrockService:
             
             # Try to parse as JSON
             try:
-                extracted_data = json.loads(ai_response)
+                # Clean response: strip any text before the first { or [
+                import re
+                json_match = re.search(r'[{\[].*[}\]]', ai_response, re.DOTALL)
+                if json_match:
+                    cleaned_response = json_match.group(0)
+                else:
+                    cleaned_response = ai_response
+                
+                extracted_data = json.loads(cleaned_response)
             except json.JSONDecodeError:
                 # If not JSON, treat as plain text
                 extracted_data = {"extracted_text": ai_response}
@@ -148,6 +156,7 @@ Return a JSON object with the main data elements you can identify."""
         # 1. Get AI's self-reported confidence
         ai_confidence_scores = extracted_data.get('confidence_scores', {})
         ai_overall_confidence = ai_confidence_scores.get('overall', None)
+        
         
         # 2. Calculate validation confidence
         # Remove confidence_scores for validation
