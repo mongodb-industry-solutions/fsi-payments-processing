@@ -298,3 +298,6 @@ pitfalls.md
 backend/docs/ADD_NEW_FORMAT_CONVERSION.md
 backend/docs/MT202_CONVERSION_ISSUES.md
 backend/docs/ADD_NEW_FORMAT_CONVERSION.md
+backend/converter_service/HARDCODING_ANALYSIS.md
+.gitignore
+backend/converter_service/PROJECT_PLAN_HANDOVER.md
