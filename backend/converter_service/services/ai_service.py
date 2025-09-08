@@ -15,14 +15,17 @@ class BedrockService:
     Simple Bedrock client for AI field processing in payment conversion.
     """
     
-    def __init__(self, region: str = "us-east-1"):
+    def __init__(self, region: str = "us-east-1", ai_config: Dict = None):
         """
         Initialize Bedrock service.
         
         Args:
             region: AWS region for Bedrock
+            ai_config: Full AI configuration from MongoDB including prompt templates
         """
         self.region = region
+        self.ai_config = ai_config or {}
+        self.prompt_templates = self.ai_config.get('prompt_templates', {})
         self.client = None
         self._initialize_client()
     
@@ -103,47 +106,28 @@ class BedrockService:
             return self._fallback_extraction(field_value, field_type)
     
     def _build_prompt(self, field_value: str, field_type: str, custom_template: str = None) -> str:
-        """Build prompt for AI extraction"""
+        """Build prompt for AI extraction using MongoDB-configured prompts"""
         
+        # Use custom template if provided (highest priority)
         if custom_template:
             return custom_template.replace("{{field_value}}", field_value)
         
-        # Default prompts for different field types
-        prompts = {
-            "remittance": f"""Extract structured information from this payment remittance text:
-
-{field_value}
-
-Return a JSON object with these fields:
-- invoice_number: The invoice number if present
-- payment_purpose: Brief description of what the payment is for
-- amount: Any amount mentioned
-- reference_numbers: List of any reference numbers (PO, contract, etc.)
-- summary: One-line summary (max 140 chars)
-
-Example output:
-{{"invoice_number": "INV-2024-001", "payment_purpose": "Electronic components", "reference_numbers": ["PO-12345"], "summary": "Payment for electronic components, INV-2024-001"}}""",
-            
-            "party_details": f"""Extract party information from this SWIFT field:
-
-{field_value}
-
-Return a JSON object with:
-- account: Account number (remove leading /)
-- name: Party name
-- address: Full address as single string
-- country: Country if identifiable
-
-Be precise and extract only what's clearly present.""",
-            
-            "default": f"""Extract key information from this field:
+        # Use MongoDB-configured template for field type
+        if field_type in self.prompt_templates:
+            template = self.prompt_templates[field_type]
+            return template.replace('{{field_value}}', field_value)
+        
+        # Fall back to MongoDB default template
+        if 'default' in self.prompt_templates:
+            template = self.prompt_templates['default']
+            return template.replace('{{field_value}}', field_value)
+        
+        # Last resort fallback (minimal prompt)
+        return f"""Extract key information from this field:
 
 {field_value}
 
 Return a JSON object with the main data elements you can identify."""
-        }
-        
-        return prompts.get(field_type, prompts["default"])
     
     def _calculate_confidence(self, extracted_data: Dict, field_type: str) -> float:
         """

@@ -49,7 +49,8 @@ class UniversalConverter:
             if ai_config.get('provider') == 'bedrock':
                 try:
                     self.ai_service = BedrockService(
-                        region=ai_config.get('region', 'us-east-1')
+                        region=ai_config.get('region', 'us-east-1'),
+                        ai_config=ai_config  # Pass full config for prompts
                     )
                     logger.info("Initialized Bedrock AI service")
                 except Exception as e:

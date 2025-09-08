@@ -3,7 +3,7 @@ Response models for converter API
 """
 
 from pydantic import BaseModel, Field
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, Union
 
 
 class ProcessingStats(BaseModel):
@@ -39,7 +39,7 @@ class ConversionMetadata(BaseModel):
     transformed_fields_count: Optional[int] = None
     processing_stats: Optional[ProcessingStats] = None
     human_review_required: bool = False
-    human_review_fields: List[str] = Field(default_factory=list)
+    human_review_fields: List[Union[str, Dict[str, Any]]] = Field(default_factory=list)
     confidence_scores: Dict[str, float] = Field(default_factory=dict)
 
 

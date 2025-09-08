@@ -225,6 +225,39 @@ Be precise and only extract what is clearly present in the text."""
                     "cost_per_1k_output": 0.00125
                 }
             },
+            "prompt_templates": {
+                "remittance": """Extract structured information from this payment remittance text:
+
+{{field_value}}
+
+Return a JSON object with these fields:
+- invoice_number: The invoice number if present
+- payment_purpose: Brief description of what the payment is for
+- amount: Any amount mentioned
+- reference_numbers: List of any reference numbers (PO, contract, etc.)
+- summary: One-line summary (max 140 chars)
+
+Example output:
+{"invoice_number": "INV-2024-001", "payment_purpose": "Electronic components", "reference_numbers": ["PO-12345"], "summary": "Payment for electronic components, INV-2024-001"}""",
+                
+                "party_details": """Extract party information from this SWIFT field:
+
+{{field_value}}
+
+Return a JSON object with:
+- account: Account number (remove leading /)
+- name: Party name
+- address: Full address as single string
+- country: Country if identifiable
+
+Be precise and extract only what's clearly present.""",
+                
+                "default": """Extract key information from this field:
+
+{{field_value}}
+
+Return a JSON object with the main data elements you can identify."""
+            },
             "fallback_to_rules": True,  # If AI fails, use rules
             "cache_responses": True,
             "cache_ttl_seconds": 3600
@@ -255,6 +288,26 @@ Be precise and only extract what is clearly present in the text."""
         "builder": {
             "type": "xml",
             "namespace": "urn:iso:std:iso:20022:tech:xsd:pacs.008.001.08",
+            "defaults": {
+                "field_defaults": {
+                    "NbOfTxs": "1",
+                    "SttlmMtd": "INDA",
+                    "BIC": "NOTPROVIDED",
+                    "Id": "",
+                    "Nm": "NOT PROVIDED",
+                    "AdrLine": ""
+                },
+                "pattern_defaults": [
+                    {
+                        "pattern": ".*\\.BIC$",
+                        "value": "NOTPROVIDED"
+                    },
+                    {
+                        "pattern": ".*\\.Nm$",
+                        "value": "NOT PROVIDED"
+                    }
+                ]
+            },
             "template": {
                 "Document": {
                     "@xmlns": "{{namespace}}",

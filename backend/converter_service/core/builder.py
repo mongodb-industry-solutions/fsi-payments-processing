@@ -4,6 +4,7 @@ No hardcoded structures or formats
 """
 
 import json
+import re
 import xml.etree.ElementTree as ET
 from typing import Dict, Any, List, Union
 from datetime import datetime
@@ -21,11 +22,17 @@ class GenericBuilder:
                 - type: Output type (xml, json, csv, etc.)
                 - template: Structure template with placeholders
                 - namespace: Optional namespace for XML
+                - defaults: Default values for missing fields
         """
         self.config = builder_config
         self.type = builder_config.get('type', 'xml')
         self.template = builder_config.get('template', {})
         self.namespace = builder_config.get('namespace', '')
+        
+        # Load defaults from MongoDB config
+        defaults_config = builder_config.get('defaults', {})
+        self.field_defaults = defaults_config.get('field_defaults', {})
+        self.pattern_defaults = defaults_config.get('pattern_defaults', [])
     
     def build(self, transformed_fields: Dict[str, Any]) -> str:
         """
@@ -162,20 +169,17 @@ class GenericBuilder:
         return re.sub(pattern, replace_var, text)
     
     def _get_default_value(self, field_name: str) -> str:
-        """Get default value for missing fields"""
-        defaults = {
-            'NbOfTxs': '1',
-            'SttlmMtd': 'INDA',
-            'BIC': 'NOTPROVIDED',
-            'Id': '',
-            'Nm': 'NOT PROVIDED',
-            'AdrLine': ''
-        }
+        """Get default value for missing fields from MongoDB config"""
         
-        # Check if field name ends with any default key
-        for key, value in defaults.items():
+        # Check field-specific defaults
+        for key, value in self.field_defaults.items():
             if field_name.endswith(key):
                 return value
+        
+        # Check pattern-based defaults
+        for pattern_def in self.pattern_defaults:
+            if re.match(pattern_def['pattern'], field_name):
+                return pattern_def['value']
         
         return ''
     

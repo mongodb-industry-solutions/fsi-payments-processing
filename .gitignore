@@ -22,7 +22,7 @@ help-for-me/
 backend/requirements/
 backend/data/
 backup/
-
+backend/converter_service/explain
 # Config
 **/config.yml
 **/config.yaml
