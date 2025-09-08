@@ -240,9 +240,19 @@ class AIFieldProcessor:
                     if field_id in batch_results:
                         # Format result to match expected structure
                         extracted = batch_results[field_id]
+                        # For MT202 fields, the AI returns the data directly without extracted_data wrapper
+                        # Check if this is already the extracted data or needs unwrapping
+                        if isinstance(extracted, dict) and "extracted_data" in extracted:
+                            value = extracted["extracted_data"]
+                            confidence = extracted.get("confidence", 0.85)
+                        else:
+                            # AI returned the data directly (MT202 style)
+                            value = extracted
+                            confidence = 0.85  # Default confidence above threshold
+                        
                         results[field_id] = {
-                            "value": extracted.get("extracted_data", extracted),
-                            "confidence": extracted.get("confidence", 0.85),
+                            "value": value,
+                            "confidence": confidence,
                             "processing_lane": "AI",
                             "model_used": "CLAUDE_SONNET"
                         }
@@ -274,9 +284,19 @@ class AIFieldProcessor:
                     if field_id in batch_results:
                         # Format result to match expected structure
                         extracted = batch_results[field_id]
+                        # For MT202 fields, the AI returns the data directly without extracted_data wrapper
+                        # Check if this is already the extracted data or needs unwrapping
+                        if isinstance(extracted, dict) and "extracted_data" in extracted:
+                            value = extracted["extracted_data"]
+                            confidence = extracted.get("confidence", 0.85)
+                        else:
+                            # AI returned the data directly (MT202 style)
+                            value = extracted
+                            confidence = 0.85  # Default confidence above threshold
+                        
                         results[field_id] = {
-                            "value": extracted.get("extracted_data", extracted),
-                            "confidence": extracted.get("confidence", 0.85),
+                            "value": value,
+                            "confidence": confidence,
                             "processing_lane": "AI",
                             "model_used": "CLAUDE_HAIKU"
                         }
@@ -359,7 +379,7 @@ class AIFieldProcessor:
                 logger.debug(f"   ✓ Received response from Bedrock in {elapsed:.1f}s")
             
             processed_data = self._parse_response(response, strategy)
-            confidence = 0.85  # Default confidence for successful processing
+            confidence = 0.85  # Default confidence above threshold for successful processing
             success = True
             error_msg = None
             

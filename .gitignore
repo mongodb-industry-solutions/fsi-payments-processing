@@ -17,6 +17,7 @@ venv.bak/
 help-for-me/
 backend/requirements/
 backend/data/
+backup/
 
 # Config
 **/config.yml
@@ -251,10 +252,19 @@ backend/scripts/enhance_*.py
 backend/scripts/restore_*.py
 backend/scripts/migrate_*.py
 backend/scripts/cleanup_*.py
-backend/scripts/test_mt202_conversion.py
+backend/scripts/test_*.py
 backend/scripts/add_field_transformations.py
 backend/scripts/add_pacs009_format_config.py
+backend/scripts/add_mt202_batch_prompt.py
 backend/scripts/SCRIPTS_ANALYSIS.md
+
+# Temporary AI results
+backend/mt103_ai_results.json
+backend/*_ai_results.json
+
+# MongoDB index creators (utility scripts)
+backend/_timeseries_coll_creator.py
+backend/_vector_search_idx_creator.py
 
 # Documentation and analysis files (temporary)
 format-convert-payment-vision.md
@@ -267,6 +277,7 @@ frontend/IMPLEMENTATION_PLAN.md
 frontend/FRONTEND_DESIGN_ESSENCE.md
 MT103_TO_PACS008_CONVERSION_ANALYSIS.md
 backend/to_add_new_format.md
+# Deleted loader scripts
 backend/load_*.py
 frontend/FRONTEND_ENHANCEMENT_PLAN.md
 killer_idea_self_learning.md
@@ -280,3 +291,6 @@ backend/FRONTEND_BACKEND_ANALYSIS.md
 backend/GENERIC_CONVERSION_IMPLEMENTATION.md
 backend/docs/MT202_COMPLEX_FIELDS.md
 pitfalls.md
+backend/docs/ADD_NEW_FORMAT_CONVERSION.md
+backend/docs/MT202_CONVERSION_ISSUES.md
+backend/docs/ADD_NEW_FORMAT_CONVERSION.md

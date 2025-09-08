@@ -310,18 +310,57 @@ class SimpleBedrock:
                 prompt_parts.append(f"=== Field {field_id} ===")
                 
                 if prompt_template:
-                    # Extract core instructions from pre-built prompt
-                    # Remove JSON output format instructions that might conflict
-                    clean_prompt = prompt_template
+                    # Check if the prompt already contains the field content
+                    # (This happens when AIFieldProcessor builds the prompt)
+                    prompt_has_content = (
+                        field_content in prompt_template or 
+                        "Now process this field content:" in prompt_template
+                    )
                     
-                    # Remove common JSON output format instructions
-                    clean_prompt = clean_prompt.replace("Output ONLY valid JSON", "Process")
-                    clean_prompt = clean_prompt.replace("Return as JSON", "Extract")
-                    clean_prompt = clean_prompt.replace("Return JSON", "Extract")
-                    clean_prompt = clean_prompt.replace("Output JSON", "Extract")
+                    # For MT202 institution fields, preserve full extraction logic
+                    # Check if this is an MT202 field that needs special institution extraction
+                    is_mt202_institution_field = (
+                        field_id in ["52", "56", "57", "58"] and 
+                        ("institution" in prompt_template.lower() or 
+                         "CRITICAL PARSING RULES" in prompt_template or
+                         "skip the BIC line" in prompt_template.lower())
+                    )
                     
-                    # Add the cleaned prompt
-                    prompt_parts.append(clean_prompt)
+                    if is_mt202_institution_field:
+                        # Keep the full prompt with extraction instructions
+                        prompt_parts.append("SPECIAL INSTRUCTIONS FOR THIS FIELD:")
+                        # Only remove the final output format, keep extraction logic
+                        import re
+                        clean_prompt = prompt_template
+                        # Remove only the absolute final JSON output instructions
+                        clean_prompt = re.sub(r"IMPORTANT:.*Return ONLY the JSON.*", "", clean_prompt, flags=re.DOTALL)
+                        clean_prompt = re.sub(r"Output must be valid, parseable JSON.*", "", clean_prompt, flags=re.DOTALL)
+                        # Add the extraction logic
+                        prompt_parts.append(clean_prompt)
+                        # If prompt doesn't already have the content, add it
+                        if not prompt_has_content:
+                            prompt_parts.append(f"\nField content to process:\n{field_content}")
+                    elif field_id in ["70", "72"] and ("MT202" in str(prompt_template) or "/INV/" in str(prompt_template) or "/INS/" in str(prompt_template)):
+                        # For MT202 remittance fields, keep extraction logic
+                        prompt_parts.append("SPECIAL INSTRUCTIONS FOR THIS FIELD:")
+                        clean_prompt = prompt_template
+                        # Remove output format but keep parsing logic
+                        clean_prompt = clean_prompt.replace("Return ONLY the JSON object, no explanations or additional text", "")
+                        clean_prompt = clean_prompt.replace("Output must be valid, parseable JSON", "")
+                        prompt_parts.append(clean_prompt)
+                        # If prompt doesn't already have the content, add it
+                        if not prompt_has_content:
+                            prompt_parts.append(f"\nField content:\n{field_content}")
+                    else:
+                        # For other fields, use existing cleaning logic
+                        clean_prompt = prompt_template
+                        # Remove common JSON output format instructions
+                        clean_prompt = clean_prompt.replace("Output ONLY valid JSON", "Process")
+                        clean_prompt = clean_prompt.replace("Return as JSON", "Extract")
+                        clean_prompt = clean_prompt.replace("Return JSON", "Extract")
+                        clean_prompt = clean_prompt.replace("Output JSON", "Extract")
+                        # Add the cleaned prompt
+                        prompt_parts.append(clean_prompt)
                 else:
                     # Fallback to simple extraction
                     prompt_parts.append(f"Content: {field_content}")
@@ -334,18 +373,14 @@ class SimpleBedrock:
                 "=== FINAL OUTPUT INSTRUCTIONS ===",
                 "Combine ALL field results into a SINGLE JSON response.",
                 "Use the exact field IDs as keys (e.g., '20', '23B', '50K', '59', '70', '71A', '72').",
-                "Each field must have 'extracted_data' and 'confidence' keys.",
+                "",
+                "Return the extracted data directly for each field.",
+                "Do NOT include confidence scores.",
                 "",
                 "Required format:",
                 "{",
-                '  "20": {',
-                '    "extracted_data": <processed field 20 data>,',
-                '    "confidence": 0.95',
-                '  },',
-                '  "23B": {',
-                '    "extracted_data": <processed field 23B data>,',
-                '    "confidence": 0.95',
-                '  },',
+                '  "fieldId": {extracted data},',
+                '  "fieldId": {extracted data},',
                 '  // ... continue for all fields',
                 "}",
                 "",
@@ -401,13 +436,22 @@ class SimpleBedrock:
                 clean_response = clean_response[:-3]
             clean_response = clean_response.strip()
             
+            # Enhanced debug logging
+            logger.debug(f"   Raw response length: {len(response)} chars")
+            logger.debug(f"   Clean response preview: {clean_response[:200]}...")
+            
             # Try to parse as JSON first
             json_match = re.search(r'\{.*\}', clean_response, re.DOTALL)
             if json_match:
                 parsed = json.loads(json_match.group())
                 
-                # Debug: Log parsed keys
+                # Debug: Log parsed keys and structure
                 logger.debug(f"   Parsed JSON keys: {list(parsed.keys())}")
+                logger.debug(f"   Expected field IDs: {[str(fid) for fid, _, _ in fields_data]}")
+                
+                # Extra debug for MT202 fields
+                if any(str(fid) in ["52", "56", "57", "58", "70", "72"] for fid, _, _ in fields_data):
+                    logger.info(f"   MT202 AI Response (first 1000 chars): {json_match.group()[:1000]}")
                 
                 # Map parsed results to field IDs
                 for field_id, _, _ in fields_data:
@@ -421,6 +465,12 @@ class SimpleBedrock:
                         results[field_id] = parsed[field_id_str]
                         found = True
                         logger.debug(f"    ✓ Found field {field_id} (direct match)")
+                        # Log what we found
+                        field_value = parsed[field_id_str]
+                        if isinstance(field_value, dict):
+                            logger.debug(f"      Value keys: {list(field_value.keys())}")
+                        else:
+                            logger.debug(f"      Value type: {type(field_value).__name__}")
                     
                     # With "field_" prefix
                     elif f"field_{field_id}" in parsed:
@@ -452,16 +502,23 @@ class SimpleBedrock:
                     if isinstance(value, dict):
                         # Ensure extracted_data and confidence exist
                         if "extracted_data" not in value and "confidence" not in value:
-                            # Wrap the entire value as extracted_data
-                            results[field_id] = {
-                                "extracted_data": value,
-                                "confidence": 0.85
-                            }
+                            # For MT202 style responses, don't wrap - return as is
+                            # The AI field processor will handle it
+                            # Check if this looks like an MT202 response
+                            if field_id in ["52", "56", "57", "58", "70", "72"]:
+                                # MT202 fields - return the data directly
+                                results[field_id] = value
+                            else:
+                                # Wrap the entire value as extracted_data for other formats
+                                results[field_id] = {
+                                    "extracted_data": value,
+                                    "confidence": 0.5  # Default to medium confidence
+                                }
                     else:
                         # Wrap non-dict values
                         results[field_id] = {
                             "extracted_data": value,
-                            "confidence": 0.85
+                            "confidence": 0.5  # Default to medium confidence
                         }
                 
                 logger.debug(f"   Successfully parsed {len(results)}/{len(fields_data)} fields from batch response")

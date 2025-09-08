@@ -165,6 +165,14 @@ class ConverterOrchestrator:
             
             # Step 5: Build target format message
             logger.info(f"🏗️ Building {self.target_format} message...")
+            logger.info(f"   Fields being sent to builder: {list(converted_fields.keys())}")
+            if self.source_format == "MT202":
+                # Debug what we're sending to the builder
+                for key, value in converted_fields.items():
+                    if key in ["InstructingAgent", "OrderingInstitution", "IntermediaryAgent1", 
+                              "IntermediaryInstitution", "CreditorAgentBIC", "AccountWithInstitution",
+                              "BeneficiaryInstitution", "Creditor", "CreditorAccount"]:
+                        logger.info(f"     {key}: {value}")
             build_metadata = {
                 "conversion_id": str(self.conversion_id),
                 "source_format": self.source_format,
@@ -284,6 +292,18 @@ class ConverterOrchestrator:
                 logger.debug(f"  Field {field_id}: is structured dict, should be handled by rules")
                 continue
             
+            # Skip "_option" fields unless explicitly configured for AI
+            # These are metadata fields that don't need AI processing
+            if field_id.endswith("_option") and field_id not in ai_required_fields:
+                logger.debug(f"  Field {field_id}: is option metadata, skipping AI")
+                continue
+            
+            # Skip "block" fields unless explicitly configured for AI
+            # These are SWIFT header blocks that rarely need AI processing
+            if field_id.startswith("block") and field_id not in ai_required_fields:
+                logger.debug(f"  Field {field_id}: is SWIFT block header, skipping AI")
+                continue
+                
             # All unmapped non-dict fields go to AI for processing
             logger.debug(f"  Field {field_id}: no rule found, sending to AI")
             fields_to_process.append((field_id, field_content))
@@ -316,22 +336,35 @@ class ConverterOrchestrator:
             converted_fields: Target dictionary to add flattened fields to
         """
         # Load transformation rules from MongoDB
-        configs = self.db.find("conversion_configs", {
+        configs = list(self.db.find("conversion_configs", {
             "source_format": self.source_format,
             "target_format": self.target_format,
             "is_active": True
-        })
+        }))
         
         config = configs[0] if configs else None
         
-        if not config or "field_transformations" not in config:
-            # Fallback to legacy hardcoded logic for backward compatibility
-            logger.debug("No field_transformations found, using legacy transformation")
+        if not config:
+            logger.debug("No config found for MT202 to pacs.009")
             self._legacy_transform_ai_fields(ai_fields, converted_fields)
             return
+            
+        if "field_transformations" not in config:
+            logger.debug("No field_transformations in config, using legacy transformation")
+            self._legacy_transform_ai_fields(ai_fields, converted_fields)
+            return
+            
+        # Check if field_transformations is a list or dict
+        field_transformations = config.get("field_transformations", [])
+        if not isinstance(field_transformations, list):
+            logger.error(f"field_transformations is not a list! Type: {type(field_transformations)}")
+            self._legacy_transform_ai_fields(ai_fields, converted_fields)
+            return
+            
+        logger.debug(f"Found {len(field_transformations)} field transformations in config")
         
         # Process each field transformation rule
-        for field_config in config["field_transformations"]:
+        for field_config in field_transformations:
             source_field = field_config["source_field"]
             source_type = field_config.get("source_type", "rules")
             
@@ -351,7 +384,18 @@ class ConverterOrchestrator:
                 try:
                     # Extract value using path
                     source_path = transform.get("source_path", "")
+                    target_field = transform.get("target_field", "")
                     logger.debug(f"    Processing transform for {source_field}: path={repr(source_path)}")
+                    
+                    # Debug logging for MT202 institution fields
+                    if source_field in ["52", "56", "57", "58"]:
+                        logger.info(f"  🔍 Processing {source_field} -> {target_field}:")
+                        logger.info(f"    Source path: '{source_path}'")
+                        logger.info(f"    Field data type: {type(field_data).__name__}")
+                        if isinstance(field_data, dict):
+                            logger.info(f"    Field data keys: {list(field_data.keys())}")
+                            if "value" in field_data:
+                                logger.info(f"    Value content: {field_data['value']}")
                     
                     # Backward-compatible extraction:
                     # - If path starts with "value.", extract from field_data directly (MT103 style)
@@ -368,6 +412,14 @@ class ConverterOrchestrator:
                             # Fallback if no "value" wrapper
                             value = self._extract_value_by_path(field_data, source_path)
                     
+                    # Debug what we extracted
+                    if source_field in ["52", "56", "57", "58"]:
+                        logger.info(f"    🔍 Processing {source_field}:")
+                        logger.info(f"       Field data: {field_data}")
+                        logger.info(f"       Source path: '{source_path}'")
+                        logger.info(f"       Extracted value: '{value}'")
+                        logger.info(f"       Target field: {target_field}")
+                    
                     if value is None:
                         continue
                     
@@ -382,7 +434,6 @@ class ConverterOrchestrator:
                         continue
                     
                     # Store in converted_fields
-                    target_field = transform["target_field"]
                     converted_fields[target_field] = transformed_value
                     
                     # Track mapping for audit
