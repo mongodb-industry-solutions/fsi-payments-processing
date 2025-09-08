@@ -252,7 +252,7 @@ def create_mt103_to_pacs008_3lane_config():
 
 {{field_value}}
 
-Return ONLY a valid JSON object with NO other text. Split the remittance text into individual lines (max 140 chars each).
+Return ONLY a valid JSON object with NO other text. Split the remittance text into individual lines.
 
 CRITICAL: Preserve the original line structure. Each line of the input should become a separate array element in the Ustrd field.
 

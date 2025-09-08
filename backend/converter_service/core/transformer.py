@@ -121,7 +121,6 @@ class Transformer:
         
         # Add system-generated fields
         transformed['current_time'] = datetime.now(UTC).isoformat()
-        transformed['namespace'] = "urn:iso:std:iso:20022:tech:xsd:pacs.008.001.08"
         
         return transformed
     
