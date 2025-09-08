@@ -117,7 +117,7 @@ def create_mt103_to_pacs008_3lane_config():
             },
             {
                 "source": "52A",
-                "targets": ["DbtrAgt.BIC"],
+                "targets": ["DbtrAgt.FinInstnId.BICFI"],
                 "transform": "copy",
                 "processing_lane": "RULES",
                 "confidence": 1.0
@@ -131,6 +131,13 @@ def create_mt103_to_pacs008_3lane_config():
                     "OUR": "DEBT",
                     "BEN": "CRED"
                 },
+                "processing_lane": "RULES",
+                "confidence": 1.0
+            },
+            {
+                "source": "53A",
+                "targets": ["IntrmyAgt1.FinInstnId.BICFI"],
+                "transform": "copy",
                 "processing_lane": "RULES",
                 "confidence": 1.0
             },
@@ -455,13 +462,14 @@ Include a 'confidence_scores' object with your confidence (0.0-1.0) for each fie
                     "NbOfTxs": "1",
                     "SttlmMtd": "INDA",
                     "BIC": "NOTPROVIDED",
+                    "BICFI": "NOTPROVIDED",
                     "Id": "",
                     "Nm": "NOT PROVIDED",
                     "AdrLine": ""
                 },
                 "pattern_defaults": [
                     {
-                        "pattern": ".*\\.BIC$",
+                        "pattern": ".*\\.BICFI$",
                         "value": "NOTPROVIDED"
                     },
                     {
@@ -509,12 +517,17 @@ Include a 'confidence_scores' object with your confidence (0.0-1.0) for each fie
                             },
                             "DbtrAgt": {
                                 "FinInstnId": {
-                                    "BIC": "{{DbtrAgt.BIC}}"
+                                    "BICFI": "{{DbtrAgt.FinInstnId.BICFI}}"
+                                }
+                            },
+                            "IntrmyAgt1": {
+                                "FinInstnId": {
+                                    "BICFI": "{{IntrmyAgt1.FinInstnId.BICFI}}"
                                 }
                             },
                             "CdtrAgt": {
                                 "FinInstnId": {
-                                    "BIC": "NOTPROVIDED"
+                                    "BICFI": "NOTPROVIDED"
                                 }
                             },
                             "Cdtr": {
