@@ -12,6 +12,7 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent))
 
 from converter_service.api.converter_api import router as converter_router
+from converter_service.api.auto_config_routes import router as auto_config_router
 from converter_service.config.settings import get_settings
 
 # Configure logging
@@ -40,6 +41,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(converter_router)
+app.include_router(auto_config_router, prefix="/api/v1/converter", tags=["Auto Configuration"])
 
 @app.on_event("startup")
 async def startup_event():

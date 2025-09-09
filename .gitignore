@@ -316,3 +316,6 @@ backend/converter_service/commands.md
 backend/converter_service/FIX_PLAN_TRANSFORM_PARAMETERS.md
 backend/converter_service/SCHEMA_UPDATE_HANDOVER.md
 frontend/BACKEND_INTEGRATION_PLAN_V2.md
+backend/converter_service/INTELLIGENT_CONVERTER_PLAN.md
+.gitignore
+backend/converter_service/tests/MT205_TEST_RESULTS.md
