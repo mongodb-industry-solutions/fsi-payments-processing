@@ -306,3 +306,10 @@ backend/converter_service/XML_OUTPUT_ANALYSIS.md
 backend/converter_service/scripts/populate_mt103_with_3lanes.py
 backend/converter_service/tests/TEST_RESULTS_SUMMARY.md
 backend/converter_service/tests/commands.md
+backend/converter_service/JSON_INTERMEDIATE_FORMAT_PLAN.md
+backend/converter_service/SCHEMA_STANDARDIZATION_PLAN.md
+.gitignore
+frontend/BACKEND_INTEGRATION_PLAN.md
+.gitignore
+backend/converter_service/FIX_PLAN_AI_CONFIG_REDUNDANCY.md
+backend/converter_service/commands.md

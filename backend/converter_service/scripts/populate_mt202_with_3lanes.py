@@ -348,10 +348,8 @@ def create_mt202_to_pacs009_3lane_config():
                 "targets": ["InstrForNxtAgt", "InstrForCdtrAgt"],
                 "transform": "ai_extract",
                 "processing_lane": "AI",
-                "confidence_threshold": 0.75,
-                "ai_config": {
-                    "field_type": "bank_to_bank_info"
-                }
+                "field_type": "bank_to_bank_info",  # Moved to root level
+                "confidence_threshold": 0.75
             }
         ],
         

@@ -198,11 +198,8 @@ def create_mt103_to_pacs008_3lane_config():
                 "targets": ["RmtInf.Ustrd", "RmtInf.Structured"],
                 "transform": "ai_extract",
                 "processing_lane": "AI",
-                "confidence_threshold": 0.8,  # Below this goes to human review
-                "ai_config": {
-                    "field_type": "remittance"
-                    # model selection is automatic based on complexity
-                }
+                "field_type": "remittance",  # Moved to root level
+                "confidence_threshold": 0.8  # Below this goes to human review
             },
             
             # AI LANE - Field 72 (Sender to Receiver Information)
@@ -211,11 +208,8 @@ def create_mt103_to_pacs008_3lane_config():
                 "targets": ["InstrForCdtrAgt"],
                 "transform": "ai_extract",
                 "processing_lane": "AI",
-                "confidence_threshold": 0.75,  # Below this goes to human review
-                "ai_config": {
-                    "field_type": "sender_receiver_info"
-                    # model selection is automatic based on complexity
-                }
+                "field_type": "sender_receiver_info",  # Moved to root level
+                "confidence_threshold": 0.75  # Below this goes to human review
             }
         ],
         

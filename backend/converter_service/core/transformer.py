@@ -136,13 +136,14 @@ class Transformer:
             return self._simple_extraction(value, mapping.get('targets', [])), 0.5
         
         try:
-            ai_config = mapping.get('ai_config', {})
+            # Get field_type directly from mapping (not from ai_config)
+            field_type = mapping.get('field_type', 'default')
             
             # Call AI service
             result = self.ai_service.extract_field_data(
                 field_value=str(value) if not isinstance(value, dict) else value.get('raw', str(value)),
-                field_type=ai_config.get('field_type', 'default'),
-                prompt_template=ai_config.get('prompt_template')
+                field_type=field_type,
+                prompt_template=None  # Removed - not used in practice
             )
             
             if result.get('success'):
