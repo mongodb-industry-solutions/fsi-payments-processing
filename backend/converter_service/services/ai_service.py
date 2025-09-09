@@ -25,10 +25,31 @@ class BedrockService:
         """
         self.region = region
         self.ai_config = ai_config or {}
-        self.prompt_templates = self.ai_config.get('prompt_templates', {})
+        
+        # Support both new field_types structure and old prompt_templates structure
+        if 'field_types' in self.ai_config:
+            # New structure: extract prompt_templates and validation_rules from field_types
+            self.field_types = self.ai_config['field_types']
+            self.prompt_templates = {}
+            self.validation_rules = {}
+            for field_type, config in self.field_types.items():
+                if 'prompt_template' in config:
+                    self.prompt_templates[field_type] = config['prompt_template']
+                if 'validation_rules' in config:
+                    self.validation_rules[field_type] = config['validation_rules']
+            logger.info(f"Using new field_types structure with {len(self.field_types)} field types")
+        else:
+            # Old structure: use prompt_templates directly
+            self.field_types = {}
+            self.prompt_templates = self.ai_config.get('prompt_templates', {})
+            self.validation_rules = self.ai_config.get('confidence_config', {}).get('validation_rules', {})
+            logger.info("Using legacy prompt_templates structure")
+        
         self.confidence_config = self.ai_config.get('confidence_config', {})
         self.hybrid_model = self.confidence_config.get('hybrid_model', {})
-        self.validation_rules = self.confidence_config.get('validation_rules', {})
+        # If validation_rules not set from field_types, get from confidence_config
+        if not self.validation_rules:
+            self.validation_rules = self.confidence_config.get('validation_rules', {})
         self.fallback_confidence = self.confidence_config.get('fallback_confidence', {})
         self.models = self.ai_config.get('models', {})
         self.client = None

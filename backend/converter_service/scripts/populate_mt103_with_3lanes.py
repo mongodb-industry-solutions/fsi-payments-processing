@@ -245,8 +245,11 @@ def create_mt103_to_pacs008_3lane_config():
                     }
                 }
             },
-            "prompt_templates": {
-                "remittance": """Extract and preserve remittance information line-by-line:
+            "field_types": {
+                "remittance": {
+                    "description": "Payment remittance information extraction (MT103 Field 70)",
+                    "used_by": ["MT103"],
+                    "prompt_template": """Extract and preserve remittance information line-by-line:
 
 {{field_value}}
 
@@ -289,8 +292,22 @@ Example output:
 }
 
 Return ONLY the JSON object, no other text.""",
+                    "validation_rules": {
+                        "expected_fields": ["invoice_number", "payment_purpose", "summary"],
+                        "field_patterns": {
+                            "invoice_number": "^(INV-|Invoice#?|Inv#?)\\d+",
+                            "payment_purpose": ".{5,}",
+                            "summary": ".{10,140}"
+                        },
+                        "boost_if_matches": 0.1,
+                        "penalty_if_missing": 0.2
+                    }
+                },
                 
-                "party_details": """Extract party information from this SWIFT field:
+                "party_details": {
+                    "description": "Party identification information extraction (currently unused)",
+                    "used_by": [],
+                    "prompt_template": """Extract party information from this SWIFT field:
 
 {{field_value}}
 
@@ -317,8 +334,22 @@ Example output:
     "overall": 0.98
   }
 }""",
+                    "validation_rules": {
+                        "expected_fields": ["account", "name", "address"],
+                        "field_patterns": {
+                            "account": ".{5,}",
+                            "name": ".{2,}",
+                            "address": ".{5,}"
+                        },
+                        "boost_if_matches": 0.05,
+                        "penalty_if_missing": 0.15
+                    }
+                },
                 
-                "sender_receiver_info": """Extract and map sender-to-receiver instructions from field 72:
+                "sender_receiver_info": {
+                    "description": "MT103 Field 72 sender-to-receiver instructions",
+                    "used_by": ["MT103"],
+                    "prompt_template": """Extract and map sender-to-receiver instructions from field 72:
 
 {{field_value}}
 
@@ -366,13 +397,121 @@ Example output:
 }
 
 Return ONLY the JSON object, no other text.""",
+                    "validation_rules": {
+                        "expected_fields": ["instruction_codes", "summary"],
+                        "field_patterns": {
+                            "instruction_codes": "^\\[.*\\]$",  # Should be an array
+                            "summary": ".{5,}"
+                        },
+                        "boost_if_matches": 0.1,
+                        "penalty_if_missing": 0.15
+                    }
+                },
                 
-                "default": """Extract key information from this field:
+                "bank_to_bank_info": {
+                    "description": "MT202 Field 72 bank-to-bank instructions",
+                    "used_by": ["MT202"],
+                    "prompt_template": """Extract and map bank-to-bank instructions from field 72:
+
+{{field_value}}
+
+Return ONLY a valid JSON object with NO other text. Map each instruction to the appropriate target field.
+
+Instructions should be mapped as follows:
+- /BNF/, /INTA/, /INTC/ -> InstrForNxtAgt (Instructions for Next Agent)
+- /ACC/, /INS/, /REC/ -> InstrForCdtrAgt (Instructions for Creditor Agent)
+- /RFB/ -> Related reference information
+- Others -> Unmapped
+
+Return JSON with these exact fields:
+{
+  "InstrForNxtAgt": ["full instruction line 1", "full instruction line 2"],
+  "InstrForCdtrAgt": ["full instruction line if any"],
+  "RelatedRef": "",
+  "Unmapped": [],
+  "confidence_scores": {
+    "overall": (0.0-1.0 based on your confidence)
+  }
+}
+
+For confidence scores:
+- Use 1.0 when mapping is certain
+- Use 0.7-0.9 when reasonably confident
+- Use 0.5 when unsure about mapping
+- Use <0.5 when very uncertain
+
+Return ONLY the JSON object, no other text.""",
+                    "validation_rules": {
+                        "expected_fields": ["InstrForNxtAgt", "InstrForCdtrAgt"],
+                        "field_patterns": {
+                            "instruction_codes": "^\\[.*\\]$"
+                        },
+                        "boost_if_matches": 0.1,
+                        "penalty_if_missing": 0.15
+                    }
+                },
+                
+                "institution_details": {
+                    "description": "Institution information extraction (MT202)",
+                    "used_by": ["MT202"],
+                    "prompt_template": """Extract institution information from this SWIFT field:
+
+{{field_value}}
+
+Return a JSON object with:
+- bic: BIC code if present
+- name: Institution name
+- address: Full address as array of lines
+- account: Account number if present
+- confidence_scores: Your confidence level (0.0-1.0) for each field and overall
+
+Example output:
+{
+  "bic": "DEUTDEFFXXX",
+  "name": "DEUTSCHE BANK AG",
+  "address": ["FRANKFURT", "GERMANY"],
+  "account": "",
+  "confidence_scores": {
+    "bic": 1.0,
+    "name": 0.95,
+    "address": 0.9,
+    "overall": 0.95
+  }
+}""",
+                    "validation_rules": {
+                        "expected_fields": ["name"],
+                        "field_patterns": {
+                            "bic": "^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$",
+                            "name": ".{2,}"
+                        },
+                        "boost_if_matches": 0.05,
+                        "penalty_if_missing": 0.15
+                    }
+                },
+                
+                "default": {
+                    "description": "Fallback field type for unspecified extractions",
+                    "used_by": ["ALL"],
+                    "prompt_template": """Extract key information from this field:
 
 {{field_value}}
 
 Return a JSON object with the main data elements you can identify.
-Include a 'confidence_scores' object with your confidence (0.0-1.0) for each field and an 'overall' score."""
+Include a 'confidence_scores' object with your confidence (0.0-1.0) for each field and an 'overall' score.""",
+                    "validation_rules": {
+                        "expected_fields": [],
+                        "field_patterns": {}
+                    }
+                }
+            },
+            # Backward compatibility: Keep prompt_templates pointing to field_types
+            "prompt_templates": {
+                "remittance": "See field_types.remittance.prompt_template",
+                "party_details": "See field_types.party_details.prompt_template",
+                "sender_receiver_info": "See field_types.sender_receiver_info.prompt_template",
+                "bank_to_bank_info": "See field_types.bank_to_bank_info.prompt_template",
+                "institution_details": "See field_types.institution_details.prompt_template",
+                "default": "See field_types.default.prompt_template"
             },
             "confidence_config": {
                 "hybrid_model": {
