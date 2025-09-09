@@ -136,7 +136,7 @@ def create_mt202_to_pacs009_3lane_config():
             },
             {
                 "source": "21",
-                "targets": ["PmtTpInf.InstrPrty"],
+                "targets": ["OrgnlMsgId"],
                 "transform": "copy",
                 "processing_lane": "RULES",
                 "confidence": 1.0
@@ -193,31 +193,31 @@ def create_mt202_to_pacs009_3lane_config():
                 "confidence": 0.9
             },
             
-            # Sender's Correspondent (53A/B/D) -> InstdAgt
+            # Sender's Correspondent (53A/B/D) -> IntrmyAgt1
             {
                 "source": "53A",
-                "targets": ["InstdAgt.FinInstnId.BICFI"],
+                "targets": ["IntrmyAgt1.FinInstnId.BICFI"],
                 "transform": "copy",
                 "processing_lane": "RULES",
                 "confidence": 1.0
             },
             {
                 "source": "53B",
-                "targets": ["InstdAgt.FinInstnId.ClrSysMmbId.MmbId"],
+                "targets": ["IntrmyAgt1.FinInstnId.ClrSysMmbId.MmbId"],
                 "transform": "copy",
                 "processing_lane": "RULES",
                 "confidence": 0.95
             },
             {
                 "source": "53D",
-                "targets": ["InstdAgt.FinInstnId.Nm"],
+                "targets": ["IntrmyAgt1.FinInstnId.Nm"],
                 "transform": "extract_name",
                 "processing_lane": "RULES",
                 "confidence": 0.95
             },
             {
                 "source": "53D",
-                "targets": ["InstdAgt.FinInstnId.PstlAdr"],
+                "targets": ["IntrmyAgt1.FinInstnId.PstlAdr"],
                 "transform": "extract_lines",
                 "transform_config": {
                     "start_line": 2
@@ -259,24 +259,24 @@ def create_mt202_to_pacs009_3lane_config():
                 "confidence": 0.9
             },
             
-            # Intermediary (56A/D) -> IntrmyAgt1
+            # Intermediary (56A/D) -> IntrmyAgt2
             {
                 "source": "56A",
-                "targets": ["IntrmyAgt1.FinInstnId.BICFI"],
+                "targets": ["IntrmyAgt2.FinInstnId.BICFI"],
                 "transform": "copy",
                 "processing_lane": "RULES",
                 "confidence": 1.0
             },
             {
                 "source": "56D",
-                "targets": ["IntrmyAgt1.FinInstnId.Nm"],
+                "targets": ["IntrmyAgt2.FinInstnId.Nm"],
                 "transform": "extract_name",
                 "processing_lane": "RULES",
                 "confidence": 0.95
             },
             {
                 "source": "56D",
-                "targets": ["IntrmyAgt1.FinInstnId.PstlAdr"],
+                "targets": ["IntrmyAgt2.FinInstnId.PstlAdr"],
                 "transform": "extract_lines",
                 "transform_config": {
                     "start_line": 2
@@ -756,6 +756,7 @@ Include a 'confidence_scores' object with your confidence (0.0-1.0) for each fie
                                 "EndToEndId": "{{EndToEndId}}",
                                 "TxId": "{{TxId}}"
                             },
+                            "OrgnlMsgId": "{{OrgnlMsgId}}",
                             "PmtTpInf": {
                                 "InstrPrty": "{{PmtTpInf.InstrPrty}}",
                                 "SvcLvl": {
@@ -806,6 +807,15 @@ Include a 'confidence_scores' object with your confidence (0.0-1.0) for each fie
                                     "Nm": "{{IntrmyAgt1.FinInstnId.Nm}}",
                                     "PstlAdr": {
                                         "AdrLine": "{{IntrmyAgt1.FinInstnId.PstlAdr}}"
+                                    }
+                                }
+                            },
+                            "IntrmyAgt2": {
+                                "FinInstnId": {
+                                    "BICFI": "{{IntrmyAgt2.FinInstnId.BICFI}}",
+                                    "Nm": "{{IntrmyAgt2.FinInstnId.Nm}}",
+                                    "PstlAdr": {
+                                        "AdrLine": "{{IntrmyAgt2.FinInstnId.PstlAdr}}"
                                     }
                                 }
                             },
