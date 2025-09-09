@@ -159,8 +159,10 @@ def create_mt202_to_pacs009_3lane_config():
                 "source": "32A.value_date",
                 "targets": ["IntrBkSttlmDt"],
                 "transform": "date_format",
-                "input_format": "%y%m%d",
-                "output_format": "%Y-%m-%d",
+                "transform_config": {
+                    "input_format": "%y%m%d",
+                    "output_format": "%Y-%m-%d"
+                },
                 "processing_lane": "RULES",
                 "confidence": 1.0
             },

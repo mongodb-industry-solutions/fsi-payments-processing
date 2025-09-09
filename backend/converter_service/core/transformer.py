@@ -232,13 +232,27 @@ class Transformer:
             
         elif transform_type == 'map':
             # Value mapping (e.g., SHA -> SHAR)
-            mapping_dict = mapping.get('map', {})
+            config = mapping.get('transform_config', {})
+            # Check transform_config first, fall back to inline for backward compatibility
+            mapping_dict = config.get('map', mapping.get('map', {}))
+            
+            # Add deprecation warning if using inline parameter
+            if 'map' in mapping and 'transform_config' not in mapping:
+                logger.warning(f"DEPRECATED: inline 'map' parameter for field {mapping.get('source', 'unknown')}. Move to transform_config")
+            
             return mapping_dict.get(str(value), value)
             
         elif transform_type == 'date_format':
             # Date format conversion
-            input_format = mapping.get('input_format', '%y%m%d')
-            output_format = mapping.get('output_format', '%Y-%m-%d')
+            config = mapping.get('transform_config', {})
+            # Check transform_config first, fall back to inline for backward compatibility
+            input_format = config.get('input_format', mapping.get('input_format', '%y%m%d'))
+            output_format = config.get('output_format', mapping.get('output_format', '%Y-%m-%d'))
+            
+            # Add deprecation warning if using inline parameters
+            if ('input_format' in mapping or 'output_format' in mapping) and 'transform_config' not in mapping:
+                logger.warning(f"DEPRECATED: inline parameters for date_format in field {mapping.get('source', 'unknown')}. Move to transform_config")
+            
             try:
                 dt = datetime.strptime(str(value), input_format)
                 return dt.strftime(output_format)

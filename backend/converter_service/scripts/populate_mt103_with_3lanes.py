@@ -110,8 +110,10 @@ def create_mt103_to_pacs008_3lane_config():
                 "source": "32A.value_date",
                 "targets": ["IntrBkSttlmDt"],
                 "transform": "date_format",
-                "input_format": "%y%m%d",
-                "output_format": "%Y-%m-%d",
+                "transform_config": {
+                    "input_format": "%y%m%d",
+                    "output_format": "%Y-%m-%d"
+                },
                 "processing_lane": "RULES",
                 "confidence": 1.0
             },
@@ -126,10 +128,12 @@ def create_mt103_to_pacs008_3lane_config():
                 "source": "71A",
                 "targets": ["ChrgBr"],
                 "transform": "map",
-                "map": {
-                    "SHA": "SHAR",
-                    "OUR": "DEBT",
-                    "BEN": "CRED"
+                "transform_config": {
+                    "map": {
+                        "SHA": "SHAR",
+                        "OUR": "DEBT",
+                        "BEN": "CRED"
+                    }
                 },
                 "processing_lane": "RULES",
                 "confidence": 1.0
