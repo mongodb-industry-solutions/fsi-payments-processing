@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-const BACKEND_API_URL = process.env.BACKEND_API_URL || "http://localhost:8000";
+const BACKEND_API_URL = process.env.BACKEND_API_URL || "http://localhost:8001";
 
 // Cache for format previews
 const previewCache = new Map();
@@ -348,7 +348,7 @@ export async function GET(request) {
           // Fetch from backend or use fallback
           if (metadata.type === "source") {
             promises.push(
-              fetch(`${BACKEND_API_URL}/api/v1/samples/preview/${formatCode}`)
+              fetch(`${BACKEND_API_URL}/api/v1/converter/samples/${formatCode}`)
                 .then(res => res.json())
                 .then(data => {
                   const preview = {
@@ -450,7 +450,7 @@ export async function GET(request) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 2000); // 2 second timeout
     
-    const sampleResponse = await fetch(`${BACKEND_API_URL}/api/v1/samples/preview/${format}`, {
+    const sampleResponse = await fetch(`${BACKEND_API_URL}/api/v1/converter/samples/${format}`, {
       signal: controller.signal
     });
     

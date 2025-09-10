@@ -1,0 +1,133 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.configCard,
+.resultCard {
+  width: 100%;
+}
+
+.cardContent {
+  padding: 1.5rem;
+}
+
+.banner {
+  margin: 1rem 0;
+}
+
+.formSection {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.configButton {
+  align-self: flex-start;
+  min-width: 200px;
+}
+
+.resultHeader {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--gray-light-2);
+}
+
+.confidenceBadge {
+  font-weight: 600;
+}
+
+.timeInfo {
+  margin-left: auto;
+  color: var(--gray-dark-1);
+  font-size: 0.875rem;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  margin: 1.5rem 0;
+  padding: 1rem;
+  background: var(--gray-light-3);
+  border-radius: 8px;
+}
+
+.statItem {
+  text-align: center;
+}
+
+.statValue {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--green-dark-2);
+  margin-top: 0.5rem;
+}
+
+.uncertainSection {
+  margin: 1.5rem 0;
+  padding: 1rem;
+  background: var(--yellow-light-3);
+  border-radius: 8px;
+  border: 1px solid var(--yellow-light-2);
+}
+
+.uncertainSection h4 {
+  margin: 0 0 1rem 0;
+  color: var(--yellow-dark-2);
+}
+
+.uncertainFields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.uncertainField {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem;
+  background: white;
+  border-radius: 4px;
+}
+
+.reason {
+  flex: 1;
+  color: var(--gray-dark-1);
+  font-size: 0.875rem;
+}
+
+.confidence {
+  color: var(--gray-base);
+  font-size: 0.875rem;
+}
+
+.actionButtons {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--gray-light-2);
+}
+
+@media (max-width: 768px) {
+  .statsGrid {
+    grid-template-columns: 1fr;
+  }
+  
+  .resultHeader {
+    flex-wrap: wrap;
+  }
+  
+  .timeInfo {
+    width: 100%;
+    margin-left: 0;
+    margin-top: 0.5rem;
+  }
+}

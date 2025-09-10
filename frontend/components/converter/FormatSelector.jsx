@@ -13,8 +13,8 @@ export default function FormatSelector({ label, value, onChange, options, placeh
         disabled={disabled}
       >
         <option value="">{placeholder || "Select format..."}</option>
-        {options && options.map(option => (
-          <option key={option.value} value={option.value}>
+        {options && options.map((option, index) => (
+          <option key={option.value || index} value={option.value}>
             {option.label}
           </option>
         ))}

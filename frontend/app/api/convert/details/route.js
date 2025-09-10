@@ -13,8 +13,8 @@ export async function GET(request) {
 
   try {
     // Fetch details from backend
-    const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000';
-    const response = await fetch(`${backendUrl}/api/v1/convert/${conversionId}/details`);
+    const backendUrl = process.env.BACKEND_API_URL || 'http://localhost:8001';
+    const response = await fetch(`${backendUrl}/api/v1/converter/convert/${conversionId}/details`);
     
     if (!response.ok) {
       // Return error if backend call fails

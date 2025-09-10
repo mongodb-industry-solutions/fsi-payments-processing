@@ -1,0 +1,192 @@
+.container {
+  width: 100%;
+}
+
+.reviewCard,
+.emptyCard {
+  width: 100%;
+}
+
+.cardContent {
+  padding: 1.5rem;
+}
+
+.emptyContent {
+  padding: 3rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.emptyIcon {
+  color: var(--green-base);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.description {
+  margin-bottom: 1.5rem;
+  color: var(--gray-dark-1);
+}
+
+.banner {
+  margin-bottom: 1.5rem;
+}
+
+.tableContainer {
+  margin: 1.5rem 0;
+  border: 1px solid var(--gray-light-2);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.reviewTable {
+  width: 100%;
+}
+
+.fieldName {
+  font-family: 'Source Code Pro', monospace;
+  font-weight: 600;
+  color: var(--blue-dark-2);
+}
+
+.currentValue {
+  max-width: 250px;
+}
+
+.valueText {
+  margin: 0;
+  padding: 0.25rem 0.5rem;
+  background: var(--gray-light-3);
+  border-radius: 4px;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 100px;
+  overflow-y: auto;
+}
+
+.noValue {
+  color: var(--gray-base);
+  font-style: italic;
+  font-size: 0.875rem;
+}
+
+.confidenceCell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.confidenceBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.threshold {
+  font-size: 0.75rem;
+  color: var(--gray-base);
+}
+
+.suggestion {
+  max-width: 200px;
+  font-size: 0.875rem;
+}
+
+.noSuggestion {
+  color: var(--gray-base);
+  font-style: italic;
+}
+
+.correctionInput {
+  min-width: 200px;
+}
+
+.statsSection {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  margin: 2rem 0;
+  padding: 1rem;
+  background: var(--gray-light-3);
+  border-radius: 8px;
+}
+
+.statItem {
+  text-align: center;
+}
+
+.statValue {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--green-dark-2);
+  margin-top: 0.5rem;
+}
+
+.actionButtons {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--gray-light-2);
+}
+
+/* Table row hover effect */
+.reviewTable tbody tr:hover {
+  background-color: var(--gray-light-3);
+}
+
+/* Scrollbar styling for value text */
+.valueText::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.valueText::-webkit-scrollbar-track {
+  background: var(--gray-light-2);
+  border-radius: 3px;
+}
+
+.valueText::-webkit-scrollbar-thumb {
+  background: var(--gray-base);
+  border-radius: 3px;
+}
+
+.valueText::-webkit-scrollbar-thumb:hover {
+  background: var(--gray-dark-1);
+}
+
+@media (max-width: 1024px) {
+  .tableContainer {
+    overflow-x: auto;
+  }
+  
+  .reviewTable {
+    min-width: 800px;
+  }
+}
+
+@media (max-width: 768px) {
+  .statsSection {
+    grid-template-columns: 1fr;
+  }
+  
+  .actionButtons {
+    flex-direction: column;
+  }
+  
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+}

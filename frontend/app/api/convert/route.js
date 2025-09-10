@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-const BACKEND_API_URL = process.env.BACKEND_API_URL || "http://localhost:8000";
+const BACKEND_API_URL = process.env.BACKEND_API_URL || "http://localhost:8001";
 
 export async function POST(request) {
   try {
@@ -17,7 +17,7 @@ export async function POST(request) {
     const sampleData = await getSampleData(sourceFormat);
 
     // Call backend conversion API
-    const response = await fetch(`${BACKEND_API_URL}/api/v1/convert/`, {
+    const response = await fetch(`${BACKEND_API_URL}/api/v1/converter/convert`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -38,10 +38,11 @@ export async function POST(request) {
 
     // Fetch conversion details to get processing summary with unique counts
     let processingSummary = null;
-    if (result.conversion_id) {
+    if (result.conversion_id || result.request_id) {
       try {
+        const conversionId = result.conversion_id || result.request_id;
         const detailsResponse = await fetch(
-          `${BACKEND_API_URL}/api/v1/convert/${result.conversion_id}/details`
+          `${BACKEND_API_URL}/api/v1/converter/convert/${conversionId}/details`
         );
         if (detailsResponse.ok) {
           const detailsData = await detailsResponse.json();
@@ -59,12 +60,12 @@ export async function POST(request) {
       targetFormat,
       inputMessage: sampleData,
       outputMessage: result.converted_message,
-      conversionId: result.conversion_id,
-      statistics: result.statistics,
+      conversionId: result.request_id || result.conversion_id,
+      statistics: result.metadata || result.statistics,
       processingLanes: {
-        rules: processingSummary?.rules_fields || result.statistics?.rules_lane?.count || 0,
-        ai: processingSummary?.ai_fields || result.statistics?.ai_lane?.count || 0,
-        human: processingSummary?.human_review_fields || result.statistics?.human_lane?.count || 0,
+        rules: processingSummary?.rules_fields || result.metadata?.processing_stats?.rules_lane?.count || 0,
+        ai: processingSummary?.ai_fields || result.metadata?.processing_stats?.ai_lane?.count || 0,
+        human: processingSummary?.human_review_fields || result.metadata?.processing_stats?.human_lane?.count || 0,
       },
     });
 

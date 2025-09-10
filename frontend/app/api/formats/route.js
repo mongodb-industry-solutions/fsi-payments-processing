@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-const BACKEND_API_URL = process.env.BACKEND_API_URL || "http://localhost:8000";
+const BACKEND_API_URL = process.env.BACKEND_API_URL || "http://localhost:8001";
 
 // Fallback formats if backend is unavailable
 const FALLBACK_FORMATS = {
@@ -21,7 +21,7 @@ const FALLBACK_FORMATS = {
 export async function GET(request) {
   try {
     // Try to fetch from backend
-    const response = await fetch(`${BACKEND_API_URL}/api/v1/formats/`, {
+    const response = await fetch(`${BACKEND_API_URL}/api/v1/converter/formats`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -60,7 +60,7 @@ export async function GET(request) {
 export async function POST(request) {
   try {
     // Force refresh from backend
-    const response = await fetch(`${BACKEND_API_URL}/api/v1/formats/`, {
+    const response = await fetch(`${BACKEND_API_URL}/api/v1/converter/formats`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",

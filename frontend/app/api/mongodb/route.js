@@ -1,23 +1,30 @@
 import { NextResponse } from "next/server";
-import { connectToDatabase, closeDatabase } from "@/lib/mongodb";
+
+const BACKEND_API_URL = process.env.BACKEND_API_URL || "http://localhost:8001";
 
 export async function GET() {
-  const dbName = process.env.DB_NAME || "fsi_payments";
-  const collectionName = process.env.COLLECTION_NAME || "conversions";
-
-  if (!process.env.MONGODB_URI) {
-    return NextResponse.json({ error: "MONGODB_URI not configured" }, { status: 500 });
-  }
-
   try {
-    const collection = await connectToDatabase(dbName, collectionName);
-    const documents = await collection.find({}).toArray();
+    // Fetch insights from backend API instead of direct MongoDB access
+    const response = await fetch(`${BACKEND_API_URL}/api/v1/converter/insights`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      signal: AbortSignal.timeout(5000)
+    });
 
-    return NextResponse.json(documents);
+    if (!response.ok) {
+      throw new Error(`Backend returned ${response.status}`);
+    }
+
+    const insights = await response.json();
+    return NextResponse.json(insights);
   } catch (error) {
-    console.error("Error fetching documents:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  } finally {
-    await closeDatabase();
+    console.error("Error fetching insights:", error);
+    return NextResponse.json({ 
+      error: error.message,
+      total_configurations: 0,
+      processing_distribution: { rules: 0, ai: 0, human: 0 }
+    }, { status: 500 });
   }
 }

@@ -1,0 +1,213 @@
+.container {
+  width: 100%;
+}
+
+.dashboardCard {
+  width: 100%;
+}
+
+.cardContent {
+  padding: 1.5rem;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.banner {
+  margin-bottom: 1.5rem;
+}
+
+.metricsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.metricCard {
+  background: var(--gray-light-3);
+  border: 1px solid var(--gray-light-2);
+}
+
+.metricContent {
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.metricIcon {
+  font-size: 2rem;
+  color: var(--green-dark-1);
+}
+
+.metricInfo {
+  flex: 1;
+}
+
+.metricValue {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--green-dark-2);
+  line-height: 1;
+  margin-bottom: 0.5rem;
+}
+
+.distributionSection {
+  margin: 2rem 0;
+  padding: 1.5rem;
+  background: var(--gray-light-3);
+  border-radius: 8px;
+}
+
+.distributionGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
+  margin-top: 1rem;
+}
+
+.distributionItem {
+  text-align: center;
+  padding: 1rem;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid var(--gray-light-2);
+}
+
+.distributionBadge {
+  margin-bottom: 1rem;
+  font-weight: 600;
+}
+
+.distributionValue {
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0.5rem 0;
+}
+
+.distributionPercent {
+  font-size: 0.875rem;
+  color: var(--gray-base);
+}
+
+.patternsSection {
+  margin: 2rem 0;
+}
+
+.patternsGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.patternItem {
+  display: inline-block;
+}
+
+.patternBadge {
+  font-family: 'Source Code Pro', monospace;
+  font-size: 0.875rem;
+}
+
+.formatsSection {
+  margin: 2rem 0;
+}
+
+.formatsList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.formatPair {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: var(--gray-light-3);
+  border-radius: 8px;
+  border: 1px solid var(--gray-light-2);
+}
+
+.sourceFormat,
+.targetFormat {
+  font-family: 'Source Code Pro', monospace;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.sourceFormat {
+  color: var(--blue-dark-2);
+}
+
+.targetFormat {
+  color: var(--green-dark-2);
+}
+
+.arrowIcon {
+  color: var(--gray-base);
+}
+
+.aiBadge {
+  margin-left: auto;
+  font-size: 0.75rem;
+}
+
+.loadingState {
+  padding: 3rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.loadingIcon {
+  font-size: 2rem;
+  color: var(--gray-base);
+  animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 1024px) {
+  .metricsGrid {
+    grid-template-columns: 1fr;
+  }
+  
+  .distributionGrid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+  
+  .metricContent {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .formatPair {
+    flex-wrap: wrap;
+  }
+}

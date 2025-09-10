@@ -237,6 +237,7 @@ claude.md
 BACKEND_IMPLEMENTATION_PLAN.md
 
 # Test scripts and temporary files
+frontend/for_help
 backend/test_*.py
 backend/check_*.py
 backend/verify_*.py
@@ -319,3 +320,6 @@ frontend/BACKEND_INTEGRATION_PLAN_V2.md
 backend/converter_service/INTELLIGENT_CONVERTER_PLAN.md
 .gitignore
 backend/converter_service/tests/MT205_TEST_RESULTS.md
+
+cicd-kanopy/
+backend/converter_service/TECHNICAL_SYSTEM_DOCUMENTATION.md

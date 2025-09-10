@@ -6,6 +6,9 @@ import FormatPreview from "@/components/converter/FormatPreview";
 import FieldMappingTable from "@/components/converter/FieldMappingTable";
 import ProcessingMetrics from "@/components/converter/ProcessingMetrics";
 import MongoDBInsightsPanel from "@/components/converter/MongoDBInsightsPanel";
+import AutoConfigPanel from "@/components/converter/AutoConfigPanel";
+import HumanReviewPanel from "@/components/converter/HumanReviewPanel";
+import LearningDashboard from "@/components/converter/LearningDashboard";
 import Button from "@leafygreen-ui/button";
 import Card from "@leafygreen-ui/card";
 import { Tabs, Tab } from "@leafygreen-ui/tabs";
@@ -33,6 +36,11 @@ export default function ConverterPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [conversionResult, setConversionResult] = useState(null);
   const [selectedTab, setSelectedTab] = useState(0);
+  
+  // Feature flags from environment
+  const enableAutoConfig = process.env.NEXT_PUBLIC_ENABLE_AUTO_CONFIG !== 'false';
+  const enableHumanReview = process.env.NEXT_PUBLIC_ENABLE_HUMAN_REVIEW !== 'false';
+  const enableLearning = process.env.NEXT_PUBLIC_ENABLE_LEARNING_DASHBOARD !== 'false';
 
   // Fetch formats on component mount
   useEffect(() => {
@@ -118,10 +126,32 @@ export default function ConverterPage() {
 
   const formatOptionsForDropdown = (formats) => {
     if (!formats || !Array.isArray(formats)) return [];
-    return formats.map(fmt => ({
-      value: fmt.format_code,
-      label: `${fmt.format_code} - ${fmt.format_name}`
-    }));
+    
+    // Handle both string array and object array formats
+    return formats.map(fmt => {
+      if (typeof fmt === 'string') {
+        // Backend returns simple strings, create label from format code
+        const formatNames = {
+          'MT103': 'Wire Transfer',
+          'MT202': 'Bank to Bank',
+          'MT192': 'Request for Transfer',
+          'MT205': 'Financial Institution Transfer',
+          'pacs.008': 'ISO 20022 Credit Transfer',
+          'pacs.009': 'ISO 20022 FI Credit Transfer',
+          'pacs.004': 'ISO 20022 Payment Return'
+        };
+        return {
+          value: fmt,
+          label: `${fmt} - ${formatNames[fmt] || fmt}`
+        };
+      } else {
+        // Handle object format (for future compatibility)
+        return {
+          value: fmt.format_code || fmt,
+          label: `${fmt.format_code || fmt} - ${fmt.format_name || ''}`
+        };
+      }
+    });
   };
 
   const fetchFormatPreview = async (formatCode, formatType) => {
@@ -280,9 +310,56 @@ export default function ConverterPage() {
               >
                 {isLoading ? "Converting..." : "Convert"}
               </Button>
+              
+              {enableAutoConfig && sourceFormat && targetFormat && (
+                <Button
+                  onClick={() => setSelectedTab(2)}
+                  variant="default"
+                  style={{ marginLeft: '10px' }}
+                >
+                  Auto Configure
+                </Button>
+              )}
             </div>
           </div>
         </Card>
+
+        {/* Intelligent Features Section - Always visible */}
+        {(enableAutoConfig || enableLearning) && sourceFormat && targetFormat && (
+          <Card className={styles.card}>
+            <div className={styles.cardContent}>
+              <h2>Intelligent Features</h2>
+              <div className={styles.tabsContainer}>
+                <Tabs 
+                  selected={0}
+                  aria-label="Intelligent Features"
+                >
+                  {enableAutoConfig && (
+                    <Tab name="Auto Configuration">
+                      <div className={styles.tabContent}>
+                        <AutoConfigPanel
+                          sourceFormat={sourceFormat}
+                          targetFormat={targetFormat}
+                        />
+                      </div>
+                    </Tab>
+                  )}
+                  
+                  {enableLearning && (
+                    <Tab name="Semantic Learning">
+                      <div className={styles.tabContent}>
+                        <LearningDashboard
+                          sourceFormat={sourceFormat}
+                          targetFormat={targetFormat}
+                        />
+                      </div>
+                    </Tab>
+                  )}
+                </Tabs>
+              </div>
+            </div>
+          </Card>
+        )}
 
           {/* Enhanced Results section with Field Mapping Visualization */}
           {conversionResult && (
@@ -323,6 +400,40 @@ export default function ConverterPage() {
                             />
                           </div>
                         </Tab>
+                        
+                        {enableHumanReview && (
+                          <Tab name="Human Review">
+                            <div className={styles.tabContent}>
+                              <HumanReviewPanel
+                                conversionId={conversionResult.conversionId}
+                                sourceFormat={conversionResult.sourceFormat}
+                                targetFormat={conversionResult.targetFormat}
+                              />
+                            </div>
+                          </Tab>
+                        )}
+                        
+                        {enableAutoConfig && (
+                          <Tab name="Auto Configure">
+                            <div className={styles.tabContent}>
+                              <AutoConfigPanel
+                                sourceFormat={sourceFormat}
+                                targetFormat={targetFormat}
+                              />
+                            </div>
+                          </Tab>
+                        )}
+                        
+                        {enableLearning && (
+                          <Tab name="Learning Dashboard">
+                            <div className={styles.tabContent}>
+                              <LearningDashboard
+                                sourceFormat={conversionResult.sourceFormat}
+                                targetFormat={conversionResult.targetFormat}
+                              />
+                            </div>
+                          </Tab>
+                        )}
                         
                         <Tab name="MongoDB Insights">
                           <div className={styles.tabContent}>
