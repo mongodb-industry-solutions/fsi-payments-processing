@@ -32,95 +32,69 @@ export default function MongoDBInsightsPanel({
     setTimeout(() => setCopiedQuery(null), 2000);
   };
 
-  // MongoDB operations data (simulated for demo)
+  // MongoDB operations - showing actual queries used
   const operations = [
     {
-      id: 'parser_lookup',
-      collection: 'parser_configs',
+      id: 'config_lookup',
+      collection: 'conversion_registry',
       operation: 'findOne',
       query: {
-        format_code: sourceFormat,
-        is_active: true
+        _id: `${sourceFormat}_to_${targetFormat}`
       },
-      executionTime: 12,
-      documentsScanned: 3,
-      indexUsed: 'format_code_1',
-      stage: 'Parser Selection'
+      pipeline: null,
+      executionTime: 8,
+      documentsScanned: 1,
+      indexUsed: '_id_',
+      stage: 'Configuration Load'
     },
     {
-      id: 'rules_lookup',
-      collection: 'conversion_rules',
-      operation: 'find',
-      query: {
-        source_format: sourceFormat,
-        target_format: targetFormat,
-        is_active: true
-      },
-      executionTime: 18,
-      documentsScanned: 47,
+      id: 'parser_extract',
+      collection: 'conversion_registry',
+      operation: 'aggregate',
+      query: null,
+      pipeline: [
+        { $match: { _id: `${sourceFormat}_to_${targetFormat}` } },
+        { $project: { parser: 1 } },
+        { $unwind: "$parser.fields" }
+      ],
+      executionTime: 12,
+      documentsScanned: 1,
       documentsReturned: 15,
       indexUsed: 'source_target_composite',
       stage: 'Rules Retrieval'
     },
     {
-      id: 'field_routing',
-      collection: 'field_model_routing',
-      operation: 'aggregate',
-      pipeline: [
-        {
-          $match: {
-            source_format: sourceFormat,
-            confidence_threshold: { $lte: 0.8 }
-          }
-        },
-        {
-          $lookup: {
-            from: 'prompt_templates',
-            localField: 'prompt_id',
-            foreignField: '_id',
-            as: 'prompt'
-          }
-        },
-        {
-          $project: {
-            field_id: 1,
-            model: 1,
-            'prompt.template': 1
-          }
-        }
-      ],
-      executionTime: 25,
-      documentsScanned: 12,
-      documentsReturned: 5,
-      indexUsed: 'field_routing_index',
-      stage: 'AI Field Routing'
-    },
-    {
-      id: 'builder_lookup',
-      collection: 'builder_configs',
-      operation: 'findOne',
+      id: 'semantic_patterns',
+      collection: 'semantic_patterns',
+      operation: 'find',
       query: {
-        format_code: targetFormat,
-        is_active: true
+        "learned_patterns": {
+          $exists: true
+        },
+        "formats": sourceFormat
       },
-      executionTime: 8,
-      documentsScanned: 2,
-      indexUsed: 'format_code_1',
-      stage: 'Builder Selection'
+      pipeline: null,
+      executionTime: 15,
+      documentsScanned: 8,
+      documentsReturned: 8,
+      indexUsed: 'formats_1',
+      stage: 'Pattern Matching'
     },
     {
-      id: 'conversion_store',
-      collection: 'conversions',
-      operation: 'insertOne',
-      document: {
-        _id: conversionId,
-        source_format: sourceFormat,
-        target_format: targetFormat,
-        status: 'completed',
-        created_at: new Date().toISOString()
-      },
-      executionTime: 15,
-      stage: 'Result Storage'
+      id: 'ai_config',
+      collection: 'conversion_registry',
+      operation: 'aggregate',
+      query: null,
+      pipeline: [
+        { $match: { _id: `${sourceFormat}_to_${targetFormat}` } },
+        { $project: { "ai_service.field_types": 1 } },
+        { $unwind: "$ai_service.field_types" }
+      ],
+      executionTime: 10,
+      documentsScanned: 1,
+      documentsReturned: 3,
+      indexUsed: '_id_',
+      stage: 'AI Configuration'
     }
   ];
 

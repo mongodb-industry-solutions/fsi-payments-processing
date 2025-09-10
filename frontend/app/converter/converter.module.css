@@ -9,9 +9,34 @@
   margin-bottom: 3rem;
 }
 
+.headerCompact {
+  text-align: center;
+  margin-bottom: 2rem;
+  padding: 1.5rem 0;
+  border-bottom: 2px solid rgba(19, 170, 82, 0.1);
+}
+
+.titleCompact {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #001e2b;
+  margin: 0;
+  background: linear-gradient(135deg, #13aa52 0%, #00a35c 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
 .subtitle {
   margin-top: 0.5rem;
   color: #5e6c84;
+}
+
+.subtitleCompact {
+  margin-top: 0.5rem;
+  color: #5e6c84;
+  font-size: 1rem;
+  font-weight: 400;
 }
 
 .content {
@@ -27,6 +52,13 @@
   border: 1px solid #e0e0e0;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  border-color: var(--mongodb-green-base, #13aa52);
 }
 
 .cardContent {
@@ -56,22 +88,53 @@
   margin-top: 2rem;
   display: flex;
   justify-content: center;
+  gap: 1rem;
+  align-items: center;
+}
+
+.configButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.actionButtons {
+  margin-top: 1.5rem;
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
 }
 
 .success {
-  color: #13aa52;
+  color: var(--mongodb-green-base, #13aa52);
   font-size: 1.1rem;
   padding: 1rem;
   background: rgba(19, 170, 82, 0.1);
   border-radius: 4px;
+  border-left: 4px solid var(--mongodb-green-base, #13aa52);
+  animation: slideIn 0.3s ease;
 }
 
 .error {
-  color: #d32f2f;
+  color: var(--risk-high, #d32f2f);
   font-size: 1.1rem;
   padding: 1rem;
   background: rgba(211, 47, 47, 0.1);
   border-radius: 4px;
+  border-left: 4px solid var(--risk-high, #d32f2f);
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 .lanesContainer {
@@ -101,16 +164,32 @@
 }
 
 .codeBlock {
-  background: #f4f4f4;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  padding: 1rem;
+  background: #1e1e1e;
+  color: #e0e0e0;
+  border: 1px solid var(--mongodb-green-dark1, #00a35c);
+  border-radius: 8px;
+  padding: 1.5rem;
   overflow-x: auto;
-  font-family: 'Courier New', monospace;
+  font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
   font-size: 0.875rem;
   line-height: 1.5;
   white-space: pre-wrap;
   word-break: break-word;
+  position: relative;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.codeBlock::before {
+  content: 'MongoDB Output';
+  position: absolute;
+  top: -10px;
+  left: 20px;
+  background: var(--mongodb-green-base, #13aa52);
+  color: white;
+  padding: 2px 10px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: bold;
 }
 
 .metadata {
@@ -133,6 +212,12 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1.5rem;
+  padding: 1.5rem;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  border: 1px solid rgba(19, 170, 82, 0.2);
+  box-shadow: 0 8px 32px rgba(19, 170, 82, 0.1);
 }
 
 .previewColumn {
@@ -165,6 +250,40 @@
 .tabContent {
   padding: 1.5rem 0;
   min-height: 400px;
+}
+
+/* Modal Styles */
+.advancedModal {
+  max-width: 900px !important;
+  width: 90% !important;
+}
+
+.modalContent {
+  padding: 0;
+}
+
+.modalHeader {
+  padding: 2rem 2rem 1rem 2rem;
+  border-bottom: 2px solid rgba(19, 170, 82, 0.1);
+}
+
+.modalHeader h1 {
+  margin: 0 0 0.5rem 0;
+  color: #001e2b;
+  font-size: 1.75rem;
+}
+
+.modalHeader p {
+  margin: 0;
+  color: #5e6c84;
+  font-size: 1rem;
+}
+
+.modalTabContent {
+  padding: 2rem;
+  min-height: 400px;
+  max-height: 600px;
+  overflow-y: auto;
 }
 
 @media (max-width: 768px) {

@@ -14,6 +14,8 @@ import Card from "@leafygreen-ui/card";
 import { Tabs, Tab } from "@leafygreen-ui/tabs";
 import { H1, Body } from "@leafygreen-ui/typography";
 import Banner from "@leafygreen-ui/banner";
+import Icon from "@leafygreen-ui/icon";
+import Modal from "@leafygreen-ui/modal";
 import LeafyGreenProvider from "@leafygreen-ui/leafygreen-provider";
 import styles from "./converter.module.css";
 
@@ -36,6 +38,9 @@ export default function ConverterPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [conversionResult, setConversionResult] = useState(null);
   const [selectedTab, setSelectedTab] = useState(0);
+  
+  // Modal state for advanced tools
+  const [showAdvancedModal, setShowAdvancedModal] = useState(false);
   
   // Feature flags from environment
   const enableAutoConfig = process.env.NEXT_PUBLIC_ENABLE_AUTO_CONFIG !== 'false';
@@ -236,11 +241,11 @@ export default function ConverterPage() {
   return (
     <LeafyGreenProvider>
       <div className={styles.container}>
-        <div className={styles.header}>
-          <H1>Payment Format Converter</H1>
-          <Body className={styles.subtitle}>
-            Convert payment messages between formats using MongoDB-driven rules and AI
-          </Body>
+        <div className={styles.headerCompact}>
+          <h1 className={styles.titleCompact}>Payment Format Converter</h1>
+          <p className={styles.subtitleCompact}>
+            Convert between payment formats using MongoDB-driven rules
+          </p>
         </div>
 
         <div className={styles.content}>
@@ -256,8 +261,7 @@ export default function ConverterPage() {
           
           <Card className={styles.card}>
             <div className={styles.cardContent}>
-              <h2>Select Formats</h2>
-              <p>Choose source and target payment formats to begin conversion</p>
+              <h2>Convert Payment Formats</h2>
             
             <div className={styles.formatSelectors}>
               <FormatSelector
@@ -311,55 +315,20 @@ export default function ConverterPage() {
                 {isLoading ? "Converting..." : "Convert"}
               </Button>
               
-              {enableAutoConfig && sourceFormat && targetFormat && (
+              {(enableAutoConfig || enableLearning) && (
                 <Button
-                  onClick={() => setSelectedTab(2)}
+                  onClick={() => setShowAdvancedModal(true)}
                   variant="default"
-                  style={{ marginLeft: '10px' }}
+                  className={styles.configButton}
                 >
-                  Auto Configure
+                  <Icon glyph="Settings" size="small" />
+                  Configure New Format
                 </Button>
               )}
             </div>
           </div>
         </Card>
 
-        {/* Intelligent Features Section - Always visible */}
-        {(enableAutoConfig || enableLearning) && sourceFormat && targetFormat && (
-          <Card className={styles.card}>
-            <div className={styles.cardContent}>
-              <h2>Intelligent Features</h2>
-              <div className={styles.tabsContainer}>
-                <Tabs 
-                  selected={0}
-                  aria-label="Intelligent Features"
-                >
-                  {enableAutoConfig && (
-                    <Tab name="Auto Configuration">
-                      <div className={styles.tabContent}>
-                        <AutoConfigPanel
-                          sourceFormat={sourceFormat}
-                          targetFormat={targetFormat}
-                        />
-                      </div>
-                    </Tab>
-                  )}
-                  
-                  {enableLearning && (
-                    <Tab name="Semantic Learning">
-                      <div className={styles.tabContent}>
-                        <LearningDashboard
-                          sourceFormat={sourceFormat}
-                          targetFormat={targetFormat}
-                        />
-                      </div>
-                    </Tab>
-                  )}
-                </Tabs>
-              </div>
-            </div>
-          </Card>
-        )}
 
           {/* Enhanced Results section with Field Mapping Visualization */}
           {conversionResult && (
@@ -413,27 +382,6 @@ export default function ConverterPage() {
                           </Tab>
                         )}
                         
-                        {enableAutoConfig && (
-                          <Tab name="Auto Configure">
-                            <div className={styles.tabContent}>
-                              <AutoConfigPanel
-                                sourceFormat={sourceFormat}
-                                targetFormat={targetFormat}
-                              />
-                            </div>
-                          </Tab>
-                        )}
-                        
-                        {enableLearning && (
-                          <Tab name="Learning Dashboard">
-                            <div className={styles.tabContent}>
-                              <LearningDashboard
-                                sourceFormat={conversionResult.sourceFormat}
-                                targetFormat={conversionResult.targetFormat}
-                              />
-                            </div>
-                          </Tab>
-                        )}
                         
                         <Tab name="MongoDB Insights">
                           <div className={styles.tabContent}>
@@ -471,6 +419,37 @@ export default function ConverterPage() {
                         <small>Conversion ID: {conversionResult.conversionId}</small>
                       </div>
                     )}
+                    
+                    {/* Quick Actions */}
+                    <div className={styles.actionButtons}>
+                      <Button
+                        onClick={() => setConversionResult(null)}
+                        variant="default"
+                        size="small"
+                      >
+                        Convert Another
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          setSourceFormat("");
+                          setTargetFormat("");
+                          setConversionResult(null);
+                        }}
+                        variant="default"
+                        size="small"
+                      >
+                        New Conversion
+                      </Button>
+                      {(enableAutoConfig || enableLearning) && (
+                        <Button
+                          onClick={() => setShowAdvancedModal(true)}
+                          variant="default"
+                          size="small"
+                        >
+                          Configure This Format
+                        </Button>
+                      )}
+                    </div>
                   </>
                 ) : (
                   <div className={styles.error}>
@@ -486,6 +465,46 @@ export default function ConverterPage() {
             </Card>
           )}
         </div>
+        
+        {/* Advanced Tools Modal */}
+        <Modal 
+          open={showAdvancedModal} 
+          setOpen={setShowAdvancedModal}
+          className={styles.advancedModal}
+        >
+          <div className={styles.modalContent}>
+            <div className={styles.modalHeader}>
+              <H1>Configure New Payment Format</H1>
+              <Body>
+                Use these tools to add support for new payment formats without code changes
+              </Body>
+            </div>
+            
+            <Tabs selected={0} aria-label="Configuration Tools">
+              {enableAutoConfig && (
+                <Tab name="Auto Configuration">
+                  <div className={styles.modalTabContent}>
+                    <AutoConfigPanel
+                      sourceFormat={sourceFormat || ""}
+                      targetFormat={targetFormat || ""}
+                    />
+                  </div>
+                </Tab>
+              )}
+              
+              {enableLearning && (
+                <Tab name="Semantic Learning">
+                  <div className={styles.modalTabContent}>
+                    <LearningDashboard
+                      sourceFormat={sourceFormat || ""}
+                      targetFormat={targetFormat || ""}
+                    />
+                  </div>
+                </Tab>
+              )}
+            </Tabs>
+          </div>
+        </Modal>
       </div>
     </LeafyGreenProvider>
   );

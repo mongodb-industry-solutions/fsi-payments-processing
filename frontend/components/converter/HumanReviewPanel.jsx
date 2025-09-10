@@ -5,7 +5,7 @@ import Card from "@leafygreen-ui/card";
 import Button from "@leafygreen-ui/button";
 import Badge from "@leafygreen-ui/badge";
 import TextInput from "@leafygreen-ui/text-input";
-import Table, { Row, Cell, HeaderRow, TableHead, TableBody } from "@leafygreen-ui/table";
+import { Table, Row, Cell, HeaderRow, TableHead, TableBody } from "@leafygreen-ui/table";
 import Banner from "@leafygreen-ui/banner";
 import { H3, Body, Overline } from "@leafygreen-ui/typography";
 import Icon from "@leafygreen-ui/icon";
