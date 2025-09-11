@@ -325,3 +325,4 @@ cicd-kanopy/
 backend/converter_service/TECHNICAL_SYSTEM_DOCUMENTATION.md
 backend/converter_service/CONVERTER_SERVICE_ANALYSIS.md
 backend/for_demo_improvements.md
+backend/converter_service/tests/test_mt103_to_json.sh
