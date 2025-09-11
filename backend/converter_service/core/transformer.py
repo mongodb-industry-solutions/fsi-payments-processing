@@ -179,6 +179,79 @@ class Transformer:
             )
         }
     
+    # ========== DEMO ENHANCEMENT METHODS (Non-invasive) ==========
+    # These methods are optional and don't affect core functionality
+    
+    def set_progress_tracker(self, progress_tracker):
+        """
+        Optional: Set a progress tracker for demo visualization.
+        This is completely optional and doesn't affect normal operation.
+        """
+        self.progress_tracker = progress_tracker
+        logger.info("Progress tracker attached for demo visualization")
+    
+    def _notify_progress(self, event_type: str, data: Dict[str, Any]):
+        """
+        Optional: Send progress updates if tracker is available.
+        Does nothing if no tracker is set.
+        """
+        if hasattr(self, 'progress_tracker') and self.progress_tracker:
+            try:
+                if event_type == 'field_start':
+                    self.progress_tracker.start_field_processing(
+                        data.get('field'),
+                        data.get('lane'),
+                        data.get('details')
+                    )
+                elif event_type == 'field_complete':
+                    self.progress_tracker.complete_field_processing(
+                        data.get('field'),
+                        data.get('status'),
+                        data.get('result'),
+                        data.get('confidence')
+                    )
+                elif event_type == 'ai_reasoning':
+                    self.progress_tracker.add_ai_reasoning(
+                        data.get('field'),
+                        data.get('reasoning')
+                    )
+            except Exception as e:
+                # Never let demo features break core functionality
+                logger.debug(f"Progress notification failed (non-critical): {e}")
+    
+    def get_demo_insights(self) -> Optional[Dict[str, Any]]:
+        """
+        Optional: Get additional insights for demo purposes.
+        Returns None if not in demo mode.
+        """
+        if not hasattr(self, 'progress_tracker'):
+            return None
+        
+        try:
+            from ..config.feature_flags import feature_flags
+            if not feature_flags.is_demo_mode():
+                return None
+            
+            return {
+                "lane_processing_order": [
+                    {"field": f, "lane": "rules"} 
+                    for f in self.processing_stats['rules_lane']['fields']
+                ] + [
+                    {"field": f, "lane": "ai"} 
+                    for f in self.processing_stats['ai_lane']['fields']
+                ],
+                "confidence_distribution": {
+                    "high": sum(1 for c in self.confidence_scores.values() if c >= 0.9),
+                    "medium": sum(1 for c in self.confidence_scores.values() if 0.7 <= c < 0.9),
+                    "low": sum(1 for c in self.confidence_scores.values() if c < 0.7)
+                },
+                "ai_model_usage": getattr(self, '_ai_model_usage', {}),
+                "transformation_timeline": getattr(self, '_transformation_timeline', [])
+            }
+        except Exception as e:
+            logger.debug(f"Could not generate demo insights: {e}")
+            return None
+    
     def _get_field_value(self, fields: Dict[str, Any], field_path: str) -> Any:
         """
         Get field value from parsed fields, handling nested paths

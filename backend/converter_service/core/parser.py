@@ -135,11 +135,22 @@ class GenericParser:
         return result
     
     def _parse_json(self, raw_message: str) -> Dict[str, Any]:
-        """Parse JSON format - to be implemented"""
-        import json
-        return json.loads(raw_message)
+        """Parse JSON format messages with error handling"""
+        try:
+            import json
+            parsed = json.loads(raw_message)
+            if not isinstance(parsed, dict):
+                # Wrap non-dict results in a dict
+                return {"data": parsed}
+            return parsed
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Invalid JSON format: {e}")
+        except Exception as e:
+            raise ValueError(f"Error parsing JSON: {e}")
     
     def _parse_xml(self, raw_message: str) -> Dict[str, Any]:
-        """Parse XML format - to be implemented"""
-        # Simplified XML parsing - would use proper XML parser in production
-        raise NotImplementedError("XML parsing not yet implemented")
+        """Parse XML format - not yet implemented for demo"""
+        raise NotImplementedError(
+            "XML parsing is not yet implemented. "
+            "Please use MT (regex) or JSON formats for now."
+        )

@@ -41,6 +41,29 @@ async def convert_message(
     Returns:
         ConversionResponse with converted message and metadata
     """
+    # Input validation
+    MAX_MESSAGE_SIZE = 1_000_000  # 1MB limit
+    
+    if len(request.message) > MAX_MESSAGE_SIZE:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Message too large. Maximum size is {MAX_MESSAGE_SIZE:,} characters"
+        )
+    
+    if not request.message.strip():
+        raise HTTPException(
+            status_code=400, 
+            detail="Message cannot be empty"
+        )
+    
+    # Basic format validation for SWIFT messages
+    if request.source_format.startswith("MT"):
+        if not (request.message.startswith("{") or ":" in request.message):
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid SWIFT message format. Expected blocks starting with { or field tags with :"
+            )
+    
     try:
         # Initialize converter
         converter = UniversalConverter(
@@ -68,11 +91,36 @@ async def convert_message(
         )
         
     except ValueError as e:
+        # Configuration or validation errors
         logger.error(f"Configuration error: {e}")
-        raise HTTPException(status_code=400, detail=str(e))
+        error_msg = str(e)
+        
+        # Provide helpful error messages
+        if "No configuration found" in error_msg:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Conversion from {request.source_format} to {request.target_format} is not configured. "
+                       f"Please check available formats at /api/v1/converter/formats"
+            )
+        elif "Invalid JSON format" in error_msg:
+            raise HTTPException(status_code=400, detail="Invalid JSON message format")
+        elif "XML parsing" in error_msg:
+            raise HTTPException(status_code=501, detail=error_msg)
+        else:
+            raise HTTPException(status_code=400, detail=error_msg)
+            
+    except NotImplementedError as e:
+        # Feature not implemented
+        logger.error(f"Feature not implemented: {e}")
+        raise HTTPException(status_code=501, detail=str(e))
+        
     except Exception as e:
-        logger.error(f"Conversion failed: {e}")
-        raise HTTPException(status_code=500, detail=f"Conversion failed: {str(e)}")
+        # Generic server error - don't expose internal details
+        logger.error(f"Conversion failed with error: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500, 
+            detail="An error occurred during conversion. Please check your message format and try again."
+        )
 
 
 @router.get("/formats")
