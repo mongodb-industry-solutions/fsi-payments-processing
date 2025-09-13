@@ -99,8 +99,17 @@ class SemanticLearningService:
                             concept_id, concept_info
                         )
                     
-                    # Add this format's pattern
-                    learned_patterns[concept_id]['learned_patterns'][source_format] = {
+                    # Check if this is a component mapping (e.g., 32A.value_date)
+                    if '.' in source_field:
+                        # Component-specific mapping
+                        component_name = source_field.split('.')[1]
+                        pattern_key = f"{source_format}.{component_name}"
+                    else:
+                        # Regular field mapping
+                        pattern_key = source_format
+                    
+                    # Add this format's pattern with component awareness
+                    learned_patterns[concept_id]['learned_patterns'][pattern_key] = {
                         'field': source_field,
                         'pattern': parser_config.get('pattern', ''),
                         'name': parser_config.get('name', ''),
@@ -147,9 +156,16 @@ class SemanticLearningService:
         """
         
         # Get the similar format's configuration
-        similar_configs = list(self.conversion_registry.find(
-            {"_id": {"$regex": f"^{similar_to}_to_"}}
-        ))
+        # If similar_to already contains '_to_', use it directly
+        if '_to_' in similar_to:
+            similar_configs = list(self.conversion_registry.find(
+                {"_id": similar_to}
+            ))
+        else:
+            # Otherwise look for configs starting with that format
+            similar_configs = list(self.conversion_registry.find(
+                {"_id": {"$regex": f"^{similar_to}_to_"}}
+            ))
         
         if not similar_configs:
             raise ValueError(f"No configuration found for {similar_to}")
@@ -166,14 +182,20 @@ class SemanticLearningService:
         # Invoke LLM if available
         if self.ai:
             try:
-                response = self.ai.invoke_model(
-                    prompt,
-                    field_type="default",
-                    field_value=""
+                # Use extract_field_data with the prompt as field_value
+                response = self.ai.extract_field_data(
+                    field_value=prompt,
+                    field_type="configuration_analysis",
+                    prompt_template=None  # Will use default template
                 )
                 
                 # Parse LLM response
                 llm_result = self._parse_llm_response(response)
+                
+                # If we didn't get detected_fields, fall back to pattern-based analysis
+                if not llm_result.get('detected_fields'):
+                    logger.warning("LLM response missing detected_fields, using pattern-based analysis")
+                    return self._pattern_based_analysis(sample_message, similar_config)
                 
                 # Merge with actual fields to ensure we don't miss any
                 return self._merge_analysis_results(llm_result, actual_fields)
@@ -208,33 +230,57 @@ class SemanticLearningService:
         
         logger.info(f"Generating configuration for {source_format} to {target_format}")
         
-        # Analyze the new format
-        field_analysis = self.analyze_new_format_with_llm(sample_message, similar_to)
+        # For JSON source format, skip LLM analysis and just copy the base config
+        if source_format == 'JSON':
+            logger.info("JSON source format detected - skipping LLM analysis")
+            field_analysis = {"detected_fields": [], "format_family": "JSON", "overall_similarity": 1.0}
+        else:
+            # Analyze the new format
+            field_analysis = self.analyze_new_format_with_llm(sample_message, similar_to)
         
         # Get base configuration to clone
-        base_config_id = f"{similar_to}_to_{target_format}"
-        base_config = self.conversion_registry.find_one({"_id": base_config_id})
+        # First try the exact similar_to ID if it contains underscore (full config ID)
+        if '_to_' in similar_to:
+            base_config_id = similar_to
+            logger.info(f"Looking for exact config ID: {base_config_id}")
+            base_config = self.conversion_registry.find_one({"_id": base_config_id})
+            if base_config:
+                logger.info(f"Found config: {base_config_id}")
+            else:
+                logger.warning(f"Config not found: {base_config_id}")
+        else:
+            # Otherwise construct the config ID
+            base_config_id = f"{similar_to}_to_{target_format}"
+            logger.info(f"Looking for constructed config ID: {base_config_id}")
+            base_config = self.conversion_registry.find_one({"_id": base_config_id})
         
         if not base_config:
             # Try to find any config with the target format
+            logger.info(f"Searching for any config ending with _to_{target_format}")
             base_configs = list(self.conversion_registry.find(
                 {"_id": {"$regex": f"_to_{target_format}$"}}
             ))
+            logger.info(f"Found {len(base_configs)} configs with target format {target_format}")
             if base_configs:
                 base_config = base_configs[0]
                 base_config_id = base_config['_id']
+                logger.info(f"Using config: {base_config_id}")
             else:
-                raise ValueError(f"No configuration found for target format: {target_format}")
+                # Log all available configs for debugging
+                all_configs = list(self.conversion_registry.find({}, {"_id": 1}))
+                logger.error(f"Available configs: {[c['_id'] for c in all_configs]}")
+                raise ValueError(f"No configuration found for {similar_to}")
         
         # Generate new configuration
         new_config = {
             "_id": f"{source_format}_to_{target_format}",
             
-            # Generate parser configuration
-            "parser": self._generate_parser_config(field_analysis, base_config),
+            # For JSON source, use the parser from base config directly
+            # For other formats, generate parser configuration
+            "parser": base_config.get('parser') if source_format == 'JSON' else self._generate_parser_config(field_analysis, base_config),
             
-            # Generate mappings based on semantic patterns
-            "mappings": self._generate_mappings(field_analysis, base_config, target_format),
+            # Generate mappings based on semantic patterns (or copy from base for JSON)
+            "mappings": base_config.get('mappings') if source_format == 'JSON' and not field_analysis.get('detected_fields') else self._generate_mappings(field_analysis, base_config, target_format),
             
             # Clone builder configuration
             "builder": base_config.get('builder'),
@@ -250,7 +296,7 @@ class SemanticLearningService:
                 "auto_generated": True,
                 "based_on": base_config_id,
                 "generation_confidence": self._calculate_overall_confidence(field_analysis),
-                "generated_at": datetime.utcnow(),
+                "generated_at": datetime.utcnow().isoformat(),  # Convert to string immediately
                 "human_validated": False,
                 "source_format": source_format,
                 "target_format": target_format,
@@ -260,16 +306,17 @@ class SemanticLearningService:
         
         return new_config
     
-    def save_generated_config(self, config: Dict[str, Any]) -> str:
+    def save_generated_config(self, config: Dict[str, Any], trigger_learning: bool = True) -> Dict[str, Any]:
         """
         Save auto-generated configuration to conversion_registry
         Merges with existing config if found to preserve all field variations
         
         Args:
             config: Generated configuration
+            trigger_learning: Whether to trigger semantic learning after saving (default: True)
             
         Returns:
-            ID of saved configuration
+            The saved configuration (merged if existing found)
         """
         
         # Check if config already exists
@@ -283,13 +330,30 @@ class SemanticLearningService:
                 merged_config
             )
             logger.info(f"Merged configuration now has {len(merged_config['parser']['fields'])} fields")
-            return config['_id']
+            return merged_config  # Return the merged config, not just ID
         
         # Save to conversion_registry
         result = self.conversion_registry.insert_one(config)
         
         logger.info(f"Saved configuration: {config['_id']}")
-        return config['_id']
+        
+        # Trigger learning to update semantic patterns from the new config (if enabled)
+        if trigger_learning:
+            logger.info("Triggering semantic pattern learning from new configuration...")
+            learned_patterns = self.learn_from_existing_configs()
+            
+            # Save the learned patterns to the database
+            for pattern_id, pattern_doc in learned_patterns.items():
+                self.semantic_patterns.update_one(
+                    {"_id": pattern_id},
+                    {"$set": pattern_doc},
+                    upsert=True
+                )
+                logger.info(f"Updated semantic pattern: {pattern_id}")
+        else:
+            logger.info("Skipping semantic pattern learning (trigger_learning=False)")
+        
+        return config  # Return the config, not just ID
     
     def _merge_configurations(self, existing_config: Dict[str, Any], new_config: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -327,7 +391,7 @@ class SemanticLearningService:
             merged['metadata'] = {}
             
         merged['metadata']['variation_count'] = existing_config.get('metadata', {}).get('variation_count', 1) + 1
-        merged['metadata']['last_updated'] = datetime.utcnow()
+        merged['metadata']['last_updated'] = datetime.utcnow().isoformat()  # Convert to string
         
         # Track all fields seen across variations
         if 'fields_seen' not in merged['metadata']:
@@ -703,19 +767,49 @@ Return ONLY a JSON object:
     def _parse_llm_response(self, response: Any) -> Dict[str, Any]:
         """
         Parse LLM response to extract field mappings
+        Handles both direct responses and AI service extract_field_data responses
         """
         
         if isinstance(response, dict):
-            return response
+            # Handle response from AI service's extract_field_data
+            if 'success' in response and 'data' in response:
+                # The actual LLM response is in the 'data' field
+                data = response.get('data', {})
+                
+                # If data has detected_fields, return it
+                if 'detected_fields' in data:
+                    return data
+                
+                # If it's extracted_text, try to parse the JSON from it
+                if 'extracted_text' in data:
+                    try:
+                        text = data['extracted_text']
+                        json_match = re.search(r'\{.*\}', text, re.DOTALL)
+                        if json_match:
+                            parsed = json.loads(json_match.group())
+                            if 'detected_fields' in parsed:
+                                return parsed
+                    except (json.JSONDecodeError, KeyError):
+                        pass
+                
+                # Log what we got for debugging
+                logger.debug(f"AI response data keys: {data.keys()}")
+                
+            # If response already has detected_fields, return it
+            elif 'detected_fields' in response:
+                return response
         
         try:
-            # Extract JSON from string response
+            # Try to extract JSON from string response
             json_match = re.search(r'\{.*\}', str(response), re.DOTALL)
             if json_match:
-                return json.loads(json_match.group())
+                parsed = json.loads(json_match.group())
+                if 'detected_fields' in parsed:
+                    return parsed
         except json.JSONDecodeError as e:
-            logger.error(f"Failed to parse LLM response: {e}")
+            logger.error(f"Failed to parse LLM response as JSON: {e}")
         
+        # Return empty detected_fields if we couldn't parse
         return {"detected_fields": []}
     
     def _pattern_based_analysis(self, sample_message: str, similar_config: Dict[str, Any]) -> Dict[str, Any]:
@@ -776,6 +870,60 @@ Return ONLY a JSON object:
         
         fields = {}
         
+        # Try JSON format extraction
+        if message.strip().startswith('{') and message.strip().endswith('}'):
+            try:
+                import json
+                data = json.loads(message)
+                
+                def extract_json_fields(obj, prefix=''):
+                    """Recursively extract fields from JSON"""
+                    if isinstance(obj, dict):
+                        for key, value in obj.items():
+                            field_path = f"{prefix}.{key}" if prefix else key
+                            if isinstance(value, dict):
+                                extract_json_fields(value, field_path)
+                            elif isinstance(value, list):
+                                # Handle lists - store the list as a field
+                                fields[field_path] = json.dumps(value) if value else "[]"
+                            else:
+                                # Store primitive values
+                                fields[field_path] = str(value) if value is not None else ""
+                    return fields
+                
+                extract_json_fields(data)
+                return fields
+            except json.JSONDecodeError:
+                pass  # Not valid JSON, try other formats
+        
+        # Try XML format extraction
+        if message.strip().startswith('<') and message.strip().endswith('>'):
+            try:
+                import xml.etree.ElementTree as ET
+                root = ET.fromstring(message)
+                
+                def extract_xml_fields(element, prefix=''):
+                    """Recursively extract fields from XML"""
+                    # Remove namespace if present
+                    tag = element.tag.split('}')[-1] if '}' in element.tag else element.tag
+                    field_path = f"{prefix}.{tag}" if prefix else tag
+                    
+                    # If element has children, recurse
+                    if len(element) > 0:
+                        for child in element:
+                            extract_xml_fields(child, field_path)
+                    else:
+                        # Leaf node - store the text
+                        if element.text:
+                            fields[field_path] = element.text.strip()
+                    
+                    return fields
+                
+                extract_xml_fields(root)
+                return fields
+            except ET.ParseError:
+                pass  # Not valid XML, try other formats
+        
         # Try SWIFT format extraction
         if '{4:' in message:
             # Extract block 4 content
@@ -787,8 +935,6 @@ Return ONLY a JSON object:
                 matches = re.findall(field_pattern, content, re.DOTALL)
                 for tag, value in matches:
                     fields[tag] = value.strip()
-        
-        # Could add other format detection here (XML, JSON, etc.)
         
         return fields
     
@@ -898,6 +1044,17 @@ Return ONLY a JSON object:
             # Add components if field has them
             if field.get('components'):
                 parser_config['fields'][field_id]['components'] = field['components']
+            else:
+                # Check semantic patterns for components
+                semantic_concept = field.get('semantic_concept')
+                if semantic_concept:
+                    pattern = self.semantic_patterns.find_one({'_id': semantic_concept})
+                    if pattern:
+                        # Look for components in learned patterns
+                        for format_data in pattern.get('learned_patterns', {}).values():
+                            if format_data.get('components'):
+                                parser_config['fields'][field_id]['components'] = format_data['components']
+                                break
         
         return parser_config
     
@@ -931,24 +1088,107 @@ Return ONLY a JSON object:
                 for format_patterns in pattern['learned_patterns'].values():
                     if format_patterns.get('target_format') == target_format:
                         # Found a pattern that maps to our target format
-                        new_mapping = {
-                            "source": field['field_id'],
-                            "targets": format_patterns['targets'],
-                            "transform": format_patterns.get('transform', 'copy'),
-                            "processing_lane": format_patterns.get('processing_lane', 'RULES'),
-                            "confidence": field.get('confidence', 0.7)
-                        }
                         
-                        # Copy transform config if present
-                        if format_patterns.get('transform_config'):
-                            new_mapping['transform_config'] = format_patterns['transform_config']
+                        # Check if this field has components in the pattern
+                        if format_patterns.get('components'):
+                            # Create a mapping for EACH component
+                            # For 32A, this creates mappings for value_date, currency, and amount
+                            for component_name, component_info in format_patterns['components'].items():
+                                source_field = f"{field['field_id']}.{component_name}"
+                                
+                                # Look for component-specific mapping in learned patterns
+                                # Search across ALL patterns, not just the current format
+                                component_pattern_key = None
+                                component_mapping = None
+                                
+                                # Search for component-specific pattern from ANY format
+                                for pattern_key, other_pattern in pattern['learned_patterns'].items():
+                                    # Check if this is a component pattern that matches our component name
+                                    # e.g., "MT202.value_date" matches component "value_date"
+                                    if '.' in pattern_key and pattern_key.endswith(f".{component_name}"):
+                                        # Check if this pattern targets our desired format
+                                        if other_pattern.get('target_format') == target_format:
+                                            # Found a pattern for this specific component
+                                            component_mapping = other_pattern
+                                            component_pattern_key = pattern_key
+                                            break
+                                
+                                if component_mapping:
+                                    # Use component-specific targets and transforms
+                                    new_mapping = {
+                                        "source": source_field,
+                                        "targets": component_mapping.get('targets', []),
+                                        "transform": component_mapping.get('transform', 'copy'),
+                                        "processing_lane": component_mapping.get('processing_lane', 'RULES'),
+                                        "confidence": field.get('confidence', 0.7)
+                                    }
+                                    
+                                    # Copy transform config if present
+                                    if component_mapping.get('transform_config'):
+                                        new_mapping['transform_config'] = component_mapping['transform_config']
+                                    
+                                    # Copy AI config if present
+                                    if component_mapping.get('field_type'):
+                                        new_mapping['field_type'] = component_mapping['field_type']
+                                        new_mapping['confidence_threshold'] = component_mapping.get('confidence_threshold', 0.8)
+                                    
+                                    mappings.append(new_mapping)
+                                    logger.debug(f"Created component mapping: {source_field} → {component_mapping.get('targets', [])} (from {component_pattern_key})")
+                                else:
+                                    # No specific component mapping found
+                                    # Look for this component in a different semantic concept
+                                    # For example, "currency" might be in "amount_currency" concept
+                                    component_found = False
+                                    
+                                    # Search all semantic patterns for this component
+                                    for other_concept_id, other_concept in pattern_lookup.items():
+                                        if other_concept_id != semantic_concept:  # Don't search the same concept again
+                                            for pk, pp in other_concept.get('learned_patterns', {}).items():
+                                                if '.' in pk and pk.endswith(f".{component_name}") and pp.get('target_format') == target_format:
+                                                    # Found the component in a different concept!
+                                                    new_mapping = {
+                                                        "source": source_field,
+                                                        "targets": pp.get('targets', []),
+                                                        "transform": pp.get('transform', 'copy'),
+                                                        "processing_lane": pp.get('processing_lane', 'RULES'),
+                                                        "confidence": field.get('confidence', 0.6)  # Slightly lower confidence
+                                                    }
+                                                    
+                                                    if pp.get('transform_config'):
+                                                        new_mapping['transform_config'] = pp['transform_config']
+                                                    
+                                                    mappings.append(new_mapping)
+                                                    logger.debug(f"Created component mapping from different concept: {source_field} → {pp.get('targets', [])} (from {other_concept_id}/{pk})")
+                                                    component_found = True
+                                                    break
+                                            if component_found:
+                                                break
+                                    
+                                    if not component_found:
+                                        logger.debug(f"No learned pattern for component {component_name} of field {field['field_id']}")
+                                        continue
+                        else:
+                            # No components, create single mapping as before
+                            source_field = field['field_id']
+                            new_mapping = {
+                                "source": source_field,
+                                "targets": format_patterns['targets'],
+                                "transform": format_patterns.get('transform', 'copy'),
+                                "processing_lane": format_patterns.get('processing_lane', 'RULES'),
+                                "confidence": field.get('confidence', 0.7)
+                            }
+                            
+                            # Copy transform config if present
+                            if format_patterns.get('transform_config'):
+                                new_mapping['transform_config'] = format_patterns['transform_config']
+                            
+                            # Copy AI config if present
+                            if format_patterns.get('field_type'):
+                                new_mapping['field_type'] = format_patterns['field_type']
+                                new_mapping['confidence_threshold'] = format_patterns.get('confidence_threshold', 0.8)
+                            
+                            mappings.append(new_mapping)
                         
-                        # Copy AI config if present
-                        if format_patterns.get('field_type'):
-                            new_mapping['field_type'] = format_patterns['field_type']
-                            new_mapping['confidence_threshold'] = format_patterns.get('confidence_threshold', 0.8)
-                        
-                        mappings.append(new_mapping)
                         break
             else:
                 # No semantic pattern found, try to map based on similar field

@@ -179,15 +179,48 @@ body {
   border-radius: 4px;
 }
 
+/* LeafyGreen Modal Centering Override */
+[data-lgid="modal-backdrop"] {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 2rem !important;
+}
+
+[data-lgid="modal-content"] {
+  margin: 0 auto !important;
+  position: relative !important;
+  transform: none !important;
+  top: auto !important;
+  left: auto !important;
+  max-width: 900px !important;
+  width: 90vw !important;
+  max-height: 90vh !important;
+  overflow-y: auto !important;
+}
+
+/* Ensure modal is properly centered */
+.leafygreen-ui-modal {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .nav-container {
     flex-direction: column;
     gap: var(--spacing-2);
   }
-  
+
   .nav-links {
     width: 100%;
     justify-content: center;
+  }
+
+  [data-lgid="modal-content"] {
+    width: 95vw !important;
+    max-width: none !important;
+    margin: 1rem !important;
   }
 }

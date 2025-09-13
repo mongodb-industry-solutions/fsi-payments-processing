@@ -62,11 +62,11 @@ class GenericParser:
             pattern = field_config.get('pattern')
             if not pattern:
                 continue
-                
+
             match = re.search(pattern, content)
             if match:
                 value = match.group(1).strip() if match.groups() else match.group(0)
-                
+
                 # Handle composite fields (like 32A)
                 if 'components' in field_config:
                     parsed_value = self._parse_components(value, field_config['components'])
@@ -138,19 +138,120 @@ class GenericParser:
         """Parse JSON format messages with error handling"""
         try:
             import json
-            parsed = json.loads(raw_message)
-            if not isinstance(parsed, dict):
-                # Wrap non-dict results in a dict
-                return {"data": parsed}
-            return parsed
+            data = json.loads(raw_message)
+            
+            # If fields are configured, extract specific fields
+            if self.fields:
+                parsed_fields = {}
+                for field_id, field_config in self.fields.items():
+                    # Use path if specified, otherwise use field_id
+                    path = field_config.get('path', field_id)
+                    name = field_config.get('name', field_id)
+                    
+                    # Navigate the JSON structure using the path
+                    value = self._extract_json_value(data, path)
+                    if value is not None:
+                        parsed_fields[name] = value
+                
+                return parsed_fields
+            else:
+                # No fields configured - return entire JSON (backward compatible)
+                if not isinstance(data, dict):
+                    return {"data": data}
+                return data
+                
         except json.JSONDecodeError as e:
             raise ValueError(f"Invalid JSON format: {e}")
         except Exception as e:
             raise ValueError(f"Error parsing JSON: {e}")
     
+    def _extract_json_value(self, data: Any, path: str) -> Any:
+        """Extract value from JSON data using dot notation path"""
+        if not path:
+            return data
+        
+        parts = path.split('.')
+        current = data
+        
+        for part in parts:
+            if isinstance(current, dict) and part in current:
+                current = current[part]
+            else:
+                return None
+        
+        return current
+    
     def _parse_xml(self, raw_message: str) -> Dict[str, Any]:
-        """Parse XML format - not yet implemented for demo"""
-        raise NotImplementedError(
-            "XML parsing is not yet implemented. "
-            "Please use MT (regex) or JSON formats for now."
-        )
+        """Parse XML format messages"""
+        try:
+            import xml.etree.ElementTree as ET
+            
+            # Parse the XML
+            root = ET.fromstring(raw_message)
+            
+            # If fields are configured, extract specific fields
+            if self.fields:
+                parsed_fields = {}
+                
+                # Handle namespace if configured
+                namespace = self.config.get('namespace', '')
+                if namespace:
+                    # Register namespace for XPath
+                    namespaces = {'ns': namespace}
+                else:
+                    namespaces = {}
+                
+                for field_id, field_config in self.fields.items():
+                    path = field_config.get('path')
+                    if not path:
+                        continue
+                    
+                    name = field_config.get('name', field_id)
+                    
+                    # Find elements using XPath
+                    # ElementTree doesn't support absolute paths starting with //
+                    # Convert to relative path starting with .//
+                    if path.startswith('//'):
+                        path = '.' + path
+                    
+                    # Handle namespace
+                    if namespace:
+                        # Replace element names with namespace prefix
+                        import re
+                        # Add namespace to each element in path
+                        path = re.sub(r'([^/\.\[]+)(?=[/\[\]]|$)', r'{{{}}}\1'.format(namespace), path)
+                    
+                    elements = root.findall(path)
+                    
+                    if elements:
+                        # Check if multiple values expected
+                        if field_config.get('multiple', False):
+                            values = [elem.text for elem in elements if elem.text]
+                            if values:
+                                parsed_fields[name] = values
+                        else:
+                            elem = elements[0]
+                            value = elem.text
+                            
+                            # Check for attributes
+                            if 'attributes' in field_config:
+                                # Store as dict with text and attributes
+                                result = {'text': value} if value else {}
+                                for attr in field_config['attributes']:
+                                    if attr in elem.attrib:
+                                        result[attr] = elem.attrib[attr]
+                                if result:
+                                    parsed_fields[name] = result
+                            else:
+                                if value:
+                                    parsed_fields[name] = value
+                
+                return parsed_fields
+            else:
+                # No specific fields configured - return error
+                return {"error": "No fields configured for XML parsing"}
+                
+        except ET.ParseError as e:
+            raise ValueError(f"Invalid XML format: {e}")
+        except Exception as e:
+            raise ValueError(f"Error parsing XML: {e}")

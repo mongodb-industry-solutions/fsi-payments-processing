@@ -13,7 +13,6 @@ sys.path.append(str(Path(__file__).parent.parent))
 
 from converter_service.api.converter_api import router as converter_router
 from converter_service.api.auto_config_routes import router as auto_config_router
-from converter_service.api.demo_api import router as demo_router
 from converter_service.config.settings import get_settings
 from converter_service.config.feature_flags import feature_flags
 
@@ -45,10 +44,14 @@ app.add_middleware(
 app.include_router(converter_router)
 app.include_router(auto_config_router, prefix="/api/v1/converter", tags=["Auto Configuration"])
 
-# Include demo router if demo mode is enabled
-if feature_flags.is_demo_mode():
-    app.include_router(demo_router)
-    logger.info("Demo API endpoints enabled")
+# Include config review router
+from api.config_review_api import router as config_review_router
+app.include_router(config_review_router, prefix="/api/v1/review", tags=["Config Review"])
+
+# Include conversion review router
+from api.conversion_review_api import router as conversion_review_router
+app.include_router(conversion_review_router, prefix="/api/v1/review", tags=["Conversion Review"])
+
 
 @app.on_event("startup")
 async def startup_event():

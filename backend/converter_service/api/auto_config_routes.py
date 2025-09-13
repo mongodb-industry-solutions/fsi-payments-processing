@@ -17,6 +17,30 @@ from ..config.settings import get_settings
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
+def _clean_config_for_response(config: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Clean configuration for JSON response by converting datetime objects to strings
+    and removing any non-serializable objects
+    """
+    import copy
+    clean = copy.deepcopy(config)
+    
+    # Convert datetime objects in metadata
+    if 'metadata' in clean:
+        metadata = clean['metadata']
+        for key, value in metadata.items():
+            if isinstance(value, datetime):
+                metadata[key] = value.isoformat()
+            elif hasattr(value, '__dict__'):
+                # Convert any object with __dict__ to string
+                metadata[key] = str(value)
+    
+    # Remove any None ai_service to avoid serialization issues
+    if 'ai_service' in clean and clean['ai_service'] is None:
+        clean['ai_service'] = {}
+    
+    return clean
+
 def get_db():
     """Get MongoDB service with settings"""
     settings = get_settings()
@@ -105,16 +129,16 @@ async def auto_configure(
             similar_to=request.similar_to
         )
         
-        # Save to conversion_registry
-        config_id = learning_service.save_generated_config(config)
+        # Save to conversion_registry (skip learning for faster response)
+        saved_config = learning_service.save_generated_config(config, trigger_learning=False)
         
-        # Calculate statistics
-        fields_detected = len(config.get('parser', {}).get('fields', {}))
-        fields_mapped = len(config.get('mappings', []))
+        # Use the saved config (which might be merged) for statistics
+        fields_detected = len(saved_config.get('parser', {}).get('fields', {}))
+        fields_mapped = len(saved_config.get('mappings', []))
         
         # Identify uncertain fields (confidence < 0.8)
         uncertain_fields = []
-        for mapping in config.get('mappings', []):
+        for mapping in saved_config.get('mappings', []):
             confidence = mapping.get('confidence', 1.0)
             if confidence < 0.8:
                 uncertain_fields.append({
@@ -125,17 +149,20 @@ async def auto_configure(
                 })
         
         # Check if ready to save (has minimum required mappings)
-        ready_to_save = fields_mapped > 0 and config['metadata']['generation_confidence'] > 0.5
+        ready_to_save = fields_mapped > 0 and saved_config['metadata']['generation_confidence'] > 0.5
         
         # Calculate generation time
         generation_time = (datetime.utcnow() - start_time).total_seconds()
         
-        logger.info(f"Configuration generated successfully: {config_id}")
+        logger.info(f"Configuration generated successfully: {saved_config['_id']}")
+        
+        # Convert datetime objects to strings for JSON serialization
+        clean_config = _clean_config_for_response(saved_config)
         
         return AutoConfigResponse(
-            configuration_id=config['_id'],
-            configuration=config,
-            confidence=config['metadata']['generation_confidence'],
+            configuration_id=saved_config['_id'],
+            configuration=clean_config,
+            confidence=saved_config['metadata']['generation_confidence'],
             fields_detected=fields_detected,
             fields_mapped=fields_mapped,
             uncertain_fields=uncertain_fields,

@@ -41,6 +41,7 @@ class ConversionMetadata(BaseModel):
     human_review_required: bool = False
     human_review_fields: List[Union[str, Dict[str, Any]]] = Field(default_factory=list)
     confidence_scores: Dict[str, float] = Field(default_factory=dict)
+    routing: Optional[Dict[str, Any]] = Field(default=None, description="Routing information from ConversionRouter")
 
 
 class ConversionResponse(BaseModel):

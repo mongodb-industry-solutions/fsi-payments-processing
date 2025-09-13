@@ -24,15 +24,15 @@ export default function Home() {
         <Body className={styles.subtitle}>
           MongoDB-driven payment format conversion with AI-powered field extraction
         </Body>
-        
+
         <div className={styles.badges}>
           <Badge variant="green">100% Generic</Badge>
           <Badge variant="blue">3-Lane Processing</Badge>
           <Badge variant="purple">AI-Powered</Badge>
         </div>
 
-        <Button 
-          variant="primary" 
+        <Button
+          variant="primary"
           size="large"
           onClick={handleGetStarted}
           className={styles.ctaButton}

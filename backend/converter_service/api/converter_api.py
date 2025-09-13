@@ -11,6 +11,7 @@ from datetime import datetime
 from ..models.requests import ConversionRequest
 from ..models.responses import ConversionResponse
 from ..core.converter import UniversalConverter
+from ..services.conversion_router import ConversionRouter
 from ..services.db_service import get_mongodb_service
 from ..config.settings import get_settings
 
@@ -65,15 +66,32 @@ async def convert_message(
             )
     
     try:
-        # Initialize converter
-        converter = UniversalConverter(
-            db_connector=db_service,
-            source_format=request.source_format,
-            target_format=request.target_format
-        )
-        
-        # Perform conversion
-        result = converter.convert(request.message)
+        # Check if direct conversion exists
+        conversion_id = f"{request.source_format}_to_{request.target_format}"
+        direct_config_exists = db_service.db['conversion_registry'].find_one({'_id': conversion_id}) is not None
+
+        # Use ConversionRouter if explicitly requested OR if no direct conversion exists
+        if request.use_router or not direct_config_exists:
+            if not direct_config_exists:
+                logger.info(f"No direct conversion found for {request.source_format} → {request.target_format}, attempting multi-hop routing")
+            else:
+                logger.info(f"Using ConversionRouter as requested for {request.source_format} → {request.target_format}")
+
+            router_service = ConversionRouter(db_service)
+            result = router_service.convert(
+                source_format=request.source_format,
+                target_format=request.target_format,
+                message=request.message,
+                options=request.options
+            )
+        else:
+            # Use existing UniversalConverter directly
+            converter = UniversalConverter(
+                db_connector=db_service,
+                source_format=request.source_format,
+                target_format=request.target_format
+            )
+            result = converter.convert(request.message)
         
         # Save result to database if requested
         if request.save_result:

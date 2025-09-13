@@ -43,6 +43,11 @@ class ConversionRequest(BaseModel):
         description="Additional conversion options"
     )
     
+    use_router: bool = Field(
+        default=False,
+        description="Use ConversionRouter for intelligent path finding (Phase 1 testing)"
+    )
+    
     class Config:
         json_schema_extra = {
             "example": {

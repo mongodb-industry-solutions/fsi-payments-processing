@@ -12,6 +12,7 @@ dependencies = [
     "boto3>=1.35.70",
     "botocore>=1.35.70",
     "voyageai>=0.3.2",
+    "jsonschema>=4.25.1",
 ]
 
 [build-system]

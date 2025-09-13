@@ -13,8 +13,10 @@ by_claude/
 .env*
 .venv
 env/
+.serena/
 venv/
 ENV/
+backend/comverter_service/tests/
 backend/tests/
 env.bak/
 venv.bak/
@@ -34,7 +36,7 @@ __pycache__/
 
 # C extensions
 *.so
-
+/backend/converter_service/scripts/populate_*
 # Distribution / packaging
 .Python
 build/
@@ -326,3 +328,17 @@ backend/converter_service/TECHNICAL_SYSTEM_DOCUMENTATION.md
 backend/converter_service/CONVERTER_SERVICE_ANALYSIS.md
 backend/for_demo_improvements.md
 backend/converter_service/tests/test_mt103_to_json.sh
+backend/converter_service/tests/mt205_sample.json
+backend/converter_service/tests/mt205_convert_request.json
+backend/converter_service/tests/mt205_conversion_result.json
+backend/converter_service/tests/mt205_autoconfig_request.json
+backend/converter_service/tests/check_fedwire_path.py
+DATA_MODEL_CONSISTENCY_GUIDE.md
+backend/converter_service/TEMPLATE_BASED_CONVERSION_GUIDE.md
+backend/converter_service/SCHEMA_VALIDATION_ENFORCEMENT.md
+backend/converter_service/validation_report.txt
+backend/converter_service/tests/demo_human_review.py
+backend/converter_service/CRITICAL_CONFIG_CREATION_GUIDE.md
+backend/converter_service/tests/iso8583_0200_sample.txt
+backend/converter_service/pacs008_output.xml.json
+backend/converter_service/fix_iso8583_graph_edge.py

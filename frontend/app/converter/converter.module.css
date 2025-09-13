@@ -255,11 +255,34 @@
 /* Modal Styles */
 .advancedModal {
   max-width: 900px !important;
-  width: 90% !important;
+  width: 90vw !important;
+  max-height: 90vh !important;
+  margin: 0 auto !important;
+}
+
+/* Ensure modal backdrop and positioning */
+.advancedModal [data-lgid="modal-backdrop"] {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.advancedModal [data-lgid="modal-content"] {
+  margin: 0 auto !important;
+  max-width: 900px !important;
+  width: 90vw !important;
+  max-height: 90vh !important;
+  overflow-y: auto !important;
 }
 
 .modalContent {
   padding: 0;
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
 }
 
 .modalHeader {
@@ -286,20 +309,31 @@
   overflow-y: auto;
 }
 
+/* Modal centering is handled in globals.css */
+
 @media (max-width: 768px) {
   .container {
     padding: 1rem;
   }
-  
+
   .formatSelectors {
     grid-template-columns: 1fr;
   }
-  
+
   .previewSection {
     grid-template-columns: 1fr;
   }
-  
+
   .tabContent {
     padding: 1rem 0;
+  }
+
+  .advancedModal {
+    width: 95vw !important;
+    max-width: none !important;
+  }
+
+  .modalTabContent {
+    padding: 1rem !important;
   }
 }

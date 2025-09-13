@@ -59,9 +59,13 @@ class Transformer:
             transform_type = mapping.get('transform', 'copy')
             processing_lane = mapping.get('processing_lane', 'RULES')
             
-            # Get source value (handle nested fields)
-            source_value = self._get_field_value(parsed_fields, source_field)
-            
+            # Get source value (handle nested fields and static values)
+            if source_field and source_field.startswith('static:'):
+                # Handle static values
+                source_value = source_field[7:]  # Remove 'static:' prefix
+            else:
+                source_value = self._get_field_value(parsed_fields, source_field)
+
             if source_value is None:
                 continue
             
@@ -294,10 +298,14 @@ class Transformer:
     
     def _apply_transformation(self, value: Any, transform_type: str, mapping: Dict) -> Any:
         """Apply specific transformation to a value"""
-        
+
         if transform_type == 'copy':
             return value
-            
+
+        elif transform_type == 'static':
+            # For static values, just return the value as-is
+            return value
+
         elif transform_type == 'remove_comma':
             if isinstance(value, str):
                 return value.replace(',', '.')

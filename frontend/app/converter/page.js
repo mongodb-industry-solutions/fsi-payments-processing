@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import FormatSelector from "@/components/converter/FormatSelector";
 import FormatPreview from "@/components/converter/FormatPreview";
 import FieldMappingTable from "@/components/converter/FieldMappingTable";
@@ -11,13 +12,23 @@ import HumanReviewPanel from "@/components/converter/HumanReviewPanel";
 import LearningDashboard from "@/components/converter/LearningDashboard";
 import Button from "@leafygreen-ui/button";
 import Card from "@leafygreen-ui/card";
-import { Tabs, Tab } from "@leafygreen-ui/tabs";
 import { H1, Body } from "@leafygreen-ui/typography";
 import Banner from "@leafygreen-ui/banner";
 import Icon from "@leafygreen-ui/icon";
 import Modal from "@leafygreen-ui/modal";
 import LeafyGreenProvider from "@leafygreen-ui/leafygreen-provider";
 import styles from "./converter.module.css";
+
+// Dynamically import Tabs to avoid hydration mismatch
+const DynamicTabs = dynamic(
+  () => import("@leafygreen-ui/tabs").then((mod) => ({ default: mod.Tabs })),
+  { ssr: false }
+);
+
+const DynamicTab = dynamic(
+  () => import("@leafygreen-ui/tabs").then((mod) => ({ default: mod.Tab })),
+  { ssr: false }
+);
 
 export default function ConverterPage() {
   // Format selection states
@@ -355,12 +366,12 @@ export default function ConverterPage() {
                     
                     {/* Tabbed Interface for Details */}
                     <div className={styles.tabsContainer}>
-                      <Tabs 
+                      <DynamicTabs
                         selected={selectedTab}
                         onChange={setSelectedTab}
                         aria-label="Conversion Details"
                       >
-                        <Tab name="Field Mappings">
+                        <DynamicTab name="Field Mappings">
                           <div className={styles.tabContent}>
                             <FieldMappingTable
                               conversionId={conversionResult.conversionId}
@@ -368,10 +379,10 @@ export default function ConverterPage() {
                               targetFormat={conversionResult.targetFormat}
                             />
                           </div>
-                        </Tab>
-                        
+                        </DynamicTab>
+
                         {enableHumanReview && (
-                          <Tab name="Human Review">
+                          <DynamicTab name="Human Review">
                             <div className={styles.tabContent}>
                               <HumanReviewPanel
                                 conversionId={conversionResult.conversionId}
@@ -379,11 +390,11 @@ export default function ConverterPage() {
                                 targetFormat={conversionResult.targetFormat}
                               />
                             </div>
-                          </Tab>
+                          </DynamicTab>
                         )}
-                        
-                        
-                        <Tab name="MongoDB Insights">
+
+
+                        <DynamicTab name="MongoDB Insights">
                           <div className={styles.tabContent}>
                             <MongoDBInsightsPanel
                               sourceFormat={conversionResult.sourceFormat}
@@ -392,9 +403,9 @@ export default function ConverterPage() {
                               conversionId={conversionResult.conversionId}
                             />
                           </div>
-                        </Tab>
-                        
-                        <Tab name="Raw Messages">
+                        </DynamicTab>
+
+                        <DynamicTab name="Raw Messages">
                           <div className={styles.tabContent}>
                             <div className={styles.messageContainer}>
                               <h3>Input ({conversionResult.sourceFormat}):</h3>
@@ -402,7 +413,7 @@ export default function ConverterPage() {
                                 {conversionResult.inputMessage}
                               </pre>
                             </div>
-                            
+
                             <div className={styles.messageContainer}>
                               <h3>Output ({conversionResult.targetFormat}):</h3>
                               <pre className={styles.codeBlock}>
@@ -410,8 +421,8 @@ export default function ConverterPage() {
                               </pre>
                             </div>
                           </div>
-                        </Tab>
-                      </Tabs>
+                        </DynamicTab>
+                      </DynamicTabs>
                     </div>
                     
                     {conversionResult.conversionId && (
@@ -467,10 +478,11 @@ export default function ConverterPage() {
         </div>
         
         {/* Advanced Tools Modal */}
-        <Modal 
-          open={showAdvancedModal} 
+        <Modal
+          open={showAdvancedModal}
           setOpen={setShowAdvancedModal}
           className={styles.advancedModal}
+          size="large"
         >
           <div className={styles.modalContent}>
             <div className={styles.modalHeader}>
@@ -480,29 +492,29 @@ export default function ConverterPage() {
               </Body>
             </div>
             
-            <Tabs selected={0} aria-label="Configuration Tools">
+            <DynamicTabs selected={0} aria-label="Configuration Tools">
               {enableAutoConfig && (
-                <Tab name="Auto Configuration">
+                <DynamicTab name="Auto Configuration">
                   <div className={styles.modalTabContent}>
                     <AutoConfigPanel
                       sourceFormat={sourceFormat || ""}
                       targetFormat={targetFormat || ""}
                     />
                   </div>
-                </Tab>
+                </DynamicTab>
               )}
-              
+
               {enableLearning && (
-                <Tab name="Semantic Learning">
+                <DynamicTab name="Semantic Learning">
                   <div className={styles.modalTabContent}>
                     <LearningDashboard
                       sourceFormat={sourceFormat || ""}
                       targetFormat={targetFormat || ""}
                     />
                   </div>
-                </Tab>
+                </DynamicTab>
               )}
-            </Tabs>
+            </DynamicTabs>
           </div>
         </Modal>
       </div>
