@@ -342,3 +342,14 @@ backend/converter_service/CRITICAL_CONFIG_CREATION_GUIDE.md
 backend/converter_service/tests/iso8583_0200_sample.txt
 backend/converter_service/pacs008_output.xml.json
 backend/converter_service/fix_iso8583_graph_edge.py
+backend/converter_service/tests/debug_ai_mapping.py
+backend/converter_service/docs/CONVERSION_ROUTER_DESIGN_AND_PLAN.md
+backend/converter_service/docs/CRITICAL_CONFIG_CREATION_GUIDE.md
+backend/converter_service/docs/dual-graph-routing-system.md
+backend/converter_service/docs/ISO8583_TO_ISO20022_ANALYSIS.md
+backend/converter_service/docs/JSON_INTERMEDIATE_FORMAT_PLAN.md
+backend/converter_service/docs/JSON_SUPPORT_IMPLEMENTATION_PLAN.md
+backend/converter_service/docs/JSON_SUPPORT_RISKS_AND_SAFER_APPROACH.md
+backend/converter_service/docs/PROJECT_PLAN_HANDOVER.md
+backend/converter_service/docs/TECHNICAL_SYSTEM_DOCUMENTATION.md
+backend/converter_service/docs/TEMPLATE_BASED_CONVERSION_GUIDE.md

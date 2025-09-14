@@ -310,6 +310,25 @@ class Transformer:
             if isinstance(value, str):
                 return value.replace(',', '.')
             return value
+
+        elif transform_type == 'decimal_conversion':
+            # Convert between minor and major units (e.g., cents to dollars)
+            config = mapping.get('transform_config', {})
+            from_minor_units = config.get('from_minor_units', False)
+            decimal_places = config.get('decimal_places', 2)
+
+            try:
+                amount = float(value)
+                if from_minor_units:
+                    # Convert from minor units (e.g., 12050 cents to 120.50 dollars)
+                    divisor = 10 ** decimal_places
+                    return f"{amount / divisor:.{decimal_places}f}"
+                else:
+                    # Convert to minor units
+                    multiplier = 10 ** decimal_places
+                    return str(int(amount * multiplier))
+            except (ValueError, TypeError):
+                return value
             
         elif transform_type == 'map':
             # Value mapping (e.g., SHA -> SHAR)
@@ -329,13 +348,24 @@ class Transformer:
             # Check transform_config first, fall back to inline for backward compatibility
             input_format = config.get('input_format', mapping.get('input_format', '%y%m%d'))
             output_format = config.get('output_format', mapping.get('output_format', '%Y-%m-%d'))
-            
+            assume_current_year = config.get('assume_current_year', False)
+
             # Add deprecation warning if using inline parameters
             if ('input_format' in mapping or 'output_format' in mapping) and 'transform_config' not in mapping:
                 logger.warning(f"DEPRECATED: inline parameters for date_format in field {mapping.get('source', 'unknown')}. Move to transform_config")
-            
+
             try:
-                dt = datetime.strptime(str(value), input_format)
+                # If assume_current_year is True and year is not in input format
+                if assume_current_year and '%Y' not in input_format and '%y' not in input_format:
+                    # Prepend current year to the value
+                    current_year = datetime.now().year
+                    # For formats like MMDD, prepend year
+                    value_str = f"{current_year}{str(value)}"
+                    # Adjust input format to include year
+                    input_format = f"%Y{input_format}"
+                    dt = datetime.strptime(value_str, input_format)
+                else:
+                    dt = datetime.strptime(str(value), input_format)
                 return dt.strftime(output_format)
             except:
                 return value
