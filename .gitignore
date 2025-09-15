@@ -1,4 +1,5 @@
 # claude
+.DS_Store
 **/.claude
 
 # Claude's temporary files and testing
@@ -25,9 +26,12 @@ backend/requirements/
 backend/data/
 backup/
 backend/converter_service/explain
+backend/converter_service/tests
 # Config
 **/config.yml
 **/config.yaml
+fix_*.py
+DEMO_*.md
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -46,6 +50,7 @@ downloads/
 eggs/
 .eggs/
 lib/
+experiments/
 lib64/
 parts/
 sdist/
@@ -353,3 +358,4 @@ backend/converter_service/docs/JSON_SUPPORT_RISKS_AND_SAFER_APPROACH.md
 backend/converter_service/docs/PROJECT_PLAN_HANDOVER.md
 backend/converter_service/docs/TECHNICAL_SYSTEM_DOCUMENTATION.md
 backend/converter_service/docs/TEMPLATE_BASED_CONVERSION_GUIDE.md
+backend/converter_service/scripts/add_ach_payment_memo_ai.py

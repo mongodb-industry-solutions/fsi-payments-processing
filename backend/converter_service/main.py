@@ -52,6 +52,14 @@ app.include_router(config_review_router, prefix="/api/v1/review", tags=["Config 
 from api.conversion_review_api import router as conversion_review_router
 app.include_router(conversion_review_router, prefix="/api/v1/review", tags=["Conversion Review"])
 
+# Include demo API routers if demo mode is enabled
+if feature_flags.is_demo_mode():
+    from converter_service.api.demo_api import router as demo_router
+    from converter_service.api.demo_interactive_api import router as demo_interactive_router
+    app.include_router(demo_router)
+    app.include_router(demo_interactive_router)
+    logger.info("Demo API endpoints enabled")
+
 
 @app.on_event("startup")
 async def startup_event():

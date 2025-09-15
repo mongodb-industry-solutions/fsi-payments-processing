@@ -63,7 +63,9 @@ class GenericParser:
             if not pattern:
                 continue
 
-            match = re.search(pattern, content)
+            # Use multiline flag if configured at parser level
+            flags = re.MULTILINE if self.config.get('multiline', False) else 0
+            match = re.search(pattern, content, flags)
             if match:
                 value = match.group(1).strip() if match.groups() else match.group(0)
 
