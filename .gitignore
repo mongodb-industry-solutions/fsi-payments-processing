@@ -359,3 +359,5 @@ backend/converter_service/docs/PROJECT_PLAN_HANDOVER.md
 backend/converter_service/docs/TECHNICAL_SYSTEM_DOCUMENTATION.md
 backend/converter_service/docs/TEMPLATE_BASED_CONVERSION_GUIDE.md
 backend/converter_service/scripts/add_ach_payment_memo_ai.py
+commands.md
+backend/converter_service/API_ENDPOINTS_DOCUMENTATION.md

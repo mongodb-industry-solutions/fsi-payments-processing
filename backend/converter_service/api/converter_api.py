@@ -14,6 +14,8 @@ from ..core.converter import UniversalConverter
 from ..services.conversion_router import ConversionRouter
 from ..services.db_service import get_mongodb_service
 from ..config.settings import get_settings
+from ..config.feature_flags import feature_flags
+from ..utils.demo_fallback_enhancer import DemoFallbackEnhancer
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/converter", tags=["converter"])
@@ -92,7 +94,18 @@ async def convert_message(
                 target_format=request.target_format
             )
             result = converter.convert(request.message)
-        
+
+        # Enhance with demo defaults if demo mode AND fallback is enabled
+        if feature_flags.is_demo_mode() and feature_flags.ENABLE_DEMO_FALLBACK and 'converted_message' in result:
+            result['converted_message'] = DemoFallbackEnhancer.enhance_conversion_output(
+                result['converted_message'],
+                request.source_format,
+                request.target_format
+            )
+            if 'metadata' not in result:
+                result['metadata'] = {}
+            result['metadata']['demo_enhanced'] = True
+
         # Save result to database if requested
         if request.save_result:
             result['request_id'] = request.request_id

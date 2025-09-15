@@ -23,6 +23,7 @@ from ..models.demo_models import (
     PaymentTypeSummary,
     ValidationResult
 )
+from ..utils.demo_fallback_enhancer import DemoFallbackEnhancer
 
 logger = logging.getLogger(__name__)
 
@@ -247,6 +248,17 @@ async def execute_payment(request: ExecutePaymentRequest):
                     "error": f"Conversion from {source_format} to {target_format} failed: {str(e)}",
                     "metadata": {}
                 }
+
+        # Apply demo enhancement to converted message (if enabled)
+        if feature_flags.ENABLE_DEMO_FALLBACK and conversion_result.get("success") and conversion_result.get("converted_message"):
+            conversion_result["converted_message"] = DemoFallbackEnhancer.enhance_conversion_output(
+                conversion_result["converted_message"],
+                source_format,
+                target_format
+            )
+            if "metadata" not in conversion_result:
+                conversion_result["metadata"] = {}
+            conversion_result["metadata"]["demo_enhanced"] = True
 
         # Prepare response
         response = ExecutePaymentResponse(

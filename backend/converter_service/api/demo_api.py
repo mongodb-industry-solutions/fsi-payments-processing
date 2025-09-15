@@ -15,6 +15,7 @@ from ..services.db_service import MongoDBService
 from ..config.feature_flags import feature_flags
 from ..config.settings import get_settings
 from ..utils.progress_tracker import ProgressTracker, ProcessingStage, FieldStatus
+from ..utils.demo_fallback_enhancer import DemoFallbackEnhancer
 from ..models.requests import ConversionRequest
 from ..models.responses import ConversionResponse
 
@@ -179,10 +180,18 @@ async def _perform_demo_conversion(converter: UniversalConverter,
     progress_tracker.start_stage(ProcessingStage.BUILDING)
     output_message = converter.builder.build(transformed_fields)
     progress_tracker.complete_stage(ProcessingStage.BUILDING)
-    
+
+    # Enhance output with intelligent demo defaults (if enabled)
+    if feature_flags.is_demo_mode() and feature_flags.ENABLE_DEMO_FALLBACK:
+        output_message = DemoFallbackEnhancer.enhance_conversion_output(
+            output_message,
+            converter.source_format,
+            converter.target_format
+        )
+
     # Mark as complete
     progress_tracker.start_stage(ProcessingStage.COMPLETE)
-    
+
     return {
         "success": True,
         "converted_message": output_message,
@@ -191,6 +200,7 @@ async def _perform_demo_conversion(converter: UniversalConverter,
             "target_format": converter.target_format,
             "parsed_fields_count": len(parsed_fields),
             "transformed_fields_count": len(transformed_fields),
+            "demo_enhanced": feature_flags.is_demo_mode(),
             **processing_summary
         }
     }

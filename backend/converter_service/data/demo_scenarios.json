@@ -615,7 +615,7 @@
           "values": {
             "card_number": "4111111111111111",
             "processing_code": "000000",
-            "amount": "6.75",
+            "amount": "675",
             "currency_code": "840",
             "datetime": "1215083052",
             "stan": "083052",
@@ -630,7 +630,7 @@
           "values": {
             "card_number": "5500000000000004",
             "processing_code": "000000",
-            "amount": "1299.99",
+            "amount": "129999",
             "currency_code": "840",
             "datetime": "1215143052",
             "stan": "143052",
@@ -730,6 +730,46 @@
       "form_schema": {
         "sections": [
           {
+            "title": "Banks Information",
+            "fields": [
+              {
+                "id": "sender_bic",
+                "label": "Executing Party BIC",
+                "type": "text",
+                "placeholder": "BARCGB22XXX",
+                "required": true
+              },
+              {
+                "id": "receiver_bic",
+                "label": "Receiving Party BIC",
+                "type": "text",
+                "placeholder": "DEUTDEFFXXX",
+                "required": true
+              },
+              {
+                "id": "ordering_institution",
+                "label": "Ordering Institution BIC",
+                "type": "text",
+                "placeholder": "BARCGB22XXX",
+                "required": true
+              },
+              {
+                "id": "account_institution",
+                "label": "Account Institution BIC",
+                "type": "text",
+                "placeholder": "DEUTDEFFXXX",
+                "required": true
+              },
+              {
+                "id": "beneficiary_institution",
+                "label": "Beneficiary Institution",
+                "type": "text",
+                "placeholder": "FX SETTLEMENT DESK",
+                "required": true
+              }
+            ]
+          },
+          {
             "title": "FX Transaction",
             "fields": [
               {
@@ -795,11 +835,35 @@
                 "required": true
               },
               {
+                "id": "related_reference",
+                "label": "Related Reference",
+                "type": "text",
+                "placeholder": "CORP-HEDGE-Q4",
+                "required": false
+              },
+              {
+                "id": "value_date",
+                "label": "Value Date",
+                "type": "text",
+                "placeholder": "241217",
+                "pattern": "[0-9]{6}",
+                "required": true,
+                "helpText": "Format: YYMMDD"
+              },
+              {
                 "id": "settlement_account",
                 "label": "Settlement Account",
                 "type": "text",
                 "placeholder": "GB12BARC20040134265359",
                 "required": true
+              },
+              {
+                "id": "sender_to_receiver_info",
+                "label": "Additional Instructions (AI Processed)",
+                "type": "textarea",
+                "placeholder": "/DEAL/Forward FX USD/EUR\n/SETTLE/T+2\n/PURPOSE/Hedging strategy",
+                "required": false,
+                "helpText": "This field is processed by AI to extract structured information"
               }
             ]
           }

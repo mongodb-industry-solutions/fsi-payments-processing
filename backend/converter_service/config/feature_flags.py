@@ -18,6 +18,7 @@ class FeatureFlags:
     SHOW_AI_REASONING = os.getenv('SHOW_AI_REASONING', 'false').lower() == 'true'
     SHOW_CONFIDENCE_BREAKDOWN = os.getenv('SHOW_CONFIDENCE_BREAKDOWN', 'false').lower() == 'true'
     SHOW_LANE_VISUALIZATION = os.getenv('SHOW_LANE_VISUALIZATION', 'false').lower() == 'true'
+    ENABLE_DEMO_FALLBACK = os.getenv('ENABLE_DEMO_FALLBACK', 'false').lower() == 'true'  # Control fallback enhancer
     
     # WebSocket support for real-time updates
     ENABLE_WEBSOCKET = os.getenv('ENABLE_WEBSOCKET', 'false').lower() == 'true'
