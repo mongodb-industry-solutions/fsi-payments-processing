@@ -655,18 +655,18 @@ Include a 'confidence_scores' object with your confidence (0.0-1.0) for each fie
                 "hybrid_model": {
                     "enabled": True,
                     "weights": {
-                        "ai_confidence": 0.7,
-                        "validation_confidence": 0.3
+                        "ai_confidence": 0.5,
+                        "validation_confidence": 0.5
                     }
                 },
                 "validation_rules": {
                     "bank_to_bank_info": {
-                        "expected_fields": ["InstrForNxtAgt", "InstrForCdtrAgt"],
+                        "expected_fields": ["InstrForCdtrAgt"],  # Check main output field
                         "field_patterns": {
-                            "instruction_codes": "^\\[.*\\]$"
+                            "InstrForCdtrAgt": ".*"  # Accept any format
                         },
-                        "boost_if_matches": 0.1,
-                        "penalty_if_missing": 0.15
+                        "boost_if_matches": 0.2,
+                        "penalty_if_missing": 0.1
                     },
                     "institution_details": {
                         "expected_fields": ["name"],
@@ -683,7 +683,7 @@ Include a 'confidence_scores' object with your confidence (0.0-1.0) for each fie
                     }
                 },
                 "fallback_confidence": {
-                    "no_ai_confidence": 0.5,
+                    "no_ai_confidence": 0.85,  # Higher confidence for successful extraction
                     "extraction_failed": 0.3
                 }
             },

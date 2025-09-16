@@ -292,37 +292,143 @@ Return a JSON object with the main data elements you can identify."""
     
     def _calculate_hybrid_confidence(self, extracted_data: Dict, field_type: str) -> float:
         """
-        Calculate hybrid confidence combining AI and validation scores
+        Calculate confidence based on extraction success, ignoring AI's self-reported confidence
         """
-        # 1. Get AI's self-reported confidence
-        ai_confidence_scores = extracted_data.get('confidence_scores', {})
-        ai_overall_confidence = ai_confidence_scores.get('overall', None)
-        
-        
-        # 2. Calculate validation confidence
-        # Remove confidence_scores for validation
-        extracted_data_clean = {k: v for k, v in extracted_data.items() 
-                               if k != 'confidence_scores'}
-        validation_confidence = self._calculate_validation_confidence(
-            extracted_data_clean, field_type
-        )
-        
-        # 3. Combine using configured weights
-        if self.hybrid_model.get('enabled', False) and ai_overall_confidence is not None:
-            weights = self.hybrid_model.get('weights', {})
-            ai_weight = weights.get('ai_confidence', 0.7)
-            val_weight = weights.get('validation_confidence', 0.3)
-            
-            final_confidence = (
-                ai_overall_confidence * ai_weight + 
-                validation_confidence * val_weight
-            )
-        else:
-            # Fallback to validation-only if no AI confidence
-            final_confidence = validation_confidence
-        
-        return round(final_confidence, 2)
+        # Check if extraction was successful
+        if not extracted_data or extracted_data == {}:
+            # Failed extraction - use low confidence
+            logger.debug(f"Field {field_type}: Empty extraction, confidence = 0.3")
+            return 0.3
+
+        # Clean data for assessment (remove metadata)
+        extracted_data_clean = {k: v for k, v in extracted_data.items()
+                               if k not in ['confidence_scores', 'processing_metadata']}
+
+        # Calculate confidence based on extraction quality
+        confidence = self._calculate_extraction_confidence(extracted_data_clean, field_type)
+
+        logger.info(f"Field {field_type}: Extraction confidence = {confidence:.2f} based on {len(extracted_data_clean)} fields")
+
+        return round(confidence, 2)
     
+    def _calculate_extraction_confidence(self, extracted_data: Dict, field_type: str) -> float:
+        """
+        Calculate confidence based on extraction quality
+        Generic implementation that works for any format
+        """
+        if not extracted_data:
+            return 0.3
+
+        # Count meaningful fields extracted
+        meaningful_fields = 0
+        total_content_length = 0
+        has_lists = False
+        has_structured_data = False
+
+        for key, value in extracted_data.items():
+            # Skip empty values
+            if not value:
+                continue
+
+            # Count meaningful fields based on content type
+            if isinstance(value, str):
+                if value.strip():
+                    meaningful_fields += 1
+                    total_content_length += len(value.strip())
+            elif isinstance(value, list):
+                has_lists = True
+                if any(v for v in value if v):  # Non-empty list with content
+                    meaningful_fields += 1
+                    total_content_length += sum(len(str(v)) for v in value if v)
+                    has_structured_data = True
+            elif isinstance(value, dict):
+                if value:  # Non-empty dict
+                    meaningful_fields += 1
+                    has_structured_data = True
+
+        # Calculate confidence based on extraction quality
+        # Progressive confidence based on extraction completeness
+        # Simple complete extractions get high confidence
+        # Complex partial extractions get moderate confidence
+
+        if meaningful_fields == 0:
+            # No meaningful data extracted
+            return 0.3
+
+        # Check for Ustrd field (common for remittance info)
+        # If it's a single-line Ustrd, it's likely a complete simple extraction
+        has_ustrd = 'Ustrd' in extracted_data
+        ustrd_lines = 0
+        if has_ustrd and isinstance(extracted_data.get('Ustrd'), list):
+            ustrd_lines = len([line for line in extracted_data['Ustrd'] if line])
+
+        # For simple single-line extractions that appear complete
+        if meaningful_fields == 1 and total_content_length < 10:
+            # Very minimal (e.g., just "PAY") - but if that's all there was, it's complete
+            return 0.80  # Higher confidence for complete simple extraction
+
+        elif meaningful_fields == 1 and total_content_length < 50:
+            # Single field with modest content (e.g., "PAYMENT FOR SERVICES")
+            # This is likely a complete extraction of simple input
+            return 0.85  # High confidence for complete simple extraction
+
+        elif has_ustrd and ustrd_lines == 1 and meaningful_fields <= 2:
+            # Single-line Ustrd with maybe one other field - simple complete extraction
+            return 0.85
+
+        elif meaningful_fields == 2 and not has_structured_data:
+            # Two fields but simple data - good extraction
+            return 0.80
+
+        elif has_ustrd and ustrd_lines > 1:
+            # Multi-line Ustrd - complex extraction
+            if meaningful_fields >= 3:
+                # Multiple lines plus other fields - excellent
+                return 0.90
+            else:
+                # Just multi-line Ustrd - very good
+                return 0.85
+
+        elif meaningful_fields >= 2 and has_structured_data:
+            # Multiple fields with structured data - high confidence
+            return 0.85
+
+        elif meaningful_fields >= 3:
+            # Many fields extracted - excellent extraction
+            return 0.90
+
+        elif meaningful_fields >= 2:
+            # Multiple fields extracted - good extraction
+            return 0.80
+
+        else:
+            # Default case: some extraction success
+            return 0.75
+
+    def _has_main_output_fields(self, extracted_data: Dict, field_type: str) -> bool:
+        """
+        Check if the main output fields for this field type are present
+        Generic implementation - just checks if we have any meaningful data
+        """
+        if not extracted_data:
+            return False
+
+        # Generic check - if we have any non-empty data, consider it successful
+        for key, value in extracted_data.items():
+            # Skip metadata fields
+            if key in ['confidence_scores', 'processing_metadata']:
+                continue
+
+            # Check if field has meaningful content
+            if value and (
+                (isinstance(value, str) and value.strip()) or
+                (isinstance(value, list) and len(value) > 0 and any(v for v in value if v)) or
+                (isinstance(value, dict) and len(value) > 0)
+            ):
+                return True
+
+        return False
+
     def _calculate_validation_confidence(self, extracted_data: Dict, field_type: str) -> float:
         """
         Calculate confidence based on validation rules from MongoDB

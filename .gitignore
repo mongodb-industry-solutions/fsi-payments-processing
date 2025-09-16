@@ -19,6 +19,7 @@ venv/
 ENV/
 backend/comverter_service/tests/
 backend/tests/
+backend/converter_service/data/configs
 env.bak/
 venv.bak/
 help-for-me/
