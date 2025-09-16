@@ -18,6 +18,7 @@ from ..utils.progress_tracker import ProgressTracker, ProcessingStage, FieldStat
 from ..utils.demo_fallback_enhancer import DemoFallbackEnhancer
 from ..models.requests import ConversionRequest
 from ..models.responses import ConversionResponse
+from ..services.payment_journey_builder import PaymentJourneyBuilder
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +31,9 @@ active_connections: Dict[str, WebSocket] = {}
 # Store recent conversions for demo reference (with max size limit)
 recent_conversions: Dict[str, Dict[str, Any]] = {}
 MAX_RECENT_CONVERSIONS = 20  # Limit stored conversions
+
+# Initialize journey builder
+journey_builder = PaymentJourneyBuilder()
 
 
 @router.get("/status")
@@ -106,6 +110,27 @@ async def demo_convert_with_visualization(request: ConversionRequest):
             for old_id in sorted_ids[:len(recent_conversions) - MAX_RECENT_CONVERSIONS]:
                 del recent_conversions[old_id]
         
+        # Add journey visualization based on payment type and form data
+        journey_data = None
+        try:
+            # Determine payment type from formats
+            payment_type_id = _determine_payment_type(request.source_format, request.target_format)
+
+            # Extract form data from request (if provided in metadata)
+            form_data = getattr(request, 'metadata', {}).get('form_data', {})
+            if not form_data:
+                # Use parsed fields as form data for complexity assessment
+                form_data = parsed_fields if 'parsed_fields' in locals() else {}
+
+            # Get journey visualization
+            journey_data = journey_builder.get_journey(
+                payment_type_id=payment_type_id,
+                form_data=form_data
+            )
+        except Exception as e:
+            logger.warning(f"Could not generate journey visualization: {e}")
+            journey_data = {"error": "Journey visualization unavailable"}
+
         # Combine standard result with demo enhancements
         response = {
             **demo_result,
@@ -116,9 +141,10 @@ async def demo_convert_with_visualization(request: ConversionRequest):
                 "processing_timeline": progress_tracker.stage_timeline,
                 "field_details": progress_tracker.field_progress,
                 "total_processing_time": progress_summary["processing_time_seconds"]
-            }
+            },
+            "journey_visualization": journey_data
         }
-        
+
         return response
         
     except Exception as e:
@@ -406,6 +432,49 @@ async def broadcast_progress(update: Dict[str, Any]):
     # Clean up disconnected clients
     for client_id in disconnected:
         del active_connections[client_id]
+
+
+def _determine_payment_type(source_format: str, target_format: str) -> str:
+    """
+    Determine payment type ID based on source and target formats.
+    Maps format pairs to payment types from demo_scenarios.json
+    """
+    format_mapping = {
+        ("MT103", "pacs.008"): "cross_border",
+        ("MT202", "pacs.009"): "bank_transfer",
+        ("ISO8583_0200", "cain.001"): "card_payment",
+        ("MT205", "pacs.009"): "fx_settlement",
+        ("pacs.008", "TARGET2"): "instant_payment"
+    }
+
+    # Return matching payment type or default to cross_border
+    return format_mapping.get((source_format, target_format), "cross_border")
+
+
+@router.get("/journeys/payment-types")
+async def get_journey_payment_types():
+    """
+    Get available payment types with their journey counts.
+    """
+    return journey_builder.get_available_payment_types()
+
+
+@router.get("/journeys/{payment_type_id}")
+async def get_payment_type_journeys(payment_type_id: str):
+    """
+    Get all possible journeys for a specific payment type.
+    """
+    payment_type = journey_builder.payment_types.get(payment_type_id)
+    if not payment_type:
+        raise HTTPException(status_code=404, detail=f"Payment type '{payment_type_id}' not found")
+
+    return {
+        "payment_type": payment_type_id,
+        "display_name": payment_type.get("display_name"),
+        "source_format": payment_type.get("source_format"),
+        "target_format": payment_type.get("target_format"),
+        "journeys": payment_type.get("possible_journeys", [])
+    }
 
 
 @router.get("/recent-conversions")

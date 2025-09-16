@@ -268,6 +268,135 @@
             "sender_to_receiver_info": "/PRIORITY/HUMANITARIAN AID\n/CLEARANCE/EXPEDITED"
           }
         }
+      ],
+      "possible_journeys": [
+        {
+          "id": "direct_simple",
+          "name": "Simple Direct Conversion",
+          "condition": "Standard fields only",
+          "description": "Direct MT103 to pacs.008 with simple field mapping",
+          "route": ["MT103", "pacs.008"],
+          "hops": [
+            {
+              "step": 1,
+              "from_format": "MT103",
+              "to_format": "pacs.008",
+              "description": "Direct SWIFT to ISO 20022 transformation",
+              "processing_time_ms": 150,
+              "confidence": 0.95,
+              "lane_distribution": {
+                "rules": 85,
+                "ai": 10,
+                "human": 5
+              },
+              "fields_processed": 27,
+              "mongodb_operations": [
+                {"type": "QUERY", "collection": "conversion_registry", "time_ms": 3},
+                {"type": "AGGREGATE", "collection": "field_mappings", "time_ms": 12}
+              ]
+            }
+          ],
+          "total_time_ms": 150,
+          "total_fields": 27,
+          "success_rate": 99.8,
+          "showcase_features": [
+            "Direct format conversion",
+            "High-speed rules processing",
+            "Minimal AI involvement"
+          ]
+        },
+        {
+          "id": "direct_ai_heavy",
+          "name": "AI-Powered Complex Extraction",
+          "condition": "Complex remittance info in fields 70 and 72",
+          "description": "MT103 to pacs.008 with heavy AI processing for unstructured data",
+          "route": ["MT103", "pacs.008"],
+          "hops": [
+            {
+              "step": 1,
+              "from_format": "MT103",
+              "to_format": "pacs.008",
+              "description": "SWIFT to ISO 20022 with AI field extraction",
+              "processing_time_ms": 2500,
+              "confidence": 0.85,
+              "lane_distribution": {
+                "rules": 60,
+                "ai": 35,
+                "human": 5
+              },
+              "fields_processed": 32,
+              "ai_fields": ["field_70", "field_72"],
+              "ai_reasoning": "Extracting invoice numbers, payment purposes, and instructions from unstructured text",
+              "mongodb_operations": [
+                {"type": "QUERY", "collection": "conversion_registry", "time_ms": 3},
+                {"type": "INSERT", "collection": "ai_processing_log", "time_ms": 5},
+                {"type": "UPDATE", "collection": "confidence_scores", "time_ms": 4}
+              ]
+            }
+          ],
+          "total_time_ms": 2500,
+          "total_fields": 32,
+          "success_rate": 98.2,
+          "human_review_probability": 0.15,
+          "showcase_features": [
+            "AI-powered field extraction",
+            "Confidence scoring system",
+            "Human review integration"
+          ]
+        },
+        {
+          "id": "multihop_via_json",
+          "name": "Multi-Hop via Canonical JSON",
+          "condition": "When direct converter unavailable or for audit trail",
+          "description": "MT103 through Canonical JSON to pacs.008",
+          "route": ["MT103", "JSON", "pacs.008"],
+          "hops": [
+            {
+              "step": 1,
+              "from_format": "MT103",
+              "to_format": "JSON",
+              "description": "SWIFT to Canonical JSON transformation",
+              "processing_time_ms": 200,
+              "confidence": 0.92,
+              "lane_distribution": {
+                "rules": 80,
+                "ai": 15,
+                "human": 5
+              },
+              "fields_processed": 27,
+              "mongodb_operations": [
+                {"type": "QUERY", "collection": "conversion_registry", "time_ms": 3},
+                {"type": "LOOKUP", "collection": "semantic_patterns", "time_ms": 8}
+              ]
+            },
+            {
+              "step": 2,
+              "from_format": "JSON",
+              "to_format": "pacs.008",
+              "description": "Canonical JSON to ISO 20022 mapping",
+              "processing_time_ms": 100,
+              "confidence": 0.98,
+              "lane_distribution": {
+                "rules": 95,
+                "ai": 5,
+                "human": 0
+              },
+              "fields_processed": 30,
+              "mongodb_operations": [
+                {"type": "QUERY", "collection": "conversion_registry", "time_ms": 2},
+                {"type": "INSERT", "collection": "conversion_paths", "time_ms": 3}
+              ]
+            }
+          ],
+          "total_time_ms": 300,
+          "total_fields": 30,
+          "success_rate": 99.5,
+          "showcase_features": [
+            "Canonical JSON as universal bridge",
+            "Multi-hop routing intelligence",
+            "Path caching for performance"
+          ]
+        }
       ]
     },
     {
@@ -486,6 +615,133 @@
             "value_date": "241217",
             "sender_to_receiver_info": "/FX/SPOT SETTLEMENT\n/RATE/110.25"
           }
+        }
+      ],
+      "possible_journeys": [
+        {
+          "id": "direct_interbank",
+          "name": "Direct Bank-to-Bank Settlement",
+          "condition": "Standard correspondent banking",
+          "description": "Direct MT202 to pacs.009 for financial institution transfers",
+          "route": ["MT202", "pacs.009"],
+          "hops": [
+            {
+              "step": 1,
+              "from_format": "MT202",
+              "to_format": "pacs.009",
+              "description": "SWIFT bank-to-bank to ISO 20022 FI transfer",
+              "processing_time_ms": 120,
+              "confidence": 0.96,
+              "lane_distribution": {
+                "rules": 90,
+                "ai": 8,
+                "human": 2
+              },
+              "fields_processed": 18,
+              "mongodb_operations": [
+                {"type": "QUERY", "collection": "conversion_registry", "time_ms": 2},
+                {"type": "QUERY", "collection": "bank_directory", "time_ms": 5}
+              ]
+            }
+          ],
+          "total_time_ms": 120,
+          "total_fields": 18,
+          "success_rate": 99.9,
+          "showcase_features": [
+            "High-speed interbank processing",
+            "BIC validation and enrichment",
+            "Nostro/vostro account mapping"
+          ]
+        },
+        {
+          "id": "settlement_with_instructions",
+          "name": "Settlement with Complex Instructions",
+          "condition": "Field 72 contains treasury or compliance instructions",
+          "description": "MT202 to pacs.009 with AI processing for sender-to-receiver info",
+          "route": ["MT202", "pacs.009"],
+          "hops": [
+            {
+              "step": 1,
+              "from_format": "MT202",
+              "to_format": "pacs.009",
+              "description": "Bank transfer with AI extraction of field 72",
+              "processing_time_ms": 1800,
+              "confidence": 0.88,
+              "lane_distribution": {
+                "rules": 75,
+                "ai": 20,
+                "human": 5
+              },
+              "fields_processed": 20,
+              "ai_fields": ["field_72"],
+              "ai_reasoning": "Extracting treasury instructions, compliance notes, and settlement details",
+              "mongodb_operations": [
+                {"type": "QUERY", "collection": "conversion_registry", "time_ms": 2},
+                {"type": "INSERT", "collection": "treasury_instructions_log", "time_ms": 4},
+                {"type": "UPDATE", "collection": "settlement_tracking", "time_ms": 3}
+              ]
+            }
+          ],
+          "total_time_ms": 1800,
+          "total_fields": 20,
+          "success_rate": 98.5,
+          "showcase_features": [
+            "Treasury instruction extraction",
+            "Compliance note processing",
+            "Settlement tracking integration"
+          ]
+        },
+        {
+          "id": "correspondent_chain",
+          "name": "Correspondent Banking Chain",
+          "condition": "Multi-bank routing through correspondent network",
+          "description": "MT202 through JSON for complex correspondent chains",
+          "route": ["MT202", "JSON", "pacs.009"],
+          "hops": [
+            {
+              "step": 1,
+              "from_format": "MT202",
+              "to_format": "JSON",
+              "description": "Bank message to canonical format",
+              "processing_time_ms": 150,
+              "confidence": 0.94,
+              "lane_distribution": {
+                "rules": 85,
+                "ai": 10,
+                "human": 5
+              },
+              "fields_processed": 18,
+              "mongodb_operations": [
+                {"type": "QUERY", "collection": "conversion_registry", "time_ms": 2},
+                {"type": "LOOKUP", "collection": "correspondent_network", "time_ms": 8}
+              ]
+            },
+            {
+              "step": 2,
+              "from_format": "JSON",
+              "to_format": "pacs.009",
+              "description": "Canonical to ISO 20022 FI transfer",
+              "processing_time_ms": 80,
+              "confidence": 0.98,
+              "lane_distribution": {
+                "rules": 95,
+                "ai": 5,
+                "human": 0
+              },
+              "fields_processed": 20,
+              "mongodb_operations": [
+                {"type": "QUERY", "collection": "conversion_registry", "time_ms": 2}
+              ]
+            }
+          ],
+          "total_time_ms": 230,
+          "total_fields": 20,
+          "success_rate": 99.3,
+          "showcase_features": [
+            "Correspondent network routing",
+            "Multi-hop bank transfers",
+            "Network optimization"
+          ]
         }
       ]
     },
@@ -716,6 +972,133 @@
             "merchant_name": "WALGREENS #0123",
             "location": "CHICAGO IL US"
           }
+        }
+      ],
+      "possible_journeys": [
+        {
+          "id": "direct_card_clearing",
+          "name": "Direct Card Network Clearing",
+          "condition": "Standard card transaction",
+          "description": "Direct ISO8583 to cain.001 for card clearing",
+          "route": ["ISO8583_0200", "cain.001"],
+          "hops": [
+            {
+              "step": 1,
+              "from_format": "ISO8583_0200",
+              "to_format": "cain.001",
+              "description": "Card network message to clearing format",
+              "processing_time_ms": 75,
+              "confidence": 0.97,
+              "lane_distribution": {
+                "rules": 92,
+                "ai": 5,
+                "human": 3
+              },
+              "fields_processed": 15,
+              "mongodb_operations": [
+                {"type": "QUERY", "collection": "conversion_registry", "time_ms": 2},
+                {"type": "LOOKUP", "collection": "merchant_database", "time_ms": 4}
+              ]
+            }
+          ],
+          "total_time_ms": 75,
+          "total_fields": 15,
+          "success_rate": 99.7,
+          "showcase_features": [
+            "Ultra-fast card processing",
+            "Merchant data enrichment",
+            "Real-time authorization"
+          ]
+        },
+        {
+          "id": "card_with_merchant_extraction",
+          "name": "Card Payment with AI Merchant Analysis",
+          "condition": "Complex merchant data in field 43",
+          "description": "ISO8583 to cain.001 with AI extraction of merchant info",
+          "route": ["ISO8583_0200", "cain.001"],
+          "hops": [
+            {
+              "step": 1,
+              "from_format": "ISO8583_0200",
+              "to_format": "cain.001",
+              "description": "Card transaction with AI merchant extraction",
+              "processing_time_ms": 1200,
+              "confidence": 0.89,
+              "lane_distribution": {
+                "rules": 70,
+                "ai": 25,
+                "human": 5
+              },
+              "fields_processed": 18,
+              "ai_fields": ["field_43_merchant_info"],
+              "ai_reasoning": "Extracting merchant name, location, category from unstructured data",
+              "mongodb_operations": [
+                {"type": "QUERY", "collection": "conversion_registry", "time_ms": 2},
+                {"type": "INSERT", "collection": "merchant_analysis_log", "time_ms": 3},
+                {"type": "UPDATE", "collection": "merchant_categories", "time_ms": 4}
+              ]
+            }
+          ],
+          "total_time_ms": 1200,
+          "total_fields": 18,
+          "success_rate": 98.8,
+          "showcase_features": [
+            "AI merchant categorization",
+            "Location extraction",
+            "Fraud risk scoring"
+          ]
+        },
+        {
+          "id": "card_via_json",
+          "name": "Card Processing via JSON Bridge",
+          "condition": "When enrichment or audit trail needed",
+          "description": "ISO8583 through JSON to cain.001 for enhanced processing",
+          "route": ["ISO8583_0200", "JSON", "cain.001"],
+          "hops": [
+            {
+              "step": 1,
+              "from_format": "ISO8583_0200",
+              "to_format": "JSON",
+              "description": "Card message to canonical format",
+              "processing_time_ms": 100,
+              "confidence": 0.93,
+              "lane_distribution": {
+                "rules": 85,
+                "ai": 10,
+                "human": 5
+              },
+              "fields_processed": 15,
+              "mongodb_operations": [
+                {"type": "QUERY", "collection": "conversion_registry", "time_ms": 2},
+                {"type": "INSERT", "collection": "transaction_audit", "time_ms": 3}
+              ]
+            },
+            {
+              "step": 2,
+              "from_format": "JSON",
+              "to_format": "cain.001",
+              "description": "Canonical to card clearing format",
+              "processing_time_ms": 60,
+              "confidence": 0.98,
+              "lane_distribution": {
+                "rules": 95,
+                "ai": 5,
+                "human": 0
+              },
+              "fields_processed": 17,
+              "mongodb_operations": [
+                {"type": "QUERY", "collection": "conversion_registry", "time_ms": 2}
+              ]
+            }
+          ],
+          "total_time_ms": 160,
+          "total_fields": 17,
+          "success_rate": 99.4,
+          "showcase_features": [
+            "Enhanced audit trail",
+            "Data enrichment capabilities",
+            "Format bridging for cards"
+          ]
         }
       ]
     },
@@ -1008,6 +1391,136 @@
             "sender_to_receiver_info": "/SOURCE/CRYPTO CONVERSION\n/COMPLIANCE/AML VERIFIED"
           }
         }
+      ],
+      "possible_journeys": [
+        {
+          "id": "direct_fx_settlement",
+          "name": "Direct FX Settlement",
+          "condition": "Standard FX deal settlement",
+          "description": "Direct MT205 to pacs.009 for foreign exchange",
+          "route": ["MT205", "pacs.009"],
+          "hops": [
+            {
+              "step": 1,
+              "from_format": "MT205",
+              "to_format": "pacs.009",
+              "description": "FX deal to ISO 20022 settlement",
+              "processing_time_ms": 180,
+              "confidence": 0.94,
+              "lane_distribution": {
+                "rules": 88,
+                "ai": 10,
+                "human": 2
+              },
+              "fields_processed": 22,
+              "mongodb_operations": [
+                {"type": "QUERY", "collection": "conversion_registry", "time_ms": 2},
+                {"type": "LOOKUP", "collection": "fx_rates", "time_ms": 6},
+                {"type": "UPDATE", "collection": "fx_positions", "time_ms": 4}
+              ]
+            }
+          ],
+          "total_time_ms": 180,
+          "total_fields": 22,
+          "success_rate": 99.5,
+          "showcase_features": [
+            "Real-time FX rate validation",
+            "Position tracking",
+            "Settlement reconciliation"
+          ]
+        },
+        {
+          "id": "fx_with_instructions",
+          "name": "FX with Complex Trading Instructions",
+          "condition": "Field 72 contains hedging or trading instructions",
+          "description": "MT205 to pacs.009 with AI processing for FX instructions",
+          "route": ["MT205", "pacs.009"],
+          "hops": [
+            {
+              "step": 1,
+              "from_format": "MT205",
+              "to_format": "pacs.009",
+              "description": "FX settlement with AI instruction extraction",
+              "processing_time_ms": 2200,
+              "confidence": 0.86,
+              "lane_distribution": {
+                "rules": 65,
+                "ai": 30,
+                "human": 5
+              },
+              "fields_processed": 24,
+              "ai_fields": ["field_72"],
+              "ai_reasoning": "Extracting hedging strategy, settlement terms, and trading instructions",
+              "mongodb_operations": [
+                {"type": "QUERY", "collection": "conversion_registry", "time_ms": 2},
+                {"type": "INSERT", "collection": "fx_trading_log", "time_ms": 5},
+                {"type": "UPDATE", "collection": "hedging_positions", "time_ms": 4}
+              ]
+            }
+          ],
+          "total_time_ms": 2200,
+          "total_fields": 24,
+          "success_rate": 97.8,
+          "human_review_probability": 0.12,
+          "showcase_features": [
+            "Hedging strategy extraction",
+            "Trading terms analysis",
+            "Risk management integration"
+          ]
+        },
+        {
+          "id": "fx_multi_currency",
+          "name": "Multi-Currency FX Chain",
+          "condition": "Complex multi-currency settlement",
+          "description": "MT205 through JSON for multi-currency FX chains",
+          "route": ["MT205", "JSON", "pacs.009"],
+          "hops": [
+            {
+              "step": 1,
+              "from_format": "MT205",
+              "to_format": "JSON",
+              "description": "FX message to canonical format",
+              "processing_time_ms": 200,
+              "confidence": 0.91,
+              "lane_distribution": {
+                "rules": 80,
+                "ai": 15,
+                "human": 5
+              },
+              "fields_processed": 22,
+              "mongodb_operations": [
+                {"type": "QUERY", "collection": "conversion_registry", "time_ms": 2},
+                {"type": "AGGREGATE", "collection": "currency_pairs", "time_ms": 10}
+              ]
+            },
+            {
+              "step": 2,
+              "from_format": "JSON",
+              "to_format": "pacs.009",
+              "description": "Canonical to FX settlement format",
+              "processing_time_ms": 90,
+              "confidence": 0.97,
+              "lane_distribution": {
+                "rules": 93,
+                "ai": 7,
+                "human": 0
+              },
+              "fields_processed": 24,
+              "mongodb_operations": [
+                {"type": "QUERY", "collection": "conversion_registry", "time_ms": 2},
+                {"type": "INSERT", "collection": "settlement_audit", "time_ms": 3}
+              ]
+            }
+          ],
+          "total_time_ms": 290,
+          "total_fields": 24,
+          "success_rate": 98.9,
+          "showcase_features": [
+            "Multi-currency support",
+            "Complex FX chains",
+            "Cross-currency netting"
+          ]
+        }
       ]
     },
     {
@@ -1201,6 +1714,151 @@
             "currency": "EUR",
             "remittance_info": "Your half of dinner at Luigi's"
           }
+        }
+      ],
+      "possible_journeys": [
+        {
+          "id": "multihop_instant",
+          "name": "Instant Payment via JSON Bridge",
+          "condition": "No direct pacs.008 to TARGET2 converter",
+          "description": "pacs.008 through JSON to TARGET2 for instant payments",
+          "route": ["pacs.008", "JSON", "TARGET2"],
+          "hops": [
+            {
+              "step": 1,
+              "from_format": "pacs.008",
+              "to_format": "JSON",
+              "description": "ISO 20022 instant payment to canonical format",
+              "processing_time_ms": 50,
+              "confidence": 0.95,
+              "lane_distribution": {
+                "rules": 92,
+                "ai": 6,
+                "human": 2
+              },
+              "fields_processed": 16,
+              "mongodb_operations": [
+                {"type": "QUERY", "collection": "conversion_registry", "time_ms": 2},
+                {"type": "INSERT", "collection": "instant_payment_log", "time_ms": 2}
+              ]
+            },
+            {
+              "step": 2,
+              "from_format": "JSON",
+              "to_format": "TARGET2",
+              "description": "Canonical to European instant payment system",
+              "processing_time_ms": 40,
+              "confidence": 0.98,
+              "lane_distribution": {
+                "rules": 95,
+                "ai": 4,
+                "human": 1
+              },
+              "fields_processed": 16,
+              "mongodb_operations": [
+                {"type": "QUERY", "collection": "conversion_registry", "time_ms": 2},
+                {"type": "UPDATE", "collection": "real_time_tracking", "time_ms": 2}
+              ]
+            }
+          ],
+          "total_time_ms": 90,
+          "total_fields": 16,
+          "success_rate": 99.8,
+          "showcase_features": [
+            "Sub-100ms multi-hop routing",
+            "Real-time payment tracking",
+            "JSON bridge for instant payments"
+          ]
+        },
+        {
+          "id": "instant_with_remittance",
+          "name": "Instant Payment with Rich Remittance",
+          "condition": "Complex remittance information provided",
+          "description": "pacs.008 to TARGET2 with AI enrichment",
+          "route": ["pacs.008", "JSON", "TARGET2"],
+          "hops": [
+            {
+              "step": 1,
+              "from_format": "pacs.008",
+              "to_format": "JSON",
+              "description": "Instant payment with AI remittance extraction",
+              "processing_time_ms": 800,
+              "confidence": 0.88,
+              "lane_distribution": {
+                "rules": 70,
+                "ai": 25,
+                "human": 5
+              },
+              "fields_processed": 18,
+              "ai_fields": ["RmtInf.Ustrd"],
+              "ai_reasoning": "Extracting structured data from unstructured remittance info",
+              "mongodb_operations": [
+                {"type": "QUERY", "collection": "conversion_registry", "time_ms": 2},
+                {"type": "INSERT", "collection": "remittance_analysis", "time_ms": 3}
+              ]
+            },
+            {
+              "step": 2,
+              "from_format": "JSON",
+              "to_format": "TARGET2",
+              "description": "Enriched canonical to TARGET2",
+              "processing_time_ms": 45,
+              "confidence": 0.97,
+              "lane_distribution": {
+                "rules": 94,
+                "ai": 5,
+                "human": 1
+              },
+              "fields_processed": 18,
+              "mongodb_operations": [
+                {"type": "QUERY", "collection": "conversion_registry", "time_ms": 2}
+              ]
+            }
+          ],
+          "total_time_ms": 845,
+          "total_fields": 18,
+          "success_rate": 98.5,
+          "showcase_features": [
+            "AI-enhanced instant payments",
+            "Rich remittance processing",
+            "Structured data extraction"
+          ]
+        },
+        {
+          "id": "instant_direct_future",
+          "name": "Direct Instant Conversion (Future)",
+          "condition": "When direct converter is auto-configured",
+          "description": "Direct pacs.008 to TARGET2 (after auto-configuration)",
+          "route": ["pacs.008", "TARGET2"],
+          "hops": [
+            {
+              "step": 1,
+              "from_format": "pacs.008",
+              "to_format": "TARGET2",
+              "description": "Direct instant payment conversion (auto-configured)",
+              "processing_time_ms": 35,
+              "confidence": 0.96,
+              "lane_distribution": {
+                "rules": 94,
+                "ai": 5,
+                "human": 1
+              },
+              "fields_processed": 16,
+              "auto_configured": true,
+              "configuration_confidence": 0.92,
+              "mongodb_operations": [
+                {"type": "QUERY", "collection": "conversion_registry", "time_ms": 2}
+              ]
+            }
+          ],
+          "total_time_ms": 35,
+          "total_fields": 16,
+          "success_rate": 99.9,
+          "showcase_features": [
+            "Ultra-fast direct conversion",
+            "Auto-configuration capabilities",
+            "Sub-50ms instant payments"
+          ]
         }
       ]
     }
