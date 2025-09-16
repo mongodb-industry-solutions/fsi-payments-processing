@@ -1,0 +1,245 @@
+.flowContainer {
+  width: 100%;
+  height: 600px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  position: relative;
+}
+
+/* Custom Node Styles */
+.countryNode {
+  padding: 16px 20px;
+  border-radius: 12px;
+  background: white;
+  border: 2px solid #e2e8f0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  min-width: 180px;
+  transition: all 0.3s ease;
+}
+
+.countryNode:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
+}
+
+.activeNode {
+  border-color: #764ba2;
+  background: linear-gradient(135deg, #f3e8ff 0%, #ffffff 100%);
+  animation: pulse 2s infinite;
+}
+
+.sourceNode {
+  border-color: #2962ff;
+  background: linear-gradient(135deg, #e3f2ff 0%, #ffffff 100%);
+}
+
+.targetNode {
+  border-color: #ff6b6b;
+  background: linear-gradient(135deg, #ffe3e3 0%, #ffffff 100%);
+}
+
+.hubNode {
+  border-color: #10b981;
+  background: linear-gradient(135deg, #d1fae5 0%, #ffffff 100%);
+  border-width: 3px;
+  border-style: dashed;
+}
+
+.nodeContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.nodeIcon {
+  font-size: 32px;
+  line-height: 1;
+}
+
+.nodeTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.nodeFormat {
+  margin-top: 4px;
+}
+
+.formatBadge {
+  display: inline-block;
+  padding: 4px 12px;
+  background: #764ba2;
+  color: white;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+
+.processingIndicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 8px 12px;
+  background: #f1f5f9;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #e2e8f0;
+  border-top-color: #764ba2;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 4px 12px rgba(118, 75, 162, 0.2);
+  }
+  50% {
+    box-shadow: 0 4px 20px rgba(118, 75, 162, 0.4);
+  }
+  100% {
+    box-shadow: 0 4px 12px rgba(118, 75, 162, 0.2);
+  }
+}
+
+/* Progress Panel */
+.progressPanel {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  max-width: 420px;
+  max-height: 400px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+}
+
+.progressScroll {
+  max-height: 300px;
+  overflow-y: auto;
+  padding-right: 8px;
+  margin-right: -8px;
+}
+
+.progressScroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.progressScroll::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.progressScroll::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.progressScroll::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+.progressPanel h3 {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  color: #1e293b;
+}
+
+.conversionStep {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  margin: 8px 0;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  transition: all 0.3s ease;
+}
+
+.conversionStep.completed {
+  background: #f0fdf4;
+  border-color: #86efac;
+}
+
+.stepNumber {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: #e2e8f0;
+  border-radius: 50%;
+  font-size: 14px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.conversionStep.completed .stepNumber {
+  background: #10b981;
+  color: white;
+}
+
+.stepDetails {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stepDetails strong {
+  font-size: 14px;
+  color: #1e293b;
+}
+
+.location {
+  font-size: 12px;
+  color: #64748b;
+  display: block;
+}
+
+.description {
+  font-size: 11px;
+  color: #94a3b8;
+  font-style: italic;
+  display: block;
+  margin-top: 2px;
+}
+
+.time {
+  font-size: 12px;
+  color: #10b981;
+  font-weight: 600;
+  display: block;
+  margin-top: 4px;
+}
+
+.totalTime {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 2px solid #e2e8f0;
+  font-size: 14px;
+  color: #1e293b;
+  display: flex;
+  justify-content: space-between;
+}

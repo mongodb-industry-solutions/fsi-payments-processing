@@ -1,0 +1,657 @@
+.container {
+  padding: 2rem;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 3rem;
+  padding: 2rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 16px;
+  color: white;
+}
+
+.header h1 {
+  margin-bottom: 1rem;
+}
+
+.mainContent {
+  min-height: 800px;
+}
+
+.tabs {
+  width: 100%;
+}
+
+/* Controls Panel */
+.controlsPanel {
+  display: flex;
+  gap: 1.5rem;
+  align-items: flex-end;
+  padding: 1.5rem;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  margin-bottom: 2rem;
+}
+
+.controlGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.controlGroup label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1e1e1e;
+}
+
+/* Journey Section */
+.journeySection {
+  padding: 2rem 0;
+}
+
+.resultSummary {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.routeInfo {
+  margin-top: 1rem;
+}
+
+.routeInfo h3 {
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+  color: #1e1e1e;
+}
+
+.routeInfo p {
+  margin: 0.25rem 0;
+  color: #5a5a5a;
+}
+
+/* Map Section (deprecated) */
+.mapSection {
+  display: grid;
+  grid-template-columns: 400px 1fr;
+  gap: 2rem;
+  padding: 2rem 0;
+}
+
+.controlPanel {
+  height: fit-content;
+}
+
+.controls {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin: 1.5rem 0;
+}
+
+.select {
+  width: 100%;
+}
+
+.mapCard {
+  min-height: 600px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mapContainer {
+  width: 100%;
+  height: 500px;
+  position: relative;
+}
+
+.worldMap {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(180deg, #e3f2fd 0%, #bbdefb 100%);
+  border-radius: 12px;
+  border: 1px solid #90caf9;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.countryMarker {
+  fill: #13aa52;
+  stroke: white;
+  stroke-width: 2;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+.countryMarker:hover {
+  transform: scale(1.3);
+  fill: #0c7c3a;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+}
+
+.sourceCountry {
+  fill: #2962ff;
+  stroke-width: 3;
+  animation: pulse 2s infinite;
+}
+
+.targetCountry {
+  fill: #ff6b6b;
+  stroke-width: 3;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.7; }
+  100% { opacity: 1; }
+}
+
+.countryLabel {
+  font-size: 12px;
+  font-weight: bold;
+  fill: #1e1e1e;
+  pointer-events: none;
+}
+
+.formatLabel {
+  font-size: 10px;
+  fill: #5a5a5a;
+  pointer-events: none;
+}
+
+.routeLine {
+  fill: none;
+  animation: dash 3s linear infinite;
+  filter: drop-shadow(0 2px 4px rgba(118, 75, 162, 0.4));
+}
+
+@keyframes dash {
+  to {
+    stroke-dashoffset: -15;
+  }
+}
+
+/* Result Panel */
+.resultPanel {
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 1px solid #e4e4e7;
+}
+
+.conversions {
+  margin-top: 1.5rem;
+}
+
+.conversionStep {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem;
+  margin: 0.5rem 0;
+  background: #f9f9f9;
+  border-radius: 8px;
+  transition: background 0.2s ease;
+}
+
+.conversionStep:hover {
+  background: #f0f0f0;
+}
+
+.arrow {
+  font-size: 1.5rem;
+  color: #13aa52;
+  font-weight: bold;
+}
+
+/* Scenarios Section */
+.scenariosSection {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(450px, 1fr));
+  gap: 1.5rem;
+  padding: 2rem 0;
+}
+
+.scenarioCard {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.scenarioCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+}
+
+.scenarioHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.scenarioMetrics {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
+/* Progress Section */
+.progressSection {
+  padding: 2rem 0;
+}
+
+.progressSteps {
+  margin-top: 1.5rem;
+}
+
+.progressStep {
+  display: flex;
+  gap: 1.5rem;
+  padding: 1rem;
+  margin: 0.5rem 0;
+  background: #f9f9f9;
+  border-radius: 8px;
+  border-left: 4px solid #13aa52;
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.stepNumber {
+  flex-shrink: 0;
+}
+
+.stepContent {
+  flex: 1;
+}
+
+.stepTime {
+  color: #5a5a5a;
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: 1rem;
+  border-bottom: 2px solid #e4e4e7;
+  margin-bottom: 2rem;
+  padding: 0 2rem;
+}
+
+.tab {
+  padding: 0.75rem 1.5rem;
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 500;
+  color: #5a5a5a;
+  transition: all 0.2s ease;
+}
+
+.tab:hover {
+  color: #1e1e1e;
+}
+
+.activeTab {
+  color: #764ba2;
+  border-bottom-color: #764ba2;
+}
+
+.subtitle {
+  font-size: 1.1rem;
+  opacity: 0.95;
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.selectGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.selectGroup label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1e1e1e;
+}
+
+.executeButton {
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.executeButton:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(118, 75, 162, 0.3);
+}
+
+.executeButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.banner {
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  font-weight: 500;
+}
+
+.successBanner {
+  background: #e6f4ea;
+  color: #0e7c3a;
+  border-left: 4px solid #13aa52;
+}
+
+.errorBanner {
+  background: #fce4ec;
+  color: #c62828;
+  border-left: 4px solid #ff6b6b;
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  background: #667eea;
+  color: white;
+  border-radius: 16px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.timeBadge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 16px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.successBadge {
+  background: #e6f4ea;
+  color: #0e7c3a;
+}
+
+.errorBadge {
+  background: #fce4ec;
+  color: #c62828;
+}
+
+.loadButton {
+  padding: 0.5rem 1rem;
+  background: white;
+  border: 2px solid #764ba2;
+  color: #764ba2;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.loadButton:hover {
+  background: #764ba2;
+  color: white;
+}
+
+.metricBadge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  background: #f0f0f0;
+  color: #1e1e1e;
+  border-radius: 16px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.progressCard {
+  background: white;
+  padding: 2rem;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.stepBadge {
+  display: inline-block;
+  padding: 0.5rem 0.75rem;
+  background: #13aa52;
+  color: white;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.emptyState {
+  text-align: center;
+  color: #5a5a5a;
+  padding: 3rem;
+  font-size: 1.1rem;
+}
+
+.codeBlock {
+  background: #f5f5f5;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-family: 'Monaco', 'Menlo', monospace;
+  font-size: 0.875rem;
+  color: #d73a49;
+  display: inline-block;
+}
+
+/* Wild Scenarios Section */
+.wildSection {
+  padding: 2rem 0;
+}
+
+.sectionTitle {
+  font-size: 1.8rem;
+  color: #1e293b;
+  margin-bottom: 0.5rem;
+  text-align: center;
+}
+
+.sectionDesc {
+  text-align: center;
+  color: #64748b;
+  margin-bottom: 2rem;
+  font-size: 1.1rem;
+}
+
+.wildGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: 1.5rem;
+}
+
+.wildCard {
+  background: white;
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+}
+
+.wildCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  border-color: #764ba2;
+}
+
+.wildHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.wildHeader h3 {
+  font-size: 1.2rem;
+  color: #1e293b;
+  margin: 0;
+  flex: 1;
+}
+
+.complexityBadge {
+  padding: 0.25rem 0.75rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.wildDesc {
+  color: #64748b;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  margin-bottom: 1.5rem;
+}
+
+.wildStats {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.statItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.5rem 0.75rem;
+  background: #f8fafc;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  color: #1e293b;
+  border: 1px solid #e2e8f0;
+}
+
+.wildButton {
+  width: 100%;
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.wildButton:hover {
+  transform: scale(1.02);
+  box-shadow: 0 6px 20px rgba(118, 75, 162, 0.4);
+}
+
+.scenarioInfo {
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.selectedScenario {
+  background: linear-gradient(135deg, #f3e8ff 0%, #faf5ff 100%);
+  padding: 1rem 1.5rem;
+  border-radius: 12px;
+  border: 2px solid #764ba2;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+
+.selectedScenario h3 {
+  font-size: 1.1rem;
+  color: #764ba2;
+  margin: 0;
+  margin-bottom: 0.25rem;
+}
+
+.selectedScenario p {
+  color: #64748b;
+  margin: 0;
+  font-size: 0.9rem;
+  flex: 1;
+}
+
+.clearButton {
+  padding: 0.5rem 1rem;
+  background: white;
+  border: 2px solid #764ba2;
+  color: #764ba2;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.clearButton:hover {
+  background: #764ba2;
+  color: white;
+  transform: scale(1.05);
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .mapSection {
+    grid-template-columns: 1fr;
+  }
+
+  .scenariosSection {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 1rem;
+  }
+
+  .header {
+    padding: 1.5rem;
+  }
+
+  .mapSection {
+    gap: 1rem;
+  }
+
+  .controls {
+    gap: 1rem;
+  }
+}

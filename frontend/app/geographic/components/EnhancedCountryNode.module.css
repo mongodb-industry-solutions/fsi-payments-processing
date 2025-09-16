@@ -1,0 +1,238 @@
+.nodeWrapper {
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.nodeWrapper.selected {
+  transform: scale(1.05);
+}
+
+.nodeWrapper.processing {
+  animation: pulse 2s infinite;
+}
+
+.nodeWrapper.completed .node {
+  border-color: #10b981;
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+}
+
+.node {
+  padding: 1rem;
+  min-width: 180px;
+  background: white;
+  border: 3px solid #e2e8f0;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.node:hover {
+  border-color: #764ba2;
+  box-shadow: 0 8px 24px rgba(118, 75, 162, 0.2);
+  transform: translateY(-2px);
+}
+
+.jsonBridge {
+  background: linear-gradient(135deg, #f3e8ff 0%, #faf5ff 100%);
+  border-color: #764ba2;
+  border-style: dashed;
+}
+
+.nodeHeader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.75rem;
+  position: relative;
+  min-height: 48px;
+}
+
+.icon {
+  font-size: 2.5rem;
+  line-height: 1;
+}
+
+.processingIndicator {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 24px;
+  height: 24px;
+  background: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #e2e8f0;
+  border-top-color: #764ba2;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.completedIndicator {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 24px;
+  height: 24px;
+  background: #10b981;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+.nodeBody {
+  text-align: center;
+}
+
+.countryName {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.cityName {
+  margin: 0.25rem 0;
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.formatBadge {
+  display: inline-block;
+  padding: 0.375rem 0.75rem;
+  margin-top: 0.5rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.formatBadge[data-format-type="native"] {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+}
+
+.formatBadge[data-format-type="json"] {
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+  color: white;
+}
+
+.complianceBadge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  margin-top: 0.5rem;
+  background: #fef3c7;
+  color: #92400e;
+  border-radius: 12px;
+  font-size: 0.625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.bridgeInfo {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #e9d5ff;
+}
+
+.bridgeText {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.75rem;
+  color: #764ba2;
+  font-weight: 600;
+  text-align: center;
+}
+
+.bridgeStats {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  font-size: 0.625rem;
+  color: #94a3b8;
+}
+
+.bridgeStats span {
+  padding: 0.25rem 0.5rem;
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #e9d5ff;
+}
+
+.mongoInfo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.mongoIcon {
+  font-size: 1rem;
+}
+
+.mongoText {
+  font-size: 0.625rem;
+  color: #64748b;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.timeInfo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  color: #10b981;
+}
+
+.timeIcon {
+  font-size: 0.875rem;
+}
+
+.timeText {
+  font-weight: 600;
+}
+
+.handle {
+  width: 10px;
+  height: 10px;
+  border: 2px solid #764ba2;
+  background: white !important;
+}
+
+.handle:hover {
+  background: #764ba2 !important;
+}

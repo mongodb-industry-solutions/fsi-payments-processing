@@ -19,6 +19,7 @@ from ..utils.demo_fallback_enhancer import DemoFallbackEnhancer
 from ..models.requests import ConversionRequest
 from ..models.responses import ConversionResponse
 from ..services.payment_journey_builder import PaymentJourneyBuilder
+from ..services.country_router import CountryRouter
 
 logger = logging.getLogger(__name__)
 
@@ -514,3 +515,146 @@ async def get_recent_conversions():
         ],
         "total": len(recent_conversions)
     }
+
+
+# ============================================================
+# GEOGRAPHIC DEMO ENDPOINTS
+# ============================================================
+
+@router.get("/geographic/scenarios")
+async def get_geographic_scenarios():
+    """Get predefined geographic demo scenarios"""
+    if not feature_flags.is_demo_mode():
+        raise HTTPException(status_code=403, detail="Demo mode is not enabled")
+
+    try:
+        # Initialize database connection
+        settings = get_settings()
+        db_service = MongoDBService(
+            connection_string=settings.mongodb_uri,
+            database_name=settings.database_name
+        )
+
+        # Create country router instance
+        country_router = CountryRouter(db_service)
+
+        # Get demo scenarios
+        scenarios = country_router.get_demo_scenarios()
+
+        return {
+            "success": True,
+            "scenarios": scenarios,
+            "total": len(scenarios)
+        }
+
+    except Exception as e:
+        logger.error(f"Error getting geographic scenarios: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/geographic/countries")
+async def get_country_formats():
+    """Get country format mappings for map visualization"""
+    if not feature_flags.is_demo_mode():
+        raise HTTPException(status_code=403, detail="Demo mode is not enabled")
+
+    try:
+        # Initialize database connection
+        settings = get_settings()
+        db_service = MongoDBService(
+            connection_string=settings.mongodb_uri,
+            database_name=settings.database_name
+        )
+
+        # Create country router instance
+        country_router = CountryRouter(db_service)
+
+        # Get country formats
+        country_formats = country_router.get_country_formats()
+
+        return {
+            "success": True,
+            "countries": country_formats,
+            "total": len(country_formats)
+        }
+
+    except Exception as e:
+        logger.error(f"Error getting country formats: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/geographic/execute-corridor")
+async def execute_corridor(
+    request: Dict[str, Any]
+):
+    """Execute real conversion for geographic corridor"""
+    if not feature_flags.is_demo_mode():
+        raise HTTPException(status_code=403, detail="Demo mode is not enabled")
+
+    try:
+        # Extract parameters
+        source_country = request.get("source_country")
+        target_country = request.get("target_country")
+        scenario_id = request.get("scenario_id")
+
+        if not source_country or not target_country:
+            raise HTTPException(
+                status_code=400,
+                detail="source_country and target_country are required"
+            )
+
+        # Initialize database connection
+        settings = get_settings()
+        db_service = MongoDBService(
+            connection_string=settings.mongodb_uri,
+            database_name=settings.database_name
+        )
+
+        # Create country router instance
+        country_router = CountryRouter(db_service)
+
+        # Execute corridor demo
+        result = await country_router.execute_corridor_demo(
+            source_country=source_country,
+            target_country=target_country,
+            scenario_id=scenario_id
+        )
+
+        return result
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error executing corridor demo: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/geographic/sample-messages")
+async def get_sample_messages():
+    """Get sample messages for each format used in demos"""
+    if not feature_flags.is_demo_mode():
+        raise HTTPException(status_code=403, detail="Demo mode is not enabled")
+
+    try:
+        # Initialize database connection
+        settings = get_settings()
+        db_service = MongoDBService(
+            connection_string=settings.mongodb_uri,
+            database_name=settings.database_name
+        )
+
+        # Create country router instance
+        country_router = CountryRouter(db_service)
+
+        # Get sample messages
+        sample_messages = country_router.get_sample_messages()
+
+        return {
+            "success": True,
+            "messages": sample_messages,
+            "total": len(sample_messages)
+        }
+
+    except Exception as e:
+        logger.error(f"Error getting sample messages: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
