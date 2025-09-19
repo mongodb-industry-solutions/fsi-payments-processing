@@ -50,7 +50,7 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
+# lib/  # Commented out - frontend needs lib folder
 experiments/
 lib64/
 parts/

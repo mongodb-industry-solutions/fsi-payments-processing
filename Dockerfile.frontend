@@ -10,9 +10,6 @@ RUN npm install --legacy-peer-deps
 # Copy all frontend files INCLUDING configs
 COPY frontend/ ./
 
-# Debug: List the directory structure to verify files are copied
-RUN ls -la && ls -la lib/api/ || echo "lib/api not found"
-
 # Build the application
 RUN npm run build
 
