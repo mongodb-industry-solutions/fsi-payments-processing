@@ -60,12 +60,18 @@ if feature_flags.is_demo_mode():
     app.include_router(demo_interactive_router)
     logger.info("Demo API endpoints enabled")
 
+    # Include WebSocket API for real-time updates
+    from converter_service.api.websocket_api import router as websocket_router
+    from converter_service.api.websocket_api import register_change_stream_listener
+    app.include_router(websocket_router)
+    logger.info("WebSocket endpoints enabled for real-time updates")
+
 
 @app.on_event("startup")
 async def startup_event():
     """Initialize service on startup"""
     logger.info(f"Starting {settings.service_name}")
-    
+
     # Extract host without credentials for logging
     try:
         from urllib.parse import urlparse
@@ -74,15 +80,29 @@ async def startup_event():
         logger.info(f"MongoDB Host: {safe_host}")
     except:
         logger.info("MongoDB: Connected")
-    
+
     logger.info(f"Database: {settings.database_name}")
     logger.info(f"AI Processing: {'Enabled' if settings.enable_ai_processing else 'Disabled'}")
     logger.info(f"Human Review: {'Enabled' if settings.enable_human_review else 'Disabled'}")
-    
-    # Log demo mode status
+
+    # Log demo mode status and start change streams
     if feature_flags.is_demo_mode():
         logger.info("Demo Mode: ENABLED")
         logger.info(f"Demo Features: {feature_flags.get_all_flags()}")
+
+        # Start MongoDB change streams for real-time updates
+        try:
+            from converter_service.services.change_stream_service import start_change_stream_monitoring
+            from converter_service.api.websocket_api import register_change_stream_listener
+
+            # Register WebSocket handler first
+            register_change_stream_listener()
+
+            # Start monitoring
+            change_stream = start_change_stream_monitoring(settings.mongodb_uri, settings.database_name)
+            logger.info("MongoDB Change Streams started for real-time configuration monitoring")
+        except Exception as e:
+            logger.warning(f"Could not start change streams (not critical for demo): {e}")
 
 @app.on_event("shutdown")
 async def shutdown_event():

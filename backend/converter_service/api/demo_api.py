@@ -518,6 +518,353 @@ async def get_recent_conversions():
 
 
 # ============================================================
+# DEMO RESET AND LIVE EDIT ENDPOINTS
+# ============================================================
+
+@router.post("/reset")
+async def reset_demo_environment(
+    preview_only: bool = False,
+    reset_type: str = "auto_generated"
+):
+    """
+    Reset demo environment to clean state.
+    Removes auto-generated configurations while preserving base configs.
+
+    Args:
+        preview_only: If true, shows what would be removed without actually removing
+        reset_type: Type of reset - "auto_generated" | "demo_formats" | "all"
+
+    Returns:
+        Reset statistics or preview of what would be removed
+    """
+
+    if not feature_flags.is_demo_mode():
+        raise HTTPException(status_code=403, detail="Demo mode is not enabled")
+
+    try:
+        from ..services.demo_reset_service import DemoResetService
+
+        # Initialize reset service
+        settings = get_settings()
+        reset_service = DemoResetService(
+            mongodb_uri=settings.mongodb_uri,
+            database_name=settings.database_name
+        )
+
+        if preview_only:
+            # Return preview of what would be removed
+            preview = reset_service.get_reset_preview(reset_type)
+            return {
+                "success": True,
+                "preview": True,
+                **preview
+            }
+        else:
+            # Execute the reset
+            result = reset_service.reset_to_base_state(reset_type)
+
+            # Clear recent conversions cache if reset successful
+            if result.get("success"):
+                recent_conversions.clear()
+                logger.info(f"Demo reset completed: {result['configs_removed']} configs removed")
+
+            return result
+
+    except Exception as e:
+        logger.error(f"Error during demo reset: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/reset/preview")
+async def preview_demo_reset(reset_type: str = "auto_generated"):
+    """
+    Preview what would be removed during a demo reset.
+    Useful for checking state before reset.
+    """
+    return await reset_demo_environment(preview_only=True, reset_type=reset_type)
+
+
+@router.post("/live-edit")
+async def live_edit_configuration(request: Dict[str, Any]):
+    """
+    Simulate human review and live editing of auto-generated configuration.
+    Demonstrates real-time configuration updates without downtime.
+
+    Request body:
+    {
+        "config_id": "MT205_to_pacs.009",
+        "add_mappings": [...],
+        "remove_mappings": [...],
+        "update_mappings": {...},
+        "update_confidence": 0.85,
+        "reviewer_name": "Demo Reviewer"
+    }
+    """
+
+    if not feature_flags.is_demo_mode():
+        raise HTTPException(status_code=403, detail="Demo mode is not enabled")
+
+    try:
+        config_id = request.get("config_id")
+        if not config_id:
+            raise HTTPException(status_code=400, detail="config_id is required")
+
+        # Initialize database connection
+        settings = get_settings()
+        db_service = MongoDBService(
+            connection_string=settings.mongodb_uri,
+            database_name=settings.database_name
+        )
+
+        # Get the configuration
+        config = db_service.db.conversion_registry.find_one({"_id": config_id})
+        if not config:
+            raise HTTPException(status_code=404, detail=f"Configuration {config_id} not found")
+
+        # Build update document
+        update_doc = {}
+
+        # Add new mappings
+        if "add_mappings" in request and request["add_mappings"]:
+            current_mappings = config.get("mappings", [])
+            new_mappings = request["add_mappings"]
+            update_doc["mappings"] = current_mappings + new_mappings
+
+        # Remove mappings
+        if "remove_mappings" in request and request["remove_mappings"]:
+            current_mappings = update_doc.get("mappings", config.get("mappings", []))
+            fields_to_remove = request["remove_mappings"]
+            update_doc["mappings"] = [
+                m for m in current_mappings
+                if m.get("source") not in fields_to_remove
+            ]
+
+        # Update specific mappings
+        if "update_mappings" in request and request["update_mappings"]:
+            current_mappings = update_doc.get("mappings", config.get("mappings", []))
+            updates = request["update_mappings"]
+
+            for mapping in current_mappings:
+                field = mapping.get("source")
+                if field in updates:
+                    mapping.update(updates[field])
+
+            update_doc["mappings"] = current_mappings
+
+        # Recalculate confidence based on updated mappings
+        # Instead of accepting confidence as input, calculate it
+        final_mappings = update_doc.get("mappings", config.get("mappings", []))
+
+        # Calculate new confidence based on field coverage
+        total_fields = len(final_mappings)
+        high_confidence_fields = len([m for m in final_mappings if m.get("confidence", 0.5) >= 0.8])
+
+        # Simple confidence calculation for demo
+        # (In production, this would use the semantic_learning_service._calculate_overall_confidence)
+        if total_fields > 0:
+            field_coverage = len(final_mappings) / max(10, len(final_mappings))  # Assume ~10 fields expected
+            avg_field_confidence = sum(m.get("confidence", 0.95) for m in final_mappings) / len(final_mappings)
+            new_confidence = round(field_coverage * avg_field_confidence * 0.95, 2)  # 0.95 for human review boost
+        else:
+            new_confidence = 0.0
+
+        # Update metadata with recalculated confidence
+        if "metadata" not in update_doc:
+            update_doc["metadata"] = config.get("metadata", {})
+        update_doc["metadata"]["generation_confidence"] = new_confidence
+        update_doc["metadata"]["human_reviewed"] = True
+        update_doc["metadata"]["review_timestamp"] = datetime.utcnow()
+        update_doc["metadata"]["reviewer"] = request.get("reviewer_name", "Demo Reviewer")
+
+        # Log the confidence change
+        old_confidence = config.get("metadata", {}).get("generation_confidence", 0)
+        logger.info(f"Confidence updated from {old_confidence:.2f} to {new_confidence:.2f} after human review")
+
+        # Apply updates to MongoDB
+        if update_doc:
+            result = db_service.db.conversion_registry.update_one(
+                {"_id": config_id},
+                {"$set": update_doc}
+            )
+
+            if result.modified_count > 0:
+                logger.info(f"Configuration {config_id} updated via live edit")
+
+                return {
+                    "success": True,
+                    "config_id": config_id,
+                    "modifications": {
+                        "mappings_added": len(request.get("add_mappings", [])),
+                        "mappings_removed": len(request.get("remove_mappings", [])),
+                        "mappings_updated": len(request.get("update_mappings", {})),
+                        "total_mappings": len(final_mappings)
+                    },
+                    "confidence": {
+                        "before": old_confidence,
+                        "after": new_confidence,
+                        "improvement": round(new_confidence - old_confidence, 2)
+                    },
+                    "message": f"Configuration updated successfully. Confidence improved from {old_confidence:.1%} to {new_confidence:.1%}. Changes are immediately active via Change Streams."
+                }
+            else:
+                return {
+                    "success": False,
+                    "config_id": config_id,
+                    "message": "No changes were applied"
+                }
+        else:
+            return {
+                "success": False,
+                "config_id": config_id,
+                "message": "No updates specified"
+            }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error during live edit: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/auto-config/{config_id}/status")
+async def get_auto_config_status(config_id: str):
+    """
+    Get detailed status of an auto-generated configuration.
+    Shows what was recognized, what's missing, and confidence scores.
+    """
+
+    if not feature_flags.is_demo_mode():
+        raise HTTPException(status_code=403, detail="Demo mode is not enabled")
+
+    try:
+        # Initialize database connection
+        settings = get_settings()
+        db_service = MongoDBService(
+            connection_string=settings.mongodb_uri,
+            database_name=settings.database_name
+        )
+
+        # Get the configuration
+        config = db_service.db.conversion_registry.find_one({"_id": config_id})
+        if not config:
+            raise HTTPException(status_code=404, detail=f"Configuration {config_id} not found")
+
+        # Analyze the configuration
+        mappings = config.get("mappings", [])
+        metadata = config.get("metadata", {})
+
+        # Categorize mappings by confidence
+        high_confidence = []
+        medium_confidence = []
+        low_confidence = []
+
+        for mapping in mappings:
+            confidence = mapping.get("confidence", 1.0)
+            field_summary = {
+                "source": mapping.get("source"),
+                "targets": mapping.get("targets", []),
+                "confidence": confidence,
+                "lane": mapping.get("processing_lane", "RULES")
+            }
+
+            if confidence >= 0.8:
+                high_confidence.append(field_summary)
+            elif confidence >= 0.5:
+                medium_confidence.append(field_summary)
+            else:
+                low_confidence.append(field_summary)
+
+        # Identify recognized patterns
+        recognized_patterns = []
+        for mapping in mappings:
+            if mapping.get("pattern_matched"):
+                recognized_patterns.append({
+                    "field": mapping.get("source"),
+                    "pattern": mapping.get("pattern_matched"),
+                    "confidence": mapping.get("confidence", 1.0)
+                })
+
+        # Calculate overall statistics
+        total_fields = len(mappings)
+        avg_confidence = sum(m.get("confidence", 1.0) for m in mappings) / total_fields if total_fields > 0 else 0
+
+        # Determine review status
+        needs_review = avg_confidence < 0.8 or len(low_confidence) > 0
+        review_reasons = []
+        if avg_confidence < 0.8:
+            review_reasons.append(f"Overall confidence below threshold: {avg_confidence:.2%}")
+        if len(low_confidence) > 0:
+            review_reasons.append(f"{len(low_confidence)} fields with low confidence")
+
+        return {
+            "config_id": config_id,
+            "auto_generated": metadata.get("auto_generated", False),
+            "generation_confidence": metadata.get("generation_confidence", 0),
+            "based_on": metadata.get("based_on"),
+            "similar_to": metadata.get("similar_to"),
+            "human_reviewed": metadata.get("human_reviewed", False),
+            "statistics": {
+                "total_fields": total_fields,
+                "average_confidence": avg_confidence,
+                "high_confidence_fields": len(high_confidence),
+                "medium_confidence_fields": len(medium_confidence),
+                "low_confidence_fields": len(low_confidence)
+            },
+            "field_breakdown": {
+                "high_confidence": high_confidence,
+                "medium_confidence": medium_confidence,
+                "low_confidence": low_confidence
+            },
+            "recognized_patterns": recognized_patterns,
+            "needs_review": needs_review,
+            "review_reasons": review_reasons,
+            "lane_distribution": {
+                "RULES": len([m for m in mappings if m.get("processing_lane", "RULES") == "RULES"]),
+                "AI": len([m for m in mappings if m.get("processing_lane") == "AI"]),
+                "HUMAN": len([m for m in mappings if m.get("processing_lane") == "HUMAN"])
+            }
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting auto-config status: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/auto-generated-configs")
+async def list_auto_generated_configs():
+    """
+    List all auto-generated configurations in the system.
+    Useful for demo management and cleanup.
+    """
+
+    if not feature_flags.is_demo_mode():
+        raise HTTPException(status_code=403, detail="Demo mode is not enabled")
+
+    try:
+        from ..services.demo_reset_service import DemoResetService
+
+        settings = get_settings()
+        reset_service = DemoResetService(
+            mongodb_uri=settings.mongodb_uri,
+            database_name=settings.database_name
+        )
+
+        configs = reset_service.get_auto_generated_configs()
+
+        return {
+            "success": True,
+            "total": len(configs),
+            "configs": configs
+        }
+
+    except Exception as e:
+        logger.error(f"Error listing auto-generated configs: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================================
 # GEOGRAPHIC DEMO ENDPOINTS
 # ============================================================
 
