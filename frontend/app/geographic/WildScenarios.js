@@ -115,7 +115,7 @@ export const WILD_SCENARIOS = {
       { id: 'eu-mifid', country: 'EU', format: 'TARGET2', icon: '🇪🇺', city: 'Brussels', compliance: 'MiFID II' },
       { id: 'swiss-bank', country: 'Switzerland', format: 'MT103', icon: '🇨🇭', city: 'Zurich', compliance: 'Banking Secrecy' },
       { id: 'singapore-mas', country: 'Singapore', format: 'pacs.008', icon: '🇸🇬', city: 'Singapore', compliance: 'MAS Rules' },
-      { id: 'dubai-islamic', country: 'Dubai', format: 'MT202', icon: '🇦🇪', city: 'Dubai', compliance: 'Islamic Banking' }
+      { id: 'dubai', country: 'Dubai', format: 'MT202', icon: '🇦🇪', city: 'Dubai', compliance: 'Dubai Banking' }
     ],
     conversions: [
       { from: 'MT103', to: 'JSON', location: 'USA', time: 50, description: 'Add FATCA fields' },
