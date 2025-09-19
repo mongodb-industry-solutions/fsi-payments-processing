@@ -1,16 +1,17 @@
 FROM node:22-alpine
 WORKDIR /app
 
-# Copy package files and configs first for better caching
+# Copy package files first for better caching
 COPY frontend/package*.json ./
-COPY frontend/jsconfig.json ./
-COPY frontend/next.config.mjs ./
 
 # Use legacy-peer-deps for Leafy Green UI components
 RUN npm install --legacy-peer-deps
 
-# Copy all frontend files
+# Copy all frontend files INCLUDING configs
 COPY frontend/ ./
+
+# Debug: List the directory structure to verify files are copied
+RUN ls -la && ls -la lib/api/ || echo "lib/api not found"
 
 # Build the application
 RUN npm run build
