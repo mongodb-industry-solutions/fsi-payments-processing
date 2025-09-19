@@ -1,0 +1,524 @@
+{
+  "auto_config_scenarios": [
+    {
+      "id": "mt192_to_pacs008",
+      "display_name": "🔄 MT192 Request for Cancellation",
+      "description": "Auto-configure MT192 to pacs.008 conversion",
+      "icon": "🔄",
+      "source_format": "MT192",
+      "target_format": "pacs.008",
+      "similar_to": "MT103",
+      "confidence_expected": 0.85,
+      "sample_message": "{1:F01CHASUS33XXXX0000000000}{2:I192DEUTDEFFXXXXN}{3:{108:PRIORITY}}{4:\n:20:REF192TEST001\n:21:RELATEDREF001\n:11S:192\n241215\n1234\n:79:CANCELLATION REQUEST FOR WIRE TRANSFER\nORIGINAL REF: TEST001\nREASON: DUPLICATE PAYMENT\nREQUESTED BY: JOHN DOE\nACCOUNT: US64209876543210987654\nAMOUNT: USD 125,750.50\nBENEFICIARY: GLOBAL SUPPLIES GMBH\nURGENT PROCESSING REQUIRED\n-}",
+      "form_schema": {
+        "sections": [
+          {
+            "title": "Message Identification",
+            "fields": [
+              {
+                "id": "reference",
+                "label": "Reference Number",
+                "type": "text",
+                "placeholder": "REF192TEST001",
+                "required": true,
+                "value": "REF192TEST001"
+              },
+              {
+                "id": "related_reference",
+                "label": "Related Reference",
+                "type": "text",
+                "placeholder": "RELATEDREF001",
+                "required": true,
+                "value": "RELATEDREF001"
+              }
+            ]
+          },
+          {
+            "title": "Cancellation Details",
+            "fields": [
+              {
+                "id": "message_type",
+                "label": "Message Type",
+                "type": "text",
+                "placeholder": "192",
+                "required": true,
+                "value": "192",
+                "readonly": true
+              },
+              {
+                "id": "cancellation_text",
+                "label": "Cancellation Request Details",
+                "type": "textarea",
+                "placeholder": "Enter cancellation details...",
+                "required": true,
+                "value": "CANCELLATION REQUEST FOR WIRE TRANSFER\nORIGINAL REF: TEST001\nREASON: DUPLICATE PAYMENT\nREQUESTED BY: JOHN DOE\nACCOUNT: US64209876543210987654\nAMOUNT: USD 125,750.50\nBENEFICIARY: GLOBAL SUPPLIES GMBH\nURGENT PROCESSING REQUIRED",
+                "rows": 8
+              }
+            ]
+          }
+        ]
+      },
+      "expected_fields_detected": 5,
+      "expected_fields_mapped": 4,
+      "showcase_features": [
+        "Pattern learning from MT103",
+        "AI-powered field detection",
+        "Automatic mapping generation"
+      ]
+    },
+    {
+      "id": "mt205_to_pacs009",
+      "display_name": "💱 MT205 Financial Institution Transfer",
+      "description": "Auto-configure MT205 COV to pacs.009 conversion",
+      "icon": "💱",
+      "source_format": "MT205",
+      "target_format": "pacs.009",
+      "similar_to": "MT202",
+      "confidence_expected": 0.88,
+      "sample_message": "{1:F01CHASUS33AXXX0000000000}{2:I205DEUTDEFFXXXXN}{3:{108:COV}}{4:\n:20:MT205TEST001\n:21:COVREF2024001\n:13C:/SNDTIME/1415+0100\n:32A:241215EUR500000,00\n:52A:CHASUS33XXX\n:57A:DEUTDEFFXXX\n:58A:/DE12345678901234567890\nBENEFICIARY INSTITUTION\nFRANKFURT\n:72:/BNF/TREASURY OPERATIONS\n/INS/COV PAYMENT FOR CLIENT\n/REC/NOTIFY TREASURY DEPT\n:50K:/US64209876543210987654\nACME CORPORATION\n1234 MAIN STREET\nNEW YORK NY 10001\n:59:/DE89370400440532013000\nGLOBAL IMPORTS GMBH\nINDUSTRIESTRASSE 78\nFRANKFURT 60329\n-}",
+      "form_schema": {
+        "sections": [
+          {
+            "title": "Transaction Information",
+            "fields": [
+              {
+                "id": "reference",
+                "label": "Transaction Reference",
+                "type": "text",
+                "placeholder": "MT205TEST001",
+                "required": true,
+                "value": "MT205TEST001"
+              },
+              {
+                "id": "related_reference",
+                "label": "Related Reference",
+                "type": "text",
+                "placeholder": "COVREF2024001",
+                "required": true,
+                "value": "COVREF2024001"
+              },
+              {
+                "id": "amount",
+                "label": "Amount",
+                "type": "number",
+                "placeholder": "500000.00",
+                "required": true,
+                "value": 500000.00
+              },
+              {
+                "id": "currency",
+                "label": "Currency",
+                "type": "select",
+                "options": ["EUR", "USD", "GBP", "CHF"],
+                "required": true,
+                "value": "EUR"
+              }
+            ]
+          },
+          {
+            "title": "Ordering Customer (Field 50K)",
+            "fields": [
+              {
+                "id": "ordering_customer_account",
+                "label": "Account Number",
+                "type": "text",
+                "placeholder": "US64209876543210987654",
+                "required": true,
+                "value": "US64209876543210987654"
+              },
+              {
+                "id": "ordering_customer_name",
+                "label": "Customer Name",
+                "type": "text",
+                "placeholder": "ACME CORPORATION",
+                "required": true,
+                "value": "ACME CORPORATION"
+              },
+              {
+                "id": "ordering_customer_address",
+                "label": "Customer Address",
+                "type": "textarea",
+                "placeholder": "Enter address...",
+                "required": true,
+                "value": "1234 MAIN STREET\nNEW YORK NY 10001",
+                "rows": 3
+              }
+            ]
+          },
+          {
+            "title": "Beneficiary (Field 59)",
+            "fields": [
+              {
+                "id": "beneficiary_account",
+                "label": "Account/IBAN",
+                "type": "text",
+                "placeholder": "DE89370400440532013000",
+                "required": true,
+                "value": "DE89370400440532013000"
+              },
+              {
+                "id": "beneficiary_name",
+                "label": "Beneficiary Name",
+                "type": "text",
+                "placeholder": "GLOBAL IMPORTS GMBH",
+                "required": true,
+                "value": "GLOBAL IMPORTS GMBH"
+              },
+              {
+                "id": "beneficiary_address",
+                "label": "Beneficiary Address",
+                "type": "textarea",
+                "placeholder": "Enter address...",
+                "required": true,
+                "value": "INDUSTRIESTRASSE 78\nFRANKFURT 60329",
+                "rows": 3
+              }
+            ]
+          },
+          {
+            "title": "Instructions",
+            "fields": [
+              {
+                "id": "instructions",
+                "label": "Sender to Receiver Info (Field 72)",
+                "type": "textarea",
+                "placeholder": "Enter instructions...",
+                "required": false,
+                "value": "/BNF/TREASURY OPERATIONS\n/INS/COV PAYMENT FOR CLIENT\n/REC/NOTIFY TREASURY DEPT",
+                "rows": 4
+              }
+            ]
+          }
+        ]
+      },
+      "expected_fields_detected": 12,
+      "expected_fields_mapped": 10,
+      "showcase_features": [
+        "COV payment handling",
+        "Complex field extraction",
+        "Pattern matching from MT202"
+      ]
+    },
+    {
+      "id": "mt202cov_to_pacs009",
+      "display_name": "🏦 MT202COV Cover Payment",
+      "description": "Auto-configure MT202COV to pacs.009 conversion",
+      "icon": "🏦",
+      "source_format": "MT202COV",
+      "target_format": "pacs.009",
+      "similar_to": "MT202",
+      "confidence_expected": 0.90,
+      "sample_message": "{1:F01BOFAUS3NXXXX0000000000}{2:I202CHASUS33XXXXN}{3:{119:COV}}{4:\n:20:MT202COVTEST\n:21:COVER2024001\n:13C:/SNDTIME/0915+0500\n:32A:241215USD1000000,00\n:52A:BOFAUS3NXXX\n:53A:/NOSTRO123456\nCORRESPONDENT BANK\n:57A:CHASUS33XXX\n:58A:/US98765432109876543210\nJP MORGAN CHASE\nNEW YORK\n:72:/BNF/COVER PAYMENT\n/INS/UNDERLYING CUSTOMER TRANSFER\n/REC/CREDIT UPON RECEIPT\n:50A:/US11111111111111111111\nORIGINAL ORDERING CUSTOMER\nBOSTON MA\n:59A:/US22222222222222222222\nFINAL BENEFICIARY\nSAN FRANCISCO CA\n:70:PAYMENT FOR INVOICE INV-2024-9999\nCOVER FOR CUSTOMER WIRE\n:71A:SHA\n-}",
+      "form_schema": {
+        "sections": [
+          {
+            "title": "Cover Payment Information",
+            "fields": [
+              {
+                "id": "reference",
+                "label": "Transaction Reference",
+                "type": "text",
+                "placeholder": "MT202COVTEST",
+                "required": true,
+                "value": "MT202COVTEST"
+              },
+              {
+                "id": "related_reference",
+                "label": "Cover Reference",
+                "type": "text",
+                "placeholder": "COVER2024001",
+                "required": true,
+                "value": "COVER2024001"
+              },
+              {
+                "id": "amount",
+                "label": "Cover Amount",
+                "type": "number",
+                "placeholder": "1000000.00",
+                "required": true,
+                "value": 1000000.00
+              },
+              {
+                "id": "currency",
+                "label": "Currency",
+                "type": "select",
+                "options": ["USD", "EUR", "GBP", "CHF"],
+                "required": true,
+                "value": "USD"
+              }
+            ]
+          },
+          {
+            "title": "Underlying Transaction",
+            "fields": [
+              {
+                "id": "original_ordering_account",
+                "label": "Original Ordering Account",
+                "type": "text",
+                "placeholder": "US11111111111111111111",
+                "required": true,
+                "value": "US11111111111111111111"
+              },
+              {
+                "id": "original_ordering_name",
+                "label": "Original Ordering Customer",
+                "type": "text",
+                "placeholder": "ORIGINAL ORDERING CUSTOMER",
+                "required": true,
+                "value": "ORIGINAL ORDERING CUSTOMER"
+              },
+              {
+                "id": "final_beneficiary_account",
+                "label": "Final Beneficiary Account",
+                "type": "text",
+                "placeholder": "US22222222222222222222",
+                "required": true,
+                "value": "US22222222222222222222"
+              },
+              {
+                "id": "final_beneficiary_name",
+                "label": "Final Beneficiary",
+                "type": "text",
+                "placeholder": "FINAL BENEFICIARY",
+                "required": true,
+                "value": "FINAL BENEFICIARY"
+              }
+            ]
+          },
+          {
+            "title": "Payment Details",
+            "fields": [
+              {
+                "id": "remittance_info",
+                "label": "Remittance Information",
+                "type": "textarea",
+                "placeholder": "Enter payment details...",
+                "required": true,
+                "value": "PAYMENT FOR INVOICE INV-2024-9999\nCOVER FOR CUSTOMER WIRE",
+                "rows": 3
+              },
+              {
+                "id": "instructions",
+                "label": "Bank Instructions",
+                "type": "textarea",
+                "placeholder": "Enter instructions...",
+                "required": false,
+                "value": "/BNF/COVER PAYMENT\n/INS/UNDERLYING CUSTOMER TRANSFER\n/REC/CREDIT UPON RECEIPT",
+                "rows": 4
+              }
+            ]
+          }
+        ]
+      },
+      "expected_fields_detected": 14,
+      "expected_fields_mapped": 12,
+      "showcase_features": [
+        "MT202COV specific handling",
+        "Underlying transaction extraction",
+        "High confidence pattern matching"
+      ]
+    },
+    {
+      "id": "mt940_to_camt053",
+      "display_name": "📊 MT940 Account Statement",
+      "description": "Auto-configure MT940 to camt.053 conversion",
+      "icon": "📊",
+      "source_format": "MT940",
+      "target_format": "camt.053",
+      "similar_to": "MT103",
+      "confidence_expected": 0.75,
+      "sample_message": "{1:F01CHASUS33XXXX0000000000}{2:I940CHASUS33XXXXN}{4:\n:20:STMT20241215\n:25:US64209876543210987654\n:28C:00012/001\n:60F:C241214USD845921,84\n:61:2412151215DR125750,50NTRF20241215001//PAYMENT001\n:86:WIRE TRANSFER TO GLOBAL SUPPLIES GMBH\n:61:2412151215CR50000,00NTRF20241215002//DEPOSIT001\n:86:INCOMING WIRE FROM ABC COMPANY\n:62F:C241215USD770171,34\n:64:C241215USD770171,34\n-}",
+      "form_schema": {
+        "sections": [
+          {
+            "title": "Statement Information",
+            "fields": [
+              {
+                "id": "statement_reference",
+                "label": "Statement Reference",
+                "type": "text",
+                "placeholder": "STMT20241215",
+                "required": true,
+                "value": "STMT20241215"
+              },
+              {
+                "id": "account_number",
+                "label": "Account Number",
+                "type": "text",
+                "placeholder": "US64209876543210987654",
+                "required": true,
+                "value": "US64209876543210987654"
+              },
+              {
+                "id": "statement_number",
+                "label": "Statement Number",
+                "type": "text",
+                "placeholder": "00012/001",
+                "required": true,
+                "value": "00012/001"
+              }
+            ]
+          },
+          {
+            "title": "Balance Information",
+            "fields": [
+              {
+                "id": "opening_balance",
+                "label": "Opening Balance",
+                "type": "number",
+                "placeholder": "845921.84",
+                "required": true,
+                "value": 845921.84
+              },
+              {
+                "id": "closing_balance",
+                "label": "Closing Balance",
+                "type": "number",
+                "placeholder": "770171.34",
+                "required": true,
+                "value": 770171.34
+              },
+              {
+                "id": "currency",
+                "label": "Currency",
+                "type": "select",
+                "options": ["USD", "EUR", "GBP", "CHF"],
+                "required": true,
+                "value": "USD"
+              }
+            ]
+          }
+        ]
+      },
+      "expected_fields_detected": 10,
+      "expected_fields_mapped": 7,
+      "showcase_features": [
+        "Statement format handling",
+        "Transaction entry parsing",
+        "Balance reconciliation"
+      ]
+    },
+    {
+      "id": "iso8583_to_json",
+      "display_name": "💳 ISO8583 Card Transaction",
+      "description": "Auto-configure ISO8583 to JSON conversion",
+      "icon": "💳",
+      "source_format": "ISO8583_0200",
+      "target_format": "JSON",
+      "similar_to": "ISO8583",
+      "confidence_expected": 0.82,
+      "sample_message": "ISO02004034442222222222222222000000012575012152024121510304142123456784523TERMINAL001MERCHANT_LOCATION_NAMEMERCHANT_CITYST840PURCHASE AT COFFEE SHOP",
+      "form_schema": {
+        "sections": [
+          {
+            "title": "Card Information",
+            "fields": [
+              {
+                "id": "card_number",
+                "label": "Card Number (Masked)",
+                "type": "text",
+                "placeholder": "4034442222222222",
+                "required": true,
+                "value": "4034442222222222"
+              },
+              {
+                "id": "transaction_amount",
+                "label": "Transaction Amount",
+                "type": "number",
+                "placeholder": "125.75",
+                "required": true,
+                "value": 125.75
+              },
+              {
+                "id": "transaction_date",
+                "label": "Transaction Date",
+                "type": "text",
+                "placeholder": "20241215",
+                "required": true,
+                "value": "20241215"
+              }
+            ]
+          },
+          {
+            "title": "Merchant Information",
+            "fields": [
+              {
+                "id": "terminal_id",
+                "label": "Terminal ID",
+                "type": "text",
+                "placeholder": "TERMINAL001",
+                "required": true,
+                "value": "TERMINAL001"
+              },
+              {
+                "id": "merchant_name",
+                "label": "Merchant Name",
+                "type": "text",
+                "placeholder": "MERCHANT_LOCATION_NAME",
+                "required": true,
+                "value": "MERCHANT_LOCATION_NAME"
+              },
+              {
+                "id": "merchant_city",
+                "label": "Merchant City",
+                "type": "text",
+                "placeholder": "MERCHANT_CITY",
+                "required": true,
+                "value": "MERCHANT_CITY"
+              },
+              {
+                "id": "transaction_description",
+                "label": "Transaction Description",
+                "type": "text",
+                "placeholder": "PURCHASE AT COFFEE SHOP",
+                "required": false,
+                "value": "PURCHASE AT COFFEE SHOP"
+              }
+            ]
+          }
+        ]
+      },
+      "expected_fields_detected": 15,
+      "expected_fields_mapped": 12,
+      "showcase_features": [
+        "Binary format parsing",
+        "Card transaction mapping",
+        "JSON structure generation"
+      ]
+    }
+  ],
+  "demo_presets": [
+    {
+      "id": "quick_mt192",
+      "name": "Quick MT192 Setup",
+      "description": "Fastest auto-configuration demo",
+      "scenario_id": "mt192_to_pacs008",
+      "estimated_time": "5-8 seconds",
+      "confidence_target": 0.85
+    },
+    {
+      "id": "complex_mt205",
+      "name": "Complex MT205 COV",
+      "description": "Showcases AI field detection",
+      "scenario_id": "mt205_to_pacs009",
+      "estimated_time": "8-12 seconds",
+      "confidence_target": 0.88
+    },
+    {
+      "id": "high_confidence_mt202cov",
+      "name": "High Confidence MT202COV",
+      "description": "Best pattern matching demo",
+      "scenario_id": "mt202cov_to_pacs009",
+      "estimated_time": "6-10 seconds",
+      "confidence_target": 0.90
+    }
+  ],
+  "configuration_statistics": {
+    "average_configuration_time_seconds": 7.5,
+    "average_confidence": 0.84,
+    "formats_auto_configured_today": 23,
+    "human_reviews_completed": 5,
+    "patterns_learned": 127,
+    "success_rate": 96.5
+  }
+}

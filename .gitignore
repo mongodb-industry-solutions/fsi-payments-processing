@@ -367,3 +367,7 @@ backend/converter_service/docs/GEOGRAPHIC_DEMO_SERVICE_PLAN.md
 frontend/FRONTEND_DESIGN_CONTEXT.md
 frontend/PAGE1_IMPLEMENTATION_PLAN.md
 backend/converter_service/docs/INTELLIGENT_AUTOCONFIG_REALTIME_REVIEW_SYSTEM.md
+backend/converter_service/docs/AUTO_CONFIG_DEMO_BACKEND_IMPLEMENTATION.md
+.gitignore
+backend/converter_service/scripts/populate_semantic_patterns.py
+backend/converter_service/scripts/populate_semantic_patterns.py

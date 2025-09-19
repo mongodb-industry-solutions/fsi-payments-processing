@@ -3,7 +3,7 @@ Demo API Endpoints
 Separate endpoints for demonstration purposes with enhanced visualization
 """
 
-from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect, Depends
 from typing import Dict, Any, Optional, List
 import asyncio
 import json
@@ -13,13 +13,16 @@ from datetime import datetime
 from ..core.converter import UniversalConverter
 from ..services.db_service import MongoDBService
 from ..config.feature_flags import feature_flags
-from ..config.settings import get_settings
 from ..utils.progress_tracker import ProgressTracker, ProcessingStage, FieldStatus
 from ..utils.demo_fallback_enhancer import DemoFallbackEnhancer
 from ..models.requests import ConversionRequest
 from ..models.responses import ConversionResponse
 from ..services.payment_journey_builder import PaymentJourneyBuilder
 from ..services.country_router import CountryRouter
+
+# Import centralized dependencies and exceptions
+from .dependencies import get_db_service, require_demo_mode
+from .exceptions import config_not_found, conversion_not_found, invalid_request
 
 logger = logging.getLogger(__name__)
 
@@ -48,26 +51,20 @@ async def get_demo_status():
 
 
 @router.post("/convert")
-async def demo_convert_with_visualization(request: ConversionRequest):
+async def demo_convert_with_visualization(
+    request: ConversionRequest,
+    _: None = Depends(require_demo_mode),
+    db_service: MongoDBService = Depends(get_db_service)
+):
     """
     Enhanced conversion endpoint with full visualization data.
     Shows real-time processing details for demo purposes.
     """
-    
-    if not feature_flags.is_demo_mode():
-        raise HTTPException(status_code=403, detail="Demo mode is not enabled")
-    
+
     try:
         # Initialize progress tracker
         progress_tracker = ProgressTracker()
         conversion_id = progress_tracker.conversion_id
-        
-        # Initialize database connection
-        settings = get_settings()
-        db_service = MongoDBService(
-            connection_string=settings.mongodb_uri,
-            database_name=settings.database_name
-        )
         
         # Start parsing stage
         progress_tracker.start_stage(ProcessingStage.PARSING, 
@@ -479,14 +476,13 @@ async def get_payment_type_journeys(payment_type_id: str):
 
 
 @router.get("/recent-conversions")
-async def get_recent_conversions():
+async def get_recent_conversions(
+    _: None = Depends(require_demo_mode)
+):
     """
     Get list of recent conversions for demo reference.
     Useful for accessing specific conversion details.
     """
-    
-    if not feature_flags.ENABLE_DEMO_MODE:
-        raise HTTPException(status_code=403, detail="Demo mode is not enabled")
     
     # Clean up old conversions (older than 10 minutes)
     current_time = datetime.now()
@@ -524,7 +520,9 @@ async def get_recent_conversions():
 @router.post("/reset")
 async def reset_demo_environment(
     preview_only: bool = False,
-    reset_type: str = "auto_generated"
+    reset_type: str = "auto_generated",
+    _: None = Depends(require_demo_mode),
+    db_service: MongoDBService = Depends(get_db_service)
 ):
     """
     Reset demo environment to clean state.
@@ -538,14 +536,12 @@ async def reset_demo_environment(
         Reset statistics or preview of what would be removed
     """
 
-    if not feature_flags.is_demo_mode():
-        raise HTTPException(status_code=403, detail="Demo mode is not enabled")
-
     try:
         from ..services.demo_reset_service import DemoResetService
+        from .dependencies import get_settings_cached
 
-        # Initialize reset service
-        settings = get_settings()
+        # Initialize reset service with connection info
+        settings = get_settings_cached()
         reset_service = DemoResetService(
             mongodb_uri=settings.mongodb_uri,
             database_name=settings.database_name
@@ -585,7 +581,11 @@ async def preview_demo_reset(reset_type: str = "auto_generated"):
 
 
 @router.post("/live-edit")
-async def live_edit_configuration(request: Dict[str, Any]):
+async def live_edit_configuration(
+    request: Dict[str, Any],
+    _: None = Depends(require_demo_mode),
+    db_service: MongoDBService = Depends(get_db_service)
+):
     """
     Simulate human review and live editing of auto-generated configuration.
     Demonstrates real-time configuration updates without downtime.
@@ -601,25 +601,15 @@ async def live_edit_configuration(request: Dict[str, Any]):
     }
     """
 
-    if not feature_flags.is_demo_mode():
-        raise HTTPException(status_code=403, detail="Demo mode is not enabled")
-
     try:
         config_id = request.get("config_id")
         if not config_id:
-            raise HTTPException(status_code=400, detail="config_id is required")
-
-        # Initialize database connection
-        settings = get_settings()
-        db_service = MongoDBService(
-            connection_string=settings.mongodb_uri,
-            database_name=settings.database_name
-        )
+            raise invalid_request("config_id is required")
 
         # Get the configuration
         config = db_service.db.conversion_registry.find_one({"_id": config_id})
         if not config:
-            raise HTTPException(status_code=404, detail=f"Configuration {config_id} not found")
+            raise config_not_found(config_id)
 
         # Build update document
         update_doc = {}
@@ -659,12 +649,23 @@ async def live_edit_configuration(request: Dict[str, Any]):
         total_fields = len(final_mappings)
         high_confidence_fields = len([m for m in final_mappings if m.get("confidence", 0.5) >= 0.8])
 
-        # Simple confidence calculation for demo
-        # (In production, this would use the semantic_learning_service._calculate_overall_confidence)
+        # Dynamic confidence calculation based on actual mappings
+        # Calculate confidence based on field coverage and individual field confidence
         if total_fields > 0:
-            field_coverage = len(final_mappings) / max(10, len(final_mappings))  # Assume ~10 fields expected
-            avg_field_confidence = sum(m.get("confidence", 0.95) for m in final_mappings) / len(final_mappings)
-            new_confidence = round(field_coverage * avg_field_confidence * 0.95, 2)  # 0.95 for human review boost
+            # Field coverage: how many fields are mapped vs expected
+            expected_fields = max(10, len(final_mappings))  # Minimum 10 fields expected
+            field_coverage = min(1.0, len(final_mappings) / expected_fields)
+
+            # Average field confidence (default to 0.7 if not specified, not 0.95)
+            avg_field_confidence = sum(m.get("confidence", 0.7) for m in final_mappings) / len(final_mappings)
+
+            # Human review boost: proportional to number of corrections applied
+            corrections_applied = len(request.get("corrections", []))
+            review_boost = min(0.15, corrections_applied * 0.03)  # Max 15% boost, 3% per correction
+
+            # Calculate final confidence
+            base_confidence = field_coverage * avg_field_confidence
+            new_confidence = min(0.95, round(base_confidence + review_boost, 2))  # Cap at 95%
         else:
             new_confidence = 0.0
 
@@ -727,27 +728,22 @@ async def live_edit_configuration(request: Dict[str, Any]):
 
 
 @router.get("/auto-config/{config_id}/status")
-async def get_auto_config_status(config_id: str):
+async def get_auto_config_status(
+    config_id: str,
+    _: None = Depends(require_demo_mode),
+    db_service: MongoDBService = Depends(get_db_service)
+):
     """
     Get detailed status of an auto-generated configuration.
     Shows what was recognized, what's missing, and confidence scores.
     """
 
-    if not feature_flags.is_demo_mode():
-        raise HTTPException(status_code=403, detail="Demo mode is not enabled")
-
     try:
-        # Initialize database connection
-        settings = get_settings()
-        db_service = MongoDBService(
-            connection_string=settings.mongodb_uri,
-            database_name=settings.database_name
-        )
 
         # Get the configuration
         config = db_service.db.conversion_registry.find_one({"_id": config_id})
         if not config:
-            raise HTTPException(status_code=404, detail=f"Configuration {config_id} not found")
+            raise config_not_found(config_id)
 
         # Analyze the configuration
         mappings = config.get("mappings", [])
@@ -833,19 +829,19 @@ async def get_auto_config_status(config_id: str):
 
 
 @router.get("/auto-generated-configs")
-async def list_auto_generated_configs():
+async def list_auto_generated_configs(
+    _: None = Depends(require_demo_mode)
+):
     """
     List all auto-generated configurations in the system.
     Useful for demo management and cleanup.
     """
 
-    if not feature_flags.is_demo_mode():
-        raise HTTPException(status_code=403, detail="Demo mode is not enabled")
-
     try:
         from ..services.demo_reset_service import DemoResetService
+        from .dependencies import get_settings_cached
 
-        settings = get_settings()
+        settings = get_settings_cached()
         reset_service = DemoResetService(
             mongodb_uri=settings.mongodb_uri,
             database_name=settings.database_name
@@ -869,18 +865,12 @@ async def list_auto_generated_configs():
 # ============================================================
 
 @router.get("/geographic/scenarios")
-async def get_geographic_scenarios():
+async def get_geographic_scenarios(
+    _: None = Depends(require_demo_mode),
+    db_service: MongoDBService = Depends(get_db_service)
+):
     """Get predefined geographic demo scenarios"""
-    if not feature_flags.is_demo_mode():
-        raise HTTPException(status_code=403, detail="Demo mode is not enabled")
-
     try:
-        # Initialize database connection
-        settings = get_settings()
-        db_service = MongoDBService(
-            connection_string=settings.mongodb_uri,
-            database_name=settings.database_name
-        )
 
         # Create country router instance
         country_router = CountryRouter(db_service)
@@ -900,18 +890,12 @@ async def get_geographic_scenarios():
 
 
 @router.get("/geographic/countries")
-async def get_country_formats():
+async def get_country_formats(
+    _: None = Depends(require_demo_mode),
+    db_service: MongoDBService = Depends(get_db_service)
+):
     """Get country format mappings for map visualization"""
-    if not feature_flags.is_demo_mode():
-        raise HTTPException(status_code=403, detail="Demo mode is not enabled")
-
     try:
-        # Initialize database connection
-        settings = get_settings()
-        db_service = MongoDBService(
-            connection_string=settings.mongodb_uri,
-            database_name=settings.database_name
-        )
 
         # Create country router instance
         country_router = CountryRouter(db_service)
@@ -932,12 +916,11 @@ async def get_country_formats():
 
 @router.post("/geographic/execute-corridor")
 async def execute_corridor(
-    request: Dict[str, Any]
+    request: Dict[str, Any],
+    _: None = Depends(require_demo_mode),
+    db_service: MongoDBService = Depends(get_db_service)
 ):
     """Execute real conversion for geographic corridor"""
-    if not feature_flags.is_demo_mode():
-        raise HTTPException(status_code=403, detail="Demo mode is not enabled")
-
     try:
         # Extract parameters
         source_country = request.get("source_country")
@@ -945,17 +928,7 @@ async def execute_corridor(
         scenario_id = request.get("scenario_id")
 
         if not source_country or not target_country:
-            raise HTTPException(
-                status_code=400,
-                detail="source_country and target_country are required"
-            )
-
-        # Initialize database connection
-        settings = get_settings()
-        db_service = MongoDBService(
-            connection_string=settings.mongodb_uri,
-            database_name=settings.database_name
-        )
+            raise invalid_request("source_country and target_country are required")
 
         # Create country router instance
         country_router = CountryRouter(db_service)
@@ -977,18 +950,12 @@ async def execute_corridor(
 
 
 @router.get("/geographic/sample-messages")
-async def get_sample_messages():
+async def get_sample_messages(
+    _: None = Depends(require_demo_mode),
+    db_service: MongoDBService = Depends(get_db_service)
+):
     """Get sample messages for each format used in demos"""
-    if not feature_flags.is_demo_mode():
-        raise HTTPException(status_code=403, detail="Demo mode is not enabled")
-
     try:
-        # Initialize database connection
-        settings = get_settings()
-        db_service = MongoDBService(
-            connection_string=settings.mongodb_uri,
-            database_name=settings.database_name
-        )
 
         # Create country router instance
         country_router = CountryRouter(db_service)

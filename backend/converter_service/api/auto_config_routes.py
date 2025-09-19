@@ -13,9 +13,13 @@ from ..services.db_service import get_mongodb_service as get_db_service
 from ..services.semantic_learning_service import SemanticLearningService
 from ..services.ai_service import get_bedrock_service as get_ai_service
 from ..config.settings import get_settings
+from ..services.auto_config_builder import AutoConfigBuilder
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
+# Initialize the auto-config builder for demo scenarios
+auto_config_builder = AutoConfigBuilder()
 
 def _clean_config_for_response(config: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -506,3 +510,214 @@ async def delete_auto_config(
             status_code=500,
             detail="Failed to delete configuration"
         )
+
+
+# ============================================================================
+# DEMO ENDPOINTS FOR AUTO-CONFIGURATION UI
+# ============================================================================
+
+@router.get("/demo/scenarios")
+async def get_demo_scenarios():
+    """
+    Get list of available auto-config demo scenarios
+
+    Returns pre-configured scenarios with sample messages for common formats
+    like MT192, MT205, MT202COV, etc.
+    """
+    try:
+        scenarios = auto_config_builder.get_scenarios_list()
+        return {
+            "scenarios": scenarios,
+            "total": len(scenarios)
+        }
+    except Exception as e:
+        logger.error(f"Error getting demo scenarios: {e}")
+        raise HTTPException(status_code=500, detail="Failed to load demo scenarios")
+
+
+@router.get("/demo/scenarios/{scenario_id}/form")
+async def get_scenario_form(
+    scenario_id: str,
+    include_values: bool = True
+):
+    """
+    Get form schema for a specific auto-config scenario
+
+    Args:
+        scenario_id: Scenario identifier (e.g., 'mt192_to_pacs008')
+        include_values: Whether to include pre-filled demo values
+
+    Returns:
+        Form schema with field definitions and optional demo values
+    """
+    form_schema = auto_config_builder.get_form_schema(
+        scenario_id,
+        include_demo_values=include_values
+    )
+
+    if not form_schema:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Scenario '{scenario_id}' not found"
+        )
+
+    return form_schema
+
+
+@router.get("/demo/presets")
+async def get_demo_presets():
+    """
+    Get quick demo presets for auto-configuration
+
+    Returns pre-selected scenarios optimized for different demo purposes
+    (e.g., fastest, most complex, highest confidence)
+    """
+    return {
+        "presets": auto_config_builder.get_demo_presets()
+    }
+
+
+@router.post("/demo/scenarios/{scenario_id}/sample-message")
+async def generate_sample_message(
+    scenario_id: str,
+    form_data: Dict[str, Any]
+):
+    """
+    Generate a sample message from user-provided form data
+
+    This endpoint takes form values and generates a properly formatted
+    sample message for auto-configuration.
+    """
+    # Validate form data
+    validation_result = auto_config_builder.validate_form_data(scenario_id, form_data)
+
+    if not validation_result['valid']:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "message": "Form validation failed",
+                "errors": validation_result['errors']
+            }
+        )
+
+    # Generate sample message
+    result = auto_config_builder.get_sample_message(scenario_id, form_data)
+
+    if not result:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Scenario '{scenario_id}' not found"
+        )
+
+    return result
+
+
+class DemoAutoConfigRequest(BaseModel):
+    """Request model for demo auto-configuration"""
+    scenario_id: str
+    form_data: Dict[str, Any]
+    execute_immediately: bool = True  # Whether to run auto-config immediately
+
+
+@router.post("/demo/execute-auto-config")
+async def execute_demo_auto_config(
+    request: DemoAutoConfigRequest,
+    db_service=Depends(get_db),
+    ai_service=Depends(get_ai_service)
+):
+    """
+    Execute auto-configuration with demo scenario data
+
+    This endpoint:
+    1. Validates the form data
+    2. Generates a sample message
+    3. Executes auto-configuration
+    4. Returns the generated configuration
+    """
+
+    # Get scenario details
+    scenario = auto_config_builder.get_scenario(request.scenario_id)
+    if not scenario:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Scenario '{request.scenario_id}' not found"
+        )
+
+    # Validate form data
+    validation_result = auto_config_builder.validate_form_data(
+        request.scenario_id,
+        request.form_data
+    )
+
+    if not validation_result['valid']:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "message": "Form validation failed",
+                "errors": validation_result['errors']
+            }
+        )
+
+    # Generate sample message
+    message_result = auto_config_builder.get_sample_message(
+        request.scenario_id,
+        request.form_data
+    )
+
+    if not message_result:
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to generate sample message"
+        )
+
+    # Execute auto-configuration if requested
+    if request.execute_immediately:
+        # Create auto-config request
+        auto_config_request = AutoConfigRequest(
+            source_format=scenario['source_format'],
+            target_format=scenario['target_format'],
+            sample_message=message_result['sample_message'],
+            similar_to=scenario['similar_to']
+        )
+
+        # Use existing auto_configure endpoint logic
+        return await auto_configure(auto_config_request, db_service, ai_service)
+    else:
+        # Just return the prepared data without executing
+        return {
+            "scenario_id": request.scenario_id,
+            "source_format": scenario['source_format'],
+            "target_format": scenario['target_format'],
+            "sample_message": message_result['sample_message'],
+            "similar_to": scenario['similar_to'],
+            "ready_to_execute": True,
+            "metadata": message_result['metadata']
+        }
+
+
+@router.get("/demo/statistics")
+async def get_demo_statistics():
+    """
+    Get statistics about auto-configuration demo
+
+    Returns metrics and statistics for dashboard display
+    """
+    return auto_config_builder.get_demo_statistics()
+
+
+@router.get("/demo/scenarios/{scenario_id}/metadata")
+async def get_scenario_metadata(scenario_id: str):
+    """
+    Get metadata and expectations for a scenario
+
+    Returns expected confidence, field counts, and showcase features
+    """
+    metadata = auto_config_builder.get_configuration_metadata(scenario_id)
+
+    if not metadata:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Scenario '{scenario_id}' not found"
+        )
+
+    return metadata
