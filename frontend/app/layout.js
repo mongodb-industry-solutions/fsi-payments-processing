@@ -25,13 +25,15 @@ function Navigation() {
 
         <div className="nav-links">
           <Link
-            href="/converter"
-            className={`nav-link ${pathname === '/converter' ? 'active' : ''}`}
+            href="/payment-builder"
+            className={`nav-link ${pathname === '/payment-builder' ? 'active' : ''}`}
           >
             <svg className="nav-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <path d="M8 2L2 6V14H6V10H10V14H14V6L8 2Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
+              <rect x="2" y="4" width="12" height="10" rx="1" stroke="currentColor" strokeWidth="1.5"/>
+              <path d="M2 8h12" stroke="currentColor" strokeWidth="1.5"/>
+              <path d="M5 11h3M10 11h2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
             </svg>
-            <span>Converter</span>
+            <span>Payment Builder</span>
           </Link>
           <Link
             href="/geographic"

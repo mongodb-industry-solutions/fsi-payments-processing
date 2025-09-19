@@ -1,0 +1,181 @@
+/* Field Container */
+.fieldContainer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  animation: fadeInUp 0.4s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fullWidth {
+  grid-column: 1 / -1;
+}
+
+/* Labels */
+.label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--gray-dark2);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+}
+
+.required {
+  color: var(--red, #d32f2f);
+  font-weight: 600;
+}
+
+/* Input Styles */
+.input,
+.select,
+.textarea {
+  padding: var(--spacing-2) var(--spacing-3);
+  border: 1px solid var(--gray-light2);
+  border-radius: 6px;
+  font-size: 0.875rem;
+  color: var(--black);
+  background: var(--white);
+  transition: var(--transition-fast);
+  width: 100%;
+}
+
+.input:focus,
+.select:focus,
+.textarea:focus {
+  outline: none;
+  border-color: var(--green-dark1);
+  box-shadow: 0 0 0 3px rgba(0, 163, 92, 0.1);
+  transform: translateY(-1px);
+}
+
+.input:hover,
+.select:hover,
+.textarea:hover {
+  border-color: var(--gray-light1);
+  background: var(--gray-light3);
+}
+
+.input::placeholder,
+.textarea::placeholder {
+  color: var(--gray-light1);
+}
+
+/* Select Styles */
+.select {
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg width='14' height='8' viewBox='0 0 14 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M1 1L7 7L13 1' stroke='%23889397' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right var(--spacing-3) center;
+  padding-right: calc(var(--spacing-3) + 20px);
+}
+
+/* Textarea Styles */
+.textarea {
+  resize: vertical;
+  min-height: 80px;
+  font-family: inherit;
+  line-height: 1.5;
+}
+
+.textareaFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: var(--spacing-1);
+}
+
+.charCount {
+  font-size: 0.75rem;
+  color: var(--gray-base);
+}
+
+/* Amount Input Wrapper */
+.amountInputWrapper {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.currencyPrefix {
+  position: absolute;
+  left: var(--spacing-3);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--gray-dark1);
+  pointer-events: none;
+}
+
+.amountInput {
+  padding-left: calc(var(--spacing-3) + 40px);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Error States */
+.inputError {
+  border-color: var(--red, #d32f2f);
+  animation: shake 0.4s ease-out;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-2px); }
+  20%, 40%, 60%, 80% { transform: translateX(2px); }
+}
+
+.inputError:focus {
+  border-color: var(--red, #d32f2f);
+  box-shadow: 0 0 0 3px rgba(211, 47, 47, 0.1);
+}
+
+.errorText {
+  font-size: 0.75rem;
+  color: var(--red, #d32f2f);
+  margin-top: var(--spacing-1);
+  animation: slideInError 0.3s ease-out;
+}
+
+@keyframes slideInError {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Hover Effects */
+.input:hover:not(:focus),
+.select:hover:not(:focus),
+.textarea:hover:not(:focus) {
+  border-color: var(--gray-light1);
+}
+
+/* Disabled States */
+.input:disabled,
+.select:disabled,
+.textarea:disabled {
+  background: var(--gray-light3);
+  color: var(--gray-base);
+  cursor: not-allowed;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .fullWidth {
+    grid-column: 1;
+  }
+}

@@ -1,0 +1,491 @@
+.container {
+  background: var(--white);
+  border: 1px solid var(--gray-light2);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 400px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+}
+
+/* Header */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-4);
+  border-bottom: 1px solid var(--gray-light2);
+  background: var(--gray-light3);
+}
+
+.header h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--black);
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: var(--spacing-1);
+}
+
+.tab {
+  padding: var(--spacing-2) var(--spacing-3);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--gray-dark1);
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.tab:hover {
+  background: var(--white);
+  border-color: var(--gray-light2);
+}
+
+.activeTab {
+  background: var(--white);
+  border-color: var(--green-dark1);
+  color: var(--green-dark1);
+}
+
+/* Content */
+.content {
+  flex: 1;
+  padding: var(--spacing-4);
+  overflow-y: auto;
+}
+
+/* Empty State */
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-6);
+  text-align: center;
+  min-height: 300px;
+  color: var(--gray-light1);
+}
+
+.emptyState svg {
+  margin-bottom: var(--spacing-4);
+}
+
+.emptyState h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--black);
+  margin-bottom: var(--spacing-2);
+}
+
+.emptyState p {
+  color: var(--gray-base);
+  font-size: 0.875rem;
+}
+
+/* Stats Footer */
+.statsFooter {
+  display: flex;
+  justify-content: space-around;
+  padding: var(--spacing-3) var(--spacing-4);
+  background: var(--gray-light3);
+  border-top: 1px solid var(--gray-light2);
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.statLabel {
+  font-size: 0.75rem;
+  color: var(--gray-base);
+  margin-bottom: var(--spacing-1);
+}
+
+.statValue {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--black);
+}
+
+/* Scrollbar */
+.content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.content::-webkit-scrollbar-track {
+  background: var(--gray-light3);
+}
+
+.content::-webkit-scrollbar-thumb {
+  background: var(--gray-light1);
+  border-radius: 3px;
+}
+
+.content::-webkit-scrollbar-thumb:hover {
+  background: var(--gray-base);
+}
+
+/* MongoDB Tab Styles */
+.mongodbTab {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+}
+
+.mongodbTab svg {
+  color: currentColor;
+}
+
+/* MongoDB Operations Styles */
+.mongoOperations {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+.mongoPlaceholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--spacing-6);
+  min-height: 350px;
+}
+
+.mongoPlaceholder svg {
+  margin-bottom: var(--spacing-3);
+  color: var(--gray-light1);
+}
+
+.mongoPlaceholder h4 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--black);
+  margin-bottom: var(--spacing-2);
+}
+
+.mongoPlaceholder p {
+  color: var(--gray-base);
+  font-size: 0.875rem;
+  margin-bottom: var(--spacing-4);
+}
+
+.mongoFeatures {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  width: 100%;
+  max-width: 400px;
+}
+
+.featureCard {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  padding: var(--spacing-3);
+  background: var(--gray-light3);
+  border-radius: 8px;
+  text-align: left;
+}
+
+.featureIcon {
+  font-size: 1.5rem;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--white);
+  border-radius: 6px;
+}
+
+.featureCard strong {
+  display: block;
+  font-size: 0.875rem;
+  color: var(--black);
+  margin-bottom: 2px;
+}
+
+.featureCard span {
+  font-size: 0.75rem;
+  color: var(--gray-base);
+}
+
+/* Operations List */
+.operationsList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+}
+
+.mongoOperation {
+  background: var(--gray-light3);
+  border: 1px solid var(--gray-light2);
+  border-radius: 8px;
+  padding: var(--spacing-3);
+  position: relative;
+}
+
+.slideUpIn {
+  animation: slideUpIn 0.4s ease-out;
+}
+
+@keyframes slideUpIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.opHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-2);
+}
+
+.opType {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.opTime {
+  font-size: 0.875rem;
+  color: var(--gray-base);
+  font-weight: 500;
+}
+
+.opDescription {
+  font-size: 0.875rem;
+  color: var(--gray-dark1);
+  margin-bottom: var(--spacing-2);
+}
+
+.opDetails {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.opCollection, .opQuery, .opDocument, .opUpdate {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+}
+
+.label {
+  font-size: 0.75rem;
+  color: var(--gray-base);
+  font-weight: 500;
+}
+
+.opCollection code {
+  font-family: 'Monaco', 'Courier New', monospace;
+  font-size: 0.875rem;
+  color: var(--green-dark1);
+  background: var(--white);
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+.opQuery pre, .opDocument pre, .opUpdate pre {
+  font-family: 'Monaco', 'Courier New', monospace;
+  font-size: 0.75rem;
+  background: var(--white);
+  padding: var(--spacing-2);
+  border-radius: 4px;
+  margin: 0;
+  color: var(--gray-dark2);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.opMetrics {
+  display: flex;
+  gap: var(--spacing-3);
+  padding-top: var(--spacing-2);
+  border-top: 1px solid var(--gray-light2);
+}
+
+.metric {
+  display: flex;
+  gap: var(--spacing-1);
+  align-items: center;
+}
+
+.metricLabel {
+  font-size: 0.75rem;
+  color: var(--gray-base);
+}
+
+.metricValue {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--black);
+}
+
+/* Index Performance Banner */
+.indexBanner {
+  background: var(--gray-light3);
+  border: 1px solid var(--gray-light2);
+  border-radius: 8px;
+  padding: var(--spacing-4);
+}
+
+.indexComparison {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-4);
+  margin-bottom: var(--spacing-3);
+}
+
+.withoutIndex, .withIndex {
+  flex: 1;
+  text-align: center;
+}
+
+.withoutIndex h5, .withIndex h5 {
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: var(--spacing-3);
+  color: var(--black);
+}
+
+.indexMetric {
+  margin-bottom: var(--spacing-2);
+}
+
+.indexMetric span {
+  display: block;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--red-base);
+  margin-bottom: 4px;
+}
+
+.withIndex .indexMetric span {
+  color: var(--green-dark1);
+}
+
+.indexMetric label {
+  font-size: 0.75rem;
+  color: var(--gray-base);
+}
+
+.vsIndicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: var(--white);
+  border-radius: 50%;
+  font-weight: 700;
+  font-size: 0.875rem;
+  color: var(--gray-dark1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.improvement {
+  display: flex;
+  gap: var(--spacing-3);
+  justify-content: center;
+  padding: var(--spacing-3);
+  background: var(--green-light3);
+  border-radius: 6px;
+}
+
+.improvementStat {
+  text-align: center;
+}
+
+.improvementStat span {
+  display: block;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--green-dark1);
+  margin-bottom: 4px;
+}
+
+.improvementStat label {
+  font-size: 0.75rem;
+  color: var(--green-dark2);
+}
+
+.highlight {
+  color: var(--green-dark1) !important;
+}
+
+.mongoTip {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-2);
+  padding: var(--spacing-3);
+  background: var(--blue-light3);
+  border: 1px solid var(--blue-light1);
+  border-radius: 6px;
+}
+
+.mongoTip svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--blue-dark1);
+}
+
+.mongoTip p {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--blue-dark1);
+  line-height: 1.5;
+}
+
+/* Processing Indicator */
+.mongoProcessing {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-3);
+  background: var(--gray-light3);
+  border-radius: 6px;
+}
+
+.pulsingDot {
+  width: 8px;
+  height: 8px;
+  background: var(--green-dark1);
+  border-radius: 50%;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+    box-shadow: 0 0 0 0 rgba(0, 163, 92, 0.4);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+    box-shadow: 0 0 0 8px rgba(0, 163, 92, 0);
+  }
+}

@@ -1,0 +1,33 @@
+.container {
+  display: flex;
+  height: calc(100vh - 64px); /* Account for navigation header */
+  background: var(--gray-light3);
+  overflow: hidden;
+}
+
+.mainContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: var(--spacing-5);
+  gap: var(--spacing-5);
+}
+
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+  .mainContent {
+    padding: var(--spacing-4);
+  }
+}
+
+@media (max-width: 768px) {
+  .container {
+    flex-direction: column;
+  }
+
+  .mainContent {
+    padding: var(--spacing-3);
+  }
+}

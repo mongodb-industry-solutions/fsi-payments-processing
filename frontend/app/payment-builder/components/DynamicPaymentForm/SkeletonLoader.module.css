@@ -1,0 +1,84 @@
+.skeletonContainer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-5);
+  padding: var(--spacing-1);
+}
+
+.skeletonSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+}
+
+.skeletonTitle {
+  width: 120px;
+  height: 20px;
+  background: linear-gradient(90deg, var(--gray-light2) 25%, var(--gray-light3) 50%, var(--gray-light2) 75%);
+  background-size: 400% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: 4px;
+}
+
+.skeletonFields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-3);
+}
+
+.skeletonField,
+.skeletonFieldFull {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.skeletonFieldFull {
+  grid-column: 1 / -1;
+}
+
+.skeletonLabel {
+  width: 80px;
+  height: 14px;
+  background: linear-gradient(90deg, var(--gray-light2) 25%, var(--gray-light3) 50%, var(--gray-light2) 75%);
+  background-size: 400% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  animation-delay: 0.1s;
+  border-radius: 3px;
+}
+
+.skeletonInput,
+.skeletonSelect {
+  height: 36px;
+  background: linear-gradient(90deg, var(--gray-light2) 25%, var(--gray-light3) 50%, var(--gray-light2) 75%);
+  background-size: 400% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  animation-delay: 0.2s;
+  border-radius: 6px;
+}
+
+.skeletonTextarea {
+  height: 80px;
+  background: linear-gradient(90deg, var(--gray-light2) 25%, var(--gray-light3) 50%, var(--gray-light2) 75%);
+  background-size: 400% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  animation-delay: 0.3s;
+  border-radius: 6px;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+/* Stagger animations */
+.skeletonSection:nth-child(1) .skeletonLabel { animation-delay: 0.1s; }
+.skeletonSection:nth-child(1) .skeletonInput { animation-delay: 0.15s; }
+.skeletonSection:nth-child(2) .skeletonLabel { animation-delay: 0.2s; }
+.skeletonSection:nth-child(2) .skeletonInput { animation-delay: 0.25s; }
+.skeletonSection:nth-child(3) .skeletonLabel { animation-delay: 0.3s; }
+.skeletonSection:nth-child(3) .skeletonTextarea { animation-delay: 0.35s; }

@@ -1,0 +1,299 @@
+/* Panel Container - Matching ScenarioSidebar width */
+.panel {
+  width: 320px;
+  background: var(--white);
+  border-right: 1px solid var(--gray-light2);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Header Section */
+.header {
+  padding: var(--spacing-5) var(--spacing-4) var(--spacing-4);
+  border-bottom: 1px solid var(--gray-light2);
+  position: relative;
+}
+
+.headerAccent {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--green-dark1);
+}
+
+.header h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--black);
+  margin-bottom: var(--spacing-1);
+}
+
+.header p {
+  font-size: 0.875rem;
+  color: var(--gray-base);
+}
+
+/* Payment Types List */
+.typesList {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--spacing-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+}
+
+/* Payment Type Card */
+.typeCard {
+  background: var(--white);
+  border: 1px solid var(--gray-light2);
+  border-radius: 8px;
+  padding: var(--spacing-3);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  animation: fadeInScale 0.4s ease-out;
+  animation-fill-mode: both;
+}
+
+.typeCard:nth-child(1) { animation-delay: 0.05s; }
+.typeCard:nth-child(2) { animation-delay: 0.1s; }
+.typeCard:nth-child(3) { animation-delay: 0.15s; }
+.typeCard:nth-child(4) { animation-delay: 0.2s; }
+.typeCard:nth-child(5) { animation-delay: 0.25s; }
+.typeCard:nth-child(6) { animation-delay: 0.3s; }
+
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.typeCard:hover {
+  transform: scale(1.02);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border-color: var(--gray-light1);
+}
+
+.typeCard.selected {
+  background: var(--green-light3);
+  border: 2px solid var(--green-dark1);
+  padding: calc(var(--spacing-3) - 1px); /* Adjust for thicker border */
+}
+
+/* Card Header */
+.cardHeader {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-2);
+  margin-bottom: var(--spacing-2);
+}
+
+.iconWrapper {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--gray-light3);
+  border-radius: 6px;
+  color: var(--green-dark1);
+  flex-shrink: 0;
+}
+
+.selected .iconWrapper {
+  background: var(--green-light2);
+  color: var(--green-dark2);
+}
+
+.cardTitle {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--spacing-2);
+}
+
+.cardTitle h3 {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--black);
+  line-height: 1.3;
+  flex: 1;
+}
+
+/* Complexity Badge */
+.complexityBadge {
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  flex-shrink: 0;
+}
+
+/* Description */
+.description {
+  font-size: 0.8125rem;
+  color: var(--gray-dark1);
+  margin-bottom: var(--spacing-3);
+  line-height: 1.4;
+}
+
+/* Format Flow */
+.formatFlow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  margin-bottom: var(--spacing-3);
+  padding: var(--spacing-2);
+  background: var(--gray-light3);
+  border-radius: 4px;
+  font-size: 0.875rem;
+}
+
+.format {
+  font-family: 'Monaco', 'Courier New', monospace;
+  font-weight: 600;
+  color: var(--black);
+}
+
+.arrow {
+  color: var(--gray-base);
+}
+
+/* Stats Grid */
+.statsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-2);
+  margin-bottom: var(--spacing-3);
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--spacing-2);
+  background: var(--gray-light3);
+  border-radius: 4px;
+}
+
+.selected .stat {
+  background: var(--green-light2);
+}
+
+.statLabel {
+  font-size: 0.75rem;
+  color: var(--gray-base);
+  margin-bottom: 2px;
+}
+
+.statValue {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--black);
+}
+
+/* MongoDB Features */
+.features {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-1);
+  margin-bottom: var(--spacing-3);
+}
+
+.featureBadge {
+  font-size: 0.6875rem;
+  padding: 2px 6px;
+  background: var(--blue-light3);
+  color: var(--blue-dark1);
+  border-radius: 3px;
+  font-weight: 500;
+}
+
+.selected .featureBadge {
+  background: var(--green-light2);
+  color: var(--green-dark2);
+}
+
+/* Select Button */
+.selectButton {
+  width: 100%;
+  padding: var(--spacing-2);
+  background: var(--white);
+  border: 1px solid var(--gray-light2);
+  border-radius: 4px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--gray-dark1);
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.selectButton:hover {
+  background: var(--gray-light3);
+  border-color: var(--gray-light1);
+}
+
+.selectedButton {
+  background: var(--green-dark1);
+  color: var(--white);
+  border-color: var(--green-dark1);
+}
+
+.selectedButton:hover {
+  background: var(--green-dark2);
+  border-color: var(--green-dark2);
+}
+
+/* Footer */
+.footer {
+  padding: var(--spacing-3) var(--spacing-4);
+  border-top: 1px solid var(--gray-light2);
+  background: var(--gray-light3);
+}
+
+.footerInfo {
+  font-size: 0.8125rem;
+  color: var(--gray-dark1);
+  text-align: center;
+}
+
+.footerInfo strong {
+  color: var(--green-dark1);
+  font-weight: 600;
+}
+
+.separator {
+  margin: 0 var(--spacing-2);
+  color: var(--gray-light1);
+}
+
+/* Scrollbar Styling */
+.typesList::-webkit-scrollbar {
+  width: 6px;
+}
+
+.typesList::-webkit-scrollbar-track {
+  background: var(--gray-light3);
+}
+
+.typesList::-webkit-scrollbar-thumb {
+  background: var(--gray-light1);
+  border-radius: 3px;
+}
+
+.typesList::-webkit-scrollbar-thumb:hover {
+  background: var(--gray-base);
+}
