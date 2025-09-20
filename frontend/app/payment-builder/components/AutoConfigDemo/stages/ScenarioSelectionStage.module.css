@@ -1,0 +1,192 @@
+.container {
+  padding: var(--spacing-4);
+}
+
+.header {
+  text-align: center;
+  margin-bottom: var(--spacing-6);
+}
+
+.header h3 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--black);
+  margin-bottom: var(--spacing-2);
+}
+
+.header p {
+  font-size: 0.875rem;
+  color: var(--gray-dark1);
+}
+
+.scenarioGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--spacing-4);
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.scenarioCard {
+  background: var(--white);
+  border: 1px solid var(--gray-light2);
+  border-radius: 10px;
+  padding: var(--spacing-4);
+  cursor: pointer;
+  transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.scenarioCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+  border-color: var(--gray-light1);
+}
+
+.customCard {
+  background: var(--gray-light3);
+  border: 2px dashed var(--gray-light1);
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  margin-bottom: var(--spacing-3);
+}
+
+.icon {
+  font-size: 1.5rem;
+}
+
+.cardHeader h4 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--black);
+}
+
+.cardContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.cardContent h5 {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--green-dark1);
+}
+
+.cardContent p {
+  font-size: 0.8125rem;
+  color: var(--gray-dark1);
+  line-height: 1.4;
+  margin-bottom: var(--spacing-2);
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-2);
+  margin: var(--spacing-2) 0;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--spacing-2);
+  background: var(--gray-light3);
+  border-radius: 6px;
+}
+
+.statLabel {
+  font-size: 0.6875rem;
+  color: var(--gray-base);
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  margin-bottom: 2px;
+}
+
+.statValue {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--black);
+}
+
+.features {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-1);
+  margin: var(--spacing-2) 0;
+}
+
+.feature {
+  font-size: 0.625rem;
+  padding: 2px 6px;
+  background: var(--blue-light3);
+  color: var(--blue-dark1);
+  border-radius: 3px;
+  font-weight: 500;
+}
+
+.difficulty {
+  position: absolute;
+  top: var(--spacing-3);
+  right: var(--spacing-3);
+  font-size: 0.625rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.difficulty.simple {
+  background: var(--green-light3);
+  color: var(--green-dark1);
+}
+
+.difficulty.medium {
+  background: var(--blue-light3);
+  color: var(--blue-dark1);
+}
+
+.difficulty.complex {
+  background: #fee9e9;
+  color: #d32f2f;
+}
+
+.selectButton {
+  width: 100%;
+  padding: var(--spacing-2) var(--spacing-3);
+  margin-top: var(--spacing-3);
+  background: var(--white);
+  border: 1px solid var(--gray-light2);
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--gray-dark1);
+  cursor: pointer;
+  transition: all 200ms ease;
+}
+
+.scenarioCard:hover .selectButton {
+  background: var(--green-dark1);
+  color: var(--white);
+  border-color: var(--green-dark1);
+}
+
+.selectButton:active {
+  transform: scale(0.98);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .scenarioGrid {
+    grid-template-columns: 1fr;
+  }
+}

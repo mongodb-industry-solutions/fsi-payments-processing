@@ -79,7 +79,8 @@ const PAYMENT_TYPES = [
   }
 ];
 
-export default function PaymentTypesPanel({ selectedType, onSelectType, isCollapsed, onToggleCollapse }) {
+
+export default function PaymentTypesPanel({ selectedType, onSelectType, isCollapsed, onToggleCollapse, onAddNewFormat }) {
   const [hoveredType, setHoveredType] = useState(null);
 
   const getComplexityBadge = (complexity) => {
@@ -122,6 +123,35 @@ export default function PaymentTypesPanel({ selectedType, onSelectType, isCollap
 
       {/* Payment Type Cards */}
       <div className={styles.typesList} role="list" aria-labelledby="payment-types-heading" aria-describedby="payment-types-description">
+        {/* Add New Format Card - Show at the top in expanded view */}
+        {!isCollapsed && onAddNewFormat && (
+          <div
+            className={styles.addNewCard}
+            onClick={onAddNewFormat}
+            role="button"
+            tabIndex={0}
+            aria-label="Configure a new payment format"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onAddNewFormat();
+              }
+            }}
+          >
+            <div className={styles.addNewIcon}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+            <div className={styles.addNewContent}>
+              <h4>Configure New Format</h4>
+              <p>Use AI to auto-configure a new payment format</p>
+              <span className={styles.addNewBadge}>Intelligent Learning</span>
+            </div>
+          </div>
+        )}
+
+        {/* Standard Payment Types */}
         {PAYMENT_TYPES.map((type) => {
           const isSelected = selectedType?.id === type.id;
           const isHovered = hoveredType === type.id;

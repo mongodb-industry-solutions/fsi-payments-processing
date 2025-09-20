@@ -1,0 +1,215 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.container.small {
+  gap: var(--spacing-1);
+}
+
+.container.large {
+  gap: var(--spacing-3);
+}
+
+.label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--gray-dark1);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.container.small .label {
+  font-size: 0.75rem;
+}
+
+.container.large .label {
+  font-size: 1rem;
+}
+
+/* Indicator */
+.indicator {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+}
+
+.segments {
+  display: flex;
+  gap: 4px;
+  flex: 1;
+}
+
+.segment {
+  height: 8px;
+  flex: 1;
+  background: var(--gray-light2);
+  border-radius: 2px;
+  transition: all 300ms ease;
+}
+
+.container.small .segment {
+  height: 6px;
+}
+
+.container.large .segment {
+  height: 12px;
+}
+
+.segment.active {
+  transform: scaleY(1.2);
+}
+
+.segment.animated {
+  animation: segmentPulse 0.5s ease-out;
+}
+
+@keyframes segmentPulse {
+  0% {
+    transform: scaleY(0);
+    opacity: 0;
+  }
+  50% {
+    transform: scaleY(1.4);
+  }
+  100% {
+    transform: scaleY(1.2);
+    opacity: 1;
+  }
+}
+
+/* Confidence Levels */
+.segment.active.excellent {
+  background: var(--green-base);
+  box-shadow: 0 0 8px rgba(76, 175, 80, 0.3);
+}
+
+.segment.active.high {
+  background: var(--green-light1);
+}
+
+.segment.active.medium {
+  background: var(--blue-base);
+}
+
+.segment.active.low {
+  background: #ff9800;
+}
+
+.segment.active.critical {
+  background: #f44336;
+  animation: criticalPulse 1s ease-in-out infinite;
+}
+
+@keyframes criticalPulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* Percentage */
+.percentage {
+  min-width: 48px;
+  text-align: right;
+  font-size: 1rem;
+  font-weight: 700;
+  font-family: 'Monaco', 'Courier New', monospace;
+}
+
+.container.small .percentage {
+  font-size: 0.875rem;
+  min-width: 40px;
+}
+
+.container.large .percentage {
+  font-size: 1.25rem;
+  min-width: 56px;
+}
+
+.percentage.excellent {
+  color: var(--green-dark1);
+}
+
+.percentage.high {
+  color: var(--green-base);
+}
+
+.percentage.medium {
+  color: var(--blue-dark1);
+}
+
+.percentage.low {
+  color: #f57c00;
+}
+
+.percentage.critical {
+  color: #d32f2f;
+}
+
+/* Level Label */
+.levelLabel {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 4px 8px;
+  border-radius: 4px;
+  text-align: center;
+}
+
+.levelLabel.excellent {
+  background: var(--green-light3);
+  color: var(--green-dark1);
+}
+
+.levelLabel.high {
+  background: var(--green-light3);
+  color: var(--green-dark1);
+}
+
+.levelLabel.medium {
+  background: var(--blue-light3);
+  color: var(--blue-dark1);
+}
+
+.levelLabel.low {
+  background: #fff3e0;
+  color: #e65100;
+}
+
+.levelLabel.critical {
+  background: #ffebee;
+  color: #c62828;
+}
+
+/* Details (for large size) */
+.details {
+  background: var(--gray-light3);
+  border-radius: 6px;
+  padding: var(--spacing-2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+}
+
+.detailItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.75rem;
+}
+
+.detailLabel {
+  color: var(--gray-base);
+  font-weight: 500;
+}
+
+.detailValue {
+  color: var(--gray-dark1);
+  font-weight: 600;
+  font-family: 'Monaco', 'Courier New', monospace;
+}

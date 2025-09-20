@@ -1,0 +1,344 @@
+.container {
+  padding: var(--spacing-2);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-4);
+}
+
+.header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--gray-dark2);
+}
+
+.formats {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.format {
+  background: var(--green-dark1);
+  color: white;
+  padding: var(--spacing-1) var(--spacing-3);
+  border-radius: 16px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.arrow {
+  color: var(--gray-base);
+  font-size: 1.25rem;
+}
+
+/* Progress Steps */
+.progressSteps {
+  background: var(--gray-light3);
+  border-radius: 8px;
+  padding: var(--spacing-4);
+  margin-bottom: var(--spacing-4);
+}
+
+.step {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  padding: var(--spacing-2) 0;
+  opacity: 0.5;
+  transition: all 300ms ease;
+}
+
+.step.active {
+  opacity: 1;
+}
+
+.step.complete {
+  opacity: 1;
+}
+
+.stepIcon {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.checkmark {
+  color: var(--green-base);
+  font-size: 1.25rem;
+  font-weight: bold;
+}
+
+.stepNumber {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--gray-light1);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid var(--gray-light2);
+  border-top-color: var(--green-base);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.stepLabel {
+  font-size: 0.875rem;
+  color: var(--gray-dark1);
+}
+
+.step.active .stepLabel {
+  font-weight: 600;
+  color: var(--green-dark1);
+}
+
+.step.complete .stepLabel {
+  color: var(--green-dark1);
+}
+
+/* Two-column layout for visualizations */
+.visualizationGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-4);
+  margin-top: var(--spacing-4);
+}
+
+.leftColumn,
+.rightColumn {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+@media (max-width: 1024px) {
+  .visualizationGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Visualization */
+.visualization {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-4);
+  margin-bottom: var(--spacing-4);
+}
+
+.patternMatching {
+  background: var(--white);
+  border: 1px solid var(--gray-light2);
+  border-radius: 8px;
+  padding: var(--spacing-3);
+}
+
+.patternMatching h4 {
+  margin: 0 0 var(--spacing-3) 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--gray-dark2);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.patternFlow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.patternItem {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2);
+  background: var(--gray-light3);
+  border-radius: 6px;
+  animation: slideIn 500ms ease;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.fieldName {
+  font-family: 'Courier New', monospace;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--green-dark1);
+  min-width: 80px;
+}
+
+.patternArrow {
+  color: var(--gray-base);
+}
+
+.pattern {
+  flex: 1;
+  font-size: 0.875rem;
+  color: var(--gray-dark1);
+  font-style: italic;
+}
+
+.confidence {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--green-base);
+}
+
+/* Confidence Section */
+.confidenceSection {
+  background: var(--white);
+  border: 1px solid var(--gray-light2);
+  border-radius: 8px;
+  padding: var(--spacing-3);
+}
+
+.confidenceSection h4 {
+  margin: 0 0 var(--spacing-3) 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--gray-dark2);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.confidenceMetrics {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.metric {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.metric label {
+  font-size: 0.75rem;
+  color: var(--gray-base);
+  min-width: 100px;
+}
+
+.progressBar {
+  flex: 1;
+  height: 8px;
+  background: var(--gray-light2);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background: var(--green-base);
+  border-radius: 4px;
+  transition: width 500ms ease;
+}
+
+.metric span {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--green-dark1);
+  min-width: 35px;
+  text-align: right;
+}
+
+/* Timer */
+.timer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-3);
+  background: var(--gray-light3);
+  border: 1px solid var(--gray-light2);
+  border-radius: 8px;
+  margin-bottom: var(--spacing-4);
+}
+
+.timerLabel {
+  font-size: 0.875rem;
+  color: var(--gray-dark1);
+  font-weight: 600;
+}
+
+.timerValue {
+  font-size: 1.25rem;
+  font-weight: bold;
+  color: var(--green-dark1);
+  font-family: 'Courier New', monospace;
+}
+
+/* MongoDB Operations */
+.mongoOperations {
+  background: var(--gray-dark2);
+  border-radius: 8px;
+  padding: var(--spacing-3);
+  color: var(--green-light1);
+}
+
+.mongoOperations h4 {
+  margin: 0 0 var(--spacing-3) 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--green-light2);
+}
+
+.operationsList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.operation {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  font-family: 'Courier New', monospace;
+  font-size: 0.875rem;
+  animation: fadeIn 500ms ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.operationIcon {
+  font-size: 1rem;
+}

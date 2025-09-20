@@ -7,6 +7,7 @@ import BuilderCanvas from './components/BuilderCanvas/BuilderCanvas';
 import JourneyVisualizer from './components/JourneyVisualizer/JourneyVisualizer';
 import FocusControl from './components/FocusControl/FocusControl';
 import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary';
+import AutoConfigBuilder from './components/AutoConfigBuilder/AutoConfigBuilder';
 
 export default function PaymentBuilder() {
   const [selectedPaymentType, setSelectedPaymentType] = useState(null);
@@ -17,6 +18,8 @@ export default function PaymentBuilder() {
   const [isFormCollapsed, setIsFormCollapsed] = useState(false);
   const [convertedMessage, setConvertedMessage] = useState(null);
   const [focusedPanel, setFocusedPanel] = useState('none'); // 'none' | 'payment-details' | 'journey'
+  const [showAutoConfig, setShowAutoConfig] = useState(false);
+  const [autoConfigScenario, setAutoConfigScenario] = useState(null);
 
   const handlePaymentTypeSelect = (paymentType) => {
     setSelectedPaymentType(paymentType);
@@ -27,6 +30,56 @@ export default function PaymentBuilder() {
     setIsFormCollapsed(false);
     // Reset focus when selecting new payment type
     setFocusedPanel('none');
+    // Close auto-config if open
+    setShowAutoConfig(false);
+  };
+
+  const handleAutoConfigSelect = (scenario) => {
+    setAutoConfigScenario(scenario);
+    setShowAutoConfig(true);
+    setSelectedPaymentType(null);
+    setExecutionResult(null);
+    setFormData({});
+  };
+
+  const handleAutoConfigClick = () => {
+    // Treat auto-config as a special payment type selection
+    const autoConfigType = {
+      id: 'auto_config',
+      name: 'Configure New Format',
+      type: 'configuration',
+      isAutoConfig: true
+    };
+    setSelectedPaymentType(autoConfigType);
+    setExecutionResult(null);
+    setFormData({});
+    setIsPanelCollapsed(true); // Collapse panel like normal selection
+    setIsFormCollapsed(false);
+    setFocusedPanel('none');
+    setShowAutoConfig(false); // We won't use modal anymore
+  };
+
+  const handleAutoConfigComplete = (configResult) => {
+    // Add the new format as a payment type
+    const newPaymentType = {
+      id: configResult.configuration_id,
+      name: `${configResult.configuration_id.replace('_to_', ' → ')}`,
+      sourceFormat: configResult.configuration_id.split('_to_')[0],
+      targetFormat: configResult.configuration_id.split('_to_')[1],
+      complexity: 'auto',
+      estimatedTime: '1-3s',
+      fields: configResult.fields_mapped,
+      isAutoConfigured: true
+    };
+
+    setSelectedPaymentType(newPaymentType);
+    setShowAutoConfig(false);
+    setAutoConfigScenario(null);
+  };
+
+  const handleAutoConfigCancel = () => {
+    setShowAutoConfig(false);
+    setAutoConfigScenario(null);
   };
 
   const togglePanelCollapse = () => {
@@ -65,6 +118,7 @@ export default function PaymentBuilder() {
           onSelectType={handlePaymentTypeSelect}
           isCollapsed={isPanelCollapsed}
           onToggleCollapse={togglePanelCollapse}
+          onAddNewFormat={handleAutoConfigClick}
         />
       </ErrorBoundary>
 
@@ -79,27 +133,41 @@ export default function PaymentBuilder() {
           }}
         >
           {/* Focus Control - Central control for view modes */}
-          <FocusControl
-            focusedPanel={focusedPanel}
-            onFocusChange={handleFocusChange}
-            hasExecutionResult={!!executionResult}
-            selectedPaymentType={selectedPaymentType}
-          />
+          {/* Only show FocusControl for regular payment types */}
+          {selectedPaymentType && !selectedPaymentType.isAutoConfig && (
+            <FocusControl
+              focusedPanel={focusedPanel}
+              onFocusChange={handleFocusChange}
+              hasExecutionResult={!!executionResult}
+              selectedPaymentType={selectedPaymentType}
+            />
+          )}
 
-          <BuilderCanvas
-            selectedPaymentType={selectedPaymentType}
-            isProcessing={isProcessing}
-            onExecute={handleExecute}
-            onExecutionComplete={handleExecutionComplete}
-            formData={formData}
-            setFormData={setFormData}
-            isFormCollapsed={isFormCollapsed}
-            onToggleFormCollapse={toggleFormCollapse}
-            focusedPanel={focusedPanel}
-          />
+          {/* Conditionally show AutoConfigBuilder or BuilderCanvas */}
+          {selectedPaymentType?.isAutoConfig ? (
+            <AutoConfigBuilder
+              embedded={true}
+              onClose={() => {
+                setSelectedPaymentType(null);
+                setAutoConfigScenario(null);
+              }}
+            />
+          ) : (
+            <BuilderCanvas
+              selectedPaymentType={selectedPaymentType}
+              isProcessing={isProcessing}
+              onExecute={handleExecute}
+              onExecutionComplete={handleExecutionComplete}
+              formData={formData}
+              setFormData={setFormData}
+              isFormCollapsed={isFormCollapsed}
+              onToggleFormCollapse={toggleFormCollapse}
+              focusedPanel={focusedPanel}
+            />
+          )}
 
-          {/* Journey Visualizer */}
-          {selectedPaymentType && (
+          {/* Journey Visualizer - or Config Progress for auto-config */}
+          {selectedPaymentType && !selectedPaymentType.isAutoConfig && (
             <JourneyVisualizer
               paymentType={selectedPaymentType}
               isProcessing={isProcessing}

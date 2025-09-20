@@ -1,0 +1,270 @@
+.fieldDetectionList {
+  background: var(--white);
+  border: 1px solid var(--gray-light2);
+  border-radius: 8px;
+  padding: var(--spacing-4);
+  margin-bottom: var(--spacing-4);
+}
+
+.title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--black);
+  margin-bottom: var(--spacing-3);
+}
+
+/* Summary Section */
+.summary {
+  display: flex;
+  gap: var(--spacing-4);
+  padding: var(--spacing-3);
+  background: var(--gray-light3);
+  border-radius: 6px;
+  margin-bottom: var(--spacing-4);
+}
+
+.summaryItem {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+}
+
+.summaryLabel {
+  font-size: 0.75rem;
+  color: var(--gray-base);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+.summaryValue {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--black);
+}
+
+.progressBar {
+  height: 6px;
+  background: var(--gray-light2);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: var(--spacing-1);
+}
+
+.progressFill {
+  height: 100%;
+  background: var(--green-base);
+  border-radius: 3px;
+  transition: width 500ms ease-out;
+}
+
+/* Fields List */
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.field {
+  padding: var(--spacing-3);
+  background: var(--gray-light3);
+  border-radius: 6px;
+  border: 1px solid transparent;
+  transition: all 200ms ease;
+}
+
+.field:hover {
+  background: var(--white);
+  border-color: var(--gray-light2);
+  transform: translateX(2px);
+}
+
+.field.animated {
+  animation: fadeSlideIn 0.4s ease-out;
+  animation-fill-mode: both;
+}
+
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fieldHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--spacing-3);
+}
+
+.fieldInfo {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  flex: 1;
+}
+
+.fieldIcon {
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.fieldCode {
+  font-family: 'Monaco', 'Courier New', monospace;
+  font-weight: 600;
+  color: var(--black);
+  font-size: 0.875rem;
+}
+
+.fieldName {
+  font-size: 0.875rem;
+  color: var(--gray-dark1);
+}
+
+/* Lane Badge */
+.laneBadge {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  padding: 4px 8px;
+  border-radius: 12px;
+  border: 1px solid;
+  font-size: 0.75rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.laneIcon {
+  font-size: 0.875rem;
+}
+
+.laneName {
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+/* Field Value and Mapping */
+.fieldValue,
+.fieldMapping {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  margin-top: var(--spacing-2);
+  padding-top: var(--spacing-2);
+  border-top: 1px solid var(--gray-light2);
+  font-size: 0.8125rem;
+}
+
+.valueLabel,
+.mappingLabel {
+  color: var(--gray-base);
+  font-weight: 500;
+}
+
+.value {
+  color: var(--gray-dark1);
+  font-family: 'Monaco', 'Courier New', monospace;
+  background: var(--white);
+  padding: 2px 6px;
+  border-radius: 4px;
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mappingTarget {
+  color: var(--green-dark1);
+  font-family: 'Monaco', 'Courier New', monospace;
+  font-weight: 600;
+}
+
+/* Empty State */
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-6);
+  color: var(--gray-base);
+}
+
+.emptyState p {
+  margin-top: var(--spacing-3);
+  font-size: 0.875rem;
+}
+
+/* Scan Animation */
+.scanAnimation {
+  width: 60px;
+  height: 60px;
+  border: 2px solid var(--gray-light2);
+  border-radius: 8px;
+  position: relative;
+  overflow: hidden;
+}
+
+.scanLine {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--green-base),
+    transparent
+  );
+  animation: scan 2s linear infinite;
+}
+
+@keyframes scan {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(60px);
+  }
+}
+
+/* Scrollbar */
+.fields::-webkit-scrollbar {
+  width: 6px;
+}
+
+.fields::-webkit-scrollbar-track {
+  background: var(--gray-light3);
+  border-radius: 3px;
+}
+
+.fields::-webkit-scrollbar-thumb {
+  background: var(--gray-light1);
+  border-radius: 3px;
+}
+
+.fields::-webkit-scrollbar-thumb:hover {
+  background: var(--gray-base);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .summary {
+    flex-direction: column;
+    gap: var(--spacing-2);
+  }
+
+  .fieldHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-2);
+  }
+}

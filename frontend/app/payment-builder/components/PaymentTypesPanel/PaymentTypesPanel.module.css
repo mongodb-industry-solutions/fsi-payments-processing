@@ -321,6 +321,68 @@
   color: var(--gray-light1);
 }
 
+/* Add New Format Card */
+.addNewCard {
+  background: var(--gray-light3);
+  border: 2px dashed var(--gray-light1);
+  border-radius: 8px;
+  padding: var(--spacing-4);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-2);
+  margin-top: var(--spacing-3);
+}
+
+.addNewCard:hover {
+  transform: scale(1.02);
+  border-color: var(--green-base);
+  background: var(--green-light3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.addNewCard:active {
+  transform: scale(0.98);
+}
+
+.addNewIcon {
+  width: 48px;
+  height: 48px;
+  background: var(--white);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--green-dark1);
+  font-size: 24px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.addNewCard:hover .addNewIcon {
+  background: var(--green-dark1);
+  color: var(--white);
+  transform: rotate(90deg);
+}
+
+.addNewCard h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--black);
+  margin: 0;
+}
+
+.addNewCard p {
+  font-size: 0.8125rem;
+  color: var(--gray-dark1);
+  margin: 0;
+  max-width: 200px;
+  line-height: 1.4;
+}
+
 /* Scrollbar Styling */
 .typesList::-webkit-scrollbar {
   width: 6px;
@@ -337,6 +399,53 @@
 
 .typesList::-webkit-scrollbar-thumb:hover {
   background: var(--gray-base);
+}
+
+/* Auto-Config Section Styles */
+.sectionDivider {
+  display: flex;
+  align-items: center;
+  padding: var(--spacing-3) var(--spacing-3);
+  margin: var(--spacing-2) 0;
+  width: 100%;
+}
+
+.dividerLine {
+  flex: 1;
+  height: 1px;
+  background: var(--gray-light2);
+}
+
+.dividerText {
+  padding: 0 var(--spacing-3);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--gray-base);
+  white-space: nowrap;
+}
+
+/* Demo Badge - consistent with complexity badge */
+.demoBadge {
+  font-size: 0.625rem;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  background: var(--blue-light3);
+  color: var(--blue-dark1);
+  border: 1px solid var(--blue-light2);
+}
+
+.customInfo {
+  padding: var(--spacing-2);
+  background: var(--gray-light3);
+  border-radius: 4px;
+  text-align: center;
+  font-size: 0.8125rem;
+  color: var(--gray-dark1);
 }
 
 /* Collapsed Type Button */

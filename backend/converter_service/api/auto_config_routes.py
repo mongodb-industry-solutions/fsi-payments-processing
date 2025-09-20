@@ -133,16 +133,16 @@ async def auto_configure(
             similar_to=request.similar_to
         )
         
-        # Save to conversion_registry (skip learning for faster response)
-        saved_config = learning_service.save_generated_config(config, trigger_learning=False)
-        
-        # Use the saved config (which might be merged) for statistics
-        fields_detected = len(saved_config.get('parser', {}).get('fields', {}))
-        fields_mapped = len(saved_config.get('mappings', []))
-        
+        # DO NOT save to conversion_registry yet - wait for approval
+        # saved_config = learning_service.save_generated_config(config, trigger_learning=False)
+
+        # Use the generated config for statistics
+        fields_detected = len(config.get('parser', {}).get('fields', {}))
+        fields_mapped = len(config.get('mappings', []))
+
         # Identify uncertain fields (confidence < 0.8)
         uncertain_fields = []
-        for mapping in saved_config.get('mappings', []):
+        for mapping in config.get('mappings', []):
             confidence = mapping.get('confidence', 1.0)
             if confidence < 0.8:
                 uncertain_fields.append({
@@ -151,22 +151,22 @@ async def auto_configure(
                     'targets': mapping['targets'],
                     'reason': 'Low confidence mapping'
                 })
-        
+
         # Check if ready to save (has minimum required mappings)
-        ready_to_save = fields_mapped > 0 and saved_config['metadata']['generation_confidence'] > 0.5
-        
+        ready_to_save = fields_mapped > 0 and config['metadata']['generation_confidence'] > 0.5
+
         # Calculate generation time
         generation_time = (datetime.utcnow() - start_time).total_seconds()
-        
-        logger.info(f"Configuration generated successfully: {saved_config['_id']}")
-        
+
+        logger.info(f"Configuration generated successfully: {config['_id']}")
+
         # Convert datetime objects to strings for JSON serialization
-        clean_config = _clean_config_for_response(saved_config)
+        clean_config = _clean_config_for_response(config)
         
         return AutoConfigResponse(
-            configuration_id=saved_config['_id'],
+            configuration_id=config['_id'],
             configuration=clean_config,
-            confidence=saved_config['metadata']['generation_confidence'],
+            confidence=config['metadata']['generation_confidence'],
             fields_detected=fields_detected,
             fields_mapped=fields_mapped,
             uncertain_fields=uncertain_fields,
@@ -229,75 +229,53 @@ async def validate_config(
 ):
     """
     Validate and approve an auto-generated configuration
-    
-    This endpoint allows human review and approval of auto-generated configs
+
+    This endpoint allows human review and approval of auto-generated configs.
+    If approved=true, saves the configuration to the database.
+    If approved=false, the configuration is not saved.
     """
-    
-    # Check if configuration exists
-    config = db_service.db['conversion_registry'].find_one({"_id": validation.configuration_id})
-    if not config:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Configuration {validation.configuration_id} not found"
-        )
-    
-    # Check if it's auto-generated
-    if not config.get('metadata', {}).get('auto_generated'):
-        raise HTTPException(
-            status_code=400,
-            detail="This configuration was not auto-generated"
-        )
-    
-    learning_service = SemanticLearningService(db_service, ai_service)
-    
+
+    # For approval, we need the full config passed in corrections field
     if validation.approved:
-        # Apply corrections if provided and mark as validated
-        if validation.corrections:
-            learning_service.validate_and_update_config(
-                validation.configuration_id,
-                validation.corrections
+        if not validation.corrections:
+            raise HTTPException(
+                status_code=400,
+                detail="Configuration data required for approval"
             )
-            message = "Configuration validated with corrections and ready for use"
-        else:
-            # Just mark as validated
-            db_service.db['conversion_registry'].update_one(
-                {"_id": validation.configuration_id},
-                {
-                    "$set": {
-                        "metadata.human_validated": True,
-                        "metadata.validated_at": datetime.utcnow()
-                    }
-                }
-            )
-            message = "Configuration validated and ready for use"
-        
-        logger.info(f"Configuration {validation.configuration_id} approved")
-        
+
+        # Save the approved configuration
+        config = validation.corrections
+        config['_id'] = validation.configuration_id
+
+        # Ensure metadata indicates it's auto-generated and now approved
+        if 'metadata' not in config:
+            config['metadata'] = {}
+        config['metadata']['auto_generated'] = True
+        config['metadata']['approved'] = True
+        config['metadata']['approved_at'] = datetime.utcnow()
+
+        # Save to database
+        db_service.db['conversion_registry'].replace_one(
+            {"_id": config['_id']},
+            config,
+            upsert=True
+        )
+
+        logger.info(f"Configuration {config['_id']} approved and saved")
+
         return {
             "status": "approved",
-            "configuration_id": validation.configuration_id,
-            "message": message
+            "configuration_id": config['_id'],
+            "message": "Configuration approved and saved successfully"
         }
     else:
-        # Mark as rejected
-        db_service.db['conversion_registry'].update_one(
-            {"_id": validation.configuration_id},
-            {
-                "$set": {
-                    "metadata.human_validated": False,
-                    "metadata.rejected": True,
-                    "metadata.rejected_at": datetime.utcnow(),
-                    "metadata.rejection_reason": validation.corrections.get('reason', 'No reason provided') if validation.corrections else 'No reason provided'
-                }
-            }
-        )
-        
+        # Configuration rejected - don't save anything
         logger.info(f"Configuration {validation.configuration_id} rejected")
-        
+
         return {
             "status": "rejected",
             "configuration_id": validation.configuration_id,
-            "message": "Configuration rejected and marked for review"
+            "message": "Configuration rejected and not saved"
         }
 
 
