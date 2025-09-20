@@ -12,7 +12,7 @@ export default function Home() {
   const router = useRouter();
 
   const handleGetStarted = () => {
-    router.push("/converter");
+    router.push("/payment-builder");
   };
 
   return (

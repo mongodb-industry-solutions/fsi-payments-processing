@@ -1,3 +1,45 @@
+/* Collapsed Bar State */
+.collapsedBar {
+  background: var(--white);
+  border: 1px solid var(--gray-light2);
+  border-radius: 8px;
+  padding: var(--spacing-3) var(--spacing-4);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 48px;
+  transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  margin-bottom: var(--spacing-3);
+  opacity: 0.9;
+}
+
+.collapsedContent {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  flex: 1;
+}
+
+.collapsedIcon {
+  flex-shrink: 0;
+  color: var(--gray-base);
+}
+
+.collapsedTitle {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--black);
+}
+
+.collapsedInfo {
+  font-size: 0.8125rem;
+  color: var(--gray-base);
+  margin-left: auto;
+  margin-right: var(--spacing-3);
+}
+
+
 /* Canvas Container */
 .canvas {
   background: var(--white);
@@ -8,6 +50,62 @@
   height: fit-content;
   min-height: 600px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+  transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Expanded Canvas State - Takes more space but not fullscreen */
+.canvas.expanded {
+  min-height: calc(100vh - 200px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.canvas.expanded .splitContent {
+  height: calc(100vh - 350px);
+  max-height: none;
+  overflow-y: auto;
+}
+
+/* Panel Header */
+.panelHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-4);
+  border-bottom: 1px solid var(--gray-light2);
+  background: var(--gray-light3);
+}
+
+.panelHeader h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--black);
+  margin: 0;
+}
+
+/* Expand/Restore Button */
+.expandBtn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--white);
+  border: 1px solid var(--gray-light2);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 200ms ease;
+  color: var(--gray-base);
+}
+
+.expandBtn:hover {
+  background: var(--gray-light3);
+  border-color: var(--gray-light1);
+  color: var(--black);
+  transform: scale(1.05);
+}
+
+.expandBtn:active {
+  transform: scale(0.95);
 }
 
 /* Empty State */
@@ -94,6 +192,13 @@
 .formColumn, .previewColumn {
   height: 100%;
   overflow-y: auto;
+}
+
+/* Expanded preview when form is hidden after conversion */
+.previewExpanded {
+  grid-column: 1 / -1;
+  width: 100%;
+  max-width: none;
 }
 
 /* Section Headers */
@@ -347,6 +452,93 @@
   font-size: 1.125rem;
   font-weight: 600;
   color: var(--green-dark2);
+}
+
+.resultActions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+}
+
+.maximizeResultBtn {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-3);
+  background: var(--green-dark1);
+  border: 1px solid var(--green-dark1);
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--white);
+  cursor: pointer;
+  transition: all 200ms ease;
+}
+
+.maximizeResultBtn:hover {
+  background: var(--green-dark2);
+  border-color: var(--green-dark2);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 163, 92, 0.3);
+}
+
+.maximizeResultBtn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.newPaymentBtn {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-3);
+  background: var(--blue-dark1);
+  border: 1px solid var(--blue-dark1);
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--white);
+  cursor: pointer;
+  transition: all 200ms ease;
+}
+
+.newPaymentBtn:hover {
+  background: var(--blue-dark2);
+  border-color: var(--blue-dark2);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.2);
+}
+
+.newPaymentBtn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.mappingToggle {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-3);
+  background: var(--white);
+  border: 1px solid var(--green-light1);
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--green-dark1);
+  cursor: pointer;
+  transition: all 200ms ease;
+}
+
+.mappingToggle:hover {
+  background: var(--green-light3);
+  border-color: var(--green-base);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 163, 92, 0.1);
+}
+
+.mappingToggle svg {
+  width: 16px;
+  height: 16px;
 }
 
 .successIcon {

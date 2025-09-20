@@ -12,7 +12,10 @@ export default function BuilderCanvas({
   onExecute,
   onExecutionComplete,
   formData,
-  setFormData
+  setFormData,
+  isFormCollapsed,
+  onToggleFormCollapse,
+  focusedPanel
 }) {
   const [isFormValid, setIsFormValid] = useState(false);
   const [executionResult, setExecutionResult] = useState(null);
@@ -32,6 +35,12 @@ export default function BuilderCanvas({
 
   const handleFormValid = (valid) => {
     setIsFormValid(valid);
+  };
+
+  const handleNewPayment = () => {
+    setExecutionResult(null);
+    setConvertedMessage(null);
+    setFormData({});
   };
 
   const handleExecute = async () => {
@@ -89,94 +98,148 @@ export default function BuilderCanvas({
     );
   }
 
-  return (
-    <div className={styles.canvas}>
-      {/* Canvas Content - Split View */}
-      <div className={styles.splitContent}>
-        {/* Left: Form */}
-        <div className={styles.formColumn}>
-          <DynamicPaymentForm
-            paymentType={selectedPaymentType}
-            onFormChange={handleFormChange}
-            onFormValid={handleFormValid}
-            formData={formData}
-            setFormData={setFormData}
-          />
-        </div>
+  // If form is collapsed, don't render anything from BuilderCanvas
+  if (isFormCollapsed) {
+    return null;
+  }
 
-        {/* Right: Preview */}
-        <div className={styles.previewColumn}>
-          <PaymentPreview
-            paymentType={selectedPaymentType}
-            formData={formData}
-            isValid={isFormValid}
-            convertedMessage={convertedMessage}
-            isConverting={isConverting}
-          />
-        </div>
-      </div>
+  // Determine if this panel is collapsed (showing as a bar)
+  const isCollapsed = focusedPanel === 'journey';
+  const isExpanded = focusedPanel === 'payment-details';
 
-      {/* Execute Section */}
-      <div className={styles.executeSection}>
-        <button
-          className={styles.executeButton}
-          onClick={handleExecute}
-          disabled={isProcessing || !isFormValid}
-        >
-          {isProcessing ? (
-            <>
-              <div className={styles.spinner} />
-              <span>Processing...</span>
-            </>
-          ) : (
-            <>
-              <span>Execute Conversion</span>
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M3 8h10M10 5l3 3-3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </>
+  // Show collapsed bar if Journey is focused
+  if (isCollapsed) {
+    return (
+      <div className={styles.collapsedBar}>
+        <div className={styles.collapsedContent}>
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" className={styles.collapsedIcon}>
+            <rect x="3" y="4" width="14" height="12" rx="1" stroke="currentColor" strokeWidth="1.5"/>
+            <path d="M7 8h6M7 10h4M7 12h5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+          </svg>
+          <span className={styles.collapsedTitle}>Payment Details</span>
+          {selectedPaymentType && (
+            <span className={styles.collapsedInfo}>
+              {selectedPaymentType.title} • {Object.values(formData).filter(v => v && v !== '').length} fields
+            </span>
           )}
-        </button>
-
-        {/* Stats Preview */}
-        <div className={styles.statsPreview}>
-          <div className={styles.statItem}>
-            <span className={styles.statLabel}>Est. Time</span>
-            <span className={styles.statValue}>{selectedPaymentType.estimatedTime}</span>
-          </div>
-          <div className={styles.statItem}>
-            <span className={styles.statLabel}>Fields</span>
-            <span className={styles.statValue}>{selectedPaymentType.fields}</span>
-          </div>
-          <div className={styles.statItem}>
-            <span className={styles.statLabel}>Complexity</span>
-            <span className={styles.statValue}>{selectedPaymentType.complexity}</span>
-          </div>
         </div>
       </div>
+    );
+  }
+
+  return (
+    <div className={`${styles.canvas} ${isExpanded ? styles.expanded : ''}`}>
+      {/* Panel Header */}
+      <div className={styles.panelHeader}>
+        <h3>Payment Details</h3>
+      </div>
+
+      {/* Canvas Content - Split View or Preview Only */}
+      <div className={styles.splitContent}>
+        {/* Left: Form - Hide after conversion */}
+        {!executionResult && (
+          <div className={styles.formColumn}>
+            <DynamicPaymentForm
+              paymentType={selectedPaymentType}
+              onFormChange={handleFormChange}
+              onFormValid={handleFormValid}
+              formData={formData}
+              setFormData={setFormData}
+            />
+          </div>
+        )}
+
+        {/* Right/Full: Preview - Always show, expands when form hidden */}
+        {(
+          <div className={`${styles.previewColumn} ${executionResult ? styles.previewExpanded : ''}`}>
+            <PaymentPreview
+              paymentType={selectedPaymentType}
+              formData={formData}
+              isValid={isFormValid}
+              convertedMessage={convertedMessage}
+              isConverting={isConverting}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Execute Section - Show only before conversion */}
+      {!executionResult && (
+
+        <div className={styles.executeSection}>
+          <button
+            className={styles.executeButton}
+            onClick={handleExecute}
+            disabled={isProcessing || !isFormValid}
+          >
+            {isProcessing ? (
+              <>
+                <div className={styles.spinner} />
+                <span>Processing...</span>
+              </>
+            ) : (
+              <>
+                <span>Execute Conversion</span>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path d="M3 8h10M10 5l3 3-3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </>
+            )}
+          </button>
+
+          {/* Stats Preview */}
+          <div className={styles.statsPreview}>
+            <div className={styles.statItem}>
+              <span className={styles.statLabel}>Est. Time</span>
+              <span className={styles.statValue}>{selectedPaymentType.estimatedTime}</span>
+            </div>
+            <div className={styles.statItem}>
+              <span className={styles.statLabel}>Fields</span>
+              <span className={styles.statValue}>{selectedPaymentType.fields}</span>
+            </div>
+            <div className={styles.statItem}>
+              <span className={styles.statLabel}>Complexity</span>
+              <span className={styles.statValue}>{selectedPaymentType.complexity}</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Result Display */}
       {executionResult && (
-        <div className={styles.resultSection}>
-          <div className={styles.resultHeader}>
-            <h3>Conversion Complete</h3>
-            <span className={styles.successIcon}>✓</span>
+        <>
+          <div className={styles.resultSection}>
+            <div className={styles.resultHeader}>
+              <h3>Conversion Complete</h3>
+              <div className={styles.resultActions}>
+                <button
+                  className={styles.newPaymentBtn}
+                  onClick={handleNewPayment}
+                >
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                  </svg>
+                  <span>New Payment</span>
+                </button>
+                <span className={styles.successIcon}>✓</span>
+              </div>
+            </div>
+            <div className={styles.resultStats}>
+              <div className={styles.resultStat}>
+                <span>Processing Time:</span>
+                <strong>{executionResult.conversion_metadata?.processing_time_seconds?.toFixed(2)}s</strong>
+              </div>
+              <div className={styles.resultStat}>
+                <span>Confidence:</span>
+                <strong>{((executionResult.conversion_metadata?.confidence_scores?.overall || 0.92) * 100).toFixed(0)}%</strong>
+              </div>
+              <div className={styles.resultStat}>
+                <span>MongoDB Ops:</span>
+                <strong>{executionResult.conversion_metadata?.mongodb_operations || 15}</strong>
+              </div>
+            </div>
           </div>
-          <div className={styles.resultStats}>
-            <div className={styles.resultStat}>
-              <span>Processing Time:</span>
-              <strong>{executionResult.conversion_metadata?.processing_time_seconds?.toFixed(2)}s</strong>
-            </div>
-            <div className={styles.resultStat}>
-              <span>Confidence:</span>
-              <strong>{((executionResult.conversion_metadata?.confidence_scores?.overall || 0.92) * 100).toFixed(0)}%</strong>
-            </div>
-            <div className={styles.resultStat}>
-              <span>MongoDB Ops:</span>
-              <strong>{executionResult.conversion_metadata?.mongodb_operations || 15}</strong>
-            </div>
-          </div>
-        </div>
+        </>
       )}
 
     </div>

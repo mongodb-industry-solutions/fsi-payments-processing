@@ -173,8 +173,12 @@ Transaction:
       return;
     }
 
-    // Only call backend if form is valid
-    if (!isValid) {
+    // Check if we have minimum required fields filled (at least 3 non-empty fields)
+    const filledFields = Object.values(formData).filter(v => v && v !== '').length;
+    const hasMinimumData = filledFields >= 3;
+
+    // Only call backend if form is valid AND has minimum data
+    if (!isValid || !hasMinimumData) {
       // Show a preview with partial data using local generation
       const fallback = paymentBuilderService.getFallbackPaymentMessage(paymentType.id, formData);
       setMessage(`// Preview (complete all required fields for final message)\n\n${fallback.source_message}`);

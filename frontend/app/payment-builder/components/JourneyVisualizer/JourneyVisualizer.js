@@ -6,11 +6,19 @@ import ProcessingFlow from './ProcessingFlow';
 import LaneDistribution from './LaneDistribution';
 import ConfidenceTracker from './ConfidenceTracker';
 import MongoDBOperations from './MongoDBOperations.js';
+import ConversionMapping from '../ConversionMapping/ConversionMapping';
+import paymentBuilderService from '../../services/paymentBuilderService';
 
 export default function JourneyVisualizer({
   paymentType,
   isProcessing,
-  executionResult
+  executionResult,
+  isPanelCollapsed,
+  isFormCollapsed,
+  onToggleFormCollapse,
+  formData,
+  convertedMessage,
+  focusedPanel
 }) {
   const [activeTab, setActiveTab] = useState('flow');
   const [animationStep, setAnimationStep] = useState(0);
@@ -51,11 +59,46 @@ export default function JourneyVisualizer({
     );
   }
 
+  // Determine panel states
+  const isCollapsed = focusedPanel === 'payment-details';
+  const isExpanded = focusedPanel === 'journey';
+
+  // Show collapsed bar if Payment Details is focused
+  if (isCollapsed) {
+    return (
+      <div className={styles.collapsedBar}>
+        <div className={styles.collapsedContent}>
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" className={styles.collapsedIcon}>
+            <circle cx="6" cy="6" r="2" stroke="currentColor" strokeWidth="1.5"/>
+            <circle cx="10" cy="6" r="2" stroke="currentColor" strokeWidth="1.5"/>
+            <circle cx="14" cy="6" r="2" stroke="currentColor" strokeWidth="1.5"/>
+            <path d="M6 8v4M10 8v4M14 8v4" stroke="currentColor" strokeWidth="1.5"/>
+            <rect x="3" y="14" width="14" height="3" rx="1" stroke="currentColor" strokeWidth="1.5"/>
+          </svg>
+          <span className={styles.collapsedTitle}>Conversion Journey</span>
+          {executionResult && (
+            <span className={styles.collapsedInfo}>
+              Completed • {executionResult.conversion_metadata?.processing_time_seconds?.toFixed(2)}s • {(executionResult.conversion_metadata?.confidence_scores?.overall * 100 || 92).toFixed(0)}% confidence
+            </span>
+          )}
+          {isProcessing && (
+            <span className={styles.collapsedInfo}>Processing...</span>
+          )}
+          {!executionResult && !isProcessing && (
+            <span className={styles.collapsedInfo}>{activeTab} view</span>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className={styles.container}>
+    <div className={`${styles.container} ${isExpanded ? styles.expanded : ''}`}>
       {/* Header with Tabs */}
       <div className={styles.header}>
-        <h3>Conversion Journey</h3>
+        <div className={styles.headerLeft}>
+          <h3>Conversion Journey</h3>
+        </div>
         <div className={styles.tabs}>
           <button
             className={`${styles.tab} ${activeTab === 'flow' ? styles.activeTab : ''}`}
@@ -64,16 +107,22 @@ export default function JourneyVisualizer({
             Flow
           </button>
           <button
-            className={`${styles.tab} ${activeTab === 'lanes' ? styles.activeTab : ''}`}
-            onClick={() => setActiveTab('lanes')}
+            className={`${styles.tab} ${activeTab === 'mapping' ? styles.activeTab : ''}`}
+            onClick={() => setActiveTab('mapping')}
           >
-            Lanes
+            Mapping
           </button>
           <button
             className={`${styles.tab} ${activeTab === 'confidence' ? styles.activeTab : ''}`}
             onClick={() => setActiveTab('confidence')}
           >
             Confidence
+          </button>
+          <button
+            className={`${styles.tab} ${activeTab === 'lanes' ? styles.activeTab : ''}`}
+            onClick={() => setActiveTab('lanes')}
+          >
+            Lanes
           </button>
           <button
             className={`${styles.tab} ${activeTab === 'mongodb' ? styles.activeTab : ''} ${styles.mongodbTab}`}
@@ -99,15 +148,40 @@ export default function JourneyVisualizer({
           />
         )}
 
-        {activeTab === 'lanes' && (
-          <LaneDistribution
+        {activeTab === 'mapping' && (
+          convertedMessage && formData ? (
+            <ConversionMapping
+              sourceMessage={paymentBuilderService.constructMessage(
+                paymentType,
+                formData
+              )}
+              targetMessage={convertedMessage}
+              sourceFormat={paymentType.sourceFormat}
+              targetFormat={paymentType.targetFormat}
+              mappingData={executionResult?.conversion_metadata?.field_mappings}
+            />
+          ) : (
+            <div className={styles.emptyMapping}>
+              <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                <path d="M12 24h24M30 18l6 6-6 6" stroke="currentColor" strokeWidth="2" opacity="0.3" strokeLinecap="round" strokeLinejoin="round"/>
+                <rect x="4" y="12" width="14" height="24" rx="2" stroke="currentColor" strokeWidth="2" opacity="0.3"/>
+                <rect x="30" y="12" width="14" height="24" rx="2" stroke="currentColor" strokeWidth="2" opacity="0.3"/>
+              </svg>
+              <h4>Field Mapping</h4>
+              <p>Complete a conversion to see field mappings</p>
+            </div>
+          )
+        )}
+
+        {activeTab === 'confidence' && (
+          <ConfidenceTracker
             executionResult={executionResult}
             isProcessing={isProcessing}
           />
         )}
 
-        {activeTab === 'confidence' && (
-          <ConfidenceTracker
+        {activeTab === 'lanes' && (
+          <LaneDistribution
             executionResult={executionResult}
             isProcessing={isProcessing}
           />

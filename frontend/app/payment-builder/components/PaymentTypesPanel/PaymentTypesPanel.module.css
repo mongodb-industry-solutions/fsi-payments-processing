@@ -7,6 +7,12 @@
   flex-direction: column;
   height: 100%;
   overflow: hidden;
+  transition: width 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Collapsed Panel State */
+.panel.collapsed {
+  width: 56px;
 }
 
 /* Header Section */
@@ -14,6 +20,41 @@
   padding: var(--spacing-5) var(--spacing-4) var(--spacing-4);
   border-bottom: 1px solid var(--gray-light2);
   position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+/* Collapse Button */
+.collapseBtn {
+  position: absolute;
+  top: 16px;
+  right: 12px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--white);
+  border: 1px solid var(--gray-light2);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 200ms ease;
+  color: var(--gray-base);
+}
+
+.collapseBtn:hover {
+  background: var(--gray-light3);
+  border-color: var(--gray-light1);
+  color: var(--black);
+}
+
+.collapseBtn:active {
+  transform: scale(0.95);
+}
+
+.panel.collapsed .collapseBtn {
+  right: 14px;
 }
 
 .headerAccent {
@@ -296,4 +337,48 @@
 
 .typesList::-webkit-scrollbar-thumb:hover {
   background: var(--gray-base);
+}
+
+/* Collapsed Type Button */
+.collapsedTypeButton {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--white);
+  border: 1px solid var(--gray-light2);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 200ms ease;
+  color: var(--gray-dark1);
+  font-size: 1.25rem;
+}
+
+.collapsedTypeButton:hover {
+  background: var(--gray-light3);
+  border-color: var(--gray-light1);
+  transform: translateY(-2px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+.collapsedTypeButton.selected {
+  background: var(--green-light2);
+  border-color: var(--green-base);
+  color: var(--green-dark1);
+}
+
+.collapsedTypeButton.selected:hover {
+  background: var(--green-light1);
+}
+
+.collapsedTypeButton:active {
+  transform: scale(0.95);
+}
+
+/* Adjust typesList for collapsed state */
+.panel.collapsed .typesList {
+  padding: var(--spacing-2) var(--spacing-1);
+  align-items: center;
+  gap: var(--spacing-2);
 }

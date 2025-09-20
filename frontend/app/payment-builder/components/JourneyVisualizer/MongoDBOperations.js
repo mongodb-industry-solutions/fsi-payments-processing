@@ -28,10 +28,12 @@ export default function MongoDBOperations({ executionResult, isProcessing, payme
 
   const generateMongoOperations = (metadata) => {
     const ops = [];
+    // Generate unique timestamp-based ID prefix to avoid duplicate keys
+    const uniquePrefix = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
     // 1. Load conversion configuration
     ops.push({
-      id: 'op_1',
+      id: `${uniquePrefix}_op_1`,
       type: 'FIND',
       collection: 'conversion_registry',
       query: `{ "_id": "${metadata.conversion_id}" }`,
@@ -46,7 +48,7 @@ export default function MongoDBOperations({ executionResult, isProcessing, payme
     // 2. Query semantic patterns for AI fields
     if (metadata.processing_stats?.ai_lane?.count > 0) {
       ops.push({
-        id: 'op_2',
+        id: `${uniquePrefix}_op_2`,
         type: 'FIND',
         collection: 'semantic_patterns',
         query: `{ "field_type": { "$in": ${JSON.stringify(metadata.processing_stats.ai_lane.fields)} } }`,
@@ -61,7 +63,7 @@ export default function MongoDBOperations({ executionResult, isProcessing, payme
 
     // 3. Insert conversion result
     ops.push({
-      id: 'op_3',
+      id: `${uniquePrefix}_op_3`,
       type: 'INSERT',
       collection: 'conversion_results',
       document: `{
@@ -78,7 +80,7 @@ export default function MongoDBOperations({ executionResult, isProcessing, payme
 
     // 4. Update statistics
     ops.push({
-      id: 'op_4',
+      id: `${uniquePrefix}_op_4`,
       type: 'UPDATE',
       collection: 'conversion_stats',
       query: `{ "format_pair": "${metadata.source_format}_to_${metadata.target_format}" }`,

@@ -233,7 +233,7 @@ function DynamicPaymentForm({
   return (
     <div className={styles.formContainer}>
       <div className={styles.formHeader}>
-        <h3>Payment Details</h3>
+        <h3>Form Fields</h3>
         <button
           onClick={loadDemoValues}
           className={styles.loadDemoButton}

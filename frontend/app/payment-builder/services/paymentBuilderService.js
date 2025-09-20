@@ -216,6 +216,74 @@ export class PaymentBuilderService {
     }
   }
 
+  // Construct message from form data (for visualization)
+  constructMessage(paymentType, formData) {
+    if (!paymentType || !formData) return '';
+
+    // Construct MT103 message
+    if (paymentType.sourceFormat === 'MT103') {
+      const reference = `REF${Date.now().toString().slice(-8)}`;
+      const valueDate = new Date().toISOString().slice(2, 10).replace(/-/g, '');
+      const amount = formData.amount || '0.00';
+      const currency = formData.currency || 'USD';
+
+      return `{1:F01CHASUS33XXXX0000000000}
+{2:I103DEUTDEFFXXXXN}
+{3:{108:ILOVESEPA}}
+{4:
+:20:${reference}
+:23B:CRED
+:32A:${valueDate}${currency}${amount.replace('.', ',')}
+:50K:/${formData.sender_account || 'US64209876543210987654'}
+${formData.sender_name || 'SENDER NAME'}
+${formData.sender_address || '1234 MAIN STREET'}
+${formData.sender_city || 'NEW YORK NY 10001'}
+${formData.sender_country || 'USA'}
+:52A:CHASUS33XXX
+:53A:DEUTDEFFXXX
+:59:/${formData.beneficiary_account || 'DE89370400440532013000'}
+${formData.beneficiary_name || 'BENEFICIARY NAME'}
+${formData.beneficiary_address || 'STREET ADDRESS'}
+${formData.beneficiary_city || 'CITY'}
+${formData.beneficiary_country || 'COUNTRY'}
+:70:${formData.purpose || 'PAYMENT PURPOSE'}
+:71A:SHA
+${formData.sender_to_receiver ? `:72:${formData.sender_to_receiver}` : ''}
+-}`;
+    }
+
+    // Construct MT202 message
+    if (paymentType.sourceFormat === 'MT202') {
+      const reference = `REF${Date.now().toString().slice(-8)}`;
+      const relatedRef = `RR${Date.now().toString().slice(-7)}`;
+      const valueDate = new Date().toISOString().slice(2, 10).replace(/-/g, '');
+      const amount = formData.amount || '0.00';
+      const currency = formData.currency || 'EUR';
+
+      return `{1:F01CHASUS33AXXX0000000000}
+{2:I202DEUTDEFFXXXXN}
+{3:{108:PRIORITY}}
+{4:
+:20:${reference}
+:21:${relatedRef}
+:32A:${valueDate}${currency}${amount.replace('.', ',')}
+:52A:${formData.ordering_institution || 'CHASUS33XXX'}
+:57A:${formData.account_institution || 'DEUTDEFFXXX'}
+:58A:/${formData.beneficiary_account || 'DE12345678901234567890'}
+${formData.beneficiary_institution || 'BENEFICIARY INSTITUTION'}
+:72:${formData.sender_to_receiver || '/BNF/TREASURY OPERATIONS\n/INS/PRIORITY PROCESSING'}
+-}`;
+    }
+
+    // Construct ISO8583 message
+    if (paymentType.sourceFormat === 'ISO8583_0200') {
+      return `MTI:0200|PAN:${formData.card_number || '4111111111111111'}|PROC:000000|AMT:${formData.amount || '0'}|TXN_DT:${new Date().toISOString().slice(0, 10).replace(/-/g, '')}|STAN:${Date.now().toString().slice(-6)}|TIME:${new Date().toISOString().slice(11, 19).replace(/:/g, '')}|DATE:${new Date().toISOString().slice(5, 10).replace(/-/g, '')}|EXPR:2512|MCC:${formData.merchant_category || '5999'}|ACQ:123456|REF:${formData.ref || Date.now().toString().slice(-12)}|CARD_ACC_NAME:${formData.cardholder_name || 'JOHN DOE'}|CUR:${formData.currency_code || '840'}|PIN:1234|ADD_DATA:${formData.merchant_name || 'MERCHANT'}|RESP:00`;
+    }
+
+    // Default fallback
+    return 'Message preview unavailable';
+  }
+
   // Get payment journey details
   async getPaymentJourney(paymentType) {
     try {

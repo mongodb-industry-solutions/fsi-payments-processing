@@ -76,23 +76,10 @@ const PAYMENT_TYPES = [
     fields: 12,
     mongoFeatures: ['Caching', 'Low Latency', 'Direct Route'],
     color: 'teal'
-  },
-  {
-    id: 'multi_hop',
-    name: 'Multi-Hop Journey',
-    icon: <NetworkIcon />,
-    description: 'Complex multi-format routing',
-    sourceFormat: 'MT103',
-    targetFormat: 'pacs.009',
-    complexity: 'complex',
-    estimatedTime: '2-5s',
-    fields: 30,
-    mongoFeatures: ['Graph Routing', 'JSON Bridge', 'Auto-config'],
-    color: 'red'
   }
 ];
 
-export default function PaymentTypesPanel({ selectedType, onSelectType }) {
+export default function PaymentTypesPanel({ selectedType, onSelectType, isCollapsed, onToggleCollapse }) {
   const [hoveredType, setHoveredType] = useState(null);
 
   const getComplexityBadge = (complexity) => {
@@ -105,12 +92,32 @@ export default function PaymentTypesPanel({ selectedType, onSelectType }) {
   };
 
   return (
-    <div className={styles.panel}>
+    <div className={`${styles.panel} ${isCollapsed ? styles.collapsed : ''}`}>
       {/* Header */}
       <div className={styles.header}>
         <div className={styles.headerAccent} aria-hidden="true" />
-        <h2 id="payment-types-heading">Payment Types</h2>
-        <p id="payment-types-description">Select a payment scenario to build</p>
+        {!isCollapsed && (
+          <>
+            <h2 id="payment-types-heading">Payment Types</h2>
+            <p id="payment-types-description">Select a payment scenario to build</p>
+          </>
+        )}
+        <button
+          className={styles.collapseBtn}
+          onClick={onToggleCollapse}
+          aria-label={isCollapsed ? "Expand payment types panel" : "Collapse payment types panel"}
+          title={isCollapsed ? "Expand panel" : "Collapse panel"}
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path
+              d={isCollapsed ? "M6 12L10 8L6 4" : "M10 4L6 8L10 12"}
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </button>
       </div>
 
       {/* Payment Type Cards */}
@@ -119,6 +126,21 @@ export default function PaymentTypesPanel({ selectedType, onSelectType }) {
           const isSelected = selectedType?.id === type.id;
           const isHovered = hoveredType === type.id;
           const complexityColors = getComplexityBadge(type.complexity);
+
+          if (isCollapsed) {
+            // Collapsed view - only show icons
+            return (
+              <button
+                key={type.id}
+                className={`${styles.collapsedTypeButton} ${isSelected ? styles.selected : ''}`}
+                onClick={() => onSelectType(type)}
+                title={type.name}
+                aria-label={type.name}
+              >
+                {type.icon}
+              </button>
+            );
+          }
 
           return (
             <div
@@ -207,13 +229,15 @@ export default function PaymentTypesPanel({ selectedType, onSelectType }) {
       </div>
 
       {/* Footer Info */}
-      <div className={styles.footer}>
-        <div className={styles.footerInfo}>
-          <strong>6</strong> payment scenarios
-          <span className={styles.separator}>•</span>
-          <strong>100%</strong> generic converter
+      {!isCollapsed && (
+        <div className={styles.footer}>
+          <div className={styles.footerInfo}>
+            <strong>5</strong> payment scenarios
+            <span className={styles.separator}>•</span>
+            <strong>100%</strong> generic converter
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

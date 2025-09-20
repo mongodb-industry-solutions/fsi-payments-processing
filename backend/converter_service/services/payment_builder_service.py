@@ -208,6 +208,11 @@ class PaymentBuilder:
         if payment_type_id == "card_payment" and "stan" not in data:
             data["stan"] = datetime.now().strftime("%H%M%S")
 
+        # Add REF for card transactions (retrieval reference number)
+        if payment_type_id == "card_payment" and "ref" not in data:
+            # Generate a 12-digit retrieval reference number
+            data["ref"] = f"{datetime.now().strftime('%y%m%d')}{str(random.randint(100000, 999999))}"
+
         # Add datetime for card transactions
         if payment_type_id == "card_payment" and "datetime" not in data:
             data["datetime"] = datetime.now().strftime("%m%d%H%M%S")
