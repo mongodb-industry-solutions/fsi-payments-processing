@@ -372,3 +372,9 @@ backend/converter_service/docs/AUTO_CONFIG_DEMO_BACKEND_IMPLEMENTATION.md
 populate*.py
 restore*.py
 backend/converter_service/scripts/populate_semantic_patterns.py
+MONGODB_HOMEPAGE_VISION.md
+backend/converter_service/scripts/cleanup_auto_configs.py
+backend/converter_service/scripts/populate_semantic_patterns.py
+frontend/app/payment-builder/AUTO_CONFIG_INTEGRATION_PLAN.md
+frontend/app/payment-builder/AUTOCONFIG_ACTUAL_IMPLEMENTATION.md
+frontend/app/payment-builder/AUTOCONFIG_IMPLEMENTATION_PHASE_PLAN.md
