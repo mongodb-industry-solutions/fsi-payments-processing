@@ -32,6 +32,13 @@
   --blue-light2: #C3E7FE;
   --blue-light3: #E1F7FF;
 
+  /* Yellow Palette - For warnings and low confidence */
+  --yellow-dark2: #7C4100;
+  --yellow-dark1: #B35E00;
+  --yellow-base: #FFC010;
+  --yellow-light1: #FFD666;
+  --yellow-light2: #FFECB5;
+
   /* Spacing */
   --spacing-1: 0.25rem;
   --spacing-2: 0.5rem;

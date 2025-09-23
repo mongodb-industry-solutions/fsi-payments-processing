@@ -29,7 +29,11 @@ const EnhancedCountryNode = ({ data, selected }) => {
             </div>
           )}
           {isCompleted && (
-            <div className={styles.completedIndicator}>✓</div>
+            <div className={styles.completedIndicator}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M5 13L9 17L19 7" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
           )}
         </div>
 

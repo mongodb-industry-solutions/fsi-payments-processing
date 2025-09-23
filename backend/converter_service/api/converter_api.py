@@ -112,14 +112,37 @@ async def convert_message(
             result['timestamp'] = datetime.utcnow()
             db_service.save_conversion_result(result)
         
-        # Build response
-        return ConversionResponse(
+        # Build response with top-level processing stats for backward compatibility
+        response = ConversionResponse(
             success=result['success'],
             converted_message=result.get('converted_message'),
             metadata=result.get('metadata', {}),
             error=result.get('error'),
             request_id=request.request_id
         )
+
+        # Add top-level processing_stats and confidence_scores if available
+        if 'processing_stats' in result:
+            response.processing_stats = result['processing_stats']
+        elif 'metadata' in result and 'processing_stats' in result['metadata']:
+            response.processing_stats = result['metadata']['processing_stats']
+
+        if 'confidence_scores' in result:
+            response.confidence_scores = result['confidence_scores']
+        elif 'metadata' in result and 'confidence_scores' in result['metadata']:
+            response.confidence_scores = result['metadata']['confidence_scores']
+
+        if 'human_review_required' in result:
+            response.human_review_required = result['human_review_required']
+        elif 'metadata' in result and 'human_review_required' in result['metadata']:
+            response.human_review_required = result['metadata']['human_review_required']
+
+        if 'processing_time_seconds' in result:
+            response.processing_time_seconds = result['processing_time_seconds']
+        elif 'metadata' in result and 'processing_time_seconds' in result['metadata']:
+            response.processing_time_seconds = result['metadata']['processing_time_seconds']
+
+        return response
         
     except ValueError as e:
         # Configuration or validation errors

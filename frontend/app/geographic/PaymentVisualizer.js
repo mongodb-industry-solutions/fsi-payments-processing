@@ -16,11 +16,17 @@ import 'reactflow/dist/style.css';
 import ScenarioSidebar from './components/ScenarioSidebar';
 import NodeDetailsPanel from './components/NodeDetailsPanel';
 import EnhancedCountryNode from './components/EnhancedCountryNode';
+import CryptoNode from './components/CryptoNode';
+import JsonBridgeNode from './components/JsonBridgeNode';
+import ConversionResultsSummary from './components/ConversionResultsSummary';
 import { getLayoutedElements, getRadialLayout, determineLayoutStrategy } from './utils/layoutUtils';
+import { convertPayment } from './services/conversionService';
 import styles from './PaymentVisualizer.module.css';
 
 const nodeTypes = {
   country: EnhancedCountryNode,
+  crypto: CryptoNode,
+  jsonBridge: JsonBridgeNode,
 };
 
 const edgeOptions = {
@@ -35,6 +41,19 @@ const edgeOptions = {
   },
 };
 
+const cryptoEdgeOptions = {
+  animated: true,
+  style: {
+    stroke: '#764ba2',
+    strokeWidth: 3,
+    strokeDasharray: '5 5',
+  },
+  markerEnd: {
+    type: MarkerType.ArrowClosed,
+    color: '#764ba2',
+  },
+};
+
 function PaymentVisualizerFlow() {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
@@ -44,6 +63,10 @@ function PaymentVisualizerFlow() {
   const [isExecuting, setIsExecuting] = useState(false);
   const [currentStep, setCurrentStep] = useState(null);
   const [executionProgress, setExecutionProgress] = useState({});
+  const [conversionResults, setConversionResults] = useState([]);
+  const [showResultsSummary, setShowResultsSummary] = useState(false);
+  const [resultsMinimized, setResultsMinimized] = useState(false);
+  const [jsonBridgeData, setJsonBridgeData] = useState({});
   const { fitView } = useReactFlow();
 
   const onConnect = useCallback((params) => setEdges((eds) => addEdge(params, eds)), [setEdges]);
@@ -59,6 +82,7 @@ function PaymentVisualizerFlow() {
         nodeId: node.id
       });
     }
+    // JSON bridge nodes handle their own click events internally
   }, []);
 
   const buildScenarioFlow = (scenario) => {
@@ -130,15 +154,20 @@ function PaymentVisualizerFlow() {
     } else {
       // Linear/sequential flow with JSON bridges
       scenario.hops.forEach((hop, index) => {
-        // Add country node
+        // Determine node type based on isCrypto flag
+        const nodeType = hop.isCrypto ? 'crypto' : 'country';
+
+        // Add country or crypto node
         initialNodes.push({
           id: hop.id,
-          type: 'country',
+          type: nodeType,
           position: { x: 0, y: 0 }, // Will be positioned by layout
           data: {
             ...hop,
             mongoConfig: true,
-            status: executionProgress[hop.id] || 'idle'
+            status: executionProgress[hop.id] || 'idle',
+            // Pass crypto details if available from conversions
+            cryptoDetails: scenario.conversions.find(c => c.cryptoDetails)?.cryptoDetails
           }
         });
 
@@ -147,7 +176,7 @@ function PaymentVisualizerFlow() {
           const jsonId = `json-${index}`;
           initialNodes.push({
             id: jsonId,
-            type: 'country',
+            type: 'jsonBridge',
             position: { x: 0, y: 0 }, // Will be positioned by layout
             data: {
               country: 'JSON',
@@ -155,26 +184,31 @@ function PaymentVisualizerFlow() {
               icon: '🔄',
               isHub: true,
               city: 'Universal',
-              status: executionProgress[jsonId] || 'idle'
+              status: executionProgress[jsonId] || 'idle',
+              beforeJson: jsonBridgeData[jsonId]?.beforeJson || null,
+              afterJson: jsonBridgeData[jsonId]?.afterJson || null
             }
           });
 
           // Create edges: country → JSON → next country
+          const nextHop = scenario.hops[index + 1];
+          const isCryptoEdge = hop.isCrypto || nextHop.isCrypto;
+          const edgeStyle = isCryptoEdge ? cryptoEdgeOptions : edgeOptions;
+
           initialEdges.push({
             id: `${hop.id}-${jsonId}`,
             source: hop.id,
             target: jsonId,
-            ...edgeOptions,
+            ...edgeStyle,
             label: `${hop.format} → JSON`,
             labelStyle: { fontSize: 11, fontWeight: 600 }
           });
 
-          const nextHop = scenario.hops[index + 1];
           initialEdges.push({
             id: `${jsonId}-${nextHop.id}`,
             source: jsonId,
             target: nextHop.id,
-            ...edgeOptions,
+            ...edgeStyle,
             label: `JSON → ${nextHop.format}`,
             labelStyle: { fontSize: 11, fontWeight: 600 }
           });
@@ -210,9 +244,20 @@ function PaymentVisualizerFlow() {
 
     setIsExecuting(true);
     setCurrentStep(0);
+    setConversionResults([]);
+    setJsonBridgeData({});
     const progress = {};
+    const results = [];
+    let previousOutput = null;
+    const bridgeData = {};
 
-    // Simulate step-by-step execution
+    // Check if this scenario supports real API conversion
+    const useRealAPI = selectedScenario.sampleMessage && selectedScenario.conversions[0]?.useRealAPI;
+
+    // Get initial message
+    let currentMessage = selectedScenario.sampleMessage;
+
+    // Process each conversion step
     for (let i = 0; i < selectedScenario.conversions.length; i++) {
       setCurrentStep(i);
 
@@ -227,29 +272,188 @@ function PaymentVisualizerFlow() {
         setExecutionProgress({ ...progress });
       }
 
-      // Wait for the conversion time
-      await new Promise(resolve => setTimeout(resolve, conversion.time * 10)); // Speed up for demo
+
+      // Perform real conversion or simulation
+      if (useRealAPI && conversion.useRealAPI && currentMessage) {
+        try {
+          console.log(`Calling real API: ${conversion.from} → ${conversion.to}`);
+
+          // For subsequent steps, use the previous output
+          const inputMessage = i === 0 ? currentMessage : previousOutput;
+
+          // For crypto scenario with explicit conversions, don't use router for individual steps
+          const useRouterForStep = false; // We're manually controlling the conversion flow
+
+          const result = await convertPayment(
+            conversion.from,
+            conversion.to,
+            inputMessage,
+            useRouterForStep
+          );
+
+          if (result.success) {
+            // Check if we have per-step stats from routing execution log
+            let stepStats = result.processingStats;
+            let stepConfidence = result.confidenceScores;
+
+            // For multi-hop, extract per-step stats from execution log if available
+            if (result.routing && result.routing.execution_log) {
+              const stepLog = result.routing.execution_log.find(
+                log => log.from === conversion.from && log.to === conversion.to
+              );
+
+              if (stepLog && stepLog.processing_stats) {
+                // Use the actual per-step stats from the execution log
+                stepStats = stepLog.processing_stats;
+                stepConfidence = stepLog.confidence_scores || {};
+              }
+            }
+
+            // Ensure stats are in the correct format (count instead of object)
+            if (stepStats) {
+              const normalizedStats = {};
+              for (const lane of ['rules_lane', 'ai_lane', 'human_lane']) {
+                if (stepStats[lane]) {
+                  normalizedStats[lane] = typeof stepStats[lane] === 'object'
+                    ? stepStats[lane].count || 0
+                    : stepStats[lane];
+                }
+              }
+              stepStats = normalizedStats;
+            }
+
+            // Capture data for JSON bridges based on conversion steps
+            // Map conversions to the correct JSON bridge based on visual layout
+            // Bridge 0: India → USA (MT103 → JSON → pacs.008)
+            // Bridge 1: USA → Mexico (pacs.008 → SPEI, then SPEI → JSON)
+            // Bridge 2: Mexico → Blockchain (JSON → USDC)
+
+            let jsonId;
+
+            // Determine which JSON bridge this conversion belongs to
+            if (i <= 1) {
+              // Steps 0-1: India to USA bridge (MT103→JSON→pacs.008)
+              jsonId = 'json-0';
+            } else if (i >= 2 && i <= 3) {
+              // Steps 2-3: USA to Mexico bridge (pacs.008→SPEI→JSON)
+              jsonId = 'json-1';
+            } else {
+              // Step 4: Mexico to Blockchain bridge (JSON→USDC)
+              jsonId = 'json-2';
+            }
+
+            bridgeData[jsonId] = bridgeData[jsonId] || {};
+
+            // Capture data based on conversion type
+            if (conversion.to === 'JSON') {
+              // Store the JSON output as afterJson
+              bridgeData[jsonId].afterJson = result.convertedMessage;
+              // Also store the input as beforeJson
+              bridgeData[jsonId].beforeJson = inputMessage;
+            } else if (conversion.from === 'JSON') {
+              // Store the JSON input as beforeJson and output as afterJson
+              bridgeData[jsonId].beforeJson = inputMessage;
+              bridgeData[jsonId].afterJson = result.convertedMessage;
+            } else if (conversion.from === 'pacs.008' && conversion.to === 'SPEI') {
+              // Special case: pacs.008→SPEI for USA→Mexico bridge
+              // Store pacs.008 as beforeJson and SPEI as intermediate
+              bridgeData[jsonId].beforeJson = inputMessage;
+              bridgeData[jsonId].intermediateFormat = result.convertedMessage;
+            }
+
+            // Update the JSON bridge data state
+            setJsonBridgeData({...bridgeData});
+
+            results.push({
+              step: i + 1,
+              from: conversion.from,
+              to: conversion.to,
+              input: inputMessage,
+              output: result.convertedMessage,
+              processingStats: stepStats,
+              confidenceScores: stepConfidence,
+              processingTime: result.processingTime,
+              humanReviewRequired: result.humanReviewRequired
+            });
+
+            // Store output for next step
+            previousOutput = result.convertedMessage;
+
+            // Update results display
+            setConversionResults([...results]);
+
+          } else {
+            console.error('Conversion failed:', result.error);
+            // Continue with simulation if API fails
+          }
+        } catch (error) {
+          console.error('API call failed:', error);
+          // Continue with simulation if API fails
+        }
+      } else {
+        // Simulation mode (original behavior)
+        await new Promise(resolve => setTimeout(resolve, conversion.time || 1000));
+      }
 
       if (fromNode) {
         progress[fromNode.id] = 'completed';
+        // Clear current conversion and set completed result
+        if (!useRealAPI) {
+          // For simulation, add mock result data
+          const mockResult = {
+            step: i + 1,
+            from: conversion.from,
+            to: conversion.to,
+            processingTime: (conversion.time || 1000) / 1000,
+            processingStats: {
+              rules_lane: Math.floor(Math.random() * 10) + 5,
+              ai_lane: Math.floor(Math.random() * 3),
+            },
+            humanReviewRequired: false,
+            confidenceScores: Math.random() > 0.5 ? { 'field_70': 0.85, 'field_72': 0.78 } : {}
+          };
+
+          results.push(mockResult);
+          setConversionResults([...results]);
+        }
       }
       if (toNode) {
         progress[toNode.id] = 'processing';
       }
       setExecutionProgress({ ...progress });
+
+      // Add a pause between steps for clarity
+      if (i < selectedScenario.conversions.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
     }
 
     // Mark all as completed
     selectedScenario.hops.forEach(hop => {
       progress[hop.id] = 'completed';
     });
+
+    // Add JSON bridge nodes to completed status
+    for (let i = 0; i < selectedScenario.hops.length - 1; i++) {
+      const jsonId = `json-${i}`;
+      if (progress[jsonId] !== undefined) {
+        progress[jsonId] = 'completed';
+      }
+    }
+
     setExecutionProgress(progress);
     setIsExecuting(false);
     setCurrentStep(null);
+
+    // Show results summary if we have conversion results
+    if (results.length > 0) {
+      setShowResultsSummary(true);
+      setResultsMinimized(false);
+    }
   };
 
   useEffect(() => {
-    // Update node statuses when execution progress changes
+    // Update node statuses when execution progress or JSON data changes
     if (selectedScenario) {
       buildScenarioFlow(selectedScenario);
     }
@@ -319,6 +523,27 @@ function PaymentVisualizerFlow() {
         }}
       />
 
+      {/* Persistent Results Panel with Toggle */}
+      {showResultsSummary && conversionResults.length > 0 && (
+        <div className={resultsMinimized ? styles.resultsMinimized : styles.resultsExpanded}>
+          {resultsMinimized ? (
+            <button
+              className={styles.expandButton}
+              onClick={() => setResultsMinimized(false)}
+              title="Show Conversion Results"
+            >
+              📊 Show Results ({conversionResults.length} steps)
+            </button>
+          ) : (
+            <ConversionResultsSummary
+              results={conversionResults}
+              onClose={() => {
+                setResultsMinimized(true);
+              }}
+            />
+          )}
+        </div>
+      )}
     </div>
   );
 }

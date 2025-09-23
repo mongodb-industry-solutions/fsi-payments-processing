@@ -46,28 +46,49 @@ class ConversionMetadata(BaseModel):
 
 class ConversionResponse(BaseModel):
     """Response model for conversion result"""
-    
+
     success: bool = Field(
         description="Whether conversion was successful"
     )
-    
+
     converted_message: Optional[str] = Field(
         default=None,
         description="Converted message in target format"
     )
-    
+
     metadata: Optional[ConversionMetadata] = Field(
         default=None,
         description="Conversion metadata and statistics"
     )
-    
+
     error: Optional[str] = Field(
         default=None,
         description="Error message if conversion failed"
     )
-    
+
     request_id: str = Field(
         description="Request identifier for tracking"
+    )
+
+    # Top-level fields for backward compatibility
+    processing_stats: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Processing statistics (rules/AI/human lanes)"
+    )
+
+    confidence_scores: Optional[Dict[str, float]] = Field(
+        default=None,
+        description="AI confidence scores for processed fields"
+    )
+
+    human_review_required: Optional[bool] = Field(
+        default=None,
+        description="Whether human review is required"
+    )
+
+    processing_time_seconds: Optional[float] = Field(
+        default=None,
+        description="Total processing time in seconds"
     )
     
     class Config:

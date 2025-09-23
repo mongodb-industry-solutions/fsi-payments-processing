@@ -2,64 +2,10 @@
 
 import { useState } from 'react';
 import styles from './ScenarioSidebar.module.css';
-import { WILD_SCENARIOS } from '../WildScenarios';
-
-const SIMPLE_SCENARIOS = {
-  usToUk: {
-    id: 'us-uk-simple',
-    name: '🇺🇸→🇬🇧 Transatlantic Transfer',
-    description: 'Simple US to UK payment via JSON bridge',
-    complexity: 'simple',
-    hops: [
-      { id: 'usa', country: 'USA', format: 'MT103', icon: '🇺🇸', city: 'New York' },
-      { id: 'uk', country: 'UK', format: 'CHAPS', icon: '🇬🇧', city: 'London' }
-    ],
-    conversions: [
-      { from: 'MT103', to: 'JSON', location: 'USA', time: 45, description: 'Parse SWIFT fields' },
-      { from: 'JSON', to: 'CHAPS', location: 'UK', time: 35, description: 'Build UK format' }
-    ],
-    totalTime: 80
-  },
-  euToJp: {
-    id: 'eu-jp-simple',
-    name: '🇪🇺→🇯🇵 Europe to Asia',
-    description: 'EU TARGET2 to Japan MT202 conversion',
-    complexity: 'simple',
-    hops: [
-      { id: 'germany', country: 'Germany', format: 'TARGET2', icon: '🇩🇪', city: 'Frankfurt' },
-      { id: 'japan', country: 'Japan', format: 'MT202', icon: '🇯🇵', city: 'Tokyo' }
-    ],
-    conversions: [
-      { from: 'TARGET2', to: 'JSON', location: 'Germany', time: 40, description: 'Extract EU fields' },
-      { from: 'JSON', to: 'MT202', location: 'Japan', time: 42, description: 'Build Japanese format' }
-    ],
-    totalTime: 82
-  },
-  tripleHop: {
-    id: 'triple-hop',
-    name: '🌐 Triple Hop Express',
-    description: 'US → UK → Germany in 3 hops',
-    complexity: 'moderate',
-    hops: [
-      { id: 'usa', country: 'USA', format: 'MT103', icon: '🇺🇸', city: 'New York' },
-      { id: 'uk', country: 'UK', format: 'CHAPS', icon: '🇬🇧', city: 'London' },
-      { id: 'germany', country: 'Germany', format: 'TARGET2', icon: '🇩🇪', city: 'Frankfurt' }
-    ],
-    conversions: [
-      { from: 'MT103', to: 'JSON', location: 'USA', time: 45, description: 'US to Universal' },
-      { from: 'JSON', to: 'CHAPS', location: 'UK', time: 35, description: 'Universal to UK' },
-      { from: 'CHAPS', to: 'JSON', location: 'UK', time: 32, description: 'UK to Universal' },
-      { from: 'JSON', to: 'TARGET2', location: 'Germany', time: 38, description: 'Universal to EU' }
-    ],
-    totalTime: 150
-  }
-};
+import { SIMPLIFIED_SCENARIOS } from '../SimplifiedScenarios';
 
 export default function ScenarioSidebar({ onSelectScenario, selectedScenario }) {
-  const [activeTab, setActiveTab] = useState('wild');
-
-  const wildScenarios = Object.values(WILD_SCENARIOS);
-  const simpleScenarios = Object.values(SIMPLE_SCENARIOS);
+  const scenarios = Object.values(SIMPLIFIED_SCENARIOS);
 
   const renderScenarioCard = (scenario) => {
     const isSelected = selectedScenario?.id === scenario.id;
@@ -107,15 +53,15 @@ export default function ScenarioSidebar({ onSelectScenario, selectedScenario }) 
               <path d="M14 8V13C14 14 13 15 12 15H4C3 15 2 14 2 13V8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
             </svg>
             <span className={styles.statValue}>{scenario.conversions.length}</span>
-            <span className={styles.statLabel}>hops</span>
+            <span className={styles.statLabel}>steps</span>
           </div>
           <div className={styles.stat}>
             <svg className={styles.statIcon} width="16" height="16" viewBox="0 0 16 16" fill="none">
               <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.5"/>
               <path d="M8 4V8L10 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
             </svg>
-            <span className={styles.statValue}>{scenario.totalTime}ms</span>
-            <span className={styles.statLabel}>latency</span>
+            <span className={styles.statValue}>{(scenario.totalTime/1000).toFixed(0)}s</span>
+            <span className={styles.statLabel}>duration</span>
           </div>
         </div>
 
@@ -150,32 +96,15 @@ export default function ScenarioSidebar({ onSelectScenario, selectedScenario }) 
             <path d="M7 5H13C14 5 15 6 15 7V13" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
             <circle cx="10" cy="10" r="1" fill="currentColor" opacity="0.5"/>
           </svg>
-          Payment Routes
+          Payment Scenarios
         </h3>
-      </div>
-
-      <div className={styles.tabs}>
-        <button
-          className={`${styles.tab} ${activeTab === 'wild' ? styles.active : ''}`}
-          onClick={() => setActiveTab('wild')}
-        >
-          Complex Routes ({wildScenarios.length})
-        </button>
-        <button
-          className={`${styles.tab} ${activeTab === 'simple' ? styles.active : ''}`}
-          onClick={() => setActiveTab('simple')}
-        >
-          Simple Routes ({simpleScenarios.length})
-        </button>
+        <p className={styles.headerDescription}>
+          Select a scenario to visualize the payment journey
+        </p>
       </div>
 
       <div className={styles.scenarioList}>
-        {activeTab === 'wild' &&
-          wildScenarios.map(renderScenarioCard)
-        }
-        {activeTab === 'simple' &&
-          simpleScenarios.map(renderScenarioCard)
-        }
+        {scenarios.map(renderScenarioCard)}
       </div>
     </div>
   );

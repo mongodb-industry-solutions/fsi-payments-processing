@@ -1,0 +1,404 @@
+/* Enhanced Node Container */
+.enhancedNode {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  width: 280px;
+  border: 2px solid #E8EDEB;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.enhancedNode:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+  border-color: var(--green-dark1);
+}
+
+.enhancedNode.processing {
+  border-color: var(--green-dark1);
+  animation: pulse 2s infinite;
+}
+
+.enhancedNode.expanded {
+  width: 340px;
+  z-index: 100;
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 4px 20px rgba(0, 163, 92, 0.3); }
+  50% { box-shadow: 0 4px 30px rgba(0, 163, 92, 0.5); }
+  100% { box-shadow: 0 4px 20px rgba(0, 163, 92, 0.3); }
+}
+
+/* Node Header */
+.nodeHeader {
+  padding: 15px;
+  border-bottom: 1px solid #F9FBFA;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.nodeTitle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.nodeIcon {
+  font-size: 24px;
+}
+
+.nodeInfo h3 {
+  font-size: 16px;
+  color: var(--black);
+  margin-bottom: 2px;
+  font-weight: 600;
+}
+
+.location {
+  font-size: 12px;
+  color: var(--gray-dark1);
+}
+
+.formatBadge {
+  background: linear-gradient(135deg, var(--green-dark1) 0%, var(--green-dark2) 100%);
+  color: white;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Processing Status Bar */
+.processingStatus {
+  padding: 12px 15px;
+  background: #FAFAFA;
+  border-bottom: 1px solid #F9FBFA;
+}
+
+.statusLabel {
+  font-size: 11px;
+  color: var(--gray-dark1);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.laneIndicators {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.laneBadge {
+  flex: 1;
+  padding: 8px;
+  border-radius: 8px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.laneBadge.rules {
+  background: var(--green-light2);
+  border: 1px solid var(--green-dark1);
+}
+
+.laneBadge.ai {
+  background: var(--blue-light2);
+  border: 1px solid var(--blue-dark1);
+}
+
+.laneBadge.human {
+  background: var(--yellow-light2);
+  border: 1px solid var(--yellow-dark1);
+}
+
+.laneBadge.inactive {
+  background: var(--gray-light2);
+  border: 1px solid var(--gray-light1);
+  opacity: 0.5;
+}
+
+.laneBadge.active::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+  background: currentColor;
+  opacity: 0.1;
+  animation: fillProgress 2s linear;
+}
+
+@keyframes fillProgress {
+  from { width: 0; }
+  to { width: 100%; }
+}
+
+.laneName {
+  font-size: 11px;
+  font-weight: 600;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.laneBadge.rules .laneName { color: var(--green-dark2); }
+.laneBadge.ai .laneName { color: var(--blue-dark1); }
+.laneBadge.human .laneName { color: var(--yellow-dark1); }
+.laneBadge.inactive .laneName { color: var(--gray-base); }
+
+.laneCount {
+  font-size: 18px;
+  font-weight: 700;
+  display: block;
+}
+
+.laneBadge.rules .laneCount { color: var(--green-dark2); }
+.laneBadge.ai .laneCount { color: var(--blue-dark2); }
+.laneBadge.human .laneCount { color: var(--yellow-dark2); }
+.laneBadge.inactive .laneCount { color: var(--gray-dark1); }
+
+.laneLabel {
+  font-size: 10px;
+  color: var(--gray-dark1);
+}
+
+/* Progress Bar */
+.progressBar {
+  height: 4px;
+  background: var(--gray-light2);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--green-base) 0%, var(--blue-base) 50%, var(--yellow-base) 100%);
+  transition: width 0.3s ease;
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% { opacity: 1; }
+  50% { opacity: 0.8; }
+  100% { opacity: 1; }
+}
+
+/* Direct Mapping Message */
+.directMappingMessage {
+  font-size: 11px;
+  color: var(--green-dark2);
+  text-align: center;
+  padding: 8px;
+  background: var(--green-light2);
+  border-radius: 6px;
+  margin: 10px;
+}
+
+/* Real-time Metrics */
+.realtimeMetrics {
+  padding: 15px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.metric {
+  display: flex;
+  flex-direction: column;
+}
+
+.metricLabel {
+  font-size: 11px;
+  color: var(--gray-dark1);
+  margin-bottom: 4px;
+}
+
+.metricValue {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--black);
+}
+
+.metricValue.success { color: var(--green-dark1); }
+.metricValue.warning { color: var(--yellow-dark1); }
+
+/* Confidence Section */
+.confidenceSection {
+  padding: 15px;
+  background: #FAFAFA;
+  border-top: 1px solid #F9FBFA;
+}
+
+.confidenceMeter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.confidenceBar {
+  flex: 1;
+  height: 8px;
+  background: var(--gray-light2);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.confidenceFill {
+  height: 100%;
+  background: linear-gradient(90deg, #DC2626 0%, var(--yellow-base) 50%, var(--green-base) 100%);
+  transition: width 0.5s ease;
+}
+
+.confidenceValue {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--green-dark1);
+}
+
+.aiFields {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.aiFieldChip {
+  background: var(--blue-light2);
+  color: var(--blue-dark1);
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+/* Expand Button */
+.expandButton {
+  padding: 10px 15px;
+  background: var(--gray-light3);
+  border-top: 1px solid #F9FBFA;
+  text-align: center;
+  font-size: 12px;
+  color: var(--gray-dark1);
+  cursor: pointer;
+  transition: background 0.2s;
+  border-radius: 0 0 10px 10px;
+}
+
+.expandButton:hover {
+  background: var(--gray-light2);
+}
+
+.expandIcon {
+  display: inline-block;
+  transition: transform 0.3s;
+  margin-left: 5px;
+}
+
+/* Field Mapping Details (Expandable) */
+.fieldMappingDetails {
+  padding: 20px;
+  background: #FAFAFA;
+  border-top: 2px solid var(--gray-light2);
+  border-radius: 0 0 10px 10px;
+}
+
+.mappingHeader {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gray-dark2);
+  margin-bottom: 15px;
+}
+
+.fieldFlowGrid {
+  display: grid;
+  gap: 8px;
+}
+
+.fieldFlowItem {
+  display: flex;
+  align-items: center;
+  padding: 8px;
+  background: white;
+  border-radius: 6px;
+  border-left: 3px solid;
+  font-size: 11px;
+}
+
+.fieldFlowItem.success {
+  border-left-color: var(--green-dark1);
+}
+
+.fieldFlowItem.dropped {
+  border-left-color: #DC2626;
+  opacity: 0.7;
+}
+
+.fieldFlowItem.warning {
+  border-left-color: var(--yellow-dark1);
+}
+
+.fieldSource {
+  flex: 1;
+  font-family: 'Courier New', monospace;
+  color: var(--gray-dark2);
+}
+
+.fieldArrow {
+  margin: 0 10px;
+  color: var(--gray-base);
+}
+
+.fieldTarget {
+  flex: 1;
+  font-family: 'Courier New', monospace;
+  color: var(--gray-dark2);
+}
+
+.fieldStatus {
+  margin-left: 10px;
+  font-size: 14px;
+}
+
+.fieldStatus.success { color: var(--green-dark1); }
+.fieldStatus.dropped { color: #DC2626; }
+.fieldStatus.warning { color: var(--yellow-dark1); }
+
+.mappingSummary {
+  margin-top: 15px;
+  padding: 10px;
+  background: var(--blue-light2);
+  border-radius: 6px;
+  font-size: 11px;
+  color: var(--blue-dark1);
+}
+
+/* Status Indicator */
+.statusIndicator {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--green-base);
+  animation: blink 2s infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* React Flow Handles */
+.handle {
+  width: 8px;
+  height: 8px;
+  border: 2px solid white;
+  background: var(--green-dark1);
+}

@@ -38,10 +38,19 @@ export const getLayoutedElements = (nodes, edges, layoutType = 'linear') => {
 
   // Add nodes to dagre graph with dimensions
   nodes.forEach((node) => {
-    dagreGraph.setNode(node.id, {
-      width: node.data?.isHub ? 150 : 200,
-      height: node.data?.isHub ? 120 : 150
-    });
+    // Set dimensions based on node type
+    let width = 200;
+    let height = 150;
+
+    if (node.type === 'jsonBridge') {
+      width = 150;
+      height = 80;
+    } else if (node.data?.isHub) {
+      width = 150;
+      height = 120;
+    }
+
+    dagreGraph.setNode(node.id, { width, height });
   });
 
   // Add edges to dagre graph
@@ -55,11 +64,24 @@ export const getLayoutedElements = (nodes, edges, layoutType = 'linear') => {
   // Apply the calculated positions back to nodes
   const layoutedNodes = nodes.map((node) => {
     const nodeWithPosition = dagreGraph.node(node.id);
+
+    // Calculate centering offset based on node type
+    let offsetX = 100;
+    let offsetY = 75;
+
+    if (node.type === 'jsonBridge') {
+      offsetX = 75;
+      offsetY = 40;
+    } else if (node.data?.isHub) {
+      offsetX = 75;
+      offsetY = 60;
+    }
+
     return {
       ...node,
       position: {
-        x: nodeWithPosition.x - (node.data?.isHub ? 75 : 100),
-        y: nodeWithPosition.y - (node.data?.isHub ? 60 : 75),
+        x: nodeWithPosition.x - offsetX,
+        y: nodeWithPosition.y - offsetY,
       },
     };
   });

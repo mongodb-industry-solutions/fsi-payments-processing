@@ -1,0 +1,362 @@
+.summaryContainer {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 600px;
+  max-height: 70vh;
+  background: var(--white);
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--gray-light2);
+  overflow: hidden;
+  z-index: 1000;
+  animation: slideUp 0.3s ease;
+  backdrop-filter: blur(8px);
+  background: rgba(255, 255, 255, 0.98);
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--gray-light2);
+  background: linear-gradient(135deg, var(--green-dark2) 0%, var(--green-dark1) 100%);
+  color: var(--white);
+}
+
+.header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--white);
+}
+
+.closeButton {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.2);
+  color: var(--white);
+  font-size: 1.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.closeButton:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.05);
+}
+
+.stepsContainer {
+  max-height: calc(70vh - 140px);
+  overflow-y: auto;
+}
+
+.step {
+  border-bottom: 1px solid var(--gray-light2);
+}
+
+.step:last-child {
+  border-bottom: none;
+}
+
+.stepHeader {
+  padding: 1rem 1.5rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.stepHeader:hover {
+  background: var(--gray-light3);
+}
+
+.stepInfo {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.stepNumber {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--green-dark2);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.stepConversion {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--black);
+}
+
+.stepStats {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.processing {
+  animation: pulse 1.5s ease-in-out infinite;
+  background: linear-gradient(45deg, var(--green-light3), var(--green-light2));
+  border-color: var(--green-base);
+}
+
+.stat {
+  font-size: 0.875rem;
+  color: var(--gray-dark1);
+  padding: 0.25rem 0.5rem;
+  background: var(--gray-light3);
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+.time {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--green-dark1);
+}
+
+.stepContent {
+  padding: 0 1.5rem 1.5rem;
+  animation: expand 0.3s ease;
+}
+
+@keyframes expand {
+  from {
+    opacity: 0;
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 1000px;
+  }
+}
+
+.statsSection,
+.confidenceSection,
+.outputSection {
+  margin-bottom: 1.5rem;
+}
+
+.statsSection h4,
+.confidenceSection h4,
+.outputSection h4 {
+  margin: 0 0 0.75rem 0;
+  font-size: 1rem;
+  color: var(--black);
+  font-weight: 600;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  padding: 1rem;
+  background: var(--gray-light3);
+  border-radius: 8px;
+  border: 1px solid var(--gray-light2);
+}
+
+.statItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.label {
+  font-size: 0.875rem;
+  color: var(--gray-dark1);
+}
+
+.value {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--black);
+}
+
+.confidenceGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.confidenceItem {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.fieldName {
+  font-size: 0.875rem;
+  color: var(--gray-dark1);
+  min-width: 80px;
+}
+
+.confidenceBar {
+  flex: 1;
+  height: 8px;
+  background: var(--gray-light2);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.confidenceFill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--green-base) 0%, var(--green-dark1) 100%);
+  transition: width 0.3s ease;
+  box-shadow: 0 0 4px rgba(0, 230, 118, 0.3);
+}
+
+.confidenceFill[data-confidence="low"] {
+  background: linear-gradient(90deg, var(--yellow-dark1) 0%, var(--yellow-base) 100%);
+  box-shadow: 0 0 4px rgba(252, 235, 0, 0.3);
+}
+
+.confidenceValue {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--black);
+  min-width: 40px;
+  text-align: right;
+}
+
+.outputContainer {
+  background: var(--black);
+  border-radius: 8px;
+  padding: 1rem;
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid var(--gray-dark2);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.output {
+  margin: 0;
+  font-family: 'Monaco', 'Consolas', 'Courier New', monospace;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: var(--green-base);
+  white-space: pre-wrap;
+  word-break: break-all;
+  text-shadow: 0 0 2px rgba(0, 230, 118, 0.5);
+}
+
+.footer {
+  padding: 1rem 1.5rem;
+  background: var(--gray-light3);
+  border-top: 1px solid var(--gray-light2);
+}
+
+.totalStats {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--black);
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .summaryContainer {
+    background: rgba(30, 30, 30, 0.98);
+    border-color: var(--gray-dark2);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+
+  .header {
+    background: linear-gradient(135deg, var(--green-dark3) 0%, var(--green-dark2) 100%);
+    border-bottom-color: var(--gray-dark2);
+  }
+
+  .stepHeader:hover {
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .stepConversion {
+    color: var(--gray-light3);
+  }
+
+  .stat {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--gray-light1);
+  }
+
+  .statsSection h4,
+  .confidenceSection h4,
+  .outputSection h4 {
+    color: var(--gray-light3);
+  }
+
+  .statsGrid {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--gray-dark1);
+  }
+
+  .label,
+  .fieldName {
+    color: var(--gray-light1);
+  }
+
+  .value,
+  .confidenceValue {
+    color: var(--gray-light3);
+  }
+
+  .confidenceBar {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .outputContainer {
+    background: rgba(0, 0, 0, 0.7);
+    border-color: var(--gray-dark1);
+  }
+
+  .output {
+    color: var(--green-light1);
+    text-shadow: 0 0 3px rgba(0, 230, 118, 0.7);
+  }
+
+  .footer {
+    background: rgba(255, 255, 255, 0.05);
+    border-top-color: var(--gray-dark2);
+  }
+
+  .totalStats {
+    color: var(--gray-light3);
+  }
+
+  .step {
+    border-bottom-color: var(--gray-dark2);
+  }
+}

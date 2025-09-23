@@ -1,0 +1,334 @@
+.overlay {
+  position: fixed;
+  top: 140px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.overlayContent {
+  background: white;
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  border: 2px solid #e2e8f0;
+  min-width: 500px;
+  max-width: 600px;
+}
+
+.stepHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.stepNumber {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #764ba2;
+}
+
+.pauseButton {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: #f3f4f6;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #1f2937;
+  transition: all 0.2s ease;
+}
+
+.pauseButton:hover {
+  background: #e5e7eb;
+}
+
+.conversionFlow {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #f3f4f6 0%, #f9fafb 100%);
+  border-radius: 12px;
+}
+
+.fromFormat,
+.toFormat {
+  padding: 1rem 1.5rem;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  border: 2px solid #e5e7eb;
+}
+
+.formatLabel {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.arrow {
+  display: flex;
+  align-items: center;
+}
+
+.stepTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1f2937;
+  text-align: center;
+  margin-bottom: 0.75rem;
+}
+
+.stepDetails {
+  font-size: 1rem;
+  color: #6b7280;
+  text-align: center;
+  margin-bottom: 1.5rem;
+  line-height: 1.5;
+}
+
+.progressSection {
+  margin-bottom: 1.5rem;
+}
+
+.progressBar {
+  height: 8px;
+  background: #e5e7eb;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.progressFill {
+  height: 100%;
+  background: linear-gradient(90deg, #764ba2 0%, #667eea 100%);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.progressText {
+  text-align: center;
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.location {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: #6b7280;
+  padding-top: 1rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .overlayContent {
+    background: #1f2937;
+    border-color: #374151;
+  }
+
+  .stepNumber {
+    color: #a78bfa;
+  }
+
+  .pauseButton {
+    background: #374151;
+    color: #f3f4f6;
+  }
+
+  .pauseButton:hover {
+    background: #4b5563;
+  }
+
+  .conversionFlow {
+    background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
+  }
+
+  .fromFormat,
+  .toFormat {
+    background: #374151;
+    border-color: #4b5563;
+  }
+
+  .formatLabel,
+  .stepTitle {
+    color: #f3f4f6;
+  }
+
+  .stepDetails,
+  .progressText,
+  .location {
+    color: #9ca3af;
+  }
+
+  .progressBar {
+    background: #374151;
+  }
+}
+
+/* Results Section */
+.resultsSection {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.resultHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.resultHeader h4 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #1f2937;
+  font-weight: 600;
+}
+
+.toggleButton {
+  padding: 0.5rem 1rem;
+  background: #764ba2;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.toggleButton:hover {
+  background: #5f3a8c;
+}
+
+.resultContent {
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: #f9fafb;
+  border-radius: 8px;
+}
+
+.statItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.statLabel {
+  font-size: 0.75rem;
+  color: #6b7280;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.25rem;
+}
+
+.statValue {
+  font-size: 1rem;
+  color: #1f2937;
+  font-weight: 600;
+}
+
+.outputPreview {
+  background: #1f2937;
+  border-radius: 8px;
+  padding: 1rem;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.outputCode {
+  margin: 0;
+  font-family: 'Monaco', 'Consolas', 'Courier New', monospace;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: #10b981;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.reviewAlert {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background: #fef3c7;
+  color: #92400e;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Dark mode support for results */
+@media (prefers-color-scheme: dark) {
+  .resultsSection {
+    border-top-color: #374151;
+  }
+
+  .resultHeader h4 {
+    color: #f3f4f6;
+  }
+
+  .stats {
+    background: #374151;
+  }
+
+  .statValue {
+    color: #f3f4f6;
+  }
+
+  .outputPreview {
+    background: #111827;
+  }
+
+  .reviewAlert {
+    background: #451a03;
+    color: #fbbf24;
+  }
+}
