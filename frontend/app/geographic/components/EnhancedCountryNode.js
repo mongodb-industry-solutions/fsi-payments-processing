@@ -1,18 +1,32 @@
 'use client';
 
-import { memo } from 'react';
+import { memo, useState } from 'react';
 import { Handle, Position } from 'reactflow';
+import FormatInfoModal from './FormatInfoModal';
 import styles from './EnhancedCountryNode.module.css';
 
 const EnhancedCountryNode = ({ data, selected }) => {
+  const [showFormatModal, setShowFormatModal] = useState(false);
   const isJsonBridge = data.format === 'Bridge' || data.format === 'JSON' || data.isHub;
   const isProcessing = data.status === 'processing';
   const isCompleted = data.status === 'completed';
 
+  const handleNodeClick = (e) => {
+    // Stop event from bubbling to ReactFlow's node click handler
+    e.stopPropagation();
+
+    // Only open modal for non-JSON bridge nodes
+    if (!isJsonBridge && data.format) {
+      setShowFormatModal(true);
+    }
+  };
+
   return (
-    <div
-      className={`${styles.nodeWrapper} ${selected ? styles.selected : ''} ${isProcessing ? styles.processing : ''} ${isCompleted ? styles.completed : ''}`}
-    >
+    <>
+      <div
+        className={`${styles.nodeWrapper} ${selected ? styles.selected : ''} ${isProcessing ? styles.processing : ''} ${isCompleted ? styles.completed : ''} ${!isJsonBridge ? styles.clickable : ''}`}
+        onClick={handleNodeClick}
+      >
       <Handle
         type="target"
         position={Position.Left}
@@ -86,6 +100,16 @@ const EnhancedCountryNode = ({ data, selected }) => {
         style={{ background: '#764ba2' }}
       />
     </div>
+
+      {/* Format Info Modal */}
+      <FormatInfoModal
+        isOpen={showFormatModal}
+        onClose={() => setShowFormatModal(false)}
+        format={data.format}
+        country={data.country}
+        city={data.city}
+      />
+    </>
   );
 };
 

@@ -1057,16 +1057,180 @@ PAYMENT FOR COMPONENTS
             // Update popup content based on config type
             if (configType === 'MT103_to_JSON') {
                 document.getElementById('configId').textContent = 'MT103_to_JSON';
-                document.getElementById('configLanes').textContent = 'Rules: 19, AI: 2';
-                document.getElementById('configModel').textContent = 'Claude 3 Haiku';
-                document.getElementById('configTime').textContent = '1.2 seconds';
-                document.getElementById('configSuccess').textContent = '99.8%';
+                document.getElementById('rulesCount').textContent = '19 fields';
+                document.getElementById('aiCount').textContent = '2 fields';
+                document.getElementById('avgTime').textContent = '1.2s';
+                document.getElementById('successRate').textContent = '99.8%';
+
+                // Update MongoDB document display for MT103_to_JSON
+                document.getElementById('mongoDocument').textContent = JSON.stringify({
+                    "_id": "MT103_to_JSON",
+                    "source_format": "MT103",
+                    "target_format": "JSON",
+                    "parser": {
+                        "type": "swift",
+                        "field_patterns": {
+                            "20": "^:20:(.+)$",
+                            "32A": "^:32A:(\\d{6})([A-Z]{3})([\\d,]+)$",
+                            "50K": "^:50K:(.+?)(?=:5\\d|:7\\d|$)",
+                            "59": "^:59:(.+?)(?=:7\\d|$)",
+                            "70": "^:70:(.+?)(?=:7\\d|$)",
+                            "72": "^:72:(.+?)(?=:\\d|$)"
+                        }
+                    },
+                    "mappings": [
+                        {
+                            "source": "20",
+                            "targets": ["transaction.end_to_end_id"],
+                            "transform": "direct",
+                            "processing_lane": "RULES"
+                        },
+                        {
+                            "source": "32A",
+                            "targets": ["dates.value_date", "amounts.instructed.currency", "amounts.instructed.value"],
+                            "transform": "split_date_currency_amount",
+                            "processing_lane": "RULES"
+                        },
+                        {
+                            "source": "50K",
+                            "targets": ["parties.debtor.account", "parties.debtor.name", "parties.debtor.address"],
+                            "transform": "extract_party_info",
+                            "processing_lane": "RULES"
+                        },
+                        {
+                            "source": "59",
+                            "targets": ["parties.creditor.account", "parties.creditor.name", "parties.creditor.address"],
+                            "transform": "extract_party_info",
+                            "processing_lane": "RULES"
+                        },
+                        {
+                            "source": "70",
+                            "targets": ["remittance.unstructured"],
+                            "transform": "ai_extract",
+                            "processing_lane": "AI",
+                            "field_type": "remittance",
+                            "confidence_threshold": 0.8
+                        },
+                        {
+                            "source": "72",
+                            "targets": ["instructions.sender"],
+                            "transform": "ai_extract",
+                            "processing_lane": "AI",
+                            "field_type": "sender_receiver_info",
+                            "confidence_threshold": 0.75
+                        }
+                    ],
+                    "ai_config": {
+                        "model": "claude-3-haiku",
+                        "temperature": 0.2,
+                        "retry_count": 2
+                    },
+                    "builder": {
+                        "type": "json",
+                        "schema_version": "2.0",
+                        "canonical_format": true
+                    },
+                    "metadata": {
+                        "created_at": "2024-12-15T10:30:00Z",
+                        "version": 3,
+                        "success_rate": 0.998,
+                        "avg_processing_ms": 1200
+                    }
+                }, null, 2);
             } else if (configType === 'JSON_to_CHAPS') {
                 document.getElementById('configId').textContent = 'JSON_to_CHAPS';
-                document.getElementById('configLanes').textContent = 'Rules: 15, AI: 0';
-                document.getElementById('configModel').textContent = 'Not required';
-                document.getElementById('configTime').textContent = '50ms';
-                document.getElementById('configSuccess').textContent = '100%';
+                document.getElementById('rulesCount').textContent = '15 fields';
+                document.getElementById('aiCount').textContent = '0 fields';
+                document.getElementById('avgTime').textContent = '50ms';
+                document.getElementById('successRate').textContent = '100%';
+
+                // Update MongoDB document display for JSON_to_CHAPS
+                document.getElementById('mongoDocument').textContent = JSON.stringify({
+                    "_id": "JSON_to_CHAPS",
+                    "source_format": "JSON",
+                    "target_format": "CHAPS",
+                    "parser": {
+                        "type": "json",
+                        "canonical_format": true
+                    },
+                    "mappings": [
+                        {
+                            "source": "transaction.end_to_end_id",
+                            "targets": ["EndToEndId"],
+                            "transform": "direct",
+                            "processing_lane": "RULES"
+                        },
+                        {
+                            "source": "transaction.message_id",
+                            "targets": ["MsgId"],
+                            "transform": "direct",
+                            "processing_lane": "RULES"
+                        },
+                        {
+                            "source": "amounts.instructed.value",
+                            "targets": ["InstructedAmount.Value"],
+                            "transform": "direct",
+                            "processing_lane": "RULES"
+                        },
+                        {
+                            "source": "amounts.instructed.currency",
+                            "targets": ["InstructedAmount.Currency"],
+                            "transform": "direct",
+                            "processing_lane": "RULES"
+                        },
+                        {
+                            "source": "parties.debtor.name",
+                            "targets": ["DbtrNm"],
+                            "transform": "direct",
+                            "processing_lane": "RULES"
+                        },
+                        {
+                            "source": "parties.debtor.account",
+                            "targets": ["DbtrAcct"],
+                            "transform": "direct",
+                            "processing_lane": "RULES"
+                        },
+                        {
+                            "source": "parties.creditor.name",
+                            "targets": ["CdtrNm"],
+                            "transform": "direct",
+                            "processing_lane": "RULES"
+                        },
+                        {
+                            "source": "parties.creditor.account",
+                            "targets": ["CdtrAcct"],
+                            "transform": "direct",
+                            "processing_lane": "RULES"
+                        },
+                        {
+                            "source": "remittance.unstructured",
+                            "targets": ["RmtInf.Ustrd"],
+                            "transform": "join_array",
+                            "processing_lane": "RULES"
+                        },
+                        {
+                            "source": "dates.value_date",
+                            "targets": ["IntrBkSttlmDt"],
+                            "transform": "date_format",
+                            "processing_lane": "RULES",
+                            "transform_config": {
+                                "output_format": "%Y-%m-%d"
+                            }
+                        }
+                    ],
+                    "builder": {
+                        "type": "chaps",
+                        "message_type": "pacs.008",
+                        "namespace": "urn:iso:std:iso:20022:tech:xsd:pacs.008.001.08"
+                    },
+                    "metadata": {
+                        "created_at": "2024-12-15T10:30:00Z",
+                        "version": 2,
+                        "success_rate": 1.0,
+                        "avg_processing_ms": 50,
+                        "notes": "Direct mapping from canonical JSON - no AI required"
+                    }
+                }, null, 2);
             }
 
             popup.classList.add('active');

@@ -19,10 +19,12 @@
 
 .infoSection {
   position: absolute;
-  top: 20px;
-  right: 20px;
-  z-index: 1000;
-  max-width: 400px;
+  top: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  max-width: 600px;
+  width: 90%;
 }
 
 .executeButton {
@@ -57,7 +59,7 @@
 .flowContainer {
   flex: 1;
   position: relative;
-  height: calc(100vh - 250px); /* Account for timeline height */
+  height: calc(100vh - 230px); /* Account for pipeline panel height */
   overflow: hidden;
 }
 

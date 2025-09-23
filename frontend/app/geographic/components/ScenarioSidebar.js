@@ -4,8 +4,15 @@ import { useState } from 'react';
 import styles from './ScenarioSidebar.module.css';
 import { SIMPLIFIED_SCENARIOS } from '../SimplifiedScenarios';
 
-export default function ScenarioSidebar({ onSelectScenario, selectedScenario }) {
+export default function ScenarioSidebar({ onSelectScenario, selectedScenario, onExecuteScenario, isExecuting }) {
   const scenarios = Object.values(SIMPLIFIED_SCENARIOS);
+
+  const handleButtonClick = (event, scenario) => {
+    event.stopPropagation();
+    if (selectedScenario?.id === scenario.id && onExecuteScenario) {
+      onExecuteScenario();
+    }
+  };
 
   const renderScenarioCard = (scenario) => {
     const isSelected = selectedScenario?.id === scenario.id;
@@ -65,20 +72,29 @@ export default function ScenarioSidebar({ onSelectScenario, selectedScenario }) 
           </div>
         </div>
 
-        <button className={styles.launchButton}>
-          {isSelected ? (
+        <button
+          className={`${styles.launchButton} ${isSelected ? styles.active : ''} ${isExecuting && isSelected ? styles.executing : ''}`}
+          onClick={(e) => handleButtonClick(e, scenario)}
+          disabled={!isSelected || isExecuting}
+        >
+          {isExecuting && isSelected ? (
+            <>
+              <div className={styles.spinner}></div>
+              <span>Executing...</span>
+            </>
+          ) : isSelected ? (
             <>
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M13 4L6 11L3 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M4 2L12 8L4 14V2Z" fill="currentColor"/>
               </svg>
-              <span>Route Active</span>
+              <span>Execute Route</span>
             </>
           ) : (
             <>
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M3 8L13 8M13 8L9 4M13 8L9 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M8 2V14M2 8H14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
               </svg>
-              <span>Execute Route</span>
+              <span>Select Route</span>
             </>
           )}
         </button>

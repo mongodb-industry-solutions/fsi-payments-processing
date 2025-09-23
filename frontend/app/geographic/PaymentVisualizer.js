@@ -18,7 +18,8 @@ import NodeDetailsPanel from './components/NodeDetailsPanel';
 import EnhancedCountryNode from './components/EnhancedCountryNode';
 import CryptoNode from './components/CryptoNode';
 import JsonBridgeNode from './components/JsonBridgeNode';
-import ConversionResultsSummary from './components/ConversionResultsSummary';
+import InfoCallout from './components/InfoCallout';
+import ProcessingPipelinePanel from './components/ProcessingPipelinePanel';
 import { getLayoutedElements, getRadialLayout, determineLayoutStrategy } from './utils/layoutUtils';
 import { convertPayment } from './services/conversionService';
 import styles from './PaymentVisualizer.module.css';
@@ -72,7 +73,12 @@ function PaymentVisualizerFlow() {
   const onConnect = useCallback((params) => setEdges((eds) => addEdge(params, eds)), [setEdges]);
 
   const onNodeClick = useCallback((event, node) => {
+    // Don't show NodeDetailsPanel for country nodes as they have their own FormatInfoModal
     if (node.type === 'country') {
+      return; // Let the node handle its own click event
+    }
+    // For other node types, show NodeDetailsPanel if needed
+    if (node.type === 'somethingElse') {
       setSelectedNode(node.data);
       // Calculate position in screen coordinates
       const rect = event.currentTarget.getBoundingClientRect();
@@ -186,7 +192,8 @@ function PaymentVisualizerFlow() {
               city: 'Universal',
               status: executionProgress[jsonId] || 'idle',
               beforeJson: jsonBridgeData[jsonId]?.beforeJson || null,
-              afterJson: jsonBridgeData[jsonId]?.afterJson || null
+              afterJson: jsonBridgeData[jsonId]?.afterJson || null,
+              selectedScenario: scenario
             }
           });
 
@@ -236,6 +243,9 @@ function PaymentVisualizerFlow() {
     setSelectedScenario(scenario);
     setSelectedNode(null);
     setExecutionProgress({});
+    setConversionResults([]); // Clear conversion results when switching scenarios
+    setCurrentStep(null); // Reset current step
+    setIsExecuting(false); // Ensure execution state is reset
     buildScenarioFlow(scenario);
   };
 
@@ -464,17 +474,20 @@ function PaymentVisualizerFlow() {
       <ScenarioSidebar
         onSelectScenario={handleSelectScenario}
         selectedScenario={selectedScenario}
+        onExecuteScenario={simulateExecution}
+        isExecuting={isExecuting}
       />
 
       <div className={styles.mainCanvas}>
-        {selectedScenario && (
-          <button
-            className={styles.executeButton}
-            onClick={simulateExecution}
-            disabled={isExecuting}
-          >
-            {isExecuting ? 'Executing...' : 'Execute Scenario'}
-          </button>
+        {selectedScenario && selectedScenario.mongoDbAdvantages && (
+          <div className={styles.infoSection}>
+            <InfoCallout
+              title={selectedScenario.mongoDbAdvantages.title}
+              variant="info"
+            >
+              {selectedScenario.mongoDbAdvantages.message}
+            </InfoCallout>
+          </div>
         )}
 
         <div className={styles.flowContainer}>
@@ -523,27 +536,13 @@ function PaymentVisualizerFlow() {
         }}
       />
 
-      {/* Persistent Results Panel with Toggle */}
-      {showResultsSummary && conversionResults.length > 0 && (
-        <div className={resultsMinimized ? styles.resultsMinimized : styles.resultsExpanded}>
-          {resultsMinimized ? (
-            <button
-              className={styles.expandButton}
-              onClick={() => setResultsMinimized(false)}
-              title="Show Conversion Results"
-            >
-              📊 Show Results ({conversionResults.length} steps)
-            </button>
-          ) : (
-            <ConversionResultsSummary
-              results={conversionResults}
-              onClose={() => {
-                setResultsMinimized(true);
-              }}
-            />
-          )}
-        </div>
-      )}
+      {/* MongoDB Processing Pipeline Panel */}
+      <ProcessingPipelinePanel
+        selectedScenario={selectedScenario}
+        conversionResults={conversionResults}
+        isExecuting={isExecuting}
+        currentStep={currentStep}
+      />
     </div>
   );
 }

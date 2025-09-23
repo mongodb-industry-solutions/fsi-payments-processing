@@ -239,37 +239,60 @@
 
 .launchButton {
   width: 100%;
-  padding: 0.5rem 0.75rem;
-  background: var(--white);
-  color: var(--gray-dark1);
-  border: 1px solid var(--gray-light1);
-  border-radius: 6px;
+  padding: 0.75rem;
+  background: #f1f5f9;
+  color: #64748b;
+  border: 2px solid transparent;
+  border-radius: 10px;
   font-size: 0.875rem;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
-  transition: var(--transition-fast);
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
+  transition: all 0.2s ease;
   font-family: inherit;
 }
 
-.launchButton:hover {
-  background: var(--gray-light3);
-  border-color: var(--gray-base);
-  color: var(--black);
+.launchButton:hover:not(:disabled) {
   transform: translateY(-1px);
+  background: #e2e8f0;
 }
 
-.scenarioCard.selected .launchButton {
-  background: var(--green-light3);
-  color: var(--green-dark2);
-  border-color: var(--green-light2);
-  font-weight: 600;
+.launchButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
-.scenarioCard.selected .launchButton:hover {
-  background: var(--green-light2);
-  border-color: var(--green-dark1);
+.launchButton.active {
+  background: linear-gradient(135deg, #00a35c 0%, #00684a 100%);
+  color: white;
+  border-color: #00a35c;
+}
+
+.launchButton.active:hover:not(:disabled) {
+  box-shadow: 0 4px 12px rgba(0, 163, 92, 0.3);
+  transform: translateY(-2px);
+}
+
+.launchButton.executing {
+  background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+  color: white;
+  cursor: wait;
+}
+
+.spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }

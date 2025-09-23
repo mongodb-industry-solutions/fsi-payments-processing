@@ -10,6 +10,7 @@ by_claude/
 **/task-def.json
 
 # Environments
+backend/converter_service_copy
 .env
 .env*
 .venv
@@ -33,6 +34,8 @@ backend/converter_service/tests
 **/config.yaml
 fix_*.py
 DEMO_*.md
+test_*.py
+*_PLAN.md
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -378,3 +381,10 @@ backend/converter_service/scripts/populate_semantic_patterns.py
 frontend/app/payment-builder/AUTO_CONFIG_INTEGRATION_PLAN.md
 frontend/app/payment-builder/AUTOCONFIG_ACTUAL_IMPLEMENTATION.md
 frontend/app/payment-builder/AUTOCONFIG_IMPLEMENTATION_PHASE_PLAN.md
+PAYMENT_CONVERTER_ANALYSIS_AND_STRATEGY.md
+test_conversion.sh
+backend/converter_service/test_mt103_to_chaps.sh
+backend/converter_service/test_mt103_to_json.sh
+backend/converter_service/test_multihop_output.sh
+backend/converter_service/test_router.json
+backend/converter_service/test_simple.json

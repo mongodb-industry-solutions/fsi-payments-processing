@@ -260,3 +260,16 @@
   font-weight: 600;
   color: #48bb78;
 }
+
+/* Clickable state for USDC */
+.clickable {
+  cursor: pointer;
+}
+
+.clickable:hover {
+  transform: translateY(-3px) scale(1.03);
+  box-shadow:
+    0 20px 60px rgba(102, 126, 234, 0.8),
+    0 0 120px rgba(118, 75, 162, 0.4),
+    inset 0 0 50px rgba(255, 255, 255, 0.3);
+}

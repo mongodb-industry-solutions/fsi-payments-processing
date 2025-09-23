@@ -1,0 +1,657 @@
+/* Backdrop */
+.backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 99999;
+  animation: fadeIn 0.2s ease-out;
+  pointer-events: all;
+}
+
+/* Modal Container */
+.modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  border-radius: 12px;
+  width: 600px;
+  max-width: 90vw;
+  max-height: 80vh;
+  z-index: 100000;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  animation: slideUp 0.3s ease-out;
+  cursor: default !important;
+  pointer-events: all;
+}
+
+/* Modal Header */
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+  color: white;
+}
+
+.headerContent {
+  flex: 1;
+}
+
+.headerContent h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: white;
+}
+
+.formatName {
+  margin: 2px 0 0 0;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 400;
+}
+
+.closeButton {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.closeButton:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Tab Navigation */
+.tabNav {
+  display: flex;
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.tab {
+  flex: 1;
+  padding: 12px 16px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: #6b7280;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.tab:hover {
+  color: #374151;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.activeTab {
+  color: #764ba2;
+  border-bottom-color: #764ba2;
+  background: white;
+}
+
+/* Modal Body */
+.modalBody {
+  padding: 20px;
+  overflow-y: auto;
+  max-height: calc(80vh - 120px);
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Sections */
+.section {
+  margin-bottom: 24px;
+}
+
+.section:last-child {
+  margin-bottom: 0;
+}
+
+.section h3 {
+  margin: 0 0 10px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.section p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #4b5563;
+}
+
+/* About Tab Content */
+.aboutContent {
+  animation: fadeIn 0.2s ease;
+}
+
+.usageList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.usageList li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 6px 0;
+  font-size: 13px;
+  color: #4b5563;
+  line-height: 1.4;
+}
+
+.bullet {
+  color: #764ba2;
+  font-weight: bold;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.infoBox {
+  display: flex;
+  gap: 10px;
+  padding: 12px;
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 6px;
+  margin-top: 16px;
+}
+
+.infoIcon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.infoBox p {
+  margin: 0;
+  font-size: 12px;
+  color: #0c4a6e;
+  line-height: 1.4;
+}
+
+.infoBox strong {
+  font-weight: 600;
+  color: #075985;
+}
+
+/* Format Tab Content */
+.formatContent {
+  animation: fadeIn 0.2s ease;
+}
+
+.codeBlock {
+  background: #1e1e1e;
+  border-radius: 6px;
+  padding: 16px;
+  overflow-x: auto;
+  margin-top: 10px;
+}
+
+.codeBlock pre {
+  margin: 0;
+  font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
+  font-size: 11px;
+  line-height: 1.5;
+  color: #d4d4d4;
+  white-space: pre;
+}
+
+.note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px;
+  background: #fef3c7;
+  border: 1px solid #fbbf24;
+  border-radius: 6px;
+  margin-top: 12px;
+}
+
+.noteIcon {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.note span:last-child {
+  font-size: 12px;
+  color: #92400e;
+  line-height: 1.4;
+}
+
+/* MongoDB Tab Content */
+.mongoContent {
+  animation: fadeIn 0.2s ease;
+  cursor: default !important;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.pipelineDesc {
+  font-size: 13px;
+  color: #4b5563;
+  line-height: 1.5;
+  margin: 0 0 16px 0;
+}
+
+/* MongoDB Document Display */
+.mongoDocument {
+  background: #1e1e1e;
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 16px;
+  height: 350px;
+  max-height: 350px;
+  overflow-y: auto;
+  overflow-x: auto;
+  position: relative;
+  cursor: default;
+  user-select: text;
+}
+
+/* Custom scrollbar for MongoDB document */
+.mongoDocument::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.mongoDocument::-webkit-scrollbar-track {
+  background: #2d2d2d;
+  border-radius: 4px;
+}
+
+.mongoDocument::-webkit-scrollbar-thumb {
+  background: #4a4a4a;
+  border-radius: 4px;
+}
+
+.mongoDocument::-webkit-scrollbar-thumb:hover {
+  background: #5a5a5a;
+}
+
+.mongoDocument::-webkit-scrollbar-corner {
+  background: #2d2d2d;
+}
+
+.jsonContent {
+  margin: 0;
+  font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
+  font-size: 11px;
+  line-height: 1.4;
+  color: #d4d4d4;
+  white-space: pre;
+  word-wrap: break-word;
+  min-width: 0;
+  cursor: text !important;
+  user-select: text;
+}
+
+.loading {
+  text-align: center;
+  padding: 20px;
+  color: #6b7280;
+  font-style: italic;
+}
+
+.noConfig {
+  text-align: center;
+  padding: 20px;
+  color: #9ca3af;
+}
+
+.noConfig p {
+  margin: 0 0 8px 0;
+}
+
+.hint {
+  font-size: 12px;
+  color: #6b7280;
+  font-style: italic;
+}
+
+.documentHeader {
+  color: #4caf50;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #333;
+}
+
+.documentId {
+  color: #4caf50;
+  font-weight: 500;
+}
+
+.configSection {
+  margin-bottom: 16px;
+}
+
+.configSectionHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.configKey {
+  color: #fbbf24;
+  font-weight: bold;
+}
+
+.configType {
+  color: #666;
+  font-style: italic;
+}
+
+.configContent {
+  margin-left: 16px;
+}
+
+/* Parser Fields */
+.parserField {
+  margin-bottom: 8px;
+}
+
+.fieldKey {
+  color: #38bdf8;
+  font-weight: 500;
+}
+
+.fieldDetails {
+  margin-left: 16px;
+  margin-top: 2px;
+}
+
+.fieldPattern {
+  color: #a78bfa;
+  font-size: 10px;
+}
+
+.fieldName {
+  color: #86efac;
+  font-size: 10px;
+  margin-top: 2px;
+}
+
+/* Mapping Fields */
+.mappingField {
+  margin-bottom: 10px;
+  padding: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+}
+
+.mappingHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mappingSource {
+  color: #38bdf8;
+  font-weight: 500;
+}
+
+.mappingArrow {
+  color: #666;
+}
+
+.mappingTarget {
+  color: #86efac;
+}
+
+.mappingMeta {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.laneBadge {
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.laneBadge.rules {
+  background: rgba(34, 197, 94, 0.2);
+  color: #86efac;
+}
+
+.laneBadge.ai {
+  background: rgba(168, 85, 247, 0.2);
+  color: #c084fc;
+}
+
+.transformBadge {
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 9px;
+  background: rgba(251, 191, 36, 0.2);
+  color: #fde68a;
+}
+
+/* Builder Fields */
+.builderField {
+  margin-bottom: 4px;
+}
+
+.builderKey {
+  color: #fbbf24;
+}
+
+.builderValue {
+  color: #a5f3fc;
+  margin-left: 8px;
+}
+
+/* Stats Section */
+.statsSection {
+  display: flex;
+  gap: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #333;
+  margin-top: 12px;
+}
+
+.stat {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.statLabel {
+  color: #888;
+  font-size: 10px;
+}
+
+.statValue {
+  color: #4caf50;
+  font-weight: bold;
+  font-size: 11px;
+}
+
+.configCard {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 14px;
+  margin-bottom: 12px;
+}
+
+.configHeader {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+
+.stepNumber {
+  width: 24px;
+  height: 24px;
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.configHeader h4 {
+  margin: 0 0 2px 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.configTitle {
+  margin: 0;
+  font-size: 12px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.configDesc {
+  font-size: 12px;
+  color: #4b5563;
+  line-height: 1.4;
+  margin: 0 0 8px 34px;
+}
+
+.example {
+  display: inline-block;
+  background: #1e1e1e;
+  color: #00ed64;
+  padding: 3px 6px;
+  border-radius: 4px;
+  font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
+  font-size: 11px;
+  margin-left: 34px;
+}
+
+.lanes {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-left: 34px;
+}
+
+.lane {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #4b5563;
+}
+
+.laneIcon {
+  font-size: 14px;
+}
+
+.laneLabel {
+  font-weight: 500;
+  color: #374151;
+}
+
+.mongoNote {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 12px;
+  background: #e8f5e9;
+  border: 1px solid #4caf50;
+  border-radius: 6px;
+  margin-top: 16px;
+}
+
+.mongoIcon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.mongoNote p {
+  margin: 0;
+  font-size: 12px;
+  color: #1b5e20;
+  line-height: 1.4;
+}
+
+.mongoNote strong {
+  font-weight: 600;
+  color: #2e7d32;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -45%);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .modal {
+    width: 95%;
+    max-height: 90vh;
+  }
+
+  .modalBody {
+    padding: 16px;
+    max-height: calc(90vh - 120px);
+  }
+
+  .tab {
+    padding: 10px 8px;
+    font-size: 12px;
+  }
+
+  .section h3 {
+    font-size: 13px;
+  }
+}
