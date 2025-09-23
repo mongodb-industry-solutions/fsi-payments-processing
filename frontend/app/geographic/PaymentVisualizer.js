@@ -18,9 +18,8 @@ import NodeDetailsPanel from './components/NodeDetailsPanel';
 import EnhancedCountryNode from './components/EnhancedCountryNode';
 import CryptoNode from './components/CryptoNode';
 import JsonBridgeNode from './components/JsonBridgeNode';
-import InfoCallout from './components/InfoCallout';
 import ProcessingPipelinePanel from './components/ProcessingPipelinePanel';
-import { getLayoutedElements, getRadialLayout, determineLayoutStrategy } from './utils/layoutUtils';
+import { getLayoutedElements, getRadialLayout, getRoutingTreeLayout, determineLayoutStrategy } from './utils/layoutUtils';
 import { convertPayment } from './services/conversionService';
 import styles from './PaymentVisualizer.module.css';
 
@@ -68,6 +67,8 @@ function PaymentVisualizerFlow() {
   const [showResultsSummary, setShowResultsSummary] = useState(false);
   const [resultsMinimized, setResultsMinimized] = useState(false);
   const [jsonBridgeData, setJsonBridgeData] = useState({});
+  const [bfsState, setBfsState] = useState({ queue: [], visited: [], current: null });
+  const [selectedPath, setSelectedPath] = useState(null);
   const { fitView } = useReactFlow();
 
   const onConnect = useCallback((params) => setEdges((eds) => addEdge(params, eds)), [setEdges]);
@@ -101,7 +102,162 @@ function PaymentVisualizerFlow() {
     const layoutStrategy = determineLayoutStrategy(scenario);
 
     // Build nodes based on scenario type
-    if (scenario.parallel && scenario.hops.some(h => h.isHub)) {
+    if (scenario.isRoutingScenario && scenario.routingNodes) {
+      // Tree-based routing visualization for BFS path discovery
+      const { source, destination, paths } = scenario.routingNodes;
+
+      // Add source node
+      initialNodes.push({
+        id: source.id,
+        type: 'country',
+        position: { x: 0, y: 0 },
+        data: {
+          ...source,
+          mongoConfig: true,
+          status: executionProgress[source.id] || 'idle',
+          isSource: true
+        }
+      });
+
+      // Add destination node
+      initialNodes.push({
+        id: destination.id,
+        type: 'country',
+        position: { x: 0, y: 0 },
+        data: {
+          ...destination,
+          mongoConfig: true,
+          status: executionProgress[destination.id] || 'idle',
+          isDestination: true
+        }
+      });
+
+      // Add all intermediate nodes from all paths
+      paths.forEach((path, pathIndex) => {
+        path.nodes.forEach(node => {
+          const nodeType = node.isCrypto ? 'crypto' : 'country';
+          initialNodes.push({
+            id: node.id,
+            type: nodeType,
+            position: { x: 0, y: 0 },
+            data: {
+              ...node,
+              mongoConfig: true,
+              status: executionProgress[node.id] || 'idle',
+              isIntermediate: true,
+              pathId: path.id,
+              pathAvailable: path.available,
+              pathOptimal: path.optimal
+            }
+          });
+        });
+      });
+
+      // Create edges for each path
+      paths.forEach((path, pathIndex) => {
+        const isOptimal = path.optimal;
+        const isAvailable = path.available;
+
+        // Define edge style based on path status
+        const pathEdgeStyle = isAvailable ?
+          (isOptimal ?
+            {
+              ...edgeOptions,
+              style: {
+                stroke: '#00A35C',
+                strokeWidth: 3,
+                strokeDasharray: '0'
+              },
+              markerEnd: {
+                type: MarkerType.ArrowClosed,
+                color: '#00A35C',
+              }
+            } : edgeOptions)
+          : {
+            ...edgeOptions,
+            animated: false,
+            style: {
+              stroke: '#CBD5E1',
+              strokeWidth: 2,
+              strokeDasharray: '5,5'
+            },
+            markerEnd: {
+              type: MarkerType.ArrowClosed,
+              color: '#CBD5E1',
+            }
+          };
+
+        const pathNodes = path.nodes;
+
+        // Edge from source to first node
+        if (pathNodes.length > 0) {
+          const firstNodeId = `${pathNodes[0].id}_path${pathIndex}`;
+          initialEdges.push({
+            id: `${source.id}-${firstNodeId}`,
+            source: source.id,
+            target: firstNodeId,
+            ...pathEdgeStyle,
+            label: isOptimal ? '✅' : (isAvailable ? '' : '❌'),
+            labelStyle: {
+              fontSize: 11,
+              fontWeight: 600,
+              fill: isAvailable ? '#00A35C' : '#94A3B8'
+            }
+          });
+        }
+
+        // Edges between intermediate nodes in the path
+        for (let i = 0; i < pathNodes.length - 1; i++) {
+          const currentNodeId = `${pathNodes[i].id}_path${pathIndex}`;
+          const nextNodeId = `${pathNodes[i + 1].id}_path${pathIndex}`;
+          initialEdges.push({
+            id: `${currentNodeId}-${nextNodeId}`,
+            source: currentNodeId,
+            target: nextNodeId,
+            ...pathEdgeStyle,
+            labelStyle: { fontSize: 11, fontWeight: 600 }
+          });
+        }
+
+        // Edge from last node to destination
+        if (pathNodes.length > 0) {
+          const lastNode = pathNodes[pathNodes.length - 1];
+          const lastNodeId = `${lastNode.id}_path${pathIndex}`;
+          initialEdges.push({
+            id: `${lastNodeId}-${destination.id}`,
+            source: lastNodeId,
+            target: destination.id,
+            ...pathEdgeStyle,
+            labelStyle: { fontSize: 11, fontWeight: 600 }
+          });
+        }
+      });
+
+      // Apply routing tree layout with multi-hop support
+      const { nodes: layoutedNodes, edges: layoutedEdges } = getRoutingTreeLayout(
+        initialNodes,
+        initialEdges,
+        {
+          sourceId: source.id,
+          destinationId: destination.id,
+          paths: paths
+        }
+      );
+
+      setNodes(layoutedNodes);
+      setEdges(layoutedEdges);
+
+      // Auto-fit view after layout with better padding for complex graph
+      setTimeout(() => {
+        fitView({
+          padding: 0.1,
+          duration: 800,
+          maxZoom: 0.7,
+          minZoom: 0.3
+        });
+      }, 100);
+
+    } else if (scenario.parallel && scenario.hops.some(h => h.isHub)) {
       // Hub and spoke pattern - keep hub in center, others around it
       const hubNode = scenario.hops.find(h => h.isHub);
       const spokeNodes = scenario.hops.filter(h => !h.isHub);
@@ -152,9 +308,16 @@ function PaymentVisualizerFlow() {
       setNodes(layoutedNodes);
       setEdges(layoutedEdges);
 
-      // Auto-fit view after layout
+      // Auto-fit view after layout with adjusted zoom for small node counts
       setTimeout(() => {
-        fitView({ padding: 0.2, duration: 800 });
+        const nodeCount = layoutedNodes.length;
+        const zoomPadding = nodeCount <= 2 ? 0.5 : nodeCount <= 3 ? 0.35 : 0.2;
+
+        fitView({
+          padding: zoomPadding,
+          duration: 800,
+          maxZoom: nodeCount <= 2 ? 0.5 : nodeCount <= 3 ? 0.65 : 0.8
+        });
       }, 100);
 
     } else {
@@ -232,9 +395,16 @@ function PaymentVisualizerFlow() {
       setNodes(layoutedNodes);
       setEdges(layoutedEdges);
 
-      // Auto-fit view after layout
+      // Auto-fit view after layout with adjusted zoom for small node counts
       setTimeout(() => {
-        fitView({ padding: 0.2, duration: 800 });
+        const nodeCount = layoutedNodes.length;
+        const zoomPadding = nodeCount <= 2 ? 0.5 : nodeCount <= 3 ? 0.35 : 0.2;
+
+        fitView({
+          padding: zoomPadding,
+          duration: 800,
+          maxZoom: nodeCount <= 2 ? 0.5 : nodeCount <= 3 ? 0.65 : 0.8
+        });
       }, 100);
     }
   };
@@ -260,6 +430,73 @@ function PaymentVisualizerFlow() {
     const results = [];
     let previousOutput = null;
     const bridgeData = {};
+
+    // Handle routing scenario with BFS animation
+    if (selectedScenario.isRoutingScenario) {
+      // BFS algorithm animation
+      const bfsSteps = [
+        { queue: ['usa'], current: 'usa', visited: [] },
+        { queue: ['australia', 'singapore', 'newzealand', 'direct'], current: 'usa', visited: ['usa'] },
+        { queue: ['singapore', 'newzealand', 'direct'], current: 'australia', visited: ['usa', 'australia'] },
+        { queue: ['newzealand', 'direct'], current: 'singapore', visited: ['usa', 'australia', 'singapore'] },
+        { queue: ['direct'], current: 'newzealand', visited: ['usa', 'australia', 'singapore', 'newzealand'] },
+        { queue: [], current: 'direct', visited: ['usa', 'australia', 'singapore', 'newzealand', 'direct'] },
+        { queue: [], current: null, visited: ['usa', 'australia', 'singapore', 'newzealand', 'direct'], selected: 'australia' }
+      ];
+
+      // Animate BFS steps
+      for (let step of bfsSteps) {
+        setBfsState(step);
+
+        // Update node progress
+        const newProgress = {};
+        step.visited.forEach(nodeId => {
+          newProgress[nodeId] = 'completed';
+        });
+        if (step.current) {
+          newProgress[step.current] = 'processing';
+        }
+        if (step.selected) {
+          newProgress[step.selected] = 'selected';
+          setSelectedPath(step.selected);
+        }
+        setExecutionProgress(newProgress);
+
+        await new Promise(resolve => setTimeout(resolve, 800));
+      }
+
+      // After BFS completes, highlight the optimal path
+      setExecutionProgress({
+        usa: 'completed',
+        australia: 'selected',
+        fiji: 'completed'
+      });
+
+      // Add routing results
+      results.push({
+        from: 'MT103',
+        to: 'NPP',
+        via: 'Australia',
+        processingTime: 2.5,
+        processingStats: { rules_lane: 45, ai_lane: 8 },
+        step: 1
+      });
+
+      results.push({
+        from: 'NPP',
+        to: 'FJD',
+        via: 'Fiji Banking',
+        processingTime: 1.8,
+        processingStats: { rules_lane: 38, ai_lane: 5 },
+        step: 2
+      });
+
+      setConversionResults(results);
+      setCurrentStep(null);
+      setIsExecuting(false);
+      setShowResultsSummary(true);
+      return;
+    }
 
     // Check if this scenario supports real API conversion
     const useRealAPI = selectedScenario.sampleMessage && selectedScenario.conversions[0]?.useRealAPI;
@@ -479,41 +716,37 @@ function PaymentVisualizerFlow() {
       />
 
       <div className={styles.mainCanvas}>
-        {selectedScenario && selectedScenario.mongoDbAdvantages && (
-          <div className={styles.infoSection}>
-            <InfoCallout
-              title={selectedScenario.mongoDbAdvantages.title}
-              variant="info"
-            >
-              {selectedScenario.mongoDbAdvantages.message}
-            </InfoCallout>
-          </div>
-        )}
-
         <div className={styles.flowContainer}>
-          <ReactFlow
-            nodes={nodes}
-            edges={edges}
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
-            onConnect={onConnect}
-            onNodeClick={onNodeClick}
-            nodeTypes={nodeTypes}
-            fitView
-            fitViewOptions={{
-              padding: 0.15,
-              includeHiddenNodes: false,
-              maxZoom: 1.5,
-              minZoom: 0.2
-            }}
-            defaultViewport={{ x: 0, y: 0, zoom: 0.8 }}
-            minZoom={0.1}
-            maxZoom={2}
-            attributionPosition="bottom-left"
-          >
-            <Background variant="dots" gap={12} size={1} />
-            <Controls position="top-right" />
-          </ReactFlow>
+          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
+            <ReactFlow
+              nodes={nodes}
+              edges={edges}
+              onNodesChange={onNodesChange}
+              onEdgesChange={onEdgesChange}
+              onConnect={onConnect}
+              onNodeClick={onNodeClick}
+              nodeTypes={nodeTypes}
+              fitView
+              fitViewOptions={{
+                padding: 0.3,
+                includeHiddenNodes: false,
+                maxZoom: 1.0,
+                minZoom: 0.5,
+                duration: 800
+              }}
+              defaultViewport={{ x: 200, y: 50, zoom: 0.65 }}
+              minZoom={0.1}
+              maxZoom={2}
+              attributionPosition="bottom-left"
+              translateExtent={[[-500, -300], [2500, 600]]}
+              nodeExtent={[[-200, -100], [2200, 550]]}
+              zoomOnScroll={true}
+              panOnDrag={true}
+            >
+              <Background variant="dots" gap={12} size={1} />
+              <Controls position="top-right" />
+            </ReactFlow>
+          </div>
         </div>
 
         {!selectedScenario && (

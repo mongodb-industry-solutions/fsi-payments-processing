@@ -7,7 +7,47 @@
   border-top: 2px solid #E8EDEB;
   padding: 20px 40px;
   box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
-  z-index: 10;
+  z-index: 1000; /* Increased to ensure panel stays above ReactFlow */
+}
+
+/* MongoDB Advantages Section - Flat Design with MongoDB Colors */
+.mongoAdvantages {
+  background: linear-gradient(135deg, #F0F9F4 0%, #E8F5E9 100%);
+  border-left: 3px solid #00ED64;
+  padding: 14px 20px;
+  margin-bottom: 20px;
+  border-radius: 6px;
+}
+
+.leafIcon {
+  font-size: 24px;
+  color: #13AA52;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.advantagesContent {
+  flex: 1;
+}
+
+.advantagesHeader {
+  margin-bottom: 6px;
+}
+
+.advantagesHeader h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #00684A;
+  letter-spacing: -0.02em;
+}
+
+.advantagesText {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #00684A;
+  opacity: 0.85;
 }
 
 .pipelineHeader {
@@ -15,6 +55,8 @@
   align-items: center;
   gap: 8px;
   margin-bottom: 20px;
+  position: relative;
+  z-index: 1001; /* Ensure header stays on top */
 }
 
 .mongoIcon {

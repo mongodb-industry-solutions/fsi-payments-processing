@@ -7,6 +7,40 @@ import { SIMPLIFIED_SCENARIOS } from '../SimplifiedScenarios';
 export default function ScenarioSidebar({ onSelectScenario, selectedScenario, onExecuteScenario, isExecuting }) {
   const scenarios = Object.values(SIMPLIFIED_SCENARIOS);
 
+  // Sort scenarios to put remote island routing at the bottom
+  const sortedScenarios = scenarios.sort((a, b) => {
+    if (a.id === 'remote-island-routing') return 1;
+    if (b.id === 'remote-island-routing') return -1;
+    return 0;
+  });
+
+  // Helper function to extract source and target formats
+  const getFormatDisplay = (scenario) => {
+    // Helper to shorten format names if too long
+    const shortenFormat = (format) => {
+      const abbreviations = {
+        'TARGET2': 'T2',
+        'pacs.008': 'pacs008',
+        'pacs.009': 'pacs009'
+      };
+      return abbreviations[format] || format;
+    };
+
+    if (scenario.isRoutingScenario && scenario.routingNodes) {
+      // For routing scenarios, use source and destination formats
+      const sourceFormat = shortenFormat(scenario.routingNodes.source.format);
+      const targetFormat = shortenFormat(scenario.routingNodes.destination.format);
+      return `${sourceFormat}→${targetFormat}`;
+    } else if (scenario.hops && scenario.hops.length > 0) {
+      // For regular scenarios, use first and last hop formats
+      const sourceFormat = shortenFormat(scenario.hops[0].format);
+      const targetFormat = shortenFormat(scenario.hops[scenario.hops.length - 1].format);
+      return `${sourceFormat}→${targetFormat}`;
+    }
+    // Fallback
+    return 'N/A';
+  };
+
   const handleButtonClick = (event, scenario) => {
     event.stopPropagation();
     if (selectedScenario?.id === scenario.id && onExecuteScenario) {
@@ -34,7 +68,7 @@ export default function ScenarioSidebar({ onSelectScenario, selectedScenario, on
 
         {/* Mini visualization preview */}
         <div className={styles.miniFlow}>
-          {scenario.hops.slice(0, 4).map((hop, idx) => (
+          {scenario.hops && scenario.hops.slice(0, 4).map((hop, idx) => (
             <div key={hop.id} className={styles.miniNode}>
               <span className={styles.miniIcon}>{hop.icon}</span>
               {idx < Math.min(3, scenario.hops.length - 1) && (
@@ -42,7 +76,7 @@ export default function ScenarioSidebar({ onSelectScenario, selectedScenario, on
               )}
             </div>
           ))}
-          {scenario.hops.length > 4 && <span className={styles.moreNodes}>+{scenario.hops.length - 4}</span>}
+          {scenario.hops && scenario.hops.length > 4 && <span className={styles.moreNodes}>+{scenario.hops.length - 4}</span>}
         </div>
 
         <div className={styles.scenarioStats}>
@@ -51,7 +85,7 @@ export default function ScenarioSidebar({ onSelectScenario, selectedScenario, on
               <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.5"/>
               <path d="M2 8H14M8 2C8 2 5 5 5 8C5 11 8 14 8 14M8 2C8 2 11 5 11 8C11 11 8 14 8 14" stroke="currentColor" strokeWidth="1.5"/>
             </svg>
-            <span className={styles.statValue}>{scenario.hops.length}</span>
+            <span className={styles.statValue}>{scenario.hops ? scenario.hops.length : 0}</span>
             <span className={styles.statLabel}>nodes</span>
           </div>
           <div className={styles.stat}>
@@ -64,11 +98,10 @@ export default function ScenarioSidebar({ onSelectScenario, selectedScenario, on
           </div>
           <div className={styles.stat}>
             <svg className={styles.statIcon} width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.5"/>
-              <path d="M8 4V8L10 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+              <path d="M4 4L2 8L4 12M12 4L14 8L12 12M9 2L7 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
-            <span className={styles.statValue}>{(scenario.totalTime/1000).toFixed(0)}s</span>
-            <span className={styles.statLabel}>duration</span>
+            <span className={styles.statValue}>{getFormatDisplay(scenario)}</span>
+            <span className={styles.statLabel}>formats</span>
           </div>
         </div>
 
@@ -120,7 +153,7 @@ export default function ScenarioSidebar({ onSelectScenario, selectedScenario, on
       </div>
 
       <div className={styles.scenarioList}>
-        {scenarios.map(renderScenarioCard)}
+        {sortedScenarios.map(renderScenarioCard)}
       </div>
     </div>
   );

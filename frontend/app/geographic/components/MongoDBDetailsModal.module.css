@@ -647,3 +647,305 @@
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
+/* Routing Section - BFS Path Discovery */
+.routingSection {
+  margin-top: 32px;
+  padding: 24px;
+  background: linear-gradient(135deg, #F0F9FF 0%, #F8FAFC 100%);
+  border-radius: 12px;
+  border: 1px solid #BAE6FD;
+}
+
+.routingSection h3 {
+  margin: 0 0 24px 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #0C4A6E;
+}
+
+/* BFS Visualization */
+.bfsVisualization {
+  background: #1E293B;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 24px;
+  color: white;
+}
+
+.bfsVisualization h4 {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  color: #38BDF8;
+  font-weight: 600;
+}
+
+.algorithmSteps {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.algorithmStep {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+}
+
+.stepNumber {
+  width: 28px;
+  height: 28px;
+  background: #38BDF8;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.stepContent {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+}
+
+.stateItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stateLabel {
+  color: #94A3B8;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  min-width: 60px;
+}
+
+.queue,
+.current,
+.visited {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  flex: 1;
+}
+
+.queueNode,
+.visitedNode {
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.queueNode {
+  background: #3B82F6;
+  color: white;
+}
+
+.currentNode {
+  padding: 3px 10px;
+  background: #EF4444;
+  color: white;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.visitedNode {
+  background: #10B981;
+  color: white;
+}
+
+.empty {
+  color: #64748B;
+  font-style: italic;
+  font-size: 11px;
+}
+
+/* Path Comparison */
+.pathComparison {
+  margin-top: 24px;
+}
+
+.pathComparison h4 {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #0C4A6E;
+}
+
+.pathGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.pathCard {
+  background: white;
+  border: 2px solid #E5E7EB;
+  border-radius: 12px;
+  padding: 16px;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.pathCard:hover {
+  border-color: #9CA3AF;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.pathCard.selected {
+  border-color: #38BDF8;
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.05) 0%, rgba(56, 189, 248, 0.02) 100%);
+}
+
+.pathCard.unavailable {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.pathCard.unavailable:hover {
+  transform: none;
+  border-color: #E5E7EB;
+}
+
+.pathHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.pathName {
+  font-weight: 600;
+  font-size: 14px;
+  color: #1E293B;
+}
+
+.pathBadge {
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  background: #10B981;
+  color: white;
+}
+
+.selectedBadge {
+  background: #38BDF8;
+}
+
+.unavailableBadge {
+  background: #EF4444;
+}
+
+.pathRoute {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.routeNode {
+  padding: 4px 8px;
+  background: #F3F4F6;
+  border: 1px solid #E5E7EB;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.routeArrow {
+  color: #9CA3AF;
+  font-size: 12px;
+  margin: 0 2px;
+}
+
+.pathMetrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.pathMetric {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.metricIcon {
+  font-size: 14px;
+}
+
+.metricValue {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.pathReason {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #6B7280;
+  font-style: italic;
+  padding-top: 12px;
+  border-top: 1px solid #F3F4F6;
+}
+
+.routingDecision {
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+  background: #E0F2FE;
+  border-radius: 12px;
+  border: 1px solid #38BDF8;
+  align-items: flex-start;
+}
+
+.decisionIcon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.decisionText {
+  flex: 1;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #1E293B;
+}
+
+.decisionText strong {
+  color: #0C4A6E;
+  font-weight: 600;
+}
+
+/* Responsive for Routing Section */
+@media (max-width: 768px) {
+  .pathGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .stepContent {
+    grid-template-columns: 1fr;
+  }
+
+  .pathMetrics {
+    grid-template-columns: 1fr;
+  }
+}

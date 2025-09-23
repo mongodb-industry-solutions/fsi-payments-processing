@@ -1,4 +1,226 @@
 export const SIMPLIFIED_SCENARIOS = {
+  remoteIslandRouting: {
+    id: 'remote-island-routing',
+    name: '🏝️ Remote Island Routing',
+    description: 'USA to Fiji - Finding optimal path to remote Pacific island',
+    complexity: 'advanced',
+    isRoutingScenario: true,  // Special flag for tree-based routing visualization
+
+    // Define all nodes in the routing tree with varying hop counts
+    routingNodes: {
+      source: { id: 'usa', country: 'USA', format: 'MT103', icon: '🇺🇸', city: 'New York' },
+      destination: { id: 'fiji', country: 'Fiji', format: 'FJD', icon: '🇫🇯', city: 'Suva' },
+
+      // Define all paths with different hop counts
+      paths: [
+        // Path 1: 2 hops (USA -> Australia -> Fiji) - AVAILABLE/OPTIMAL
+        {
+          id: 'path1',
+          name: 'Via Australia',
+          available: true,
+          optimal: true,
+          nodes: [
+            { id: 'australia', country: 'Australia', format: 'NPP', icon: '🇦🇺', city: 'Sydney' }
+          ]
+        },
+
+        // Path 2: 3 hops (USA -> UK -> Singapore -> Fiji) - UNAVAILABLE
+        {
+          id: 'path2',
+          name: 'Via Europe-Asia',
+          available: false,
+          optimal: false,
+          nodes: [
+            { id: 'uk', country: 'UK', format: 'CHAPS', icon: '🇬🇧', city: 'London' },
+            { id: 'singapore', country: 'Singapore', format: 'FAST', icon: '🇸🇬', city: 'Singapore' }
+          ]
+        },
+
+        // Path 3: 4 hops (USA -> Canada -> Japan -> New Zealand -> Fiji) - UNAVAILABLE
+        {
+          id: 'path3',
+          name: 'Via Pacific Ring',
+          available: false,
+          optimal: false,
+          nodes: [
+            { id: 'canada', country: 'Canada', format: 'Lynx', icon: '🇨🇦', city: 'Toronto' },
+            { id: 'japan', country: 'Japan', format: 'Zengin', icon: '🇯🇵', city: 'Tokyo' },
+            { id: 'newzealand', country: 'New Zealand', format: 'SBI', icon: '🇳🇿', city: 'Auckland' }
+          ]
+        },
+
+        // Path 4: 2 hops (USA -> USDC Stablecoin -> Fiji) - UNAVAILABLE
+        {
+          id: 'path4',
+          name: 'Via Stablecoin',
+          available: false,
+          optimal: false,
+          nodes: [
+            { id: 'crypto', country: 'Blockchain', format: 'USDC', icon: '🪙', city: 'Polygon', isCrypto: true }
+          ]
+        }
+      ]
+    },
+
+    // Keep existing hops for the selected/optimal path
+    hops: [
+      { id: 'usa', country: 'USA', format: 'MT103', icon: '🇺🇸', city: 'New York' },
+      { id: 'australia', country: 'Australia', format: 'NPP', icon: '🇦🇺', city: 'Sydney' },
+      { id: 'fiji', country: 'Fiji', format: 'FJD', icon: '🇫🇯', city: 'Suva' }
+    ],
+    conversions: [
+      {
+        from: 'MT103',
+        to: 'JSON',
+        location: 'US Gateway',
+        time: 1500,
+        description: 'SWIFT extraction',
+        details: 'Converting MT103 to universal JSON',
+        useRealAPI: true
+      },
+      {
+        from: 'JSON',
+        to: 'NPP',
+        location: 'Sydney Hub',
+        time: 2000,
+        description: 'Australia routing',
+        details: 'JSON to Australian NPP format',
+        useRealAPI: true
+      },
+      {
+        from: 'NPP',
+        to: 'JSON',
+        location: 'Pacific Bridge',
+        time: 1500,
+        description: 'Pacific crossing',
+        details: 'NPP back to universal JSON',
+        useRealAPI: true
+      },
+      {
+        from: 'JSON',
+        to: 'FJD',
+        location: 'Fiji Gateway',
+        time: 1000,
+        description: 'Local delivery',
+        details: 'JSON to Fiji domestic format',
+        useRealAPI: true
+      }
+    ],
+    totalTime: 6000,
+    sampleMessage: `{1:F01CHASUS33XXXX0000000000}{2:I103DEUTDEFFXXXXN}{3:{108:PACIFIC}}{4:
+:20:FIJI001
+:23B:CRED
+:32A:241215USD5000,00
+:50K:/US64209876543210987654
+SILICON VALLEY TECH INC
+2000 TECH BOULEVARD
+SAN FRANCISCO CA 94105
+USA
+:52A:CHASUS33XXX
+:53A:AUSBAU2SXXX
+:59:/FJ89370400440532013000
+PACIFIC SOFTWARE SOLUTIONS
+45 VICTORIA PARADE
+SUVA
+FIJI
+:70:CONTRACTOR PAYMENT
+SOFTWARE DEVELOPMENT SERVICES
+INVOICE INV-FJ-2024-089
+:71A:SHA
+:72:/REC/NOTIFY FINANCE@PACIFICSOFTWARE.FJ
+-}`,
+    mongoDbAdvantages: {
+      title: '🧭 MongoDB: Intelligent Path Finding',
+      message: "MongoDB's graph capabilities enable BFS routing to find optimal paths even to remote locations with no direct payment rails. The system evaluates multiple paths based on cost, speed, and reliability."
+    },
+    pipelineStory: {
+      source: 'MT103 from Silicon Valley tech company',
+      mongodb: 'BFS algorithm finds path through Australia banking hub',
+      target: 'Delivers as FJD format to Fiji contractor',
+      story: 'No direct USA-Fiji payment rail exists. MongoDB router discovers the optimal path through Australia, leveraging historical Commonwealth banking relationships.'
+    },
+    routingPaths: {
+      working: {
+        name: 'Via Australia (Selected)',
+        path: ['USA', 'JSON', 'Australia', 'JSON', 'Fiji'],
+        cost: 5,
+        time: 6,
+        reliability: 95,
+        reason: 'Australia-Fiji banking corridor established 1970s'
+      },
+      alternative1: {
+        name: 'Via New Zealand',
+        path: ['USA', 'New Zealand', 'Fiji'],
+        cost: 8,
+        time: 4,
+        reliability: 92,
+        reason: 'Pacific Islands banking consortium',
+        available: false
+      },
+      alternative2: {
+        name: 'Via Singapore + Australia',
+        path: ['USA', 'Singapore', 'Australia', 'Fiji'],
+        cost: 12,
+        time: 9,
+        reliability: 98,
+        reason: 'Through two major financial hubs',
+        available: false
+      },
+      alternative3: {
+        name: 'Via Hong Kong + Philippines',
+        path: ['USA', 'Hong Kong', 'Philippines', 'Fiji'],
+        cost: 4,
+        time: 12,
+        reliability: 75,
+        reason: 'Budget route through emerging corridors',
+        available: false
+      }
+    },
+    mongodbConfig: {
+      bridge: {
+        title: 'Multi-Hop Pacific Routing',
+        from: 'MT103 (USA)',
+        through: 'NPP (Australia)',
+        to: 'FJD (Fiji)',
+        description: 'BFS finds path where none is obvious'
+      },
+      mapping: {
+        totalFields: 15,
+        rulesLane: 15,
+        aiLane: 0,
+        humanLane: 0,
+        examples: [
+          { source: ':20:', target: 'transaction_id', type: 'rules', description: 'Transaction reference' },
+          { source: ':32A:', target: 'amount', type: 'rules', description: 'Payment amount' },
+          { source: ':50K:', target: 'debtor', type: 'rules', description: 'Sender details' },
+          { source: ':59:', target: 'creditor', type: 'rules', description: 'Receiver in Fiji' }
+        ]
+      },
+      conversion: {
+        steps: [
+          { step: 1, action: 'BFS Path Discovery', time: '50ms', details: 'Find optimal route to Fiji' },
+          { step: 2, action: 'MT103 → JSON', time: '1.5s', details: 'Extract SWIFT fields' },
+          { step: 3, action: 'JSON → NPP', time: '2s', details: 'Route through Australia' },
+          { step: 4, action: 'NPP → JSON', time: '1.5s', details: 'Pacific bridge conversion' },
+          { step: 5, action: 'JSON → FJD', time: '1s', details: 'Fiji local delivery' }
+        ],
+        totalTime: '6.05s'
+      },
+      metrics: {
+        pathsEvaluated: 4,
+        optimalPath: 'Via Australia',
+        costSaving: '60% vs direct SWIFT',
+        reliability: '95%',
+        routingTime: '50ms'
+      },
+      insights: {
+        key: 'Graph-Based Routing Intelligence',
+        value: 'BFS algorithm evaluated 4 possible paths in 50ms to find optimal route',
+        impact: 'Enables payments to any destination, even without direct rails'
+      }
+    }
+  },
+
   simpleTransfer: {
     id: 'simple-transfer',
     name: '🌐 Cross-Border Transfer',

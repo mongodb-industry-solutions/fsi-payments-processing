@@ -32,11 +32,11 @@ export default function CryptoNode({ data, selected }) {
         <Handle type="target" position={Position.Left} className={styles.handle} />
 
         <div className={styles.innerGlow}>
-        <div className={styles.blockchainGrid}>
-          <div className={styles.blockchainLine}></div>
-          <div className={styles.blockchainLine}></div>
-          <div className={styles.blockchainLine}></div>
-        </div>
+          <div className={styles.blockchainGrid}>
+            <div className={styles.blockchainLine}></div>
+            <div className={styles.blockchainLine}></div>
+            <div className={styles.blockchainLine}></div>
+          </div>
 
         <div className={styles.content}>
           <div className={styles.icon}>{displayIcon}</div>
@@ -82,10 +82,10 @@ export default function CryptoNode({ data, selected }) {
             </div>
           </div>
         )}
-      </div>
+        </div>
 
-      <Handle type="source" position={Position.Right} className={styles.handle} />
-    </div>
+        <Handle type="source" position={Position.Right} className={styles.handle} />
+      </div>
 
     {/* Format Info Modal for USDC */}
     <FormatInfoModal

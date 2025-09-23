@@ -8,11 +8,12 @@
 
 .mainCanvas {
   flex: 1;
-  display: flex;
-  flex-direction: column;
   position: relative;
   height: 100vh;
   overflow: hidden;
+  isolation: isolate; /* Create new stacking context */
+  display: flex;
+  flex-direction: column;
 }
 
 /* Header styles removed as header is no longer used */
@@ -32,7 +33,7 @@
   top: 80px;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 1001;
+  z-index: 100; /* Reduced to be below panel (z-index: 1000) */
   padding: 0.75rem 2rem;
   background: linear-gradient(135deg, #13aa52 0%, #00684a 100%);
   color: white;
@@ -57,10 +58,13 @@
 }
 
 .flowContainer {
-  flex: 1;
-  position: relative;
-  height: calc(100vh - 230px); /* Account for pipeline panel height */
-  overflow: hidden;
+  position: absolute;
+  top: 0; /* Reset to normal position */
+  left: 0;
+  right: 0;
+  bottom: 200px; /* Adjusted space for pipeline panel */
+  z-index: 1; /* Base z-index for flow container */
+  min-height: 450px; /* Increased minimum height */
 }
 
 .emptyState {
@@ -114,7 +118,7 @@
 }
 
 .react-flow__controls {
-  top: 20px !important;
+  top: 40px !important; /* Increased top spacing to avoid overlap */
   right: 20px !important;
   bottom: auto !important;
   left: auto !important;
@@ -122,6 +126,7 @@
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  z-index: 5 !important; /* Keep controls below panel (z-index: 1000) */
 }
 
 .react-flow__controls-button {

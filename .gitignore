@@ -388,3 +388,8 @@ backend/converter_service/test_mt103_to_json.sh
 backend/converter_service/test_multihop_output.sh
 backend/converter_service/test_router.json
 backend/converter_service/test_simple.json
+frontend/app/geographic/MONGODB_CONSOLE_FEATURE.md
+.gitignore
+backend/converter_service/scripts/upload_corrected_mt103_to_json.py
+.gitignore
+backend/converter_service/scripts/check_conversion_graph.py

@@ -26,18 +26,37 @@ const ProcessingPipelinePanel = ({ selectedScenario, conversionResults, isExecut
       'CHAPS': 'UK CHAPS',
       'TARGET2': 'TARGET2',
       'SPEI': 'Mexican SPEI',
-      'USDC': 'USDC Stablecoin'
+      'USDC': 'USDC Stablecoin',
+      'NPP': 'Australian NPP',
+      'FJD': 'Fiji Banking',
+      'NZ': 'NZ Banking'
     };
     return `${formatNames[from] || from} → ${formatNames[to] || to}`;
   };
+
+  // Check if this is the remote island routing scenario
+  const isRemoteIslandScenario = selectedScenario?.id === 'remote-island-routing';
 
   // Dynamic content based on execution state
   if (hasResults && !isExecuting) {
     // Show actual conversion results
     return (
       <div className={styles.pipelinePanel}>
+        {/* MongoDB Advantages Section */}
+        {selectedScenario?.mongoDbAdvantages && (
+          <div className={styles.mongoAdvantages}>
+            <div className={styles.advantagesContent}>
+              <div className={styles.advantagesHeader}>
+                <h4>{selectedScenario.mongoDbAdvantages.title}</h4>
+              </div>
+              <p className={styles.advantagesText}>
+                {selectedScenario.mongoDbAdvantages.message}
+              </p>
+            </div>
+          </div>
+        )}
+
         <div className={styles.pipelineHeader}>
-          <span className={styles.mongoIcon}>🍃</span>
           <h3>MongoDB Processing Pipeline - Conversion Complete</h3>
           <span className={styles.totalTime}>Total: {totalTime}s</span>
         </div>
@@ -72,8 +91,12 @@ const ProcessingPipelinePanel = ({ selectedScenario, conversionResults, isExecut
         </div>
 
         <div className={`${styles.storyLine} ${styles.success}`}>
-          <p>✅ Payment successfully converted through MongoDB's universal JSON format.
-             {conversionResults.length} transformation{conversionResults.length > 1 ? 's' : ''} completed in {totalTime} seconds.</p>
+          {isRemoteIslandScenario ? (
+            <p>✅ Payment successfully routed to Fiji via Australia! MongoDB's BFS algorithm discovered the optimal path through {conversionResults.length} hops in {totalTime} seconds.</p>
+          ) : (
+            <p>✅ Payment successfully converted through MongoDB's universal JSON format.
+               {conversionResults.length} transformation{conversionResults.length > 1 ? 's' : ''} completed in {totalTime} seconds.</p>
+          )}
         </div>
 
         {/* MongoDB Details Button */}
@@ -101,8 +124,21 @@ const ProcessingPipelinePanel = ({ selectedScenario, conversionResults, isExecut
     // Show processing animation
     return (
       <div className={styles.pipelinePanel}>
+        {/* MongoDB Advantages Section */}
+        {selectedScenario?.mongoDbAdvantages && (
+          <div className={styles.mongoAdvantages}>
+            <div className={styles.advantagesContent}>
+              <div className={styles.advantagesHeader}>
+                <h4>{selectedScenario.mongoDbAdvantages.title}</h4>
+              </div>
+              <p className={styles.advantagesText}>
+                {selectedScenario.mongoDbAdvantages.message}
+              </p>
+            </div>
+          </div>
+        )}
+
         <div className={styles.pipelineHeader}>
-          <span className={`${styles.mongoIcon} ${styles.spinning}`}>🍃</span>
           <h3>MongoDB Processing Pipeline - Converting...</h3>
           <div className={styles.progressIndicator}>
             <div className={styles.progressBar}>
@@ -112,49 +148,99 @@ const ProcessingPipelinePanel = ({ selectedScenario, conversionResults, isExecut
         </div>
 
         <div className={styles.pipelineFlow}>
-          <div className={`${styles.step} ${currentStep >= 0 ? styles.processing : ''}`}>
-            <div className={styles.stepNumber}>1</div>
-            <div className={styles.stepContent}>
-              <h4>Reading MT103 Message</h4>
-              <p className={styles.processingText}>
-                {currentStep === 0
-                  ? "Applying 21 regex patterns from MongoDB's conversion_registry..."
-                  : "Parsing payment message..."}
-              </p>
-            </div>
-          </div>
+          {isRemoteIslandScenario ? (
+            <>
+              <div className={`${styles.step} ${currentStep >= 0 ? styles.processing : ''}`}>
+                <div className={styles.stepNumber}>1</div>
+                <div className={styles.stepContent}>
+                  <h4>BFS Path Discovery</h4>
+                  <p className={styles.processingText}>
+                    {currentStep === 0
+                      ? "Running BFS algorithm to find optimal route to Fiji..."
+                      : "Analyzing network graph..."}
+                  </p>
+                </div>
+              </div>
 
-          <div className={styles.arrow}>→</div>
+              <div className={styles.arrow}>→</div>
 
-          <div className={`${styles.step} ${currentStep >= 1 ? styles.processing : ''}`}>
-            <div className={styles.stepNumber}>2</div>
-            <div className={styles.stepContent}>
-              <h4>Transforming via 3 Lanes</h4>
-              <p className={styles.processingText}>
-                {currentStep === 1
-                  ? "Processing 18 Rules + 3 AI field mappings from MongoDB..."
-                  : "Converting to Canonical JSON..."}
-              </p>
-            </div>
-          </div>
+              <div className={`${styles.step} ${currentStep >= 1 ? styles.processing : ''}`}>
+                <div className={styles.stepNumber}>2</div>
+                <div className={styles.stepContent}>
+                  <h4>Route via Australia</h4>
+                  <p className={styles.processingText}>
+                    {currentStep === 1
+                      ? "Converting MT103 → JSON → NPP through 3 lanes..."
+                      : "Processing through Sydney hub..."}
+                  </p>
+                </div>
+              </div>
 
-          <div className={styles.arrow}>→</div>
+              <div className={styles.arrow}>→</div>
 
-          <div className={`${styles.step} ${currentStep >= 2 ? styles.processing : ''}`}>
-            <div className={styles.stepNumber}>3</div>
-            <div className={styles.stepContent}>
-              <h4>Building pacs.008</h4>
-              <p className={styles.processingText}>
-                {currentStep === 2
-                  ? "Filling XML template from MongoDB with transformed data..."
-                  : "Creating target format..."}
-              </p>
-            </div>
-          </div>
+              <div className={`${styles.step} ${currentStep >= 2 ? styles.processing : ''}`}>
+                <div className={styles.stepNumber}>3</div>
+                <div className={styles.stepContent}>
+                  <h4>Final Hop to Fiji</h4>
+                  <p className={styles.processingText}>
+                    {currentStep === 2
+                      ? "Converting NPP → FJD for Fiji banking system..."
+                      : "Delivering to Pacific island..."}
+                  </p>
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className={`${styles.step} ${currentStep >= 0 ? styles.processing : ''}`}>
+                <div className={styles.stepNumber}>1</div>
+                <div className={styles.stepContent}>
+                  <h4>Reading MT103 Message</h4>
+                  <p className={styles.processingText}>
+                    {currentStep === 0
+                      ? "Applying 21 regex patterns from MongoDB's conversion_registry..."
+                      : "Parsing payment message..."}
+                  </p>
+                </div>
+              </div>
+
+              <div className={styles.arrow}>→</div>
+
+              <div className={`${styles.step} ${currentStep >= 1 ? styles.processing : ''}`}>
+                <div className={styles.stepNumber}>2</div>
+                <div className={styles.stepContent}>
+                  <h4>Transforming via 3 Lanes</h4>
+                  <p className={styles.processingText}>
+                    {currentStep === 1
+                      ? "Processing 18 Rules + 3 AI field mappings from MongoDB..."
+                      : "Converting to Canonical JSON..."}
+                  </p>
+                </div>
+              </div>
+
+              <div className={styles.arrow}>→</div>
+
+              <div className={`${styles.step} ${currentStep >= 2 ? styles.processing : ''}`}>
+                <div className={styles.stepNumber}>3</div>
+                <div className={styles.stepContent}>
+                  <h4>Building pacs.008</h4>
+                  <p className={styles.processingText}>
+                    {currentStep === 2
+                      ? "Filling XML template from MongoDB with transformed data..."
+                      : "Creating target format..."}
+                  </p>
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
         <div className={styles.storyLine}>
-          <p>🔄 Processing payment through MongoDB's intelligent conversion engine...</p>
+          {isRemoteIslandScenario ? (
+            <p>🔄 Discovering optimal route to Fiji through MongoDB's graph-based routing engine...</p>
+          ) : (
+            <p>🔄 Processing payment through MongoDB's intelligent conversion engine...</p>
+          )}
         </div>
       </div>
     );
@@ -163,8 +249,21 @@ const ProcessingPipelinePanel = ({ selectedScenario, conversionResults, isExecut
   // Default static view
   return (
     <div className={styles.pipelinePanel}>
+      {/* MongoDB Advantages Section */}
+      {selectedScenario?.mongoDbAdvantages && (
+        <div className={styles.mongoAdvantages}>
+          <div className={styles.advantagesContent}>
+            <div className={styles.advantagesHeader}>
+              <h4>{selectedScenario.mongoDbAdvantages.title}</h4>
+            </div>
+            <p className={styles.advantagesText}>
+              {selectedScenario.mongoDbAdvantages.message}
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className={styles.pipelineHeader}>
-        <span className={styles.mongoIcon}>🍃</span>
         <h3>MongoDB Processing Pipeline</h3>
       </div>
 

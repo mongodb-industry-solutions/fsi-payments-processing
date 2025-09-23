@@ -63,6 +63,125 @@ const MongoDBDetailsModal = ({ isOpen, onClose, conversionResults, selectedScena
             </p>
           </div>
 
+          {/* Special Section for Remote Island Routing */}
+          {selectedScenario?.id === 'remote-island-routing' && (
+            <div className={styles.routingSection}>
+              <h3>🧭 BFS Path Discovery - Finding Route to Fiji</h3>
+
+              <div className={styles.bfsVisualization}>
+                <h4>Graph-Based Routing Algorithm</h4>
+                <div className={styles.algorithmSteps}>
+                  <div className={styles.algoStep}>
+                    <span className={styles.stepNum}>1</span>
+                    <div>
+                      <strong>Initialize BFS Queue</strong>
+                      <code>Queue: [USA]</code>
+                    </div>
+                  </div>
+                  <div className={styles.algoStep}>
+                    <span className={styles.stepNum}>2</span>
+                    <div>
+                      <strong>Explore USA connections</strong>
+                      <code>Found: MT103 → JSON</code>
+                    </div>
+                  </div>
+                  <div className={styles.algoStep}>
+                    <span className={styles.stepNum}>3</span>
+                    <div>
+                      <strong>Explore JSON connections</strong>
+                      <code>Found: JSON → NPP (Australia)</code>
+                    </div>
+                  </div>
+                  <div className={styles.algoStep}>
+                    <span className={styles.stepNum}>4</span>
+                    <div>
+                      <strong>Explore NPP connections</strong>
+                      <code>Found: NPP → JSON → FJD (Fiji)</code>
+                    </div>
+                  </div>
+                  <div className={styles.algoStep}>
+                    <span className={styles.stepNum}>5</span>
+                    <div>
+                      <strong>Path Found!</strong>
+                      <code className={styles.successPath}>USA → JSON → NPP → JSON → Fiji</code>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className={styles.pathComparison}>
+                <h4>📊 Path Evaluation (4 routes analyzed in 50ms)</h4>
+                <div className={styles.pathGrid}>
+                  <div className={`${styles.pathOption} ${styles.selected}`}>
+                    <div className={styles.pathHeader}>
+                      <span className={styles.pathName}>Via Australia</span>
+                      <span className={styles.selectedBadge}>✅ Selected</span>
+                    </div>
+                    <div className={styles.pathRoute}>USA → Australia → Fiji</div>
+                    <div className={styles.pathMetrics}>
+                      <span>💰 $5</span>
+                      <span>⚡ 6s</span>
+                      <span>🛡️ 95%</span>
+                    </div>
+                    <div className={styles.pathReason}>
+                      Commonwealth banking corridor since 1970s
+                    </div>
+                  </div>
+
+                  <div className={styles.pathOption}>
+                    <div className={styles.pathHeader}>
+                      <span className={styles.pathName}>Via New Zealand</span>
+                      <span className={styles.unavailable}>❌ No Config</span>
+                    </div>
+                    <div className={styles.pathRoute}>USA → New Zealand → Fiji</div>
+                    <div className={styles.pathMetrics}>
+                      <span>💰 $8</span>
+                      <span>⚡ 4s</span>
+                      <span>🛡️ 92%</span>
+                    </div>
+                  </div>
+
+                  <div className={styles.pathOption}>
+                    <div className={styles.pathHeader}>
+                      <span className={styles.pathName}>Via Singapore</span>
+                      <span className={styles.unavailable}>❌ No Config</span>
+                    </div>
+                    <div className={styles.pathRoute}>USA → Singapore → Australia → Fiji</div>
+                    <div className={styles.pathMetrics}>
+                      <span>💰 $12</span>
+                      <span>⚡ 9s</span>
+                      <span>🛡️ 98%</span>
+                    </div>
+                  </div>
+
+                  <div className={styles.pathOption}>
+                    <div className={styles.pathHeader}>
+                      <span className={styles.pathName}>Via Hong Kong</span>
+                      <span className={styles.unavailable}>❌ No Config</span>
+                    </div>
+                    <div className={styles.pathRoute}>USA → HK → Philippines → Fiji</div>
+                    <div className={styles.pathMetrics}>
+                      <span>💰 $4</span>
+                      <span>⚡ 12s</span>
+                      <span>🛡️ 75%</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className={styles.routingInsight}>
+                <div className={styles.insightIcon}>💡</div>
+                <div>
+                  <strong>MongoDB's Graph Advantage:</strong> The <code>conversion_graph</code> collection stores
+                  edges between payment formats with metadata (cost, latency, reliability). BFS algorithm evaluated
+                  4 possible paths in 50ms to find the optimal route through Australia, leveraging historical
+                  banking relationships. Without direct USA-Fiji rails, MongoDB's router intelligently discovered
+                  the best path through intermediary hubs.
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Three-Step Process */}
           <div className={styles.processFlow}>
             <div className={styles.processStep}>

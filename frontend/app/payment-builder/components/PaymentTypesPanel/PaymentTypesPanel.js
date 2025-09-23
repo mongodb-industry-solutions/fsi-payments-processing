@@ -222,8 +222,8 @@ export default function PaymentTypesPanel({ selectedType, onSelectType, isCollap
               {/* Stats Grid */}
               <div className={styles.statsGrid}>
                 <div className={styles.stat}>
-                  <span className={styles.statLabel}>Time</span>
-                  <span className={styles.statValue}>{type.estimatedTime}</span>
+                  <span className={styles.statLabel}>Formats</span>
+                  <span className={styles.statValue}>{type.sourceFormat}→{type.targetFormat}</span>
                 </div>
                 <div className={styles.stat}>
                   <span className={styles.statLabel}>Fields</span>
