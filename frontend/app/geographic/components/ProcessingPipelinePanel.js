@@ -1,19 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styles from './ProcessingPipelinePanel.module.css';
 import MongoDBDetailsModal from './MongoDBDetailsModal';
 
 const ProcessingPipelinePanel = ({ selectedScenario, conversionResults, isExecuting, currentStep }) => {
   const [showModal, setShowModal] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
+
+  // Auto-expand when execution starts
+  useEffect(() => {
+    if (isExecuting) {
+      setIsCollapsed(false);
+    }
+  }, [isExecuting]);
 
   if (!selectedScenario) return null;
 
   const pipeline = selectedScenario.pipelineStory || {};
   const hasResults = conversionResults && conversionResults.length > 0;
 
-  // Calculate total processing time
-  const totalTime = hasResults
-    ? conversionResults.reduce((sum, r) => sum + (r.processingTime || 0), 0).toFixed(2)
-    : null;
+  // Calculate conversion statistics
+  const totalConversions = hasResults ? conversionResults.length : 0;
 
   // Format conversion step for display
   const formatConversionStep = (from, to) => {
@@ -41,7 +47,25 @@ const ProcessingPipelinePanel = ({ selectedScenario, conversionResults, isExecut
   if (hasResults && !isExecuting) {
     // Show actual conversion results
     return (
-      <div className={styles.pipelinePanel}>
+      <div className={`${styles.pipelinePanel} ${isCollapsed ? styles.collapsed : ''}`}>
+        <div className={styles.panelHandle} onClick={() => setIsCollapsed(!isCollapsed)}>
+          <div className={styles.handleBar}></div>
+          <span className={styles.panelTitle}>
+            MongoDB Processing Pipeline {hasResults && '- Conversion Complete'}
+          </span>
+          <svg
+            className={styles.handleArrow}
+            width="16"
+            height="16"
+            viewBox="0 0 16 16"
+            fill="none"
+            style={{ transform: isCollapsed ? 'rotate(180deg)' : 'rotate(0deg)' }}
+          >
+            <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </div>
+
+        <div className={styles.collapsibleContent} style={{ display: isCollapsed ? 'none' : 'block' }}>
         {/* MongoDB Advantages Section */}
         {selectedScenario?.mongoDbAdvantages && (
           <div className={styles.mongoAdvantages}>
@@ -56,10 +80,6 @@ const ProcessingPipelinePanel = ({ selectedScenario, conversionResults, isExecut
           </div>
         )}
 
-        <div className={styles.pipelineHeader}>
-          <h3>MongoDB Processing Pipeline - Conversion Complete</h3>
-          <span className={styles.totalTime}>Total: {totalTime}s</span>
-        </div>
 
         <div className={styles.pipelineFlow}>
           {conversionResults.map((result, index) => (
@@ -71,8 +91,8 @@ const ProcessingPipelinePanel = ({ selectedScenario, conversionResults, isExecut
                 <div className={styles.stepContent}>
                   <h4>{formatConversionStep(result.from, result.to)}</h4>
                   <div className={styles.stepDetails}>
-                    <span className={styles.timing}>
-                      ⏱ {(result.processingTime || 0).toFixed(2)}s
+                    <span className={styles.status}>
+                      ✅ Complete
                     </span>
                     {result.processingStats && (
                       <span className={styles.lanes}>
@@ -92,10 +112,10 @@ const ProcessingPipelinePanel = ({ selectedScenario, conversionResults, isExecut
 
         <div className={`${styles.storyLine} ${styles.success}`}>
           {isRemoteIslandScenario ? (
-            <p>✅ Payment successfully routed to Fiji via Australia! MongoDB's BFS algorithm discovered the optimal path through {conversionResults.length} hops in {totalTime} seconds.</p>
+            <p>✅ Payment successfully routed to Fiji via Australia! MongoDB's BFS algorithm discovered the optimal path through {conversionResults.length} hops.</p>
           ) : (
             <p>✅ Payment successfully converted through MongoDB's universal JSON format.
-               {conversionResults.length} transformation{conversionResults.length > 1 ? 's' : ''} completed in {totalTime} seconds.</p>
+               {conversionResults.length} transformation{conversionResults.length > 1 ? 's' : ''} completed successfully.</p>
           )}
         </div>
 
@@ -116,6 +136,7 @@ const ProcessingPipelinePanel = ({ selectedScenario, conversionResults, isExecut
           conversionResults={conversionResults}
           selectedScenario={selectedScenario}
         />
+        </div>
       </div>
     );
   }
@@ -123,7 +144,25 @@ const ProcessingPipelinePanel = ({ selectedScenario, conversionResults, isExecut
   if (isExecuting) {
     // Show processing animation
     return (
-      <div className={styles.pipelinePanel}>
+      <div className={`${styles.pipelinePanel} ${isCollapsed ? styles.collapsed : ''}`}>
+        <div className={styles.panelHandle} onClick={() => setIsCollapsed(!isCollapsed)}>
+          <div className={styles.handleBar}></div>
+          <span className={styles.panelTitle}>
+            MongoDB Processing Pipeline - Executing...
+          </span>
+          <svg
+            className={styles.handleArrow}
+            width="16"
+            height="16"
+            viewBox="0 0 16 16"
+            fill="none"
+            style={{ transform: isCollapsed ? 'rotate(180deg)' : 'rotate(0deg)' }}
+          >
+            <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </div>
+
+        <div className={styles.collapsibleContent} style={{ display: isCollapsed ? 'none' : 'block' }}>
         {/* MongoDB Advantages Section */}
         {selectedScenario?.mongoDbAdvantages && (
           <div className={styles.mongoAdvantages}>
@@ -138,14 +177,6 @@ const ProcessingPipelinePanel = ({ selectedScenario, conversionResults, isExecut
           </div>
         )}
 
-        <div className={styles.pipelineHeader}>
-          <h3>MongoDB Processing Pipeline - Converting...</h3>
-          <div className={styles.progressIndicator}>
-            <div className={styles.progressBar}>
-              <div className={styles.progressFill} style={{ width: `${((currentStep || 0) + 1) * 33}%` }} />
-            </div>
-          </div>
-        </div>
 
         <div className={styles.pipelineFlow}>
           {isRemoteIslandScenario ? (
@@ -242,13 +273,32 @@ const ProcessingPipelinePanel = ({ selectedScenario, conversionResults, isExecut
             <p>🔄 Processing payment through MongoDB's intelligent conversion engine...</p>
           )}
         </div>
+        </div>
       </div>
     );
   }
 
   // Default static view
   return (
-    <div className={styles.pipelinePanel}>
+    <div className={`${styles.pipelinePanel} ${isCollapsed ? styles.collapsed : ''}`}>
+      <div className={styles.panelHandle} onClick={() => setIsCollapsed(!isCollapsed)}>
+        <div className={styles.handleBar}></div>
+        <span className={styles.panelTitle}>
+          MongoDB Processing Pipeline
+        </span>
+        <svg
+          className={styles.handleArrow}
+          width="16"
+          height="16"
+          viewBox="0 0 16 16"
+          fill="none"
+          style={{ transform: isCollapsed ? 'rotate(180deg)' : 'rotate(0deg)' }}
+        >
+          <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      </div>
+
+      <div className={styles.collapsibleContent} style={{ display: isCollapsed ? 'none' : 'block' }}>
       {/* MongoDB Advantages Section */}
       {selectedScenario?.mongoDbAdvantages && (
         <div className={styles.mongoAdvantages}>
@@ -263,9 +313,6 @@ const ProcessingPipelinePanel = ({ selectedScenario, conversionResults, isExecut
         </div>
       )}
 
-      <div className={styles.pipelineHeader}>
-        <h3>MongoDB Processing Pipeline</h3>
-      </div>
 
       <div className={styles.pipelineFlow}>
         <div className={styles.step}>
@@ -305,6 +352,7 @@ const ProcessingPipelinePanel = ({ selectedScenario, conversionResults, isExecut
       <div className={styles.hint}>
         <p>💡 Click <strong>Execute Route</strong> to see MongoDB's zero-code conversion engine in action.
            Every step is powered by configurations stored in MongoDB - no hardcoded logic!</p>
+      </div>
       </div>
     </div>
   );

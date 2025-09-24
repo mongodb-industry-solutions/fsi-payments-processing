@@ -250,10 +250,10 @@ function PaymentVisualizerFlow() {
       // Auto-fit view after layout with better padding for complex graph
       setTimeout(() => {
         fitView({
-          padding: 0.1,
+          padding: 0.15,
           duration: 800,
-          maxZoom: 0.7,
-          minZoom: 0.3
+          maxZoom: 0.5,
+          minZoom: 0.2
         });
       }, 100);
 
@@ -342,46 +342,90 @@ function PaymentVisualizerFlow() {
 
         // Add JSON bridge between countries (except after last country)
         if (index < scenario.hops.length - 1) {
-          const jsonId = `json-${index}`;
-          initialNodes.push({
-            id: jsonId,
-            type: 'jsonBridge',
-            position: { x: 0, y: 0 }, // Will be positioned by layout
-            data: {
-              country: 'JSON',
-              format: 'Bridge',
-              icon: '🔄',
-              isHub: true,
-              city: 'Universal',
-              status: executionProgress[jsonId] || 'idle',
-              beforeJson: jsonBridgeData[jsonId]?.beforeJson || null,
-              afterJson: jsonBridgeData[jsonId]?.afterJson || null,
-              selectedScenario: scenario
-            }
-          });
-
-          // Create edges: country → JSON → next country
           const nextHop = scenario.hops[index + 1];
-          const isCryptoEdge = hop.isCrypto || nextHop.isCrypto;
-          const edgeStyle = isCryptoEdge ? cryptoEdgeOptions : edgeOptions;
 
-          initialEdges.push({
-            id: `${hop.id}-${jsonId}`,
-            source: hop.id,
-            target: jsonId,
-            ...edgeStyle,
-            label: `${hop.format} → JSON`,
-            labelStyle: { fontSize: 11, fontWeight: 600 }
-          });
+          // For crypto scenarios, we still need JSON bridge for conversion
+          if (nextHop.isCrypto) {
+            // Add JSON bridge between SPEI and USDC for proper conversion visualization
+            const jsonId = `json-crypto-bridge`;
+            initialNodes.push({
+              id: jsonId,
+              type: 'jsonBridge',
+              position: { x: 0, y: 0 }, // Will be positioned by layout
+              data: {
+                country: 'JSON',
+                format: 'Bridge',
+                icon: '🔄',
+                isHub: true,
+                city: 'TradFi→DeFi',
+                status: executionProgress[jsonId] || 'idle',
+                beforeJson: jsonBridgeData[jsonId]?.beforeJson || null,
+                afterJson: jsonBridgeData[jsonId]?.afterJson || null,
+                selectedScenario: scenario
+              }
+            });
 
-          initialEdges.push({
-            id: `${jsonId}-${nextHop.id}`,
-            source: jsonId,
-            target: nextHop.id,
-            ...edgeStyle,
-            label: `JSON → ${nextHop.format}`,
-            labelStyle: { fontSize: 11, fontWeight: 600 }
-          });
+            // Create edges: SPEI → JSON → USDC
+            const edgeStyle = cryptoEdgeOptions;
+            initialEdges.push({
+              id: `${hop.id}-${jsonId}`,
+              source: hop.id,
+              target: jsonId,
+              ...edgeStyle,
+              label: `${hop.format} → JSON`,
+              labelStyle: { fontSize: 11, fontWeight: 600 }
+            });
+
+            initialEdges.push({
+              id: `${jsonId}-${nextHop.id}`,
+              source: jsonId,
+              target: nextHop.id,
+              ...edgeStyle,
+              label: `JSON → ${nextHop.format}`,
+              labelStyle: { fontSize: 11, fontWeight: 600 }
+            });
+          } else {
+            // Add JSON bridge for non-crypto transitions
+            const jsonId = `json-${index}`;
+            initialNodes.push({
+              id: jsonId,
+              type: 'jsonBridge',
+              position: { x: 0, y: 0 }, // Will be positioned by layout
+              data: {
+                country: 'JSON',
+                format: 'Bridge',
+                icon: '🔄',
+                isHub: true,
+                city: 'Universal',
+                status: executionProgress[jsonId] || 'idle',
+                beforeJson: jsonBridgeData[jsonId]?.beforeJson || null,
+                afterJson: jsonBridgeData[jsonId]?.afterJson || null,
+                selectedScenario: scenario
+              }
+            });
+
+            // Create edges: country → JSON → next country
+            const isCryptoEdge = hop.isCrypto || nextHop.isCrypto;
+            const edgeStyle = isCryptoEdge ? cryptoEdgeOptions : edgeOptions;
+
+            initialEdges.push({
+              id: `${hop.id}-${jsonId}`,
+              source: hop.id,
+              target: jsonId,
+              ...edgeStyle,
+              label: `${hop.format} → JSON`,
+              labelStyle: { fontSize: 11, fontWeight: 600 }
+            });
+
+            initialEdges.push({
+              id: `${jsonId}-${nextHop.id}`,
+              source: jsonId,
+              target: nextHop.id,
+              ...edgeStyle,
+              label: `JSON → ${nextHop.format}`,
+              labelStyle: { fontSize: 11, fontWeight: 600 }
+            });
+          }
         }
       });
 
@@ -737,13 +781,12 @@ function PaymentVisualizerFlow() {
               defaultViewport={{ x: 200, y: 50, zoom: 0.65 }}
               minZoom={0.1}
               maxZoom={2}
-              attributionPosition="bottom-left"
-              translateExtent={[[-500, -300], [2500, 600]]}
-              nodeExtent={[[-200, -100], [2200, 550]]}
+              proOptions={{ hideAttribution: true }}
+              translateExtent={[[-500, -500], [4000, 1200]]}
+              nodeExtent={[[-200, -200], [3800, 1000]]}
               zoomOnScroll={true}
               panOnDrag={true}
             >
-              <Background variant="dots" gap={12} size={1} />
               <Controls position="top-right" />
             </ReactFlow>
           </div>

@@ -216,6 +216,131 @@
   font-weight: 600;
 }
 
+/* Canonical JSON Section */
+.canonicalExplanation {
+  margin-top: 16px;
+}
+
+.canonicalIntro {
+  font-size: 15px;
+  line-height: 1.6;
+  color: #1B2240;
+  margin-bottom: 24px;
+}
+
+.canonicalStructure {
+  margin: 24px 0;
+}
+
+.canonicalStructure h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #5C6C75;
+  margin-bottom: 12px;
+}
+
+.jsonPreview {
+  background: #F7F8FA;
+  border: 1px solid #E8EDEB;
+  border-radius: 8px;
+  padding: 16px;
+  overflow-x: auto;
+}
+
+.jsonPreview pre {
+  margin: 0;
+  font-family: 'Monaco', 'Courier New', monospace;
+  font-size: 13px;
+  color: #1B2240;
+  line-height: 1.5;
+}
+
+.conversionFlow {
+  margin: 24px 0;
+}
+
+.conversionExample h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #5C6C75;
+  margin-bottom: 16px;
+}
+
+.flowDiagram {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 20px;
+  background: white;
+  border: 2px solid #E8EDEB;
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+
+.formatNode {
+  background: #016BF8;
+  color: white;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.jsonNode {
+  background: #FFF0E1;
+  border: 2px solid #FFA319;
+  padding: 16px;
+  border-radius: 8px;
+  text-align: center;
+  min-width: 200px;
+}
+
+.jsonNode > div:first-child {
+  font-weight: 600;
+  color: #1B2240;
+  margin-bottom: 8px;
+}
+
+.jsonMapping {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.jsonMapping small {
+  font-size: 11px;
+  color: #5C6C75;
+  font-family: 'Monaco', 'Courier New', monospace;
+}
+
+.arrow {
+  font-size: 24px;
+  color: #5C6C75;
+}
+
+.multiHopExample {
+  background: #F7F8FA;
+  border-left: 3px solid #00684A;
+  padding: 16px;
+  border-radius: 4px;
+}
+
+.multiHopExample p {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  color: #1B2240;
+}
+
+.multiHopExample p:last-child {
+  margin: 0;
+}
+
+.multiHopExample .explanation {
+  color: #5C6C75;
+  font-style: italic;
+}
+
 /* Lane Container */
 .laneContainer {
   display: grid;
@@ -405,6 +530,135 @@
   text-align: center;
   color: #00684A;
   margin-bottom: 24px;
+}
+
+/* MongoDB Advantages Section */
+.mongoAdvantages {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+  margin: 24px 0;
+}
+
+.advantageCard {
+  background: white;
+  border: 2px solid #E8EDEB;
+  border-radius: 12px;
+  padding: 24px;
+  transition: all 0.3s ease;
+}
+
+.advantageCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 104, 74, 0.1);
+  border-color: #00684A;
+}
+
+.advantageIcon {
+  font-size: 32px;
+  margin-bottom: 12px;
+}
+
+.advantageCard h4 {
+  color: #1B2240;
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.advantageCard p {
+  color: #5C6C75;
+  font-size: 14px;
+  line-height: 1.6;
+  margin-bottom: 16px;
+}
+
+.codeExample {
+  background: #F7F8FA;
+  border: 1px solid #E8EDEB;
+  border-radius: 6px;
+  padding: 12px;
+  margin-top: 12px;
+}
+
+.codeExample code {
+  display: block;
+  font-family: 'Monaco', 'Courier New', monospace;
+  font-size: 12px;
+  color: #1B2240;
+  white-space: pre;
+  line-height: 1.5;
+}
+
+.evolutionExample {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 12px;
+  background: #F0F7FF;
+  border-radius: 6px;
+}
+
+.evolutionExample span {
+  font-size: 13px;
+  color: #1B2240;
+}
+
+.pipelineExample {
+  background: #FFF0E1;
+  border: 1px solid #FFA319;
+  border-radius: 6px;
+  padding: 12px;
+  margin-top: 12px;
+  text-align: center;
+}
+
+.pipelineExample code {
+  display: block;
+  font-family: 'Monaco', 'Courier New', monospace;
+  font-size: 13px;
+  color: #1B2240;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.pipelineExample span {
+  font-size: 12px;
+  color: #5C6C75;
+  font-style: italic;
+}
+
+.bottomInsight {
+  background: linear-gradient(135deg, #E8F5FC 0%, #F0F7FF 100%);
+  border: 2px solid #016BF8;
+  border-radius: 12px;
+  padding: 24px;
+  margin-top: 24px;
+}
+
+.insightHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.insightIcon {
+  font-size: 24px;
+}
+
+.bottomInsight strong {
+  color: #016BF8;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.bottomInsight p {
+  color: #1B2240;
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 0;
 }
 
 .comparisonGrid {

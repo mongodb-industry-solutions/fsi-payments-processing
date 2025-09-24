@@ -101,9 +101,9 @@ export default function ConversionResultsSummary({ results, onClose }) {
                         </span>
                       </div>
                       <div className={styles.statItem}>
-                        <span className={styles.label}>Processing Time:</span>
+                        <span className={styles.label}>Processing Status:</span>
                         <span className={styles.value}>
-                          {(result.processingTime || 0).toFixed(3)} seconds
+                          {result.status === 'success' ? '✅ Completed' : '⏳ Processing'}
                         </span>
                       </div>
                     </div>

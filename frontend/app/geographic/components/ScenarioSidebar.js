@@ -7,10 +7,10 @@ import { SIMPLIFIED_SCENARIOS } from '../SimplifiedScenarios';
 export default function ScenarioSidebar({ onSelectScenario, selectedScenario, onExecuteScenario, isExecuting }) {
   const scenarios = Object.values(SIMPLIFIED_SCENARIOS);
 
-  // Sort scenarios to put remote island routing at the bottom
+  // Sort scenarios to put remote island routing at the bottom - commented out for now
   const sortedScenarios = scenarios.sort((a, b) => {
-    if (a.id === 'remote-island-routing') return 1;
-    if (b.id === 'remote-island-routing') return -1;
+    // if (a.id === 'remote-island-routing') return 1;
+    // if (b.id === 'remote-island-routing') return -1;
     return 0;
   });
 

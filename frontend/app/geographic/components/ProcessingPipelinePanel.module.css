@@ -5,9 +5,79 @@
   right: 0;
   background: #F9FBFA;
   border-top: 2px solid #E8EDEB;
-  padding: 20px 40px;
   box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
-  z-index: 1000; /* Increased to ensure panel stays above ReactFlow */
+  z-index: 1000;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.pipelinePanel.collapsed {
+  height: 40px;
+  overflow: hidden;
+}
+
+.panelHandle {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  cursor: pointer;
+  user-select: none;
+  background: linear-gradient(to bottom, #FFFFFF, #F9FBFA);
+  border-bottom: 1px solid #E8EDEB;
+  margin: 0 0 20px 0;
+  padding: 0 40px;
+  transition: background 0.2s ease;
+}
+
+.pipelinePanel.collapsed .panelHandle {
+  border-bottom: none;
+  margin-bottom: 0;
+  background: #F9FBFA;
+}
+
+.panelHandle:hover {
+  background: linear-gradient(to bottom, #FAFAFA, #F5F7F6);
+}
+
+.handleBar {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 0 8px 5px 8px;
+  border-color: transparent transparent #CBD5E1 transparent;
+  transition: border-color 0.2s ease;
+}
+
+.panelHandle:hover .handleBar {
+  border-color: transparent transparent #13AA52 transparent;
+}
+
+.panelTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+  margin: 0 16px;
+}
+
+.handleArrow {
+  position: absolute;
+  right: 40px;
+  color: #64748B;
+  transition: transform 0.3s ease, color 0.2s ease;
+}
+
+.panelHandle:hover .handleArrow {
+  color: #13AA52;
+}
+
+.collapsibleContent {
+  padding: 0 40px 20px 40px;
+  transition: opacity 0.3s ease;
 }
 
 /* MongoDB Advantages Section - Flat Design with MongoDB Colors */

@@ -1,4 +1,6 @@
 export const SIMPLIFIED_SCENARIOS = {
+  // Remote Island Routing - Commented out for future improvements
+  /*
   remoteIslandRouting: {
     id: 'remote-island-routing',
     name: '🏝️ Remote Island Routing',
@@ -198,28 +200,29 @@ INVOICE INV-FJ-2024-089
       },
       conversion: {
         steps: [
-          { step: 1, action: 'BFS Path Discovery', time: '50ms', details: 'Find optimal route to Fiji' },
-          { step: 2, action: 'MT103 → JSON', time: '1.5s', details: 'Extract SWIFT fields' },
-          { step: 3, action: 'JSON → NPP', time: '2s', details: 'Route through Australia' },
-          { step: 4, action: 'NPP → JSON', time: '1.5s', details: 'Pacific bridge conversion' },
-          { step: 5, action: 'JSON → FJD', time: '1s', details: 'Fiji local delivery' }
+          { step: 1, action: 'BFS Path Discovery', details: 'Find optimal route to Fiji' },
+          { step: 2, action: 'MT103 → JSON', details: 'Extract SWIFT fields' },
+          { step: 3, action: 'JSON → NPP', details: 'Route through Australia' },
+          { step: 4, action: 'NPP → JSON', details: 'Pacific bridge conversion' },
+          { step: 5, action: 'JSON → FJD', details: 'Fiji local delivery' }
         ],
-        totalTime: '6.05s'
+        totalHops: 5
       },
       metrics: {
         pathsEvaluated: 4,
         optimalPath: 'Via Australia',
         costSaving: '60% vs direct SWIFT',
         reliability: '95%',
-        routingTime: '50ms'
+        routingEfficiency: 'Optimal'
       },
       insights: {
         key: 'Graph-Based Routing Intelligence',
-        value: 'BFS algorithm evaluated 4 possible paths in 50ms to find optimal route',
+        value: 'BFS algorithm evaluated 4 possible paths to find the optimal route',
         impact: 'Enables payments to any destination, even without direct rails'
       }
     }
   },
+  */
 
   simpleTransfer: {
     id: 'simple-transfer',
@@ -308,22 +311,22 @@ ORDER PO-8934567 QTY 5000 UNITS
       },
       conversion: {
         steps: [
-          { step: 1, action: 'Parse MT103', time: '45ms', details: 'Extract 21 fields using regex' },
-          { step: 2, action: 'Transform to JSON', time: '1.2s', details: '18 rules + 3 AI mappings' },
-          { step: 3, action: 'Build CHAPS', time: '30ms', details: 'XML template population' }
+          { step: 1, action: 'Parse MT103', details: 'Extract 21 fields using regex' },
+          { step: 2, action: 'Transform to JSON', details: '18 rules + 3 AI mappings' },
+          { step: 3, action: 'Build CHAPS', details: 'XML template population' }
         ],
-        totalTime: '1.28s'
+        processingSteps: 3
       },
       metrics: {
         accuracy: '99.8%',
         straightThrough: '95%',
         aiConfidence: '88%',
         costSaving: '92%',
-        setupTime: '5 seconds'
+        setupMode: 'Instant'
       },
       insights: {
         key: 'Zero-Code Architecture',
-        value: 'Adding MT192 support would take 5 seconds with auto-config vs 3 months traditional development',
+        value: 'Adding MT192 support is instant with auto-config vs traditional lengthy development cycles',
         impact: 'New payment formats added instantly without deploying code'
       }
     }
@@ -379,7 +382,7 @@ ORDER PO-8934567 QTY 5000 UNITS
     useRealAPI: false,
     mongoDbAdvantages: {
       title: '🍃 MongoDB: Intelligent Routing Engine',
-      message: "MongoDB's graph-based routing finds optimal paths through multiple payment networks. The conversion_graph collection enables real-time path discovery while caching successful routes for sub-100ms subsequent conversions."
+      message: "MongoDB's graph-based routing finds optimal paths through multiple payment networks. The conversion_graph collection enables real-time path discovery while caching successful routes for instant subsequent conversions."
     },
     pipelineStory: {
       source: 'Payment originating from USA in MT103 format',
@@ -409,10 +412,10 @@ ORDER PO-8934567 QTY 5000 UNITS
       },
       conversion: {
         steps: [
-          { step: 1, action: 'MT103→JSON', time: '1.1s', details: 'Initial conversion with AI' },
-          { step: 2, action: 'JSON→CHAPS', time: '35ms', details: 'UK format creation' },
-          { step: 3, action: 'CHAPS→JSON', time: '1.0s', details: 'Bridge extraction' },
-          { step: 4, action: 'JSON→TARGET2', time: '40ms', details: 'EU format build' }
+          { step: 1, action: 'MT103→JSON', details: 'Initial conversion with AI' },
+          { step: 2, action: 'JSON→CHAPS', details: 'UK format creation' },
+          { step: 3, action: 'CHAPS→JSON', details: 'Bridge extraction' },
+          { step: 4, action: 'JSON→TARGET2', details: 'EU format build' }
         ],
         totalTime: '2.18s'
       },

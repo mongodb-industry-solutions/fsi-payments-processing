@@ -5,26 +5,34 @@ const LAYOUT_CONFIGS = {
   linear: {
     rankdir: 'LR', // Left to Right for payment flows
     align: 'UL',
-    nodesep: 100,  // Horizontal spacing between nodes
-    ranksep: 150,  // Spacing between ranks
+    nodesep: 180,  // Much more horizontal spacing between nodes
+    ranksep: 250,  // Increased spacing between ranks
+    marginx: 80,
+    marginy: 60,
+  },
+  crypto: {
+    rankdir: 'LR', // Left to Right for payment flows
+    align: 'UL',
+    nodesep: 100,  // Increased horizontal spacing - controls edge length between nodes
+    ranksep: 160,  // More rank separation - controls distance between columns
     marginx: 50,
     marginy: 50,
   },
   hub: {
     rankdir: 'TB', // Top to Bottom for hub layouts
     align: 'DL',
-    nodesep: 80,
-    ranksep: 100,
-    marginx: 50,
-    marginy: 50,
+    nodesep: 120,
+    ranksep: 150,
+    marginx: 60,
+    marginy: 60,
   },
   complex: {
     rankdir: 'LR',
     align: 'DL',
-    nodesep: 120,
-    ranksep: 180,
-    marginx: 60,
-    marginy: 60,
+    nodesep: 200,
+    ranksep: 280,
+    marginx: 80,
+    marginy: 80,
   }
 };
 
@@ -32,6 +40,11 @@ const LAYOUT_CONFIGS = {
 export const getLayoutedElements = (nodes, edges, layoutType = 'linear') => {
   const dagreGraph = new dagre.graphlib.Graph();
   const config = LAYOUT_CONFIGS[layoutType] || LAYOUT_CONFIGS.linear;
+
+  // Debug logging to verify crypto layout is being used
+  if (layoutType === 'crypto') {
+    console.log('Using crypto layout with config:', config);
+  }
 
   dagreGraph.setDefaultEdgeLabel(() => ({}));
   dagreGraph.setGraph(config);
@@ -42,12 +55,26 @@ export const getLayoutedElements = (nodes, edges, layoutType = 'linear') => {
     let width = 200;
     let height = 150;
 
-    if (node.type === 'jsonBridge') {
-      width = 150;
-      height = 80;
-    } else if (node.data?.isHub) {
-      width = 150;
-      height = 120;
+    // For crypto layout, use standard dimensions with increased spacing
+    if (layoutType === 'crypto') {
+      width = 180;
+      height = 140;
+
+      if (node.type === 'jsonBridge') {
+        width = 140;
+        height = 80;
+      }
+    } else {
+      if (node.type === 'jsonBridge') {
+        width = 150;
+        height = 80;
+      } else if (node.type === 'crypto') {
+        width = 200;
+        height = 150;
+      } else if (node.data?.isHub) {
+        width = 150;
+        height = 120;
+      }
     }
 
     dagreGraph.setNode(node.id, { width, height });
@@ -61,6 +88,16 @@ export const getLayoutedElements = (nodes, edges, layoutType = 'linear') => {
   // Calculate the layout
   dagre.layout(dagreGraph);
 
+  // Different base offsets for different layouts
+  let baseOffsetX = 300;
+  let baseOffsetY = 200;
+
+  // Crypto layout needs balanced offset for moderate spacing
+  if (layoutType === 'crypto') {
+    baseOffsetX = 150;  // Balanced offset for better spacing
+    baseOffsetY = 150;  // Reduced from 200
+  }
+
   // Apply the calculated positions back to nodes
   const layoutedNodes = nodes.map((node) => {
     const nodeWithPosition = dagreGraph.node(node.id);
@@ -69,19 +106,33 @@ export const getLayoutedElements = (nodes, edges, layoutType = 'linear') => {
     let offsetX = 100;
     let offsetY = 75;
 
-    if (node.type === 'jsonBridge') {
-      offsetX = 75;
-      offsetY = 40;
-    } else if (node.data?.isHub) {
-      offsetX = 75;
-      offsetY = 60;
+    // For crypto layout, use offsets matching the standard dimensions
+    if (layoutType === 'crypto') {
+      offsetX = 90;
+      offsetY = 70;
+
+      if (node.type === 'jsonBridge') {
+        offsetX = 70;
+        offsetY = 40;
+      }
+    } else {
+      if (node.type === 'jsonBridge') {
+        offsetX = 75;
+        offsetY = 40;
+      } else if (node.type === 'crypto') {
+        offsetX = 100;
+        offsetY = 75;
+      } else if (node.data?.isHub) {
+        offsetX = 75;
+        offsetY = 60;
+      }
     }
 
     return {
       ...node,
       position: {
-        x: nodeWithPosition.x - offsetX + 500, // Add 500px offset to move right
-        y: nodeWithPosition.y - offsetY + 150, // Add 150px offset to move down
+        x: nodeWithPosition.x - offsetX + baseOffsetX, // Use layout-specific offset
+        y: nodeWithPosition.y - offsetY + baseOffsetY, // Use layout-specific offset
       },
     };
   });
@@ -94,9 +145,9 @@ export const getRadialLayout = (nodes, edges, hubId) => {
   const hubNode = nodes.find(n => n.id === hubId);
   if (!hubNode) return { nodes, edges };
 
-  const centerX = 800; // Move center to the right
-  const centerY = 300; // Center vertically
-  const radius = 300; // Slightly smaller radius
+  const centerX = 1000; // Center in expanded canvas
+  const centerY = 400; // Center vertically in expanded canvas
+  const radius = 400; // Larger radius for better spacing
 
   const layoutedNodes = nodes.map((node) => {
     if (node.id === hubId) {
@@ -168,15 +219,15 @@ export const getRoutingTreeLayout = (nodes, edges, routingConfig) => {
   const layoutedNodes = [];
   const processedNodes = new Set(); // Track which nodes have been added
 
-  // Positioning constants - CENTERED LAYOUT
-  const canvasWidth = 1400; // Canvas width
-  const canvasHeight = 550; // Height for vertical spacing
+  // Positioning constants - EXPANDED LAYOUT FOR ROUTING
+  const canvasWidth = 2000; // Increased canvas width for more space
+  const canvasHeight = 800; // Increased height for better vertical distribution
   const nodeWidth = 180;
   const nodeHeight = 90; // Node height
-  const startX = 600; // Move much further right to center
-  const endX = canvasWidth - 200; // Adjust end position
-  const verticalPadding = 30; // Top and bottom padding
-  const minLaneSpacing = 180; // Minimum spacing between path lanes
+  const startX = 300; // Source node position
+  const endX = canvasWidth - 300; // Destination node position
+  const verticalPadding = 50; // Top and bottom padding
+  const minLaneSpacing = 150; // Spacing between path lanes
 
   // Calculate vertical positions using swim lanes
   const numPaths = paths ? paths.length : 0;
@@ -233,9 +284,9 @@ export const getRoutingTreeLayout = (nodes, edges, routingConfig) => {
         centerY + 100 // Bottom path
       ];
     } else if (numPaths === 4) {
-      // Four paths (remote island scenario): start from very top
-      const laneSpacing = 90; // Tighter spacing for better fit
-      const startY = 0; // Start from absolute top
+      // Four paths (remote island scenario): evenly distributed
+      const laneSpacing = 140; // Good spacing for 4 paths
+      const startY = verticalPadding + 50; // Start with padding
       laneYPositions = [
         startY,
         startY + laneSpacing,
@@ -264,7 +315,8 @@ export const getRoutingTreeLayout = (nodes, edges, routingConfig) => {
 
       // Position each node in the path horizontally along its lane
       pathNodes.forEach((nodeData, hopIndex) => {
-        const nodeX = startX + pathHopSpacing * (hopIndex + 1) + nodeWidth / 2;
+        // Better horizontal distribution with proper offsets
+        const nodeX = startX + nodeWidth + pathHopSpacing * (hopIndex + 1);
         const uniqueKey = `${nodeData.id}_path${pathIndex}`;
         const baseNode = nodes.find(n => n.id === nodeData.id);
 
@@ -304,6 +356,12 @@ export const determineLayoutStrategy = (scenario) => {
   // Routing tree pattern for BFS scenarios
   if (scenario.isRoutingScenario) {
     return 'routing';
+  }
+
+  // Crypto scenarios need extra spacing
+  if (scenario.complexity === 'hybrid-crypto' ||
+      (scenario.hops && scenario.hops.some(h => h.isCrypto))) {
+    return 'crypto';
   }
 
   // Hub and spoke patterns
