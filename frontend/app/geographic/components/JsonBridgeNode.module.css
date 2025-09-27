@@ -62,8 +62,35 @@
 }
 
 .icon {
-  font-size: 20px;
-  filter: brightness(1.2);
+  width: 24px;
+  height: 24px;
+  background: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.icon::before {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border: 2px solid #047857;
+  border-radius: 50%;
+  border-right-color: transparent;
+  border-bottom-color: transparent;
+  transform: rotate(45deg);
+}
+
+.icon::after {
+  content: '';
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background: #047857;
+  border-radius: 50%;
 }
 
 .label {
@@ -906,4 +933,121 @@
   .benefitsList {
     grid-template-columns: 1fr;
   }
+}
+
+/* Why JSON Section Styles */
+.whyJsonSection {
+  margin-top: 20px;
+  padding: 20px;
+  background: linear-gradient(to bottom, #f0fdf4, #ffffff);
+  border-radius: 12px;
+  border: 1px solid #d1fae5;
+}
+
+.whyJsonSection h4 {
+  font-size: 16px;
+  margin-bottom: 16px;
+  color: #047857;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.comparisonGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.comparisonCard {
+  padding: 16px;
+  border-radius: 8px;
+  background: white;
+  border: 1px solid #e5e7eb;
+}
+
+.comparisonCard:first-child {
+  border-color: #fecaca;
+  background: linear-gradient(to bottom, #fef2f2, #ffffff);
+}
+
+.comparisonCard:last-child {
+  border-color: #a7f3d0;
+  background: linear-gradient(to bottom, #f0fdf4, #ffffff);
+}
+
+.comparisonCard h5 {
+  font-size: 14px;
+  margin-bottom: 12px;
+  font-weight: 600;
+}
+
+.comparisonList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: 13px;
+  color: #4b5563;
+}
+
+.comparisonList li {
+  padding: 6px 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.comparisonList li:last-child {
+  border-bottom: none;
+}
+
+.comparisonList strong {
+  color: #111827;
+}
+
+.mathExplanation {
+  padding: 16px;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.formula {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  padding: 12px;
+  background: #f9fafb;
+  border-radius: 6px;
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+
+.formula span:first-child {
+  color: #dc2626;
+}
+
+.formula span:last-child {
+  color: #059669;
+}
+
+.vs {
+  color: #6b7280;
+  font-weight: bold;
+}
+
+.networkEffect {
+  font-size: 13px;
+  line-height: 1.6;
+  color: #374151;
+  margin: 0;
+  padding: 12px;
+  background: linear-gradient(to right, #f0fdf4, #dcfce7);
+  border-radius: 6px;
+  border-left: 3px solid #059669;
+}
+
+.networkEffect strong {
+  color: #047857;
 }

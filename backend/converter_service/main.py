@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 # Create FastAPI app
 app = FastAPI(
-    title="Payment Converter Service",
+    title="OmniPay Service",
     description="Generic payment format conversion with AI support",
     version="1.0.0"
 )

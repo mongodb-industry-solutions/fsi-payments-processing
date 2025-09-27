@@ -263,19 +263,206 @@
   margin: 0 0 16px 0;
 }
 
+/* Field Descriptions - Compact */
+.fieldDescriptions {
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 10px;
+  margin-bottom: 12px;
+}
+
+.fieldDescriptions h4 {
+  font-size: 12px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 8px 0;
+}
+
+.fieldGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  font-size: 11px;
+}
+
+.fieldItem {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+}
+
+.fieldItem strong {
+  font-family: 'SF Mono', Monaco, monospace;
+  font-size: 11px;
+  color: #047857;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.fieldItem span {
+  font-size: 11px;
+  color: #6b7280;
+  line-height: 1.3;
+}
+
+/* View Toggle */
+.viewToggle {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.viewButton {
+  flex: 1;
+  padding: 8px 16px;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  color: #6b7280;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.viewButton:hover {
+  background: #e5e7eb;
+}
+
+.activeView {
+  background: #059669;
+  color: white;
+  border-color: #059669;
+}
+
+.activeView:hover {
+  background: #047857;
+}
+
 /* MongoDB Document Display */
 .mongoDocument {
   background: #1e1e1e;
   border-radius: 6px;
-  padding: 12px;
+  padding: 0;
   margin-bottom: 16px;
-  height: 350px;
-  max-height: 350px;
+  height: 450px;
+  max-height: 450px;
   overflow-y: auto;
   overflow-x: auto;
   position: relative;
   cursor: default;
   user-select: text;
+}
+
+.documentHeader {
+  background: #2d2d2d;
+  padding: 10px 16px;
+  border-bottom: 1px solid #3d3d3d;
+  font-size: 12px;
+  color: #9ca3af;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.collectionName {
+  font-weight: 600;
+  color: #10b981;
+}
+
+.expandAllBtn {
+  padding: 4px 8px;
+  background: #374151;
+  border: none;
+  border-radius: 4px;
+  color: #9ca3af;
+  font-size: 11px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.expandAllBtn:hover {
+  background: #4b5563;
+}
+
+/* JSON Document Styles */
+.jsonDocument {
+  padding: 16px;
+  font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.jsonNode {
+  position: relative;
+}
+
+.jsonLine {
+  display: flex;
+  align-items: center;
+  padding: 2px 0;
+}
+
+.jsonToggle {
+  cursor: pointer;
+  color: #6b7280;
+  margin-right: 8px;
+  user-select: none;
+  font-size: 10px;
+}
+
+.jsonToggle:hover {
+  color: #9ca3af;
+}
+
+.mongoSystemField {
+  color: #fbbf24;
+}
+
+.jsonKey {
+  color: #60a5fa;
+}
+
+.jsonColon {
+  color: #9ca3af;
+  margin: 0 4px;
+}
+
+.jsonString {
+  color: #86efac;
+}
+
+.jsonNumber {
+  color: #fbbf24;
+}
+
+.jsonBoolean {
+  color: #f87171;
+}
+
+.jsonNull {
+  color: #94a3b8;
+}
+
+.jsonBracket {
+  color: #e5e7eb;
+}
+
+.jsonComma {
+  color: #9ca3af;
+}
+
+.jsonChildren {
+  margin-left: 4px;
+}
+
+.jsonCollapsed {
+  color: #6b7280;
+  font-style: italic;
 }
 
 /* Custom scrollbar for MongoDB document */
@@ -583,6 +770,140 @@
 .laneLabel {
   font-weight: 500;
   color: #374151;
+}
+
+/* Processing Stats */
+.processingStats {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 16px;
+}
+
+.processingStats h4 {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 10px 0;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.statItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px;
+  background: white;
+  border-radius: 4px;
+  border: 1px solid #e5e7eb;
+}
+
+.statValue {
+  font-size: 20px;
+  font-weight: 700;
+  color: #059669;
+}
+
+.statLabel {
+  font-size: 11px;
+  color: #6b7280;
+  text-align: center;
+}
+
+/* Schema View */
+.schemaView {
+  background: #f9fafb;
+  border-radius: 6px;
+  padding: 20px;
+  height: 450px;
+  overflow-y: auto;
+  margin-bottom: 16px;
+}
+
+.schemaView h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 16px 0;
+}
+
+.schemaGrid {
+  display: grid;
+  gap: 12px;
+}
+
+.schemaSection {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 12px;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.schemaSection:hover {
+  transform: translateX(4px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.sectionIcon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.schemaSection strong {
+  display: block;
+  font-size: 13px;
+  color: #047857;
+  font-family: 'SF Mono', Monaco, monospace;
+  margin-bottom: 4px;
+}
+
+.schemaSection span {
+  font-size: 12px;
+  color: #6b7280;
+  line-height: 1.4;
+}
+
+/* Processing Breakdown */
+.processingBreakdown {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.processingBreakdown h4 {
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+.laneStats {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.laneStat {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  color: #4b5563;
+}
+
+.laneBar {
+  height: 20px;
+  border-radius: 4px;
+  transition: width 0.3s ease;
 }
 
 .mongoNote {

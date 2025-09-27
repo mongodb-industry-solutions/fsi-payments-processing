@@ -33,7 +33,7 @@ function JsonBridgeNode({ data }) {
   // Sample Canonical JSON MongoDB Document
   const canonicalJsonDocument = {
     "_id": "conv_20241215_TEST001",
-    "_collection": "conversion_results",
+    "_collection": "canonical_json",
     "header": {
       "message_type": "customer_transfer",
       "message_id": "TEST001",
@@ -268,7 +268,7 @@ function JsonBridgeNode({ data }) {
       <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
         <div className={styles.modalHeader}>
           <h2>MongoDB Bridge Details</h2>
-          <button className={styles.closeButton} onClick={closeModal}>✕</button>
+          <button className={styles.closeButton} onClick={closeModal}>×</button>
         </div>
 
         <div className={styles.tabContainer}>
@@ -303,7 +303,7 @@ function JsonBridgeNode({ data }) {
               </div>
 
               <div className={styles.arrowDivider}>
-                <span>⬇️</span>
+                <span>↓</span>
               </div>
 
               <div className={styles.jsonSection}>
@@ -325,13 +325,56 @@ function JsonBridgeNode({ data }) {
                 <>
                   {/* Canonical JSON Format Section */}
                   <div className={styles.configSection}>
-                    <h3>📚 Canonical JSON - The Universal Payment Language</h3>
+                    <h3>Canonical JSON - The Universal Payment Language</h3>
                     <div className={styles.canonicalExplanation}>
                       <p className={styles.introText}>
-                        Canonical JSON is MongoDB's <strong>universal translator</strong> for payments.
-                        Instead of building 100+ direct converters (MT103→CHAPS, MT202→TARGET2, etc.),
-                        every format just converts to/from this single JSON structure stored in MongoDB.
+                        Canonical JSON is OmniPay's <strong>universal interchange format</strong> for payment messages.
+                        Instead of building hundreds of direct converters between format pairs,
+                        every format converts to and from this single JSON structure stored in MongoDB.
                       </p>
+
+                      {/* Why JSON? Section */}
+                      <div className={styles.whyJsonSection}>
+                        <h4>Why Use JSON as an Intermediate Format?</h4>
+                        <div className={styles.comparisonGrid}>
+                          <div className={styles.comparisonCard}>
+                            <h5 style={{color: '#dc2626'}}>Direct Conversion Approach</h5>
+                            <ul className={styles.comparisonList}>
+                              <li><strong>For any-to-any conversion:</strong></li>
+                              <li>MT103 → pacs.008 (1 converter)</li>
+                              <li>MT103 → TARGET2 (1 converter)</li>
+                              <li>MT103 → CHAPS (1 converter)</li>
+                              <li>pacs.008 → TARGET2 (1 converter)</li>
+                              <li><strong>10 formats = 90 separate converters</strong></li>
+                              <li>Each pair needs custom code</li>
+                            </ul>
+                          </div>
+                          <div className={styles.comparisonCard}>
+                            <h5 style={{color: '#059669'}}>JSON Bridge Approach</h5>
+                            <ul className={styles.comparisonList}>
+                              <li><strong>For any-to-any conversion:</strong></li>
+                              <li>MT103 → JSON (1 converter)</li>
+                              <li>JSON → pacs.008 (1 converter)</li>
+                              <li>JSON → TARGET2 (1 converter)</li>
+                              <li>JSON → CHAPS (1 converter)</li>
+                              <li><strong>10 formats = 20 converters total</strong></li>
+                              <li>All formats connect via JSON</li>
+                            </ul>
+                          </div>
+                        </div>
+                        <div className={styles.mathExplanation}>
+                          <div className={styles.formula}>
+                            <span>Direct: N × (N-1) converters for full connectivity</span>
+                            <span className={styles.vs}>versus</span>
+                            <span>JSON: 2N converters for full connectivity</span>
+                          </div>
+                          <p className={styles.networkEffect}>
+                            <strong>Key Insight:</strong> With direct conversion, to convert MT103 to any of 9 other formats requires 9 separate converters.
+                            With JSON bridge, MT103 needs only 1 converter (to JSON), then JSON handles conversion to all 9 targets.
+                            This creates a hub-and-spoke model where JSON is the universal hub.
+                          </p>
+                        </div>
+                      </div>
 
                       {/* View Mode Toggle */}
                       <div className={styles.viewToggle}>
@@ -339,20 +382,20 @@ function JsonBridgeNode({ data }) {
                           className={`${styles.viewButton} ${viewMode === 'document' ? styles.activeView : ''}`}
                           onClick={() => setViewMode('document')}
                         >
-                          📄 Document View
+                          Document View
                         </button>
                         <button
                           className={`${styles.viewButton} ${viewMode === 'schema' ? styles.activeView : ''}`}
                           onClick={() => setViewMode('schema')}
                         >
-                          🗂️ Schema View
+                          Schema View
                         </button>
                       </div>
 
                       {viewMode === 'document' ? (
                         <div className={styles.mongoDocument}>
                           <div className={styles.documentHeader}>
-                            <span className={styles.collectionName}>conversion_results</span>
+                            <span className={styles.collectionName}>Canonical JSON</span>
                             <button
                               className={styles.expandAllBtn}
                               onClick={() => {
@@ -377,87 +420,87 @@ function JsonBridgeNode({ data }) {
                         </div>
                       ) : (
                         <div className={styles.jsonStructure}>
-                          <h4>🗂️ The 12 Universal Sections</h4>
+                          <h4>The 12 Universal Sections</h4>
                           <div className={styles.sectionsGrid}>
                             <div className={styles.schemaSection}>
-                              <span className={styles.sectionIcon}>📋</span>
+                              <span className={styles.sectionIcon}>▪</span>
                               <div>
                                 <strong>header</strong>
                                 <span>Message type, ID, priority</span>
                               </div>
                             </div>
                             <div className={styles.schemaSection}>
-                              <span className={styles.sectionIcon}>💳</span>
+                              <span className={styles.sectionIcon}>▪</span>
                               <div>
                                 <strong>transaction</strong>
                                 <span>Transaction ID, type, status</span>
                               </div>
                             </div>
                             <div className={styles.schemaSection}>
-                              <span className={styles.sectionIcon}>👥</span>
+                              <span className={styles.sectionIcon}>▪</span>
                               <div>
                                 <strong>parties</strong>
                                 <span>Sender, receiver, banks</span>
                               </div>
                             </div>
                             <div className={styles.schemaSection}>
-                              <span className={styles.sectionIcon}>💰</span>
+                              <span className={styles.sectionIcon}>▪</span>
                               <div>
                                 <strong>amounts</strong>
                                 <span>Payment amount, currency</span>
                               </div>
                             </div>
                             <div className={styles.schemaSection}>
-                              <span className={styles.sectionIcon}>📅</span>
+                              <span className={styles.sectionIcon}>▪</span>
                               <div>
                                 <strong>dates</strong>
                                 <span>Value date, execution date</span>
                               </div>
                             </div>
                             <div className={styles.schemaSection}>
-                              <span className={styles.sectionIcon}>📄</span>
+                              <span className={styles.sectionIcon}>▪</span>
                               <div>
                                 <strong>remittance</strong>
                                 <span>Invoice, payment details</span>
                               </div>
                             </div>
                             <div className={styles.schemaSection}>
-                              <span className={styles.sectionIcon}>📝</span>
+                              <span className={styles.sectionIcon}>▪</span>
                               <div>
                                 <strong>instructions</strong>
                                 <span>Processing instructions</span>
                               </div>
                             </div>
                             <div className={styles.schemaSection}>
-                              <span className={styles.sectionIcon}>🔗</span>
+                              <span className={styles.sectionIcon}>▪</span>
                               <div>
                                 <strong>references</strong>
                                 <span>Reference numbers</span>
                               </div>
                             </div>
                             <div className={styles.schemaSection}>
-                              <span className={styles.sectionIcon}>💵</span>
+                              <span className={styles.sectionIcon}>▪</span>
                               <div>
                                 <strong>charges</strong>
                                 <span>Fees and charges</span>
                               </div>
                             </div>
                             <div className={styles.schemaSection}>
-                              <span className={styles.sectionIcon}>⚖️</span>
+                              <span className={styles.sectionIcon}>▪</span>
                               <div>
                                 <strong>regulatory</strong>
                                 <span>Compliance info</span>
                               </div>
                             </div>
                             <div className={styles.schemaSection}>
-                              <span className={styles.sectionIcon}>⚙️</span>
+                              <span className={styles.sectionIcon}>▪</span>
                               <div>
                                 <strong>processing_metadata</strong>
                                 <span>Conversion details</span>
                               </div>
                             </div>
                             <div className={styles.schemaSection}>
-                              <span className={styles.sectionIcon}>📦</span>
+                              <span className={styles.sectionIcon}>▪</span>
                               <div>
                                 <strong>original_fields</strong>
                                 <span>Preserved source data</span>
@@ -468,17 +511,17 @@ function JsonBridgeNode({ data }) {
                       )}
 
                       <div className={styles.whyMatters}>
-                        <h4>💡 Key Benefits</h4>
+                        <h4>Key Benefits</h4>
                         <div className={styles.benefitsList}>
                           <div className={styles.benefit}>
-                            <span className={styles.benefitIcon}>✅</span>
+                            <span className={styles.benefitIcon}>•</span>
                             <div>
                               <strong>No Data Loss</strong>
                               <span>Every field preserved in original_fields</span>
                             </div>
                           </div>
                           <div className={styles.benefit}>
-                            <span className={styles.benefitIcon}>🚀</span>
+                            <span className={styles.benefitIcon}>•</span>
                             <div>
                               <strong>Instant New Formats</strong>
                               <span>Just map to same JSON structure</span>
@@ -492,7 +535,7 @@ function JsonBridgeNode({ data }) {
                   {/* Scenario-Specific Configuration */}
                   {mongoConfig.bridge && (
                     <div className={styles.configSection}>
-                      <h3>🌉 {mongoConfig.bridge.title}</h3>
+                      <h3>{mongoConfig.bridge.title}</h3>
                       <div className={styles.bridgeFlow}>
                         <div className={styles.bridgeItem}>
                           <strong>{mongoConfig.bridge.from}</strong>
@@ -513,7 +556,7 @@ function JsonBridgeNode({ data }) {
                   {/* Field Processing Details */}
                   {mongoConfig.mapping && (
                     <div className={styles.configSection}>
-                      <h3>🔄 How This Scenario Works</h3>
+                      <h3>How This Scenario Works</h3>
 
                       {/* Processing Stats */}
                       <div className={styles.mappingStats}>
@@ -533,7 +576,7 @@ function JsonBridgeNode({ data }) {
                             {mongoConfig.mapping.examples.map((example, idx) => (
                               <div key={idx} className={styles.mappingRow}>
                                 <span className={example.type === 'ai' ? styles.aiLabel : styles.rulesLabel}>
-                                  {example.type === 'ai' ? '🤖' : '📋'}
+                                  {example.type === 'ai' ? 'AI' : 'RULES'}
                                 </span>
                                 <code>{example.source}</code>
                                 <span className={styles.mappingArrow}>→</span>
@@ -552,7 +595,7 @@ function JsonBridgeNode({ data }) {
                   {/* Metrics */}
                   {mongoConfig.metrics && (
                     <div className={styles.configSection}>
-                      <h3>📊 Performance Metrics</h3>
+                      <h3>Performance Metrics</h3>
                       <div className={styles.metricsGrid}>
                         <div className={styles.metric}>
                           <span className={styles.metricValue}>{mongoConfig.metrics.accuracy}</span>
@@ -577,7 +620,7 @@ function JsonBridgeNode({ data }) {
                   {/* Insights */}
                   {mongoConfig.insights && (
                     <div className={styles.insightBox}>
-                      <h4>🚀 {mongoConfig.insights.key}</h4>
+                      <h4>{mongoConfig.insights.key}</h4>
                       <p>{mongoConfig.insights.value}</p>
                       <p className={styles.impact}>
                         <strong>Impact:</strong> {mongoConfig.insights.impact}
@@ -596,7 +639,7 @@ function JsonBridgeNode({ data }) {
 
         <div className={styles.modalFooter}>
           <div className={styles.info}>
-            <span className={styles.infoIcon}>ℹ️</span>
+            <span className={styles.infoIcon}></span>
             <span>
               {activeTab === 'json'
                 ? 'The MongoDB Bridge uses a universal Canonical JSON format to enable seamless multi-hop conversions between any payment formats.'
@@ -625,7 +668,7 @@ function JsonBridgeNode({ data }) {
 
         <div className={styles.content}>
           <div className={styles.iconContainer}>
-            <span className={styles.icon}>🔄</span>
+            <span className={styles.icon}></span>
           </div>
 
           <div className={styles.label}>
