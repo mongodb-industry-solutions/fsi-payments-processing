@@ -227,12 +227,82 @@ INVOICE INV-FJ-2024-089
   simpleTransfer: {
     id: 'simple-transfer',
     name: '🌐 Cross-Border Transfer',
-    description: 'US to UK payment via universal JSON bridge',
+    description: 'Hub-and-spoke model: USA to UK/France via Canonical JSON',
     complexity: 'simple',
+
+    // Hub and spoke configuration
+    hubAndSpoke: true,
+    selectedDestination: 'uk', // Default to UK, can be changed to 'france'
+
+    // All possible nodes in the hub-spoke model
+    allNodes: {
+      usa: { id: 'usa', country: 'USA', format: 'MT103', icon: '🇺🇸', city: 'New York' },
+      uk: { id: 'uk', country: 'UK', format: 'CHAPS', icon: '🇬🇧', city: 'London' },
+      france: { id: 'france', country: 'France', format: 'ISO 20022 (pacs.008)', icon: '🇫🇷', city: 'Paris' }
+    },
+
+    // Default hops (for UK)
     hops: [
       { id: 'usa', country: 'USA', format: 'MT103', icon: '🇺🇸', city: 'New York' },
       { id: 'uk', country: 'UK', format: 'CHAPS', icon: '🇬🇧', city: 'London' }
     ],
+    // Conversion paths for different destinations
+    conversionPaths: {
+      uk: {
+        hops: [
+          { id: 'usa', country: 'USA', format: 'MT103', icon: '🇺🇸', city: 'New York' },
+          { id: 'uk', country: 'UK', format: 'CHAPS', icon: '🇬🇧', city: 'London' }
+        ],
+        conversions: [
+          {
+            from: 'MT103',
+            to: 'JSON',
+            location: 'Processing',
+            time: 2000,
+            description: 'Extracting payment fields',
+            details: 'Converting SWIFT MT103 format to universal JSON structure',
+            useRealAPI: true
+          },
+          {
+            from: 'JSON',
+            to: 'CHAPS',
+            location: 'UK Gateway',
+            time: 2000,
+            description: 'Building UK format',
+            details: 'Transforming JSON to UK CHAPS payment message',
+            useRealAPI: true
+          }
+        ]
+      },
+      france: {
+        hops: [
+          { id: 'usa', country: 'USA', format: 'MT103', icon: '🇺🇸', city: 'New York' },
+          { id: 'france', country: 'France', format: 'ISO 20022 (pacs.008)', icon: '🇫🇷', city: 'Paris' }
+        ],
+        conversions: [
+          {
+            from: 'MT103',
+            to: 'JSON',
+            location: 'Processing',
+            time: 2000,
+            description: 'Extracting payment fields',
+            details: 'Converting SWIFT MT103 format to universal JSON structure',
+            useRealAPI: true
+          },
+          {
+            from: 'JSON',
+            to: 'ISO 20022 (pacs.008)',
+            location: 'EU Gateway',
+            time: 2000,
+            description: 'Building ISO 20022',
+            details: 'Transforming JSON to ISO 20022 pacs.008 payment message',
+            useRealAPI: true
+          }
+        ]
+      }
+    },
+
+    // Default conversions (for UK)
     conversions: [
       {
         from: 'MT103',

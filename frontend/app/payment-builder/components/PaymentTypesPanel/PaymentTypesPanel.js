@@ -6,7 +6,6 @@ import {
   WireTransferIcon,
   CardIcon,
   BankIcon,
-  CurrencyIcon,
   FastPaymentIcon,
   NetworkIcon
 } from '../shared/Icons';
@@ -50,19 +49,6 @@ const PAYMENT_TYPES = [
     fields: 15,
     mongoFeatures: ['Direct Mapping', 'High Volume', 'Bulk Ops'],
     color: 'purple'
-  },
-  {
-    id: 'fx_settlement',
-    name: 'FX Settlement',
-    icon: <CurrencyIcon />,
-    description: 'Foreign exchange settlement',
-    sourceFormat: 'MT205',
-    targetFormat: 'pacs.009',
-    complexity: 'medium',
-    estimatedTime: '750ms',
-    fields: 22,
-    mongoFeatures: ['Decimal128', 'Multi-currency', 'Atomic Ops'],
-    color: 'orange'
   },
   {
     id: 'instant_payment',
@@ -123,32 +109,45 @@ export default function PaymentTypesPanel({ selectedType, onSelectType, isCollap
 
       {/* Payment Type Cards */}
       <div className={styles.typesList} role="list" aria-labelledby="payment-types-heading" aria-describedby="payment-types-description">
-        {/* Add New Format Card - Show at the top in expanded view */}
-        {!isCollapsed && onAddNewFormat && (
-          <div
-            className={styles.addNewCard}
-            onClick={onAddNewFormat}
-            role="button"
-            tabIndex={0}
-            aria-label="Configure a new payment format"
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                onAddNewFormat();
-              }
-            }}
-          >
-            <div className={styles.addNewIcon}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                <path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        {/* Add New Format Card - Show at the top */}
+        {onAddNewFormat && (
+          isCollapsed ? (
+            <button
+              className={styles.collapsedAutoConfigButton}
+              onClick={onAddNewFormat}
+              title="Configure New Format"
+              aria-label="Configure New Format"
+            >
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <path d="M10 4V16M4 10H16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
+            </button>
+          ) : (
+            <div
+              className={styles.addNewCard}
+              onClick={onAddNewFormat}
+              role="button"
+              tabIndex={0}
+              aria-label="Configure a new payment format"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  onAddNewFormat();
+                }
+              }}
+            >
+              <div className={styles.addNewIcon}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+              <div className={styles.addNewContent}>
+                <h4>Configure New Format</h4>
+                <p>Use AI to auto-configure a new payment format</p>
+                <span className={styles.addNewBadge}>Intelligent Learning</span>
+              </div>
             </div>
-            <div className={styles.addNewContent}>
-              <h4>Configure New Format</h4>
-              <p>Use AI to auto-configure a new payment format</p>
-              <span className={styles.addNewBadge}>Intelligent Learning</span>
-            </div>
-          </div>
+          )
         )}
 
         {/* Standard Payment Types */}
@@ -262,7 +261,7 @@ export default function PaymentTypesPanel({ selectedType, onSelectType, isCollap
       {!isCollapsed && (
         <div className={styles.footer}>
           <div className={styles.footerInfo}>
-            <strong>5</strong> payment scenarios
+            <strong>4</strong> payment scenarios
             <span className={styles.separator}>•</span>
             <strong>100%</strong> generic converter
           </div>

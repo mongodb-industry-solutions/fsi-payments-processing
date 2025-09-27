@@ -69,6 +69,7 @@ function PaymentVisualizerFlow() {
   const [jsonBridgeData, setJsonBridgeData] = useState({});
   const [bfsState, setBfsState] = useState({ queue: [], visited: [], current: null });
   const [selectedPath, setSelectedPath] = useState(null);
+  const [selectedDestination, setSelectedDestination] = useState('uk'); // For hub-and-spoke scenarios
   const { fitView } = useReactFlow();
 
   const onConnect = useCallback((params) => setEdges((eds) => addEdge(params, eds)), [setEdges]);
@@ -320,6 +321,121 @@ function PaymentVisualizerFlow() {
         });
       }, 100);
 
+    } else if (scenario.hubAndSpoke) {
+      // Hub-and-spoke model for cross-border transfers
+      // Central JSON hub with multiple destination spokes
+      const hubId = 'json-hub';
+
+      // Use selectedDestination from state
+      const activeDestination = selectedDestination || 'uk';
+
+      // Add central JSON hub
+      initialNodes.push({
+        id: hubId,
+        type: 'jsonBridge',
+        position: { x: 0, y: 0 }, // Will be positioned by layout
+        data: {
+          country: 'JSON',
+          format: 'Canonical',
+          icon: '🔄',
+          isHub: true,
+          city: 'Universal Hub',
+          status: executionProgress[hubId] || 'idle',
+          beforeJson: jsonBridgeData[hubId]?.beforeJson || null,
+          afterJson: jsonBridgeData[hubId]?.afterJson || null,
+          selectedScenario: scenario
+        }
+      });
+
+      // Add source node (USA)
+      const sourceNode = scenario.allNodes.usa;
+      initialNodes.push({
+        id: sourceNode.id,
+        type: 'country',
+        position: { x: 0, y: 0 },
+        data: {
+          ...sourceNode,
+          mongoConfig: true,
+          status: executionProgress[sourceNode.id] || 'idle'
+        }
+      });
+
+      // Add edge from USA to JSON hub (always active as it's the source)
+      initialEdges.push({
+        id: `${sourceNode.id}-${hubId}`,
+        source: sourceNode.id,
+        target: hubId,
+        ...edgeOptions,
+        label: `MT103 → JSON`,
+        labelStyle: { fontSize: 11, fontWeight: 600, color: '#00A35C' }
+      });
+
+      // Add destination nodes (UK and France)
+      const destinations = [scenario.allNodes.uk, scenario.allNodes.france];
+      destinations.forEach(dest => {
+        // Check if this destination is selected
+        const isDestinationSelected = activeDestination === dest.id;
+
+        // Add destination node
+        initialNodes.push({
+          id: dest.id,
+          type: 'country',
+          position: { x: 0, y: 0 },
+          data: {
+            ...dest,
+            mongoConfig: true,
+            status: executionProgress[dest.id] || 'idle',
+            // Mark selected destination
+            isSelected: isDestinationSelected
+          }
+        });
+
+        // Add edge from JSON hub to destination
+        const edgeStyle = isDestinationSelected ?
+          { ...edgeOptions, style: { ...edgeOptions.style, strokeWidth: 3, stroke: '#00A35C' } } :
+          { ...edgeOptions, style: { ...edgeOptions.style, strokeWidth: 2, stroke: '#cbd5e1', strokeDasharray: '5 5' }, animated: false };
+
+        initialEdges.push({
+          id: `${hubId}-${dest.id}`,
+          source: hubId,
+          target: dest.id,
+          ...edgeStyle,
+          label: dest.format === 'CHAPS' ? `JSON → CHAPS` : `JSON → ISO 20022`,
+          labelStyle: { fontSize: 11, fontWeight: 600, color: isDestinationSelected ? '#00A35C' : '#9ca3af' }
+        });
+      });
+
+      // Custom layout for hub-and-spoke pattern with more spacing
+      // Position nodes in a triangular pattern with JSON at center
+      const layoutedNodes = initialNodes.map(node => {
+        if (node.id === hubId) {
+          // JSON hub at center
+          return { ...node, position: { x: 500, y: 300 } };
+        } else if (node.id === 'usa') {
+          // USA on the left with more distance
+          return { ...node, position: { x: 50, y: 300 } };
+        } else if (node.id === 'uk') {
+          // UK on top-right with more spacing
+          return { ...node, position: { x: 950, y: 100 } };
+        } else if (node.id === 'france') {
+          // France on bottom-right with more spacing
+          return { ...node, position: { x: 950, y: 500 } };
+        }
+        return node;
+      });
+
+      setNodes(layoutedNodes);
+      setEdges(initialEdges);
+
+      // Auto-fit view
+      setTimeout(() => {
+        fitView({
+          padding: 0.2,
+          duration: 800,
+          maxZoom: 0.9
+        });
+      }, 100);
+
     } else {
       // Linear/sequential flow with JSON bridges
       scenario.hops.forEach((hop, index) => {
@@ -454,6 +570,18 @@ function PaymentVisualizerFlow() {
   };
 
   const handleSelectScenario = (scenario) => {
+    // Set the default destination for hub-and-spoke scenarios
+    if (scenario.hubAndSpoke) {
+      const defaultDest = scenario.selectedDestination || 'uk';
+      setSelectedDestination(defaultDest);
+      // Update scenario with the correct conversion path
+      scenario = {
+        ...scenario,
+        hops: scenario.conversionPaths[defaultDest].hops,
+        conversions: scenario.conversionPaths[defaultDest].conversions
+      };
+    }
+
     setSelectedScenario(scenario);
     setSelectedNode(null);
     setExecutionProgress({});
@@ -758,6 +886,58 @@ function PaymentVisualizerFlow() {
         onExecuteScenario={simulateExecution}
         isExecuting={isExecuting}
       />
+
+      {/* Destination Selector for Hub-and-Spoke scenarios */}
+      {selectedScenario?.hubAndSpoke && (
+        <div className={styles.destinationSelector}>
+          <h3>Select Destination</h3>
+          <div className={styles.destinationButtons}>
+            <button
+              className={`${styles.destinationButton} ${selectedDestination === 'uk' ? styles.selected : ''}`}
+              onClick={() => {
+                setSelectedDestination('uk');
+                // Update the scenario with new destination
+                if (selectedScenario) {
+                  const updatedScenario = {
+                    ...selectedScenario,
+                    selectedDestination: 'uk',
+                    hops: selectedScenario.conversionPaths.uk.hops,
+                    conversions: selectedScenario.conversionPaths.uk.conversions
+                  };
+                  setSelectedScenario(updatedScenario);
+                  buildScenarioFlow(updatedScenario);
+                }
+              }}
+            >
+              <span className={styles.flag}>🇬🇧</span>
+              <span>UK (CHAPS)</span>
+            </button>
+            <button
+              className={`${styles.destinationButton} ${selectedDestination === 'france' ? styles.selected : ''}`}
+              onClick={() => {
+                setSelectedDestination('france');
+                // Update the scenario with new destination
+                if (selectedScenario) {
+                  const updatedScenario = {
+                    ...selectedScenario,
+                    selectedDestination: 'france',
+                    hops: selectedScenario.conversionPaths.france.hops,
+                    conversions: selectedScenario.conversionPaths.france.conversions
+                  };
+                  setSelectedScenario(updatedScenario);
+                  buildScenarioFlow(updatedScenario);
+                }
+              }}
+            >
+              <span className={styles.flag}>🇫🇷</span>
+              <span>France (ISO 20022)</span>
+            </button>
+          </div>
+          <p className={styles.destinationInfo}>
+            The Canonical JSON hub enables any-to-any conversion. Select a destination to see the conversion path.
+          </p>
+        </div>
+      )}
 
       <div className={styles.mainCanvas}>
         <div className={styles.flowContainer}>

@@ -22,6 +22,18 @@ export default function PaymentBuilder() {
   const [autoConfigScenario, setAutoConfigScenario] = useState(null);
 
   const handlePaymentTypeSelect = (paymentType) => {
+    // Toggle deselection if clicking the same payment type
+    if (selectedPaymentType?.id === paymentType.id) {
+      setSelectedPaymentType(null);
+      setExecutionResult(null);
+      setFormData({});
+      setFocusedPanel('none');
+      setShowAutoConfig(false);
+      // Optionally expand panel when deselecting
+      // setIsPanelCollapsed(false);
+      return;
+    }
+
     setSelectedPaymentType(paymentType);
     setExecutionResult(null);
     setFormData({});

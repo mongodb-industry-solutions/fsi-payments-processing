@@ -16,6 +16,73 @@
   flex-direction: column;
 }
 
+/* Destination Selector */
+.destinationSelector {
+  position: absolute;
+  top: 20px;
+  left: 420px;
+  z-index: 100;
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+  width: 320px;
+}
+
+.destinationSelector h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 12px 0;
+}
+
+.destinationButtons {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.destinationButton {
+  flex: 1;
+  padding: 10px 12px;
+  background: white;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.destinationButton:hover {
+  background: #f9fafb;
+  border-color: #10b981;
+}
+
+.destinationButton.selected {
+  background: #ecfdf5;
+  border-color: #10b981;
+  color: #047857;
+  font-weight: 600;
+}
+
+.flag {
+  font-size: 18px;
+}
+
+.destinationInfo {
+  font-size: 11px;
+  color: #6b7280;
+  line-height: 1.4;
+  margin: 0;
+}
+
 /* Header styles removed as header is no longer used */
 
 .infoSection {
