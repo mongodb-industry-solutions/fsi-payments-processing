@@ -165,17 +165,20 @@ export default function PaymentBuilder() {
               }}
             />
           ) : (
-            <BuilderCanvas
-              selectedPaymentType={selectedPaymentType}
-              isProcessing={isProcessing}
-              onExecute={handleExecute}
-              onExecutionComplete={handleExecutionComplete}
-              formData={formData}
-              setFormData={setFormData}
-              isFormCollapsed={isFormCollapsed}
-              onToggleFormCollapse={toggleFormCollapse}
-              focusedPanel={focusedPanel}
-            />
+            /* Only show BuilderCanvas when not focusing on journey */
+            focusedPanel !== 'journey' && (
+              <BuilderCanvas
+                selectedPaymentType={selectedPaymentType}
+                isProcessing={isProcessing}
+                onExecute={handleExecute}
+                onExecutionComplete={handleExecutionComplete}
+                formData={formData}
+                setFormData={setFormData}
+                isFormCollapsed={isFormCollapsed}
+                onToggleFormCollapse={toggleFormCollapse}
+                focusedPanel={focusedPanel}
+              />
+            )
           )}
 
           {/* Journey Visualizer - or Config Progress for auto-config */}

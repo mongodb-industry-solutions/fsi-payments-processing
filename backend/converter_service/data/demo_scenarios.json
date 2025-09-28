@@ -7,7 +7,7 @@
       "icon": "🌍",
       "source_format": "MT103",
       "target_format": "pacs.008",
-      "message_template": "{1:F01${sender_bic}0000000000}{2:I103${receiver_bic}N}{3:{108:ILOVESEPA}}{4:\n:20:${reference}\n:23B:CRED\n:32A:${value_date}${currency}${amount}\n:50K:/${sender_account}\n${sender_name}\n${sender_address}\n:52A:${sender_bank_bic}\n:53A:${intermediary_bic}\n:59:/${beneficiary_account}\n${beneficiary_name}\n${beneficiary_address}\n:70:${remittance_info}\n:71A:SHA\n:72:${sender_to_receiver_info}\n-}",
+      "message_template": "{1:F01${sender_bic}0000000000}{2:I103${receiver_bic}N}{4:\n:20:${reference}\n:23B:CRED\n:32A:${value_date}${currency}${amount}\n:50K:/${sender_account}\n${sender_name}\n${sender_address}\n:52A:${sender_bank_bic}\n:53A:${intermediary_bic}\n:59:/${beneficiary_account}\n${beneficiary_name}\n${beneficiary_address}\n:70:${remittance_info}\n:71A:SHA\n:72:${sender_to_receiver_info}\n-}",
       "form_schema": {
         "sections": [
           {
@@ -118,32 +118,40 @@
                 "type": "textarea",
                 "placeholder": "Invoice INV-2024-3847 dated 15.11.2024\nPayment for electronic components",
                 "required": false
+              },
+              {
+                "id": "sender_to_receiver",
+                "label": "Bank Instructions (Field 72)",
+                "type": "textarea",
+                "placeholder": "/ACC/PRIORITY\n/REC/NOTIFY recipient@bank.com\n/INS/Special delivery instructions",
+                "required": false,
+                "help": "Instructions for correspondent banks using /TAG/ format"
               }
             ]
           }
         ]
       },
       "demo_values": {
-        "sender_name": "ACME TECHNOLOGIES INC",
-        "sender_account": "US64209876543210987654",
-        "sender_address": "1234 INNOVATION DRIVE\nSILICON VALLEY CA 94025\nUSA",
-        "sender_bic": "CHASUS33XXXX",
-        "sender_bank_bic": "CHASUS33XXX",
-        "beneficiary_name": "GLOBAL SUPPLIES GMBH",
-        "beneficiary_account": "DE89370400440532013000",
-        "beneficiary_address": "INDUSTRIESTRASSE 78\n60329 FRANKFURT\nGERMANY",
-        "receiver_bic": "DEUTDEFFXXX",
-        "intermediary_bic": "DEUTDEFFXXX",
-        "amount": "125750.50",
-        "currency": "USD",
-        "reference": "PAY-2024-DEC-001",
+        "sender_name": "SWISS PHARMA INTERNATIONAL AG",
+        "sender_account": "CH9300762011623852957",
+        "sender_address": "BAHNHOFSTRASSE 45\n8001 ZURICH\nSWITZERLAND",
+        "sender_bic": "UBSWCHZH80A",
+        "sender_bank_bic": "UBSWCHZH80A",
+        "beneficiary_name": "SOUTH AFRICAN HEALTH SUPPLIES PTY LTD",
+        "beneficiary_account": "ZA123456789012345678901",
+        "beneficiary_address": "123 MEDICAL PLAZA SANDTON\nJOHANNESBURG 2001\nSOUTH AFRICA",
+        "receiver_bic": "ABSAZAJJXXX",
+        "intermediary_bic": "ABSAZAJJXXX",
+        "amount": "180000.00",
+        "currency": "CHF",
+        "reference": "MED-CH-ZA-2024-001",
         "value_date": "241215",
-        "remittance_info": "INV-2024-11-3847 DATED 15.11.2024\nPAYMENT FOR ELECTRONIC COMPONENTS\nORDER PO-8934567 QTY 5000 UNITS",
-        "sender_to_receiver_info": "/ACC/URGENT PROCESSING REQUIRED\n/REC/NOTIFY ACCOUNTS@GLOBALSUPPLIES.DE"
+        "remittance_info": "INVOICE MED-ZA-2024-5678 DATED 10.12.2024\nPHARMACEUTICAL SUPPLIES ORDER\nPO-MED-SA-9876 QTY 10000 UNITS VACCINES",
+        "sender_to_receiver_info": "/ACC/PRIORITY MEDICAL SHIPMENT\n/REC/NOTIFY LOGISTICS@SAHEALTHSUPPLIES.CO.ZA\n/INS/TEMPERATURE CONTROLLED DELIVERY REQUIRED"
       },
       "demo_values_sets": [
         {
-          "scenario_name": "Tech Equipment Import - US to Germany",
+          "scenario_name": "Pharmaceutical Export - Switzerland to South Africa",
           "values": {
             "sender_name": "ACME TECHNOLOGIES INC",
             "sender_account": "US64209876543210987654",
@@ -451,6 +459,13 @@
                 "type": "text",
                 "placeholder": "DE12345678901234567890",
                 "required": true
+              },
+              {
+                "id": "account_institution",
+                "label": "Account With Institution (Field 57A)",
+                "type": "text",
+                "placeholder": "DEUTDEFFXXX",
+                "required": true
               }
             ]
           },
@@ -490,6 +505,22 @@
                 "type": "text",
                 "placeholder": "SETTLEMENT-DEC-2024",
                 "required": false
+              },
+              {
+                "id": "value_date",
+                "label": "Value Date (YYMMDD)",
+                "type": "text",
+                "placeholder": "241215",
+                "required": true,
+                "pattern": "\\d{6}"
+              },
+              {
+                "id": "sender_to_receiver_info",
+                "label": "Sender to Receiver Info (Field 72 - AI Processed)",
+                "type": "textarea",
+                "placeholder": "/BNF/TREASURY OPERATIONS\n/INS/PRIORITY PROCESSING\n/TYPE/CORRESPONDENT BANKING",
+                "required": false,
+                "rows": 4
               }
             ]
           }
@@ -528,7 +559,7 @@
             "reference": "FT2024120001",
             "related_reference": "DAILY-SET-2024-345",
             "value_date": "241215",
-            "sender_to_receiver_info": "/BNF/DAILY SETTLEMENT\n/INS/PRIORITY PROCESSING"
+            "sender_to_receiver_info": "/BNF/DAILY SETTLEMENT BATCH 345\n/INS/PRIORITY PROCESSING REQUIRED\n/TIME/CUT-OFF 16:00 CET\n/CONTACT/TREASURY.OPS@CHASE.COM\n/REF/RECONCILE WITH DAILY STATEMENT"
           }
         },
         {
@@ -545,7 +576,7 @@
             "reference": "CORR-2024-678",
             "related_reference": "NOSTRO-RECONCILE",
             "value_date": "241215",
-            "sender_to_receiver_info": "/TYPE/CORRESPONDENT\n/NOSTRO/RECONCILIATION"
+            "sender_to_receiver_info": "/TYPE/CORRESPONDENT BANKING SETTLEMENT\n/NOSTRO/ACCOUNT RECONCILIATION REQUIRED\n/PERIOD/END OF DAY POSITION\n/CONTACT/NOSTRO.TEAM@HSBC.COM\n/CONFIRM/SWIFT MT950 EXPECTED"
           }
         },
         {
@@ -562,7 +593,7 @@
             "reference": "TREAS-2024-890",
             "related_reference": "MM-OVERNIGHT",
             "value_date": "241215",
-            "sender_to_receiver_info": "/MARKET/MONEY MARKET\n/TERM/OVERNIGHT"
+            "sender_to_receiver_info": "/MARKET/INTERBANK MONEY MARKET\n/TERM/OVERNIGHT O/N\n/RATE/2.85% ANNUAL\n/VALUE/T+0 SAME DAY\n/DESK/TREASURY DEALING DESK\n/TRADER/J.SMITH EXT 4521"
           }
         },
         {
@@ -579,7 +610,7 @@
             "reference": "SEC-2024-234",
             "related_reference": "BOND-SETTLE-456",
             "value_date": "241215",
-            "sender_to_receiver_info": "/SEC/BOND SETTLEMENT\n/ISIN/XS1234567890"
+            "sender_to_receiver_info": "/SEC/GOVERNMENT BOND SETTLEMENT\n/ISIN/XS1234567890\n/NOMINAL/EUR 8.5M\n/PRICE/99.75\n/SETTLE/T+2 DVP EUROCLEAR\n/DESK/FIXED INCOME TRADING"
           }
         },
         {
@@ -596,7 +627,7 @@
             "reference": "RES-2024-567",
             "related_reference": "RESERVE-MGMT",
             "value_date": "241215",
-            "sender_to_receiver_info": "/TYPE/RESERVE REQUIREMENT\n/PERIOD/DECEMBER 2024"
+            "sender_to_receiver_info": "/TYPE/MANDATORY RESERVE REQUIREMENT\n/PERIOD/DECEMBER 2024 MAINTENANCE PERIOD\n/REF/ECB REGULATION 2024/1234\n/CALC/AVERAGE METHOD APPLIED\n/CONFIRM/RESERVE DESK +49-69-1344-0"
           }
         },
         {
@@ -613,7 +644,7 @@
             "reference": "FX-SET-2024-123",
             "related_reference": "SPOT-USD-JPY",
             "value_date": "241217",
-            "sender_to_receiver_info": "/FX/SPOT SETTLEMENT\n/RATE/110.25"
+            "sender_to_receiver_info": "/FX/SPOT FX SETTLEMENT USD/JPY\n/RATE/110.25 MID MARKET\n/DEAL/TICKET FX2024-5678\n/VALUE/SPOT T+2\n/COUNTER/BOFA USD ACCOUNT\n/DEALER/T.YAMAMOTO FX DESK TOKYO"
           }
         }
       ],
@@ -752,7 +783,7 @@
       "icon": "💳",
       "source_format": "ISO8583_0200",
       "target_format": "cain.001",
-      "message_template": "0200|PAN:${card_number}|PROC:${processing_code}|AMT:${amount}|CUR:${currency_code}|DT:${datetime}|STAN:${stan}|REF:${ref}|TERM:${terminal_id}|MID:${merchant_id}|MERCHANT:${merchant_name} ${location}|",
+      "message_template": "0200|PAN:${card_number}|PROC:${processing_code}|AMT:${amount}|CUR:${currency_code}|DT:${datetime}|STAN:${stan}|REF:${ref}|TERM:${terminal_id}|MID:${merchant_id}|MERCHANT:${merchant_name} ${location}|EXP:${card_expiry}|ACQ:${acquirer}|DATA:${additional_data}|",
       "form_schema": {
         "sections": [
           {
@@ -766,6 +797,14 @@
                 "required": true,
                 "pattern": "[0-9]{13,19}",
                 "mask": true
+              },
+              {
+                "id": "card_expiry",
+                "label": "Card Expiry (YYMM)",
+                "type": "text",
+                "placeholder": "2512",
+                "required": true,
+                "pattern": "[0-9]{4}"
               },
               {
                 "id": "processing_code",
@@ -842,6 +881,22 @@
                 "type": "text",
                 "placeholder": "MERCH12345",
                 "required": true
+              },
+              {
+                "id": "acquirer",
+                "label": "Acquirer ID",
+                "type": "text",
+                "placeholder": "12345678901",
+                "required": false,
+                "pattern": "[A-Z0-9]{11}"
+              },
+              {
+                "id": "additional_data",
+                "label": "Additional Transaction Data",
+                "type": "textarea",
+                "placeholder": "VIP Customer, email receipt to customer@email.com",
+                "required": false,
+                "help": "Free-form notes - processed by AI"
               }
             ]
           }
@@ -870,36 +925,45 @@
           "scenario_name": "Morning Coffee Purchase",
           "values": {
             "card_number": "4111111111111111",
+            "card_expiry": "2512",
             "processing_code": "000000",
             "amount": "675",
             "currency_code": "840",
             "datetime": "1215083052",
             "stan": "083052",
+            "ref": "083052123456",
             "terminal_id": "TERM0001",
             "merchant_id": "STBK12345",
+            "acquirer": "12345678901",
             "merchant_name": "STARBUCKS #12345",
-            "location": "NEW YORK NY US"
+            "location": "NEW YORK NY US",
+            "additional_data": "Loyalty member - Stars account active, Mobile order pickup"
           }
         },
         {
           "scenario_name": "Online Shopping - Electronics",
           "values": {
             "card_number": "5500000000000004",
+            "card_expiry": "2609",
             "processing_code": "000000",
             "amount": "129999",
             "currency_code": "840",
             "datetime": "1215143052",
             "stan": "143052",
+            "ref": "143052654321",
             "terminal_id": "WEB00001",
             "merchant_id": "AMZN98765",
+            "acquirer": "98765432109",
             "merchant_name": "AMAZON.COM",
-            "location": "SEATTLE WA US"
+            "location": "SEATTLE WA US",
+            "additional_data": "Prime member - Free shipping, Gift wrap requested, Email receipt to buyer@email.com"
           }
         },
         {
           "scenario_name": "Gas Station Fill-up",
           "values": {
             "card_number": "4532015112830366",
+            "card_expiry": "2711",
             "processing_code": "000000",
             "amount": "6542",
             "currency_code": "840",
@@ -908,14 +972,17 @@
             "ref": "173052123456",
             "terminal_id": "GAS00234",
             "merchant_id": "SHEL56789",
+            "acquirer": "45678901234",
             "merchant_name": "SHELL STATION #234",
-            "location": "HOUSTON TX US"
+            "location": "HOUSTON TX US",
+            "additional_data": "Pump 4, Regular unleaded, Fuel rewards member"
           }
         },
         {
           "scenario_name": "Restaurant Dinner",
           "values": {
             "card_number": "6011111111111117",
+            "card_expiry": "2804",
             "processing_code": "000000",
             "amount": "12750",
             "currency_code": "840",
@@ -924,53 +991,67 @@
             "ref": "203052654321",
             "terminal_id": "REST0089",
             "merchant_id": "DINE34567",
+            "acquirer": "23456789012",
             "merchant_name": "THE FRENCH LAUNDRY",
-            "location": "YOUNTVILLE CA US"
+            "location": "YOUNTVILLE CA US",
+            "additional_data": "Table 12, Server: Emily, Special occasion - Anniversary, Split check with tip 20%"
           }
         },
         {
           "scenario_name": "Hotel Booking",
           "values": {
             "card_number": "3530111333300000",
+            "card_expiry": "2603",
             "processing_code": "000000",
-            "amount": "450.00",
+            "amount": "45000",
             "currency_code": "840",
             "datetime": "1215223052",
             "stan": "223052",
+            "ref": "223052987654",
             "terminal_id": "HOTEL789",
             "merchant_id": "HILT45678",
+            "acquirer": "56789012345",
             "merchant_name": "HILTON MIDTOWN",
-            "location": "NEW YORK NY US"
+            "location": "NEW YORK NY US",
+            "additional_data": "Honors member Gold, Room 1204, Check-in 12/15, Check-out 12/17, Late checkout requested"
           }
         },
         {
           "scenario_name": "Grocery Shopping",
           "values": {
             "card_number": "4916338506082832",
+            "card_expiry": "2710",
             "processing_code": "000000",
-            "amount": "156.23",
+            "amount": "15623",
             "currency_code": "840",
             "datetime": "1215103052",
             "stan": "103052",
+            "ref": "103052456789",
             "terminal_id": "GROC0456",
             "merchant_id": "WHFD23456",
+            "acquirer": "67890123456",
             "merchant_name": "WHOLE FOODS MARKET",
-            "location": "SAN FRANCISCO CA US"
+            "location": "SAN FRANCISCO CA US",
+            "additional_data": "Rewards member, Used digital coupons $15 off, Organic produce preference"
           }
         },
         {
           "scenario_name": "Pharmacy Purchase",
           "values": {
             "card_number": "5105105105105100",
+            "card_expiry": "2508",
             "processing_code": "000000",
-            "amount": "42.99",
+            "amount": "4299",
             "currency_code": "840",
             "datetime": "1215113052",
             "stan": "113052",
+            "ref": "113052345678",
             "terminal_id": "PHAR0123",
             "merchant_id": "WLGR67890",
+            "acquirer": "78901234567",
             "merchant_name": "WALGREENS #0123",
-            "location": "CHICAGO IL US"
+            "location": "CHICAGO IL US",
+            "additional_data": "Balance Rewards member, Prescription pickup, FSA card used, Store #0123"
           }
         }
       ],
@@ -1526,12 +1607,12 @@
     {
       "id": "instant_payment",
       "display_name": "⚡ Instant Payment",
-      "description": "Send money instantly within seconds",
+      "description": "Convert mobile payment JSON to SEPA Instant (pacs.008)",
       "icon": "⚡",
-      "source_format": "pacs.008",
-      "target_format": "TARGET2",
-      "note": "This will use multi-hop routing through JSON",
-      "message_template": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<Document xmlns=\"urn:iso:std:iso:20022:tech:xsd:pacs.008.001.08\">\n  <FIToFICstmrCdtTrf>\n    <GrpHdr>\n      <MsgId>${message_id}</MsgId>\n      <CreDtTm>${creation_datetime}</CreDtTm>\n      <NbOfTxs>1</NbOfTxs>\n      <SttlmInf>\n        <SttlmMtd>CLRG</SttlmMtd>\n      </SttlmInf>\n    </GrpHdr>\n    <CdtTrfTxInf>\n      <PmtId>\n        <EndToEndId>${end_to_end_id}</EndToEndId>\n      </PmtId>\n      <IntrBkSttlmAmt Ccy=\"${currency}\">${amount}</IntrBkSttlmAmt>\n      <ChrgBr>SLEV</ChrgBr>\n      <Dbtr>\n        <Nm>${debtor_name}</Nm>\n      </Dbtr>\n      <DbtrAcct>\n        <Id>\n          <IBAN>${debtor_iban}</IBAN>\n        </Id>\n      </DbtrAcct>\n      <CdtrAcct>\n        <Id>\n          <IBAN>${creditor_iban}</IBAN>\n        </Id>\n      </CdtrAcct>\n      <Cdtr>\n        <Nm>${creditor_name}</Nm>\n      </Cdtr>\n      <RmtInf>\n        <Ustrd>${remittance_info}</Ustrd>\n      </RmtInf>\n    </CdtTrfTxInf>\n  </FIToFICstmrCdtTrf>\n</Document>",
+      "source_format": "JSON",
+      "target_format": "pacs.008",
+      "note": "Uses canonical JSON format to ISO 20022 conversion",
+      "message_template": "{\n  \"header\": {\n    \"message_type\": \"customer_transfer\",\n    \"reference\": \"${end_to_end_id}\",\n    \"timestamp\": \"${creation_datetime}\"\n  },\n  \"transaction\": {\n    \"end_to_end_id\": \"${end_to_end_id}\",\n    \"transaction_id\": \"${message_id}\"\n  },\n  \"parties\": {\n    \"debtor\": {\n      \"name\": \"${debtor_name}\",\n      \"account\": {\n        \"identifier\": \"${debtor_iban}\",\n        \"type\": \"IBAN\"\n      }\n    },\n    \"creditor\": {\n      \"name\": \"${creditor_name}\",\n      \"account\": {\n        \"identifier\": \"${creditor_iban}\",\n        \"type\": \"IBAN\"\n      }\n    }\n  },\n  \"amounts\": {\n    \"instructed\": {\n      \"value\": \"${amount}\",\n      \"currency\": \"${currency}\"\n    }\n  },\n  \"remittance\": {\n    \"unstructured\": [\"${remittance_info}\"]\n  },\n  \"charges\": {\n    \"bearer\": \"SLEV\"\n  }\n}",
       "form_schema": {
         "sections": [
           {
@@ -1858,6 +1939,231 @@
             "Ultra-fast direct conversion",
             "Auto-configuration capabilities",
             "Sub-50ms instant payments"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "crypto_payment",
+      "display_name": "💰 Crypto Payment (Last-Mile)",
+      "description": "Convert traditional payment to USDC stablecoin via Circle API",
+      "icon": "💰",
+      "source_format": "JSON",
+      "target_format": "USDC",
+      "note": "Uses Circle API for last-mile crypto delivery",
+      "message_template": "{\n  \"header\": {\n    \"message_type\": \"crypto_transfer\",\n    \"reference\": \"${reference}\",\n    \"timestamp\": \"${creation_datetime}\"\n  },\n  \"transaction\": {\n    \"transaction_id\": \"${transaction_id}\",\n    \"end_to_end_id\": \"${end_to_end_id}\"\n  },\n  \"parties\": {\n    \"debtor\": {\n      \"name\": \"${sender_name}\",\n      \"account\": {\n        \"identifier\": \"${source_wallet_id}\",\n        \"type\": \"WALLET\"\n      }\n    },\n    \"creditor\": {\n      \"name\": \"${recipient_name}\",\n      \"account\": {\n        \"identifier\": \"${recipient_wallet}\",\n        \"type\": \"WALLET\"\n      }\n    }\n  },\n  \"amounts\": {\n    \"instructed\": {\n      \"value\": \"${amount}\",\n      \"currency\": \"${currency}\"\n    }\n  },\n  \"remittance\": {\n    \"unstructured\": [\"${remittance_info}\"]\n  }\n}",
+      "form_schema": {
+        "sections": [
+          {
+            "title": "Sender Details",
+            "fields": [
+              {
+                "id": "sender_name",
+                "label": "Sender Name",
+                "type": "text",
+                "placeholder": "Tech Company Inc",
+                "required": true
+              },
+              {
+                "id": "source_wallet_id",
+                "label": "Source Wallet ID",
+                "type": "text",
+                "placeholder": "wallet-1234567890",
+                "required": true
+              }
+            ]
+          },
+          {
+            "title": "Recipient Details",
+            "fields": [
+              {
+                "id": "recipient_name",
+                "label": "Recipient Name",
+                "type": "text",
+                "placeholder": "John Doe",
+                "required": true
+              },
+              {
+                "id": "recipient_wallet",
+                "label": "Recipient Wallet Address",
+                "type": "text",
+                "placeholder": "0x1234567890abcdef1234567890abcdef12345678",
+                "required": true,
+                "pattern": "0x[a-fA-F0-9]{40}"
+              }
+            ]
+          },
+          {
+            "title": "Payment Information",
+            "fields": [
+              {
+                "id": "amount",
+                "label": "Amount (USD)",
+                "type": "number",
+                "placeholder": "1000.00",
+                "required": true,
+                "min": 0.01
+              },
+              {
+                "id": "currency",
+                "label": "Currency",
+                "type": "select",
+                "options": ["USD"],
+                "default": "USD",
+                "required": true
+              },
+              {
+                "id": "reference",
+                "label": "Payment Reference",
+                "type": "text",
+                "placeholder": "PAYROLL-2024-001",
+                "required": true
+              },
+              {
+                "id": "remittance_info",
+                "label": "Payment Memo",
+                "type": "text",
+                "placeholder": "Monthly salary payment",
+                "required": false,
+                "maxLength": 200
+              }
+            ]
+          }
+        ]
+      },
+      "demo_values": {
+        "sender_name": "Global Tech Corp",
+        "source_wallet_id": "wallet-corp-main",
+        "recipient_name": "Rajesh Kumar",
+        "recipient_wallet": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0",
+        "amount": "2500.00",
+        "currency": "USD",
+        "reference": "PAYROLL-2024-001",
+        "remittance_info": "December salary payment",
+        "transaction_id": "TXN-CRYPTO-001",
+        "creation_datetime": "2024-12-15T10:00:00Z"
+      },
+      "demo_values_sets": [
+        {
+          "scenario_name": "Global Payroll to India",
+          "values": {
+            "sender_name": "Global Tech Corp",
+            "source_wallet_id": "wallet-corp-payroll",
+            "recipient_name": "Rajesh Kumar",
+            "recipient_wallet": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0",
+            "amount": "2500.00",
+            "currency": "USD",
+            "reference": "PAYROLL-DEC-2024-001",
+            "remittance_info": "Monthly salary - Software Engineer",
+            "transaction_id": "TXN-PAY-001"
+          }
+        },
+        {
+          "scenario_name": "Freelancer Payment to Philippines",
+          "values": {
+            "sender_name": "Digital Agency LLC",
+            "source_wallet_id": "wallet-agency-payments",
+            "recipient_name": "Maria Santos",
+            "recipient_wallet": "0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063",
+            "amount": "800.00",
+            "currency": "USD",
+            "reference": "FREELANCE-2024-234",
+            "remittance_info": "UI/UX Design Project - Invoice #234",
+            "transaction_id": "TXN-FREE-002"
+          }
+        },
+        {
+          "scenario_name": "Remittance to Mexico",
+          "values": {
+            "sender_name": "Carlos Rodriguez",
+            "source_wallet_id": "wallet-personal-cr",
+            "recipient_name": "Rosa Rodriguez",
+            "recipient_wallet": "0x1BFD67037B42Cf73acF2047067bd4F2C47D9BfD6",
+            "amount": "500.00",
+            "currency": "USD",
+            "reference": "FAMILY-REMIT-DEC",
+            "remittance_info": "Family support - December 2024",
+            "transaction_id": "TXN-REM-003"
+          }
+        },
+        {
+          "scenario_name": "Gig Worker Payment to Brazil",
+          "values": {
+            "sender_name": "RideShare Platform",
+            "source_wallet_id": "wallet-rideshare-main",
+            "recipient_name": "João Silva",
+            "recipient_wallet": "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174",
+            "amount": "150.00",
+            "currency": "USD",
+            "reference": "DRIVER-WEEK-50-2024",
+            "remittance_info": "Weekly earnings - Week 50",
+            "transaction_id": "TXN-GIG-004"
+          }
+        },
+        {
+          "scenario_name": "Contractor Payment to Nigeria",
+          "values": {
+            "sender_name": "Consulting Firm Inc",
+            "source_wallet_id": "wallet-consulting-ops",
+            "recipient_name": "Adewale Okonkwo",
+            "recipient_wallet": "0xc2132D05D31c914a87C6611C10748AEb04B58e8F",
+            "amount": "3000.00",
+            "currency": "USD",
+            "reference": "CONTRACT-2024-Q4-789",
+            "remittance_info": "Q4 Consulting Services - Project Delta",
+            "transaction_id": "TXN-CON-005"
+          }
+        },
+        {
+          "scenario_name": "Emergency Aid to Kenya",
+          "values": {
+            "sender_name": "Global Aid Foundation",
+            "source_wallet_id": "wallet-charity-operations",
+            "recipient_name": "Grace Mwangi",
+            "recipient_wallet": "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359",
+            "amount": "200.00",
+            "currency": "USD",
+            "reference": "AID-EMERGENCY-2024-456",
+            "remittance_info": "Emergency medical assistance",
+            "transaction_id": "TXN-AID-006"
+          }
+        }
+      ],
+      "possible_journeys": [
+        {
+          "id": "last_mile_crypto",
+          "name": "Traditional Banking to Crypto Last-Mile",
+          "condition": "Standard last-mile crypto delivery",
+          "description": "JSON canonical format to Circle API USDC transfer",
+          "route": ["JSON", "USDC"],
+          "hops": [
+            {
+              "step": 1,
+              "from_format": "JSON",
+              "to_format": "USDC",
+              "description": "Convert canonical JSON to Circle API format",
+              "processing_time_ms": 50,
+              "confidence": 0.99,
+              "lane_distribution": {
+                "rules": 100,
+                "ai": 0,
+                "human": 0
+              },
+              "fields_processed": 8,
+              "mongodb_operations": [
+                {"type": "QUERY", "collection": "conversion_registry", "time_ms": 2},
+                {"type": "INSERT", "collection": "crypto_transfers", "time_ms": 3}
+              ]
+            }
+          ],
+          "total_time_ms": 50,
+          "total_fields": 8,
+          "success_rate": 99.9,
+          "showcase_features": [
+            "Real Circle API format",
+            "Last-mile crypto delivery",
+            "Instant cross-border settlement",
+            "Low fees vs traditional banking"
           ]
         }
       ]

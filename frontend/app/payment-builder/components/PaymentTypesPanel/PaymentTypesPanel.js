@@ -7,7 +7,8 @@ import {
   CardIcon,
   BankIcon,
   FastPaymentIcon,
-  NetworkIcon
+  NetworkIcon,
+  CryptoIcon
 } from '../shared/Icons';
 
 const PAYMENT_TYPES = [
@@ -29,7 +30,7 @@ const PAYMENT_TYPES = [
     name: 'Card Authorization',
     icon: <CardIcon />,
     description: 'Real-time card transaction',
-    sourceFormat: 'ISO8583',
+    sourceFormat: 'ISO8583_0200',
     targetFormat: 'cain.001',
     complexity: 'medium',
     estimatedTime: '500ms',
@@ -54,14 +55,27 @@ const PAYMENT_TYPES = [
     id: 'instant_payment',
     name: 'Instant Payment',
     icon: <FastPaymentIcon />,
-    description: 'Real-time P2P payment',
-    sourceFormat: 'pacs.008',
-    targetFormat: 'TARGET2',
+    description: 'Mobile payment to SEPA Instant',
+    sourceFormat: 'JSON',
+    targetFormat: 'pacs.008',
     complexity: 'simple',
     estimatedTime: '150ms',
-    fields: 12,
-    mongoFeatures: ['Caching', 'Low Latency', 'Direct Route'],
+    fields: 7,
+    mongoFeatures: ['Canonical JSON', 'Instant Settlement', 'Mobile Apps'],
     color: 'teal'
+  },
+  {
+    id: 'crypto_payment',
+    name: 'Crypto Payment',
+    icon: <CryptoIcon />,
+    description: 'Last-mile USDC stablecoin transfer',
+    sourceFormat: 'JSON',
+    targetFormat: 'USDC',
+    complexity: 'simple',
+    estimatedTime: '10s',
+    fields: 7,
+    mongoFeatures: ['Circle API', 'Instant Settlement', 'Low Fees'],
+    color: 'orange'
   }
 ];
 
@@ -261,7 +275,7 @@ export default function PaymentTypesPanel({ selectedType, onSelectType, isCollap
       {!isCollapsed && (
         <div className={styles.footer}>
           <div className={styles.footerInfo}>
-            <strong>4</strong> payment scenarios
+            <strong>5</strong> payment scenarios
             <span className={styles.separator}>•</span>
             <strong>100%</strong> generic converter
           </div>

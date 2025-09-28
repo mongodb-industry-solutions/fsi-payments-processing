@@ -52,6 +52,18 @@ export const NetworkIcon = () => (
   </svg>
 );
 
+export const CryptoIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/>
+    <path d="M12 6v12M9 8.5h6M9 15.5h6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+    <path d="M14.5 8.5c0-1.5-1.5-2-3-2-1.5 0-2.5.5-2.5 1.5s1 1.5 2.5 1.5c2 0 3 .5 3 2s-1 2-3 2c-1.5 0-3-.5-3-2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+    <circle cx="7" cy="7" r="1.5" fill="currentColor" opacity="0.3"/>
+    <circle cx="17" cy="7" r="1.5" fill="currentColor" opacity="0.3"/>
+    <circle cx="7" cy="17" r="1.5" fill="currentColor" opacity="0.3"/>
+    <circle cx="17" cy="17" r="1.5" fill="currentColor" opacity="0.3"/>
+  </svg>
+);
+
 // Additional utility icons
 
 export const CheckIcon = () => (

@@ -7,6 +7,7 @@ export default function LaneDistribution({ executionResult, isProcessing }) {
     ai: 0,
     human: 0
   });
+  const [overallConfidence, setOverallConfidence] = useState(0);
 
   const defaultDistribution = {
     rules: { percentage: 85, count: 23, fields: ['sender_name', 'amount', 'currency'] },
@@ -27,12 +28,17 @@ export default function LaneDistribution({ executionResult, isProcessing }) {
         human: 1
       };
 
+      const targetConfidence = executionResult?.conversion_metadata?.confidence_scores?.overall
+        ? executionResult.conversion_metadata.confidence_scores.overall * 100
+        : 92;
+
       // Animate to target values
       let progress = 0;
       const interval = setInterval(() => {
         progress += 0.05;
         if (progress >= 1) {
           setAnimatedValues(targetValues);
+          setOverallConfidence(targetConfidence);
           clearInterval(interval);
         } else {
           setAnimatedValues({
@@ -40,12 +46,29 @@ export default function LaneDistribution({ executionResult, isProcessing }) {
             ai: Math.floor(targetValues.ai * progress),
             human: Math.floor(targetValues.human * progress)
           });
+          setOverallConfidence(targetConfidence * progress);
         }
       }, 50);
 
       return () => clearInterval(interval);
     }
   }, [executionResult, isProcessing]);
+
+  // Get confidence scores for fields
+  const confidenceScores = executionResult?.conversion_metadata?.confidence_scores || {};
+
+  const getFieldConfidence = (field) => {
+    if (confidenceScores[field] !== undefined) {
+      return confidenceScores[field] * 100;
+    }
+    return null;
+  };
+
+  const getConfidenceColor = (score) => {
+    if (score >= 90) return styles.highConfidence;
+    if (score >= 80) return styles.mediumConfidence;
+    return styles.lowConfidence;
+  };
 
   const distribution = executionResult?.conversion_metadata?.processing_stats ? {
     rules: {
@@ -76,6 +99,24 @@ export default function LaneDistribution({ executionResult, isProcessing }) {
 
   return (
     <div className={styles.laneContainer}>
+      {/* Overall Confidence Header */}
+      {(executionResult || isProcessing) && (
+        <div className={styles.confidenceHeader}>
+          <div className={styles.confidenceBadge}>
+            <span className={styles.confidenceLabel}>Overall Confidence</span>
+            <span className={`${styles.confidenceValue} ${getConfidenceColor(overallConfidence)}`}>
+              {overallConfidence.toFixed(1)}%
+            </span>
+          </div>
+          <div className={styles.confidenceMeter}>
+            <div
+              className={`${styles.confidenceFill} ${getConfidenceColor(overallConfidence)}`}
+              style={{ width: `${overallConfidence}%` }}
+            />
+          </div>
+        </div>
+      )}
+
       {/* Rules Lane */}
       <div className={styles.lane}>
         <div className={styles.laneHeader}>
@@ -92,11 +133,12 @@ export default function LaneDistribution({ executionResult, isProcessing }) {
         </div>
 
         <div className={styles.laneStats}>
-          <div className={styles.percentage}>
-            {distribution.rules.percentage.toFixed(1)}%
-          </div>
           <div className={styles.count}>
-            {animatedValues.rules} fields
+            <span className={styles.countValue}>{animatedValues.rules}</span>
+            <span className={styles.countLabel}>fields</span>
+          </div>
+          <div className={styles.percentage}>
+            {distribution.rules.percentage.toFixed(1)}% of total
           </div>
         </div>
 
@@ -134,11 +176,12 @@ export default function LaneDistribution({ executionResult, isProcessing }) {
         </div>
 
         <div className={styles.laneStats}>
-          <div className={styles.percentage}>
-            {distribution.ai.percentage.toFixed(1)}%
-          </div>
           <div className={styles.count}>
-            {animatedValues.ai} fields
+            <span className={styles.countValue}>{animatedValues.ai}</span>
+            <span className={styles.countLabel}>fields</span>
+          </div>
+          <div className={styles.percentage}>
+            {distribution.ai.percentage.toFixed(1)}% of total
           </div>
         </div>
 
@@ -150,9 +193,19 @@ export default function LaneDistribution({ executionResult, isProcessing }) {
         </div>
 
         <div className={styles.fieldList}>
-          {distribution.ai.fields.slice(0, 3).map((field, idx) => (
-            <span key={idx} className={styles.fieldChip}>{field}</span>
-          ))}
+          {distribution.ai.fields.slice(0, 3).map((field, idx) => {
+            const confidence = getFieldConfidence(field);
+            return (
+              <div key={idx} className={styles.fieldItem}>
+                <span className={styles.fieldChip}>{field}</span>
+                {confidence !== null && (
+                  <span className={`${styles.confidenceChip} ${getConfidenceColor(confidence)}`}>
+                    {confidence.toFixed(0)}%
+                  </span>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -172,11 +225,12 @@ export default function LaneDistribution({ executionResult, isProcessing }) {
         </div>
 
         <div className={styles.laneStats}>
-          <div className={styles.percentage}>
-            {distribution.human.percentage.toFixed(1)}%
-          </div>
           <div className={styles.count}>
-            {animatedValues.human} fields
+            <span className={styles.countValue}>{animatedValues.human}</span>
+            <span className={styles.countLabel}>fields</span>
+          </div>
+          <div className={styles.percentage}>
+            {distribution.human.percentage.toFixed(1)}% of total
           </div>
         </div>
 
@@ -188,9 +242,22 @@ export default function LaneDistribution({ executionResult, isProcessing }) {
         </div>
 
         <div className={styles.fieldList}>
-          {distribution.human.fields.slice(0, 3).map((field, idx) => (
-            <span key={idx} className={styles.fieldChip}>{field}</span>
-          ))}
+          {distribution.human.fields.slice(0, 3).map((field, idx) => {
+            const confidence = getFieldConfidence(field);
+            return (
+              <div key={idx} className={styles.fieldItem}>
+                <span className={styles.fieldChip}>{field}</span>
+                {confidence !== null && (
+                  <span className={`${styles.confidenceChip} ${getConfidenceColor(confidence)}`}>
+                    {confidence.toFixed(0)}%
+                  </span>
+                )}
+                {confidence !== null && confidence < 80 && (
+                  <span className={styles.reviewBadge}>⚠️ Review</span>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>

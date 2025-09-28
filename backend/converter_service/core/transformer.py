@@ -93,23 +93,24 @@ class Transformer:
             
             # Store confidence score
             self.confidence_scores[source_field] = confidence
-            
-            # Check if human review needed
-            threshold = mapping.get('confidence_threshold', 
-                                   self.human_review_config.get('confidence_threshold', 0.8))
-            
-            if confidence < threshold:
-                self.human_review_fields.append({
-                    'field': source_field,
-                    'confidence': confidence,
-                    'reason': 'low_confidence',
-                    'threshold': threshold
-                })
-                self.processing_stats['human_lane']['count'] += 1
-                self.processing_stats['human_lane']['fields'].append(source_field)
-                self.processing_stats['human_lane']['reasons'].append(
-                    f"{source_field}: confidence {confidence:.2f} < threshold {threshold}"
-                )
+
+            # Check if human review needed (only for AI lane fields)
+            if processing_lane == 'AI':
+                threshold = mapping.get('confidence_threshold',
+                                       self.human_review_config.get('confidence_threshold', 0.8))
+
+                if confidence < threshold:
+                    self.human_review_fields.append({
+                        'field': source_field,
+                        'confidence': confidence,
+                        'reason': 'low_confidence',
+                        'threshold': threshold
+                    })
+                    self.processing_stats['human_lane']['count'] += 1
+                    self.processing_stats['human_lane']['fields'].append(source_field)
+                    self.processing_stats['human_lane']['reasons'].append(
+                        f"{source_field}: confidence {confidence:.2f} < threshold {threshold}"
+                    )
             
             # Map to target fields
             if isinstance(transformed_value, dict):

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import styles from './BuilderCanvas.module.css';
 import DynamicPaymentForm from '../DynamicPaymentForm/DynamicPaymentForm';
 import PaymentPreview from '../PaymentPreview/PaymentPreview';
+import MongoDBShowcase from './MongoDBShowcase';
 import paymentBuilderService from '../../services/paymentBuilderService';
 
 export default function BuilderCanvas({
@@ -84,16 +85,7 @@ export default function BuilderCanvas({
   if (!selectedPaymentType) {
     return (
       <div className={styles.canvas}>
-        <div className={styles.emptyState}>
-          <div className={styles.emptyIcon}>
-            <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-              <rect x="8" y="12" width="32" height="24" rx="2" stroke="currentColor" strokeWidth="2" opacity="0.3"/>
-              <path d="M16 20h16M16 24h12M16 28h8" stroke="currentColor" strokeWidth="2" opacity="0.3" strokeLinecap="round"/>
-            </svg>
-          </div>
-          <h3>Select a Payment Type</h3>
-          <p>Choose a payment scenario from the left panel to begin building your payment message</p>
-        </div>
+        <MongoDBShowcase />
       </div>
     );
   }

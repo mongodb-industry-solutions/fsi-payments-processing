@@ -354,7 +354,7 @@ async def get_format_sample(
         Sample message and metadata
     """
     samples = {
-        "MT103": """{1:F01CHASUS33XXXX0000000000}{2:I103DEUTDEFFXXXXN}{3:{108:ILOVESEPA}}{4:
+        "MT103": """{1:F01CHASUS33XXXX0000000000}{2:I103DEUTDEFFXXXXN}{4:
 :20:TEST001
 :23B:CRED
 :32A:241215USD125750,50

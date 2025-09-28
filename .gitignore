@@ -11,6 +11,7 @@ by_claude/
 
 # Environments
 backend/converter_service_copy
+backend/payment_converter_v2
 .env
 .env*
 .venv
@@ -393,3 +394,4 @@ frontend/app/geographic/MONGODB_CONSOLE_FEATURE.md
 backend/converter_service/scripts/upload_corrected_mt103_to_json.py
 .gitignore
 backend/converter_service/scripts/check_conversion_graph.py
+backend/PAYMENT_CONVERTER_V2_IMPLEMENTATION_GUIDE.md

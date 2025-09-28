@@ -8,7 +8,7 @@ export const FORMAT_INFO = {
       "Commercial transactions",
       "Personal remittances"
     ],
-    structure: `{1:F01CHASUS33XXXX0000000000}{2:I103DEUTDEFFXXXXN}{3:{108:ILOVESEPA}}{4:
+    structure: `{1:F01CHASUS33XXXX0000000000}{2:I103DEUTDEFFXXXXN}{4:
 :20:TEST001              // Transaction Reference
 :23B:CRED                // Bank Operation Code
 :32A:241215USD125750,50  // Value Date, Currency, Amount

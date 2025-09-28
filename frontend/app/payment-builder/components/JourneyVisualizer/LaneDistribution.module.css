@@ -5,6 +5,63 @@
   padding: var(--spacing-3);
 }
 
+/* Overall Confidence Header */
+.confidenceHeader {
+  background: linear-gradient(135deg, var(--green-light3), var(--white));
+  border: 1px solid var(--green-light2);
+  border-radius: 8px;
+  padding: var(--spacing-4);
+  margin-bottom: var(--spacing-2);
+}
+
+.confidenceBadge {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-2);
+}
+
+.confidenceLabel {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--gray-dark1);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.confidenceValue {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.confidenceMeter {
+  height: 6px;
+  background: var(--gray-light2);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.confidenceFill {
+  height: 100%;
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 3px;
+}
+
+.highConfidence {
+  color: var(--green-dark2);
+  background: var(--green-dark1);
+}
+
+.mediumConfidence {
+  color: var(--blue-dark2);
+  background: var(--blue-base);
+}
+
+.lowConfidence {
+  color: #d32f2f;
+  background: #d32f2f;
+}
+
 /* Individual Lane */
 .lane {
   background: var(--gray-light3);
@@ -62,20 +119,34 @@
 .laneStats {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
   margin-bottom: var(--spacing-2);
 }
 
-.percentage {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--black);
+.count {
+  display: flex;
+  align-items: baseline;
+  gap: var(--spacing-1);
 }
 
-.count {
+.countValue {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--black);
+  line-height: 1;
+}
+
+.countLabel {
   font-size: 0.875rem;
-  color: var(--gray-dark1);
+  color: var(--gray-base);
   font-weight: 500;
+}
+
+.percentage {
+  font-size: 0.75rem;
+  color: var(--gray-base);
+  font-weight: 500;
+  text-align: right;
 }
 
 /* Progress Bar */
@@ -107,18 +178,61 @@
 /* Field List */
 .fieldList {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: var(--spacing-2);
 }
 
+.fieldItem {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  flex-wrap: wrap;
+}
+
 .fieldChip {
-  padding: 2px 8px;
+  padding: 4px 8px;
   background: var(--white);
   border: 1px solid var(--gray-light2);
   border-radius: 4px;
   font-size: 0.75rem;
   font-family: 'Monaco', 'Courier New', monospace;
   color: var(--gray-dark2);
+}
+
+.confidenceChip {
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  font-family: 'Monaco', 'Courier New', monospace;
+}
+
+.confidenceChip.highConfidence {
+  background: var(--green-light3);
+  color: var(--green-dark2);
+  border: 1px solid var(--green-light2);
+}
+
+.confidenceChip.mediumConfidence {
+  background: var(--blue-light3);
+  color: var(--blue-dark2);
+  border: 1px solid var(--blue-light2);
+}
+
+.confidenceChip.lowConfidence {
+  background: #fee9e9;
+  color: #d32f2f;
+  border: 1px solid #fdd;
+}
+
+.reviewBadge {
+  padding: 2px 6px;
+  background: #fff3cd;
+  border: 1px solid #ffc107;
+  border-radius: 3px;
+  font-size: 0.6875rem;
+  color: #856404;
+  font-weight: 500;
 }
 
 .fieldMore {

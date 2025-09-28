@@ -47,10 +47,30 @@
   border-radius: 8px;
   display: flex;
   flex-direction: column;
-  height: fit-content;
-  min-height: 600px;
+  height: 100%;
+  max-height: calc(100vh - 140px);
+  overflow-y: auto;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
   transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Canvas Scrollbar Styling */
+.canvas::-webkit-scrollbar {
+  width: 6px;
+}
+
+.canvas::-webkit-scrollbar-track {
+  background: var(--gray-light3);
+  border-radius: 0 8px 8px 0;
+}
+
+.canvas::-webkit-scrollbar-thumb {
+  background: var(--gray-light1);
+  border-radius: 3px;
+}
+
+.canvas::-webkit-scrollbar-thumb:hover {
+  background: var(--gray-base);
 }
 
 /* Expanded Canvas State - Takes more space but not fullscreen */
