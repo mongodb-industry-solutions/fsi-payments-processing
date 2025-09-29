@@ -70,12 +70,14 @@ class AutoConfigResponse(BaseModel):
     uncertain_fields: List[Dict[str, Any]]
     generation_time_seconds: float
     ready_to_save: bool
+    detected_fields_detail: List[Dict[str, Any]] = []
+    generation_metadata: Optional[Dict[str, Any]] = None
 
 
 class ConfigValidation(BaseModel):
     """Model for configuration validation"""
     configuration_id: str
-    corrections: Optional[Dict[str, Any]] = None
+    configuration: Optional[Dict[str, Any]] = None  # Renamed from corrections for clarity
     approved: bool
 
 
@@ -101,7 +103,56 @@ async def auto_configure(
     """
     
     start_time = datetime.utcnow()
-    
+
+    # Validate similar_to configuration exists
+    base_config = None
+    base_config_id = None
+
+    if '_to_' in request.similar_to:
+        # Exact config ID provided
+        base_config_id = request.similar_to
+        base_config = db_service.db['conversion_registry'].find_one({"_id": base_config_id})
+    else:
+        # Check if it's a format family prefix (e.g., "MT", "ISO")
+        is_format_family = len(request.similar_to) <= 4 and request.similar_to.isupper()
+
+        if is_format_family:
+            # Search for configs matching format family prefix
+            logger.info(f"'{request.similar_to}' detected as format family prefix, searching for configs like '{request.similar_to}*_to_{request.target_format}'")
+            base_configs = list(db_service.db['conversion_registry'].find(
+                {"_id": {"$regex": f"^{request.similar_to}.*_to_{request.target_format}$"}}
+            ))
+
+            if base_configs:
+                base_config = base_configs[0]
+                base_config_id = base_config['_id']
+                logger.info(f"Using base config: {base_config_id} (from {len(base_configs)} matching configs)")
+        else:
+            # Construct specific config ID
+            base_config_id = f"{request.similar_to}_to_{request.target_format}"
+            base_config = db_service.db['conversion_registry'].find_one({"_id": base_config_id})
+
+    if not base_config:
+        # Provide helpful error with available configs
+        available_configs = list(db_service.db['conversion_registry'].find({}, {"_id": 1}).limit(10))
+        available_ids = [c['_id'] for c in available_configs]
+
+        error_detail = f"Base configuration not found for similar_to='{request.similar_to}' and target_format='{request.target_format}'."
+        if '_to_' not in request.similar_to:
+            is_format_family = len(request.similar_to) <= 4 and request.similar_to.isupper()
+            if is_format_family:
+                error_detail += f" Searched for configs matching '{request.similar_to}*_to_{request.target_format}' but found none."
+            else:
+                error_detail += f" Looked for config '{request.similar_to}_to_{request.target_format}' but it doesn't exist."
+        error_detail += f" Available configurations: {available_ids}"
+
+        raise HTTPException(
+            status_code=400,
+            detail=error_detail
+        )
+
+    logger.info(f"Using base configuration: {base_config_id}")
+
     # Check if configuration already exists
     config_id = f"{request.source_format}_to_{request.target_format}"
     existing = db_service.db['conversion_registry'].find_one({"_id": config_id})
@@ -110,35 +161,66 @@ async def auto_configure(
             status_code=400,
             detail=f"Configuration {config_id} already exists as a manual configuration"
         )
-    
+
     # Initialize learning service
     learning_service = SemanticLearningService(db_service, ai_service)
     
-    # Check if semantic patterns exist
-    patterns_count = db_service.db['semantic_patterns'].count_documents({})
-    if patterns_count == 0:
+    # Check patterns exist AND have learned data (not just empty documents)
+    patterns_with_data = db_service.db['semantic_patterns'].count_documents({
+        "learned_patterns": {"$ne": {}, "$exists": True}
+    })
+
+    if patterns_with_data == 0:
+        total_patterns = db_service.db['semantic_patterns'].count_documents({})
+        if total_patterns == 0:
+            error_msg = "No semantic patterns found. Run: cd backend/converter_service && uv run python scripts/populate_semantic_patterns.py"
+        else:
+            error_msg = f"Found {total_patterns} semantic patterns but none have learned data. Run learning endpoint or populate script."
+
         raise HTTPException(
             status_code=400,
-            detail="No semantic patterns found. Please run populate_semantic_patterns.py first"
+            detail=error_msg
         )
+
+    logger.info(f"Found {patterns_with_data} semantic patterns with learned data")
     
     try:
         # Generate configuration
         logger.info(f"Generating configuration for {request.source_format} to {request.target_format}")
         
-        config = learning_service.generate_config_for_new_format(
+        config, generation_metadata = learning_service.generate_config_for_new_format(
             source_format=request.source_format,
             target_format=request.target_format,
             sample_message=request.sample_message,
             similar_to=request.similar_to
         )
-        
-        # DO NOT save to conversion_registry yet - wait for approval
-        # saved_config = learning_service.save_generated_config(config, trigger_learning=False)
+
+        # Save to pending collection for testing (users can test before approval)
+        config['metadata']['status'] = 'pending_approval'
+        config['metadata']['saved_to_pending_at'] = datetime.utcnow()
+
+        db_service.db['pending_auto_configs'].replace_one(
+            {"_id": config['_id']},
+            config,
+            upsert=True
+        )
+
+        logger.info(f"Saved config to pending_auto_configs: {config['_id']}")
 
         # Use the generated config for statistics
         fields_detected = len(config.get('parser', {}).get('fields', {}))
         fields_mapped = len(config.get('mappings', []))
+
+        # Extract detailed field information from parser config
+        detected_fields_detail = []
+        for field_id, field_config in config.get('parser', {}).get('fields', {}).items():
+            detected_fields_detail.append({
+                'field_id': field_id,
+                'name': field_config.get('name', field_id),
+                'pattern': field_config.get('pattern', ''),
+                'multiline': field_config.get('multiline', False),
+                'components': field_config.get('components')
+            })
 
         # Identify uncertain fields (confidence < 0.8)
         uncertain_fields = []
@@ -171,7 +253,9 @@ async def auto_configure(
             fields_mapped=fields_mapped,
             uncertain_fields=uncertain_fields,
             generation_time_seconds=generation_time,
-            ready_to_save=ready_to_save
+            ready_to_save=ready_to_save,
+            detected_fields_detail=detected_fields_detail,
+            generation_metadata=generation_metadata
         )
         
     except ValueError as e:
@@ -235,16 +319,16 @@ async def validate_config(
     If approved=false, the configuration is not saved.
     """
 
-    # For approval, we need the full config passed in corrections field
+    # For approval, we need the full config passed in configuration field
     if validation.approved:
-        if not validation.corrections:
+        if not validation.configuration:
             raise HTTPException(
                 status_code=400,
                 detail="Configuration data required for approval"
             )
 
         # Save the approved configuration
-        config = validation.corrections
+        config = validation.configuration
         config['_id'] = validation.configuration_id
 
         # Ensure metadata indicates it's auto-generated and now approved
@@ -253,13 +337,17 @@ async def validate_config(
         config['metadata']['auto_generated'] = True
         config['metadata']['approved'] = True
         config['metadata']['approved_at'] = datetime.utcnow()
+        config['metadata']['status'] = 'approved'
 
-        # Save to database
+        # Move from pending to production registry
         db_service.db['conversion_registry'].replace_one(
             {"_id": config['_id']},
             config,
             upsert=True
         )
+
+        # Remove from pending collection (cleanup)
+        db_service.db['pending_auto_configs'].delete_one({"_id": config['_id']})
 
         logger.info(f"Configuration {config['_id']} approved and saved")
 

@@ -40,18 +40,37 @@ class MongoDBService:
     def get_conversion_config(self, conversion_id: str) -> Optional[Dict[str, Any]]:
         """
         Get conversion configuration from database
-        
+
+        Checks conversion_registry first, then falls back to pending_auto_configs.
+        This allows testing of auto-generated configs before they are approved.
+
         Args:
             conversion_id: Conversion identifier (e.g., "MT103_to_pacs.008")
-            
+
         Returns:
             Configuration dictionary or None if not found
         """
         try:
+            # Try production registry first
             config = self.db['conversion_registry'].find_one({
                 '_id': conversion_id
             })
-            return config
+
+            if config:
+                logger.info(f"Using production config: {conversion_id}")
+                return config
+
+            # Fall back to pending configs (for testing before approval)
+            config = self.db['pending_auto_configs'].find_one({
+                '_id': conversion_id
+            })
+
+            if config:
+                logger.info(f"Using pending config (not yet approved): {conversion_id}")
+                return config
+
+            logger.warning(f"Configuration not found in registry or pending: {conversion_id}")
+            return None
         except Exception as e:
             logger.error(f"Error fetching conversion config: {e}")
             return None

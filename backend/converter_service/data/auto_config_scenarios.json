@@ -69,13 +69,13 @@
     {
       "id": "mt205_to_pacs009",
       "display_name": "💱 MT205 Financial Institution Transfer",
-      "description": "Auto-configure MT205 COV to pacs.009 conversion",
+      "description": "Auto-configure MT205 to pacs.009 with unmapped fields showcase",
       "icon": "💱",
       "source_format": "MT205",
       "target_format": "pacs.009",
-      "similar_to": "MT202",
+      "similar_to": "MT",
       "confidence_expected": 0.88,
-      "sample_message": "{1:F01CHASUS33AXXX0000000000}{2:I205DEUTDEFFXXXXN}{3:{108:COV}}{4:\n:20:MT205TEST001\n:21:COVREF2024001\n:13C:/SNDTIME/1415+0100\n:32A:241215EUR500000,00\n:52A:CHASUS33XXX\n:57A:DEUTDEFFXXX\n:58A:/DE12345678901234567890\nBENEFICIARY INSTITUTION\nFRANKFURT\n:72:/BNF/TREASURY OPERATIONS\n/INS/COV PAYMENT FOR CLIENT\n/REC/NOTIFY TREASURY DEPT\n:50K:/US64209876543210987654\nACME CORPORATION\n1234 MAIN STREET\nNEW YORK NY 10001\n:59:/DE89370400440532013000\nGLOBAL IMPORTS GMBH\nINDUSTRIESTRASSE 78\nFRANKFURT 60329\n-}",
+      "sample_message": "{1:F01CHASUS33AXXX0000000000}{2:I205DEUTDEFFXXXXN}{3:{108:PRIORITY}}{4:\n:20:MT205TEST2024\n:21:RELREF20241115\n:13C:/CLSTIME/0830+0100\n:32A:241215EUR500000,00\n:52A:UBSWCHZHXXX\n:57A:DEUTDEFFXXX\n:58A:/DE98765432109876543210\nCOBADEFFXXX\n:72:/BNF/PRIORITY SETTLEMENT\n/INS/SAME DAY VALUE\n/ACC/COVER FOR FI TRANSFER\n-}",
       "form_schema": {
         "sections": [
           {
@@ -85,17 +85,17 @@
                 "id": "reference",
                 "label": "Transaction Reference",
                 "type": "text",
-                "placeholder": "MT205TEST001",
+                "placeholder": "MT205TEST2024",
                 "required": true,
-                "value": "MT205TEST001"
+                "value": "MT205TEST2024"
               },
               {
                 "id": "related_reference",
                 "label": "Related Reference",
                 "type": "text",
-                "placeholder": "COVREF2024001",
+                "placeholder": "RELREF20241115",
                 "required": true,
-                "value": "COVREF2024001"
+                "value": "RELREF20241115"
               },
               {
                 "id": "amount",
@@ -116,62 +116,39 @@
             ]
           },
           {
-            "title": "Ordering Customer (Field 50K)",
+            "title": "Banking Details",
             "fields": [
               {
-                "id": "ordering_customer_account",
-                "label": "Account Number",
+                "id": "time_indication",
+                "label": "Time Indication (Field 13C)",
                 "type": "text",
-                "placeholder": "US64209876543210987654",
-                "required": true,
-                "value": "US64209876543210987654"
+                "placeholder": "/CLSTIME/0830+0100",
+                "required": false,
+                "value": "/CLSTIME/0830+0100"
               },
               {
-                "id": "ordering_customer_name",
-                "label": "Customer Name",
+                "id": "senders_correspondent",
+                "label": "Sender's Correspondent (Field 53A)",
                 "type": "text",
-                "placeholder": "ACME CORPORATION",
-                "required": true,
-                "value": "ACME CORPORATION"
+                "placeholder": "UBSWCHZHXXX",
+                "required": false,
+                "value": "UBSWCHZHXXX"
               },
               {
-                "id": "ordering_customer_address",
-                "label": "Customer Address",
-                "type": "textarea",
-                "placeholder": "Enter address...",
-                "required": true,
-                "value": "1234 MAIN STREET\nNEW YORK NY 10001",
-                "rows": 3
-              }
-            ]
-          },
-          {
-            "title": "Beneficiary (Field 59)",
-            "fields": [
-              {
-                "id": "beneficiary_account",
-                "label": "Account/IBAN",
+                "id": "intermediary",
+                "label": "Intermediary Institution (Field 56A)",
                 "type": "text",
-                "placeholder": "DE89370400440532013000",
-                "required": true,
-                "value": "DE89370400440532013000"
+                "placeholder": "CITIUS33XXX",
+                "required": false,
+                "value": "CITIUS33XXX"
               },
               {
-                "id": "beneficiary_name",
-                "label": "Beneficiary Name",
+                "id": "beneficiary_institution",
+                "label": "Beneficiary Institution (Field 58A)",
                 "type": "text",
-                "placeholder": "GLOBAL IMPORTS GMBH",
+                "placeholder": "COMMERZBANK AG",
                 "required": true,
-                "value": "GLOBAL IMPORTS GMBH"
-              },
-              {
-                "id": "beneficiary_address",
-                "label": "Beneficiary Address",
-                "type": "textarea",
-                "placeholder": "Enter address...",
-                "required": true,
-                "value": "INDUSTRIESTRASSE 78\nFRANKFURT 60329",
-                "rows": 3
+                "value": "COMMERZBANK AG"
               }
             ]
           },
@@ -184,19 +161,19 @@
                 "type": "textarea",
                 "placeholder": "Enter instructions...",
                 "required": false,
-                "value": "/BNF/TREASURY OPERATIONS\n/INS/COV PAYMENT FOR CLIENT\n/REC/NOTIFY TREASURY DEPT",
+                "value": "/BNF/PRIORITY SETTLEMENT\n/INS/SAME DAY VALUE\n/ACC/COVER FOR FI TRANSFER",
                 "rows": 4
               }
             ]
           }
         ]
       },
-      "expected_fields_detected": 12,
-      "expected_fields_mapped": 10,
+      "expected_fields_detected": 8,
+      "expected_fields_mapped": 7,
       "showcase_features": [
-        "COV payment handling",
-        "Complex field extraction",
-        "Pattern matching from MT202"
+        "Unmapped field detection (13C)",
+        "Valid SWIFT field variants (52A, 58A)",
+        "Rare optional field handling"
       ]
     },
     {
@@ -498,8 +475,8 @@
     },
     {
       "id": "complex_mt205",
-      "name": "Complex MT205 COV",
-      "description": "Showcases AI field detection",
+      "name": "MT205 with Unmapped Fields",
+      "description": "Showcases unmapped field detection & transparency",
       "scenario_id": "mt205_to_pacs009",
       "estimated_time": "8-12 seconds",
       "confidence_target": 0.88

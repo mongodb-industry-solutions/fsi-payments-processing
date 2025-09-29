@@ -945,12 +945,17 @@ ${formData.beneficiary_institution || 'BENEFICIARY INSTITUTION'}
 
   // Auto-configure a new payment format
   async autoConfigureFormat(sourceFormat, targetFormat, sampleMessage, similarTo = null) {
+    // Validate required parameter
+    if (!similarTo) {
+      throw new Error('similarTo parameter is required for auto-configuration');
+    }
+
     try {
       const payload = {
         source_format: sourceFormat,
         target_format: targetFormat,
         sample_message: sampleMessage,
-        ...(similarTo && { similar_to: similarTo })
+        similar_to: similarTo
       };
 
       const response = await withTimeout(
@@ -1003,12 +1008,12 @@ ${formData.beneficiary_institution || 'BENEFICIARY INSTITUTION'}
   }
 
   // Validate auto-generated configuration
-  async validateAutoConfig(configurationId, corrections = null, approved = false) {
+  async validateAutoConfig(configurationId, configuration = null, approved = false) {
     try {
       const payload = {
         configuration_id: configurationId,
         approved,
-        ...(corrections && { corrections })
+        ...(configuration && { configuration })
       };
 
       const response = await withTimeout(

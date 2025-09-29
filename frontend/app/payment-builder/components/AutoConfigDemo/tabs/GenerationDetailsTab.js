@@ -21,6 +21,9 @@ export default function GenerationDetailsTab({ progress, configResult }) {
     setExpandedSection(expandedSection === section ? null : section);
   };
 
+  // Extract base comparison data from generation metadata
+  const baseComparison = configResult?.generation_metadata?.base_comparison;
+
   return (
     <div className={styles.container}>
       {/* Processing Timeline */}
@@ -261,6 +264,180 @@ export default function GenerationDetailsTab({ progress, configResult }) {
           </div>
         )}
       </div>
+
+      {/* Base Config Comparison */}
+      {baseComparison && (
+        <div className={styles.section}>
+          <div
+            className={styles.sectionHeader}
+            onClick={() => toggleSection('comparison')}
+          >
+            <span className={styles.icon}>🔄</span>
+            <h3>
+              Configuration Changes
+              {baseComparison.summary?.total_changes > 0 && (
+                <span className={styles.changesBadge}>
+                  {baseComparison.summary.total_changes} changes
+                </span>
+              )}
+            </h3>
+            <span className={styles.toggle}>
+              {expandedSection === 'comparison' ? '▼' : '▶'}
+            </span>
+          </div>
+          {expandedSection === 'comparison' && (
+            <div className={styles.sectionContent}>
+              {/* Comparison Summary */}
+              <div className={styles.comparisonSummary}>
+                <div className={styles.summaryTitle}>
+                  <strong>{baseComparison.new_config_id}</strong>
+                  <span className={styles.basedOn}>based on</span>
+                  <strong>{baseComparison.base_config_id}</strong>
+                </div>
+
+                <div className={styles.summaryGrid}>
+                  <div className={styles.summaryCard}>
+                    <div className={styles.summaryIcon}>✨</div>
+                    <div className={styles.summaryValue}>
+                      {baseComparison.summary?.fields_added || 0}
+                    </div>
+                    <div className={styles.summaryLabel}>Fields Added</div>
+                  </div>
+                  <div className={styles.summaryCard}>
+                    <div className={styles.summaryIcon}>🆕</div>
+                    <div className={styles.summaryValue}>
+                      {baseComparison.summary?.mappings_added || 0}
+                    </div>
+                    <div className={styles.summaryLabel}>Mappings Added</div>
+                  </div>
+                  <div className={styles.summaryCard}>
+                    <div className={styles.summaryIcon}>✏️</div>
+                    <div className={styles.summaryValue}>
+                      {baseComparison.summary?.mappings_modified || 0}
+                    </div>
+                    <div className={styles.summaryLabel}>Modified</div>
+                  </div>
+                  <div className={styles.summaryCard}>
+                    <div className={styles.summaryIcon}>✅</div>
+                    <div className={styles.summaryValue}>
+                      {baseComparison.summary?.mappings_preserved || 0}
+                    </div>
+                    <div className={styles.summaryLabel}>Preserved</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Highlights */}
+              {baseComparison.highlights && baseComparison.highlights.length > 0 && (
+                <div className={styles.highlights}>
+                  <h4 className={styles.subsectionTitle}>Key Highlights</h4>
+                  {baseComparison.highlights.map((highlight, idx) => (
+                    <div key={idx} className={styles.highlightItem}>
+                      {highlight}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Added Fields */}
+              {baseComparison.details?.added_fields?.length > 0 && (
+                <div className={styles.changesSection}>
+                  <h4 className={styles.subsectionTitle}>
+                    ✨ New Fields Discovered ({baseComparison.details.added_fields.length})
+                  </h4>
+                  <div className={styles.changesList}>
+                    {baseComparison.details.added_fields.map((field, idx) => (
+                      <div key={idx} className={styles.changeItem}>
+                        <div className={styles.changeHeader}>
+                          <span className={styles.fieldCode}>{field.field_id}</span>
+                          <span className={styles.fieldName}>{field.name}</span>
+                        </div>
+                        <div className={styles.fieldPattern}>
+                          Pattern: <code>{field.pattern}</code>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Added Mappings */}
+              {baseComparison.details?.added_mappings?.length > 0 && (
+                <div className={styles.changesSection}>
+                  <h4 className={styles.subsectionTitle}>
+                    🆕 New Mappings Created ({baseComparison.details.added_mappings.length})
+                  </h4>
+                  <div className={styles.changesList}>
+                    {baseComparison.details.added_mappings.map((mapping, idx) => (
+                      <div
+                        key={idx}
+                        className={`${styles.changeItem} ${
+                          mapping.confidence < 0.65 ? styles.llmSuggested : ''
+                        }`}
+                      >
+                        <div className={styles.mappingHeader}>
+                          <span className={styles.mappingSource}>{mapping.source}</span>
+                          <span className={styles.mappingArrow}>→</span>
+                          <span className={styles.mappingTargets}>
+                            {Array.isArray(mapping.targets)
+                              ? mapping.targets.join(', ')
+                              : mapping.targets
+                            }
+                          </span>
+                        </div>
+                        <div className={styles.mappingMeta}>
+                          <span className={`${styles.laneBadge} ${styles[mapping.processing_lane?.toLowerCase()]}`}>
+                            {mapping.processing_lane}
+                          </span>
+                          <span className={styles.confidence}>
+                            Confidence: {(mapping.confidence * 100).toFixed(0)}%
+                          </span>
+                          {mapping.confidence < 0.65 && (
+                            <span className={styles.llmBadge}>🤖 LLM Suggested</span>
+                          )}
+                        </div>
+                        <div className={styles.mappingReason}>
+                          💡 {mapping.reason}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Modified Mappings */}
+              {baseComparison.details?.modified_mappings?.length > 0 && (
+                <div className={styles.changesSection}>
+                  <h4 className={styles.subsectionTitle}>
+                    ✏️ Modified Mappings ({baseComparison.details.modified_mappings.length})
+                  </h4>
+                  <div className={styles.changesList}>
+                    {baseComparison.details.modified_mappings.map((mapping, idx) => (
+                      <div key={idx} className={styles.changeItem}>
+                        <div className={styles.modifiedHeader}>
+                          <span className={styles.fieldCode}>{mapping.source}</span>
+                        </div>
+                        <div className={styles.modifiedComparison}>
+                          <div className={styles.modifiedBefore}>
+                            <span className={styles.label}>Base:</span>
+                            <span>{mapping.base_targets?.join(', ')}</span>
+                            <span className={styles.laneBadge}>{mapping.base_lane}</span>
+                          </div>
+                          <div className={styles.modifiedAfter}>
+                            <span className={styles.label}>New:</span>
+                            <span>{mapping.new_targets?.join(', ')}</span>
+                            <span className={styles.laneBadge}>{mapping.new_lane}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

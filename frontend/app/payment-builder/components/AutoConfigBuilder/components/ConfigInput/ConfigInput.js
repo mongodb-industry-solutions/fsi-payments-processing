@@ -8,21 +8,22 @@ const PRESET_SCENARIOS = [
   {
     id: 'mt205_pacs009',
     name: 'MT205 → pacs.009',
-    description: 'Foreign Exchange to Financial Institution Transfer',
+    description: 'Financial Institution Transfer with unmapped fields showcase',
     sourceFormat: 'MT205',
     targetFormat: 'pacs.009',
-    similarTo: 'MT202',
-    sampleMessage: `{1:F01CHASUS33AXXX0000000000}{2:I205DEUTDEFFXXXXN}{3:{108:FX}}{4:
-:20:FX2024001
-:21:FXDEAL001
-:32A:241215EUR100000,00
-:53A:CHASUS33XXX
+    similarTo: 'MT',
+    sampleMessage: `{1:F01CHASUS33AXXX0000000000}{2:I205DEUTDEFFXXXXN}{3:{108:PRIORITY}}{4:
+:20:MT205TEST2024
+:21:RELREF20241115
+:13C:/CLSTIME/0830+0100
+:32A:241215EUR500000,00
+:52A:UBSWCHZHXXX
 :57A:DEUTDEFFXXX
-:58A:/DE12345678901234567890
-BENEFICIARY BANK
-:72:/BNF/FX SETTLEMENT
-/INS/EUR/USD EXCHANGE
-/RATE/1.0850
+:58A:/DE98765432109876543210
+COBADEFFXXX
+:72:/BNF/PRIORITY SETTLEMENT
+/INS/SAME DAY VALUE
+/ACC/COVER FOR FI TRANSFER
 -}`
   },
   {
@@ -48,7 +49,7 @@ BENEFICIARY BANK
     description: 'Cover Payment to Financial Institution Credit Transfer',
     sourceFormat: 'MT202COV',
     targetFormat: 'pacs.009',
-    similarTo: 'MT202',
+    similarTo: 'MT',
     sampleMessage: `{1:F01CHASUS33AXXX0000000000}{2:I202DEUTDEFFXXXXN}{3:{108:COVER}}{4:
 :20:COV2024001
 :21:PAYMENT001

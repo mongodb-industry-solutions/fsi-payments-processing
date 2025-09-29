@@ -3,21 +3,22 @@ import backendClient from '@/lib/api/backendClient';
 
 export async function POST(request) {
   try {
-    const { sourceFormat, targetFormat, sampleMessage } = await request.json();
-    
-    if (!sourceFormat || !targetFormat) {
+    const { sourceFormat, targetFormat, sampleMessage, similarTo } = await request.json();
+
+    if (!sourceFormat || !targetFormat || !similarTo) {
       return NextResponse.json(
-        { error: 'Source and target formats are required' },
+        { error: 'Source format, target format, and similarTo are required' },
         { status: 400 }
       );
     }
 
     // Call backend auto-configuration service
-    const result = await backendClient.autoConfigureFormat({
+    const result = await backendClient.autoConfigureFormat(
       sourceFormat,
       targetFormat,
-      sampleMessage
-    });
+      sampleMessage,
+      similarTo
+    );
 
     return NextResponse.json({
       success: true,

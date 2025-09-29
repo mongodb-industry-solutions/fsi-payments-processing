@@ -116,7 +116,7 @@ export function useAutoConfigBuilder() {
         state.input.sourceFormat,
         state.input.targetFormat,
         state.input.sampleMessage,
-        state.input.similarTo || undefined
+        state.input.similarTo || 'MT103'
       );
 
       updateProgress(50, 'Applying semantic patterns...');
@@ -129,40 +129,126 @@ export function useAutoConfigBuilder() {
 
       updateProgress(70, 'Generating field mappings...');
 
-      // Process the result into journey data
-      const mappings = result.mappings || [];
-      const steps = [
-        {
-          icon: '🔍',
-          title: 'Message Parsing',
-          duration: '~0.5s',
-          description: `Parsed ${state.input.sourceFormat} message structure`
-        },
-        {
-          icon: '📝',
-          title: 'Field Detection',
-          duration: '~1.0s',
-          description: `Identified ${result.fields_detected || 0} fields`
-        },
-        {
-          icon: '🔗',
-          title: 'Pattern Matching',
-          duration: '~1.5s',
-          description: `Applied semantic patterns from ${state.input.similarTo || 'base formats'}`
-        },
-        {
-          icon: '🧠',
-          title: 'AI Analysis',
-          duration: '~2.0s',
-          description: `Processed complex fields with AI`
-        },
-        {
+      // Process the result into journey data using REAL generation_metadata
+      const metadata = result.generation_metadata || {};
+
+      // Build steps from REAL processing steps
+      const steps = [];
+      if (metadata.processing_steps && metadata.processing_steps.length > 0) {
+        const stepIcons = {
+          field_extraction_and_analysis: '🔍',
+          base_configuration_lookup: '📚',
+          parser_generation: '⚙️',
+          mappings_generation: '🔗',
+          confidence_calculation: '📊'
+        };
+
+        const stepTitles = {
+          field_extraction_and_analysis: 'Field Extraction & Analysis',
+          base_configuration_lookup: 'Base Configuration Lookup',
+          parser_generation: 'Parser Generation',
+          mappings_generation: 'Mappings Generation',
+          confidence_calculation: 'Confidence Calculation'
+        };
+
+        metadata.processing_steps.forEach(step => {
+          const durationSec = ((step.duration_ms || 0) / 1000).toFixed(2);
+          steps.push({
+            icon: stepIcons[step.step] || '📝',
+            title: stepTitles[step.step] || step.step,
+            duration: `${durationSec}s`,
+            description: step.result?.fields_found !== undefined
+              ? `Found ${step.result.fields_found} fields using ${step.result.extraction_method}`
+              : step.result?.base_configuration_id
+              ? `Using ${step.result.base_configuration_id}`
+              : step.result?.mappings_generated !== undefined
+              ? `Generated ${step.result.mappings_generated} mappings with ${step.result.semantic_patterns_used || 0} patterns`
+              : step.result?.overall_confidence !== undefined
+              ? `Overall confidence: ${Math.round((step.result.overall_confidence || 0) * 100)}%`
+              : 'Processing step completed',
+            result: step.result || {}
+          });
+        });
+
+        // Add summary step with detailed results
+        const unmappedCount = result.unmapped_fields?.length || 0;
+        const mappedCount = (result.fields_detected || 0) - unmappedCount;
+
+        steps.push({
           icon: '✓',
-          title: 'Configuration Built',
-          duration: `${result.generation_time_seconds?.toFixed(1) || '4.5'}s total`,
-          description: 'Generated complete configuration'
-        }
-      ];
+          title: 'Configuration Complete',
+          duration: `${((metadata.total_duration_ms || 0) / 1000).toFixed(2)}s total`,
+          description: `Generated complete configuration with ${result.fields_detected || 0} fields`,
+          result: {
+            configuration_id: result.configuration_id,
+            total_fields: result.fields_detected || 0,
+            mapped_fields: mappedCount,
+            unmapped_fields: unmappedCount,
+            overall_confidence: result.confidence || 0,
+            generation_time: result.generation_time_seconds || 0,
+            semantic_patterns_count: metadata.semantic_patterns_used?.length || 0,
+            status: result.status || 'completed',
+            requires_review: (result.uncertain_fields?.length || 0) > 0,
+            uncertain_fields_count: result.uncertain_fields?.length || 0
+          }
+        });
+      } else {
+        // Fallback to generic steps if no metadata
+        steps.push(
+          {
+            icon: '🔍',
+            title: 'Message Parsing',
+            duration: '~0.5s',
+            description: `Parsed ${state.input.sourceFormat} message structure`
+          },
+          {
+            icon: '📝',
+            title: 'Field Detection',
+            duration: '~1.0s',
+            description: `Identified ${result.fields_detected || 0} fields`
+          },
+          {
+            icon: '✓',
+            title: 'Configuration Built',
+            duration: `${result.generation_time_seconds?.toFixed(1) || '4.5'}s total`,
+            description: 'Generated complete configuration'
+          }
+        );
+      }
+
+      // Build mappings from REAL configuration data
+      const mappings = [];
+      if (result.configuration && result.configuration.mappings) {
+        result.configuration.mappings.forEach(mapping => {
+          const lane = mapping.processing_lane || 'RULES';
+          const confidence = mapping.confidence ? Math.round(mapping.confidence * 100) : 95;
+
+          // Find semantic concept from metadata
+          let semanticConcept = null;
+          let learnedFrom = [];
+          if (metadata.semantic_patterns_used) {
+            const pattern = metadata.semantic_patterns_used.find(p =>
+              p.used_for_fields && p.used_for_fields.includes(mapping.source.split('.')[0])
+            );
+            if (pattern) {
+              semanticConcept = pattern.concept_name;
+              learnedFrom = pattern.learned_from_formats || [];
+            }
+          }
+
+          mappings.push({
+            source: mapping.source,
+            target: (mapping.targets || []).join(', '),
+            lane: lane,
+            confidence: confidence,
+            semanticConcept: semanticConcept,
+            learnedFrom: learnedFrom,
+            reason: semanticConcept
+              ? `Learned from: ${learnedFrom.join(', ')}`
+              : 'Direct mapping'
+          });
+        });
+      }
 
       updateProgress(90, 'Finalizing configuration...');
 
@@ -188,7 +274,7 @@ export function useAutoConfigBuilder() {
         journey: {
           ...prev.journey,
           mappings,
-          output: result
+          output: result.configuration || result
         }
       }));
     } catch (error) {

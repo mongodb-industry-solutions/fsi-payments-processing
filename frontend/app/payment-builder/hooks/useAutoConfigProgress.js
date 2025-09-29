@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import backendClient from '@/lib/api/backendClient';
 
 /**
  * Hook to manage auto-configuration progress with real backend data
@@ -18,7 +19,7 @@ export function useAutoConfigProgress() {
     error: null
   });
 
-  // Simulate progressive updates based on backend response
+  // Process real backend response with generation_metadata
   const processConfigurationResult = useCallback((result) => {
     if (!result) return;
 
@@ -28,34 +29,82 @@ export function useAutoConfigProgress() {
     const uncertainFields = result.uncertain_fields || [];
     const confidence = result.confidence || 0;
     const processingTime = result.generation_time_seconds || 0;
+    const generationMetadata = result.generation_metadata || {};
 
-    // Create field detection data from result
-    const detectedFields = [];
-    for (let i = 0; i < fields; i++) {
-      const isUncertain = uncertainFields.some(uf => uf.field === `field_${i}`);
-      detectedFields.push({
-        code: `Field ${i}`,
-        name: `Field ${i}`,
+    // Use REAL field details from backend (new in Phase 1)
+    const detectedFields = (result.detected_fields_detail || []).map((field, i) => {
+      const isUncertain = uncertainFields.some(uf =>
+        uf.field === field.field_id || uf.field === `field_${i}`
+      );
+
+      return {
+        code: field.field_id,
+        name: field.name,
         type: 'auto',
+        pattern: field.pattern,
+        multiline: field.multiline,
         lane: isUncertain ? 'AI' : 'RULES',
-        confidence: isUncertain ?
-          uncertainFields.find(uf => uf.field === `field_${i}`)?.confidence || 0 :
-          95,
+        confidence: isUncertain
+          ? (uncertainFields.find(uf => uf.field === field.field_id)?.confidence || 0) * 100
+          : 95,
         mapped: i < fieldsMapped
+      };
+    });
+
+    // If backend didn't provide details (backwards compatibility), fall back to count
+    if (detectedFields.length === 0 && fields > 0) {
+      for (let i = 0; i < fields; i++) {
+        const isUncertain = uncertainFields.some(uf => uf.field === `field_${i}`);
+        detectedFields.push({
+          code: `Field ${i}`,
+          name: `Field ${i}`,
+          type: 'auto',
+          lane: isUncertain ? 'AI' : 'RULES',
+          confidence: isUncertain
+            ? (uncertainFields.find(uf => uf.field === `field_${i}`)?.confidence || 0) * 100
+            : 95,
+          mapped: i < fieldsMapped
+        });
+      }
+    }
+
+    // Create pattern data from REAL semantic patterns used during generation
+    const patterns = [];
+    if (generationMetadata.semantic_patterns_used) {
+      generationMetadata.semantic_patterns_used.forEach(pattern => {
+        const fields = pattern.used_for_fields || [];
+        fields.forEach(fieldId => {
+          patterns.push({
+            sourceField: fieldId,
+            sourceValue: 'Auto-detected',
+            patternName: pattern.concept_name,
+            type: 'semantic',
+            confidence: 85,
+            targetField: pattern.concept_name,
+            targetPath: pattern.concept_id,
+            reason: `Learned from: ${(pattern.learned_from_formats || []).join(', ')}`,
+            learnedFrom: pattern.learned_from_formats || [],
+            semanticConcept: pattern.concept_name
+          });
+        });
       });
     }
 
-    // Create pattern data from uncertain fields
-    const patterns = uncertainFields.map(field => ({
-      sourceField: field.field,
-      sourceValue: 'Detected Value',
-      patternName: field.suggested_mapping || 'unknown',
-      type: field.confidence > 0.8 ? 'semantic' : 'ai_generated',
-      confidence: Math.round((field.confidence || 0) * 100),
-      targetField: field.suggested_mapping,
-      targetPath: field.suggested_mapping,
-      reason: field.reason
-    }));
+    // Add uncertain fields as AI patterns if no semantic patterns
+    if (patterns.length === 0 && uncertainFields.length > 0) {
+      uncertainFields.forEach(field => {
+        patterns.push({
+          sourceField: field.field,
+          sourceValue: 'Detected Value',
+          patternName: field.suggested_mapping || 'unknown',
+          type: 'ai_generated',
+          confidence: Math.round((field.confidence || 0) * 100),
+          targetField: field.suggested_mapping,
+          targetPath: field.suggested_mapping,
+          reason: field.reason
+        });
+      });
+    }
 
     // Calculate confidence scores
     const confidenceScores = {
@@ -68,31 +117,50 @@ export function useAutoConfigProgress() {
       overall: Math.round(confidence * 100)
     };
 
-    // MongoDB operations based on processing
-    const mongoOps = [
-      {
-        icon: '📝',
-        message: `Loaded semantic patterns from ${result.configuration_id?.split('_')[0] || 'MT103'}`,
-        timestamp: Date.now()
-      },
-      {
-        icon: '🔍',
-        message: `Queried conversion_registry for ${result.configuration_id}`,
-        timestamp: Date.now() + 1000
-      },
-      {
-        icon: '🧠',
-        message: `Applied ${patterns.length} AI-generated mappings`,
-        timestamp: Date.now() + 2000
-      },
-      {
+    // MongoDB operations from REAL processing steps
+    const mongoOps = [];
+    let timeOffset = 0;
+
+    if (generationMetadata.processing_steps) {
+      generationMetadata.processing_steps.forEach((step, index) => {
+        const stepIcons = {
+          field_extraction_and_analysis: '🔍',
+          base_configuration_lookup: '📚',
+          parser_generation: '⚙️',
+          mappings_generation: '🔗',
+          confidence_calculation: '📊'
+        };
+
+        const stepMessages = {
+          field_extraction_and_analysis: `Extracted ${step.result?.fields_found || 0} fields using ${step.result?.extraction_method || 'pattern matching'}`,
+          base_configuration_lookup: `Loaded base config: ${step.result?.base_configuration_id || 'Unknown'}`,
+          parser_generation: `Generated parser for ${step.result?.fields_generated || 0} fields`,
+          mappings_generation: `Created ${step.result?.mappings_generated || 0} mappings using ${step.result?.semantic_patterns_used || 0} semantic patterns`,
+          confidence_calculation: `Overall confidence: ${Math.round((step.result?.overall_confidence || 0) * 100)}%`
+        };
+
+        mongoOps.push({
+          icon: stepIcons[step.step] || '📝',
+          message: stepMessages[step.step] || `Completed ${step.step}`,
+          timestamp: Date.now() + timeOffset,
+          duration: step.duration_ms
+        });
+
+        timeOffset += (step.duration_ms || 500);
+      });
+    }
+
+    // Add final save operation
+    if (mongoOps.length > 0) {
+      mongoOps.push({
         icon: '💾',
         message: result.ready_to_save ?
-          'Configuration saved to MongoDB' :
-          'Configuration pending review',
-        timestamp: Date.now() + 3000
-      }
-    ];
+          'Configuration saved to pending_auto_configs' :
+          'Configuration ready for review',
+        timestamp: Date.now() + timeOffset,
+        duration: 0
+      });
+    }
 
     return {
       detectedFields,
@@ -193,30 +261,14 @@ export function useAutoConfigProgress() {
     });
 
     try {
-      // Call real backend
-      const response = await fetch('http://localhost:8001/api/v1/converter/auto-configure', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          source_format: sourceFormat,
-          target_format: targetFormat,
-          sample_message: sampleMessage,
-          similar_to: similarTo
-        })
-      });
+      // Call through centralized client instead of direct fetch
+      const result = await backendClient.autoConfigureFormat(
+        sourceFormat,
+        targetFormat,
+        sampleMessage,
+        similarTo
+      );
 
-      if (!response.ok) {
-        let errorMessage = `Auto-configuration failed: ${response.status}`;
-        try {
-          const errorData = await response.json();
-          errorMessage = errorData.detail || errorData.message || errorMessage;
-        } catch (e) {
-          // If response isn't JSON, keep the default message
-        }
-        throw new Error(errorMessage);
-      }
-
-      const result = await response.json();
       setConfigResult(result);
 
       // Simulate progressive updates with real data
