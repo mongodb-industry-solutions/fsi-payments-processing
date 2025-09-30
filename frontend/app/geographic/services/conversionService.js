@@ -14,7 +14,24 @@ const BACKEND_API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL || 'http://local
  * @returns {Promise<Object>} Conversion result with output and statistics
  */
 export async function convertPayment(sourceFormat, targetFormat, message, useRouter = true) {
+  console.log('convertPayment called:', {
+    sourceFormat,
+    targetFormat,
+    messageLength: message ? message.length : 0,
+    messageType: typeof message,
+    useRouter,
+    messageSample: message ? message.substring(0, 100) : null
+  });
+
   try {
+    console.log('Making API request:', {
+      url: `${BACKEND_API_URL}/api/v1/converter/convert`,
+      sourceFormat,
+      targetFormat,
+      messageLength: message ? message.length : 0,
+      useRouter
+    });
+
     const response = await fetch(`${BACKEND_API_URL}/api/v1/converter/convert`, {
       method: 'POST',
       headers: {
@@ -29,12 +46,43 @@ export async function convertPayment(sourceFormat, targetFormat, message, useRou
       }),
     });
 
+    console.log('Response status:', response.status, response.ok);
+
     if (!response.ok) {
       const errorText = await response.text();
       throw new Error(`Conversion failed: ${errorText}`);
     }
 
     const result = await response.json();
+
+    console.log('API Response:', {
+      success: result.success,
+      hasConvertedMessage: !!result.converted_message,
+      error: result.error,
+      sourceFormat,
+      targetFormat,
+      resultKeys: Object.keys(result)
+    });
+
+    // Check if the API returned an error
+    if (!result.success) {
+      console.error('API returned error:', {
+        error: result.error,
+        sourceFormat,
+        targetFormat
+      });
+
+      return {
+        success: false,
+        error: result.error || 'Conversion failed',
+        convertedMessage: null,
+        processingStats: {},
+        confidenceScores: {},
+        processingTime: 0,
+        metadata: result.metadata || {},
+        humanReviewRequired: false
+      };
+    }
 
     // Transform processing_stats to the expected format
     const processingStats = {};
@@ -45,7 +93,7 @@ export async function convertPayment(sourceFormat, targetFormat, message, useRou
     }
 
     return {
-      success: true,
+      success: result.success !== false,  // Use API's success value
       convertedMessage: result.converted_message,
       processingStats: processingStats,
       confidenceScores: result.confidence_scores || {},
@@ -55,7 +103,13 @@ export async function convertPayment(sourceFormat, targetFormat, message, useRou
       humanReviewRequired: result.human_review_required || false
     };
   } catch (error) {
-    console.error('Conversion error:', error);
+    console.error('Conversion error details:', {
+      message: error.message,
+      sourceFormat,
+      targetFormat,
+      messageLength: message ? message.length : 0,
+      error
+    });
 
     // Return a fallback result for demo purposes
     return {

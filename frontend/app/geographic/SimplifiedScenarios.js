@@ -291,7 +291,7 @@ INVOICE INV-FJ-2024-089
           },
           {
             from: 'JSON',
-            to: 'ISO 20022 (pacs.008)',
+            to: 'pacs.008',
             location: 'EU Gateway',
             time: 2000,
             description: 'Building ISO 20022',
@@ -419,7 +419,8 @@ ORDER PO-8934567 QTY 5000 UNITS
         location: 'US Gateway',
         time: 2000,
         description: 'US format extraction',
-        details: 'Parsing SWIFT fields and extracting payment data'
+        details: 'Parsing SWIFT fields and extracting payment data',
+        useRealAPI: true
       },
       {
         from: 'JSON',
@@ -427,7 +428,8 @@ ORDER PO-8934567 QTY 5000 UNITS
         location: 'UK Processing',
         time: 2000,
         description: 'UK format creation',
-        details: 'Building CHAPS message for UK clearing'
+        details: 'Building CHAPS message for UK clearing',
+        useRealAPI: true
       },
       {
         from: 'CHAPS',
@@ -435,7 +437,8 @@ ORDER PO-8934567 QTY 5000 UNITS
         location: 'UK Gateway',
         time: 2000,
         description: 'Bridging to Europe',
-        details: 'Converting UK format back to universal JSON'
+        details: 'Converting UK format back to universal JSON',
+        useRealAPI: true
       },
       {
         from: 'JSON',
@@ -443,13 +446,31 @@ ORDER PO-8934567 QTY 5000 UNITS
         location: 'EU Gateway',
         time: 2000,
         description: 'EU format creation',
-        details: 'Building TARGET2 message for European settlement'
+        details: 'Building TARGET2 message for European settlement',
+        useRealAPI: true
       }
     ],
     totalTime: 8000,
-    // Placeholder for future implementation
-    sampleMessage: null,
-    useRealAPI: false,
+    // Sample message for multi-hop
+    sampleMessage: `{1:F01CHASUS33XXXX0000000000}{2:I103UBGBGB2LXXXXN}{4:
+:20:MULTIHOP001
+:23B:CRED
+:32A:241215USD75000,00
+:50K:/US64209876543210987654
+AMERICAN CORP LLC
+NEW YORK NY 10001
+USA
+:52A:CHASUS33XXX
+:59:/DE89370400440532013000
+GERMAN TECH GMBH
+FRANKFURT
+GERMANY
+:70:MULTI-HOP PAYMENT TEST
+ROUTING VIA UK
+:71A:SHA
+:72:/ACC/PRIORITY PROCESSING
+-}`,
+    useRealAPI: true,
     mongoDbAdvantages: {
       title: '🍃 MongoDB: Intelligent Routing Engine',
       message: "MongoDB's graph-based routing finds optimal paths through multiple payment networks. The conversion_graph collection enables real-time path discovery while caching successful routes for instant subsequent conversions."

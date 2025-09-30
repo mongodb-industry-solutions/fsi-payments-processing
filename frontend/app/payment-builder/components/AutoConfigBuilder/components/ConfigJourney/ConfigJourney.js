@@ -617,11 +617,6 @@ export default function ConfigJourney({
     console.log('Added Fields:', Array.from(addedFields));
     console.log('Added Mappings:', Array.from(addedMappings));
     console.log('LLM Suggested Mappings:', Array.from(llmSuggestedMappings));
-    console.log('CSS Module classes:', {
-      commentNew: styles.commentNew,
-      commentLlm: styles.commentLlm,
-      commentAdded: styles.commentAdded
-    });
 
     // Syntax highlight JSON with change markers
     const renderHighlightedJson = (obj, indent = 0) => {
@@ -715,9 +710,6 @@ export default function ConfigJourney({
                     🤖 {baseComparison.details.added_mappings.filter(m => m.confidence < 0.65).length} LLM
                   </span>
                 )}
-                <span className={styles.statBadge} data-type="reused">
-                  ♻️ {baseComparison.summary?.mappings_preserved || 0} Reused
-                </span>
                 {baseComparison.summary?.mappings_modified > 0 && (
                   <span className={styles.statBadge} data-type="modified">
                     ✏️ {baseComparison.summary.mappings_modified} Modified
@@ -766,91 +758,127 @@ export default function ConfigJourney({
             className={styles.codeBlock}
             dangerouslySetInnerHTML={{
               __html: (() => {
-                // Generate JSON string with inline comment highlights
+                // Generate JSON string with line highlighting
                 const lines = JSON.stringify(output, null, 2).split('\n');
 
-                // First pass: identify which lines need markers
-                const lineMarkers = {}; // line index -> marker type
-                let inParser = false;
+                // Track which lines belong to new/modified elements
+                const lineHighlights = {}; // line index -> highlight type
                 let inMappings = false;
-                let currentMappingSource = null;
-                let currentMappingStartLine = null;
+                let inFields = false;
+                let currentFieldBlock = null;
+                let currentMappingBlock = null;
+                let currentMappingStart = null;
 
                 for (let i = 0; i < lines.length; i++) {
                   const line = lines[i];
 
                   // Detect sections
-                  if (line.includes('"parser"')) inParser = true;
+                  if (line.includes('"fields"')) inFields = true;
                   if (line.includes('"mappings"')) {
-                    inParser = false;
+                    inFields = false;
                     inMappings = true;
                   }
                   if (line.includes('"builder"') || line.includes('"ai_service"')) {
                     inMappings = false;
                   }
 
-                  // Track new fields in parser
-                  if (inParser && line.includes('"')) {
+                  // Track new fields in parser - highlight entire field block
+                  if (inFields && line.match(/"([^"]+)":\s*\{/)) {
                     const match = line.match(/"([^"]+)":/);
-                    if (match && match[1] !== 'parser' && match[1] !== 'fields' && match[1] !== 'type' && match[1] !== 'block_pattern' && match[1] !== 'content_block') {
+                    if (match) {
                       const fieldId = match[1];
-                      if (addedFields.has(fieldId) && line.includes('{')) {
-                        lineMarkers[i] = 'newField';
-                        console.log('Marking line', i, 'as newField for', fieldId);
+                      if (addedFields.has(fieldId)) {
+                        currentFieldBlock = fieldId;
                       }
                     }
                   }
 
-                  // Track mappings
-                  if (inMappings) {
+                  // Highlight all lines of new field block
+                  if (currentFieldBlock) {
+                    lineHighlights[i] = 'newField';
+                    // Check if this is the end of the field block
+                    if (line.includes('}') && !line.includes('{')) {
+                      currentFieldBlock = null;
+                    }
+                  }
+
+                  // Track mappings - highlight entire mapping block
+                  if (inMappings && line.includes('{')) {
+                    // Start of a mapping object
+                    currentMappingStart = i;
+                  }
+
+                  if (inMappings && currentMappingStart !== null) {
+                    // Look for source field in this mapping
                     if (line.includes('"source"')) {
                       const match = line.match(/"source":\s*"([^"]+)"/);
                       if (match) {
-                        currentMappingSource = match[1];
-                        currentMappingStartLine = i;
+                        const source = match[1];
+                        if (llmSuggestedMappings.has(source)) {
+                          currentMappingBlock = 'llmMapping';
+                        } else if (addedMappings.has(source)) {
+                          currentMappingBlock = 'newMapping';
+                        }
                       }
                     }
 
-                    // When we find closing brace of mapping object
-                    if (currentMappingSource && line.trim().match(/^}\s*,?\s*$/)) {
-                      if (llmSuggestedMappings.has(currentMappingSource)) {
-                        lineMarkers[i] = 'llmMapping';
-                        console.log('Marking line', i, 'as llmMapping for', currentMappingSource);
-                      } else if (addedMappings.has(currentMappingSource)) {
-                        lineMarkers[i] = 'newMapping';
-                        console.log('Marking line', i, 'as newMapping for', currentMappingSource);
+                    // Apply highlight to current mapping block
+                    if (currentMappingBlock) {
+                      for (let j = currentMappingStart; j <= i; j++) {
+                        lineHighlights[j] = currentMappingBlock;
                       }
-                      currentMappingSource = null;
-                      currentMappingStartLine = null;
+                    }
+
+                    // Check if this is the end of the mapping block
+                    if (line.trim().match(/^}\s*,?\s*$/)) {
+                      // Also highlight remaining lines of this mapping
+                      if (currentMappingBlock) {
+                        lineHighlights[i] = currentMappingBlock;
+                      }
+                      currentMappingBlock = null;
+                      currentMappingStart = null;
                     }
                   }
                 }
 
-                // Second pass: generate highlighted lines
+                // Generate highlighted HTML
                 const highlightedLines = [];
                 for (let i = 0; i < lines.length; i++) {
-                  let highlightedLine = lines[i]
+                  let escapedLine = lines[i]
                     .replace(/&/g, '&amp;')
                     .replace(/</g, '&lt;')
                     .replace(/>/g, '&gt;');
 
-                  // Add markers based on first pass with inline styles
-                  if (lineMarkers[i] === 'newField') {
-                    highlightedLine += ' <span style="color: #10b981; font-weight: 700; font-style: italic; background: #d1fae5; padding: 2px 6px; border-radius: 3px; margin-left: 8px;">/* ✨ NEW FIELD */</span>';
-                    console.log('Added newField marker to line', i);
-                  } else if (lineMarkers[i] === 'llmMapping') {
-                    highlightedLine += ' <span style="color: #8b5cf6; font-weight: 700; font-style: italic; background: #f3e8ff; padding: 2px 6px; border-radius: 3px; margin-left: 8px;">/* 🤖 LLM SUGGESTED */</span>';
-                    console.log('Added llmMapping marker to line', i);
-                  } else if (lineMarkers[i] === 'newMapping') {
-                    highlightedLine += ' <span style="color: #06b6d4; font-weight: 700; font-style: italic; background: #dbeafe; padding: 2px 6px; border-radius: 3px; margin-left: 8px;">/* 🆕 NEW MAPPING */</span>';
-                    console.log('Added newMapping marker to line', i);
-                  }
+                  const highlightType = lineHighlights[i];
 
-                  highlightedLines.push(highlightedLine);
+                  if (highlightType === 'newField') {
+                    // Highlight new fields with green background - no display property
+                    highlightedLines.push(
+                      '<span style="background: linear-gradient(90deg, #d1fae5 0%, transparent 80%); box-shadow: -3px 0 0 #10b981; padding-left: 12px;">' +
+                      escapedLine +
+                      '</span>'
+                    );
+                  } else if (highlightType === 'llmMapping') {
+                    // Highlight LLM-suggested mappings with purple background
+                    highlightedLines.push(
+                      '<span style="background: linear-gradient(90deg, #f3e8ff 0%, transparent 80%); box-shadow: -3px 0 0 #8b5cf6; padding-left: 12px;">' +
+                      escapedLine +
+                      '</span>'
+                    );
+                  } else if (highlightType === 'newMapping') {
+                    // Highlight new mappings with blue background
+                    highlightedLines.push(
+                      '<span style="background: linear-gradient(90deg, #e0f2fe 0%, transparent 80%); box-shadow: -3px 0 0 #0ea5e9; padding-left: 12px;">' +
+                      escapedLine +
+                      '</span>'
+                    );
+                  } else {
+                    // No highlight
+                    highlightedLines.push(escapedLine);
+                  }
                 }
 
-                console.log('Total line markers:', Object.keys(lineMarkers).length);
-                console.log('Sample highlighted line with marker:', highlightedLines.find(l => l.includes('<span')));
+                console.log('Line highlights applied:', Object.keys(lineHighlights).length);
 
                 return highlightedLines.join('\n');
               })()

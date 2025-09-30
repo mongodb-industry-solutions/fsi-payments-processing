@@ -24,6 +24,12 @@ export default function AnimatedEdge({
     targetPosition,
   });
 
+  const handleClick = () => {
+    if (data?.onEdgeClick) {
+      data.onEdgeClick(id, data);
+    }
+  };
+
   return (
     <>
       <BaseEdge path={edgePath} markerEnd={markerEnd} style={style} />
@@ -41,8 +47,21 @@ export default function AnimatedEdge({
               fontWeight: data.isActive ? 'bold' : 'normal',
               color: data.isActive ? '#764ba2' : '#64748b',
               pointerEvents: 'all',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
             }}
             className="nodrag nopan"
+            onClick={handleClick}
+            onMouseEnter={(e) => {
+              e.target.style.background = '#f0f9ff';
+              e.target.style.borderColor = '#3b82f6';
+              e.target.style.transform = `translate(-50%, -50%) translate(${labelX}px,${labelY}px) scale(1.05)`;
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.background = 'white';
+              e.target.style.borderColor = '#e2e8f0';
+              e.target.style.transform = `translate(-50%, -50%) translate(${labelX}px,${labelY}px) scale(1)`;
+            }}
           >
             {data.label}
           </div>

@@ -151,21 +151,50 @@ export function useAutoConfigBuilder() {
           confidence_calculation: 'Confidence Calculation'
         };
 
+        // Check for pattern optimization in first step
+        const firstStep = metadata.processing_steps[0];
+        const patternOptimization = firstStep?.result?.pattern_optimization;
+
+        // Add pattern optimization step if available
+        if (patternOptimization) {
+          steps.push({
+            icon: '🎯',
+            title: 'Pattern Matching Optimization',
+            duration: '0.1s',
+            description: `Matched ${patternOptimization.fields_from_patterns} of ${patternOptimization.total_fields} fields using patterns`,
+            result: {
+              ...patternOptimization,
+              savings: `${Math.round(patternOptimization.cost_reduction_percent)}% LLM reduction`,
+              llm_saved: patternOptimization.llm_calls_saved,
+              known_fields: patternOptimization.field_breakdown?.from_patterns || [],
+              unknown_fields: patternOptimization.field_breakdown?.need_llm || []
+            }
+          });
+        }
+
         metadata.processing_steps.forEach(step => {
           const durationSec = ((step.duration_ms || 0) / 1000).toFixed(2);
+
+          // Enhanced description for field extraction step
+          let description = 'Processing step completed';
+          if (step.step === 'field_extraction_and_analysis' && step.result?.pattern_optimization) {
+            const opt = step.result.pattern_optimization;
+            description = `Found ${step.result.fields_found} fields (${opt.fields_from_patterns} from patterns, ${opt.fields_from_llm} from LLM)`;
+          } else if (step.result?.fields_found !== undefined) {
+            description = `Found ${step.result.fields_found} fields using ${step.result.extraction_method}`;
+          } else if (step.result?.base_configuration_id) {
+            description = `Using ${step.result.base_configuration_id}`;
+          } else if (step.result?.mappings_generated !== undefined) {
+            description = `Generated ${step.result.mappings_generated} mappings with ${step.result.semantic_patterns_used || 0} patterns`;
+          } else if (step.result?.overall_confidence !== undefined) {
+            description = `Overall confidence: ${Math.round((step.result.overall_confidence || 0) * 100)}%`;
+          }
+
           steps.push({
             icon: stepIcons[step.step] || '📝',
             title: stepTitles[step.step] || step.step,
             duration: `${durationSec}s`,
-            description: step.result?.fields_found !== undefined
-              ? `Found ${step.result.fields_found} fields using ${step.result.extraction_method}`
-              : step.result?.base_configuration_id
-              ? `Using ${step.result.base_configuration_id}`
-              : step.result?.mappings_generated !== undefined
-              ? `Generated ${step.result.mappings_generated} mappings with ${step.result.semantic_patterns_used || 0} patterns`
-              : step.result?.overall_confidence !== undefined
-              ? `Overall confidence: ${Math.round((step.result.overall_confidence || 0) * 100)}%`
-              : 'Processing step completed',
+            description: description,
             result: step.result || {}
           });
         });
@@ -218,17 +247,36 @@ export function useAutoConfigBuilder() {
 
       // Build mappings from REAL configuration data
       const mappings = [];
+
+      // Get pattern optimization data to identify method
+      const patternOpt = metadata.processing_steps?.[0]?.result?.pattern_optimization;
+      const patternFields = patternOpt?.field_breakdown?.from_patterns || [];
+      const llmFields = patternOpt?.field_breakdown?.need_llm || [];
+
       if (result.configuration && result.configuration.mappings) {
         result.configuration.mappings.forEach(mapping => {
           const lane = mapping.processing_lane || 'RULES';
           const confidence = mapping.confidence ? Math.round(mapping.confidence * 100) : 95;
+
+          // Determine if field was pattern-matched or LLM-analyzed
+          const fieldBase = mapping.source.split('.')[0];
+          let matchMethod = 'unknown';
+          let methodIcon = '📝';
+
+          if (patternFields.includes(fieldBase)) {
+            matchMethod = 'Pattern Match';
+            methodIcon = '🎯';
+          } else if (llmFields.includes(fieldBase)) {
+            matchMethod = 'LLM Analysis';
+            methodIcon = '🤖';
+          }
 
           // Find semantic concept from metadata
           let semanticConcept = null;
           let learnedFrom = [];
           if (metadata.semantic_patterns_used) {
             const pattern = metadata.semantic_patterns_used.find(p =>
-              p.used_for_fields && p.used_for_fields.includes(mapping.source.split('.')[0])
+              p.used_for_fields && p.used_for_fields.includes(fieldBase)
             );
             if (pattern) {
               semanticConcept = pattern.concept_name;
@@ -245,7 +293,9 @@ export function useAutoConfigBuilder() {
             learnedFrom: learnedFrom,
             reason: semanticConcept
               ? `Learned from: ${learnedFrom.join(', ')}`
-              : 'Direct mapping'
+              : 'Direct mapping',
+            method: matchMethod,
+            icon: methodIcon
           });
         });
       }

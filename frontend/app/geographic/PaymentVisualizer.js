@@ -19,6 +19,8 @@ import EnhancedCountryNode from './components/EnhancedCountryNode';
 import CryptoNode from './components/CryptoNode';
 import JsonBridgeNode from './components/JsonBridgeNode';
 import ProcessingPipelinePanel from './components/ProcessingPipelinePanel';
+import ConversionDetailsModal from './components/ConversionDetailsModal';
+import AnimatedEdge from './CustomEdges';
 import { getLayoutedElements, getRadialLayout, getRoutingTreeLayout, determineLayoutStrategy } from './utils/layoutUtils';
 import { convertPayment } from './services/conversionService';
 import styles from './PaymentVisualizer.module.css';
@@ -29,7 +31,12 @@ const nodeTypes = {
   jsonBridge: JsonBridgeNode,
 };
 
+const edgeTypes = {
+  animated: AnimatedEdge,
+};
+
 const edgeOptions = {
+  type: 'animated',
   animated: true,
   style: {
     stroke: '#13aa52',
@@ -42,6 +49,7 @@ const edgeOptions = {
 };
 
 const cryptoEdgeOptions = {
+  type: 'animated',
   animated: true,
   style: {
     stroke: '#764ba2',
@@ -70,9 +78,51 @@ function PaymentVisualizerFlow() {
   const [bfsState, setBfsState] = useState({ queue: [], visited: [], current: null });
   const [selectedPath, setSelectedPath] = useState(null);
   const [selectedDestination, setSelectedDestination] = useState('uk'); // For hub-and-spoke scenarios
+  const [conversionModalData, setConversionModalData] = useState(null);
+  const [isConversionModalOpen, setIsConversionModalOpen] = useState(false);
   const { fitView } = useReactFlow();
 
   const onConnect = useCallback((params) => setEdges((eds) => addEdge(params, eds)), [setEdges]);
+
+  const handleEdgeClick = useCallback(async (edgeId, edgeData) => {
+    // Parse the edge label to get source and target formats
+    const label = edgeData?.label;
+    if (!label || !label.includes('→')) return;
+
+    const [sourceFormat, targetFormat] = label.split('→').map(s => s.trim());
+
+    // Check if any scenario has been executed yet
+    if (conversionResults.length === 0) {
+      // No scenario has been executed yet, don't show any data
+      console.log('No scenario executed yet. Execute a scenario first to see conversion details.');
+      return;
+    }
+
+    // Check if we have stored results from execution
+    const existingResult = conversionResults.find(
+      r => r.from === sourceFormat && r.to === targetFormat
+    );
+
+    if (existingResult) {
+      const conversionData = {
+        from: sourceFormat,
+        to: targetFormat,
+        input: existingResult.input,
+        output: existingResult.output,
+        processing: {
+          processingTime: existingResult.processingTime,
+          messageSize: existingResult.messageSize,
+          processingLanes: existingResult.processingLanes
+        }
+      };
+
+      setConversionModalData(conversionData);
+      setIsConversionModalOpen(true);
+    } else {
+      // No data for this specific edge in the executed results
+      console.log(`No conversion data available for ${sourceFormat} → ${targetFormat} in this execution.`);
+    }
+  }, [conversionResults]);
 
   const onNodeClick = useCallback((event, node) => {
     // Don't show NodeDetailsPanel for country nodes as they have their own FormatInfoModal
@@ -198,7 +248,10 @@ function PaymentVisualizerFlow() {
             source: source.id,
             target: firstNodeId,
             ...pathEdgeStyle,
-            label: isOptimal ? '✅' : (isAvailable ? '' : '❌'),
+            data: {
+              label: isOptimal ? '✅' : (isAvailable ? '' : '❌'),
+              onEdgeClick: handleEdgeClick
+            },
             labelStyle: {
               fontSize: 11,
               fontWeight: 600,
@@ -216,6 +269,9 @@ function PaymentVisualizerFlow() {
             source: currentNodeId,
             target: nextNodeId,
             ...pathEdgeStyle,
+            data: {
+              onEdgeClick: handleEdgeClick
+            },
             labelStyle: { fontSize: 11, fontWeight: 600 }
           });
         }
@@ -229,6 +285,9 @@ function PaymentVisualizerFlow() {
             source: lastNodeId,
             target: destination.id,
             ...pathEdgeStyle,
+            data: {
+              onEdgeClick: handleEdgeClick
+            },
             labelStyle: { fontSize: 11, fontWeight: 600 }
           });
         }
@@ -294,7 +353,10 @@ function PaymentVisualizerFlow() {
           source: hop.id,
           target: hubNode.id,
           ...edgeOptions,
-          label: `${hop.format} → JSON`,
+          data: {
+            label: `${hop.format} → JSON`,
+            onEdgeClick: handleEdgeClick
+          },
           labelStyle: { fontSize: 11, fontWeight: 600 }
         });
       });
@@ -366,7 +428,10 @@ function PaymentVisualizerFlow() {
         source: sourceNode.id,
         target: hubId,
         ...edgeOptions,
-        label: `MT103 → JSON`,
+        data: {
+          label: `MT103 → JSON`,
+          onEdgeClick: handleEdgeClick
+        },
         labelStyle: { fontSize: 11, fontWeight: 600, color: '#00A35C' }
       });
 
@@ -400,7 +465,10 @@ function PaymentVisualizerFlow() {
           source: hubId,
           target: dest.id,
           ...edgeStyle,
-          label: dest.format === 'CHAPS' ? `JSON → CHAPS` : `JSON → ISO 20022`,
+          data: {
+            label: dest.format === 'CHAPS' ? `JSON → CHAPS` : `JSON → ISO 20022`,
+            onEdgeClick: handleEdgeClick
+          },
           labelStyle: { fontSize: 11, fontWeight: 600, color: isDestinationSelected ? '#00A35C' : '#9ca3af' }
         });
       });
@@ -488,7 +556,10 @@ function PaymentVisualizerFlow() {
               source: hop.id,
               target: jsonId,
               ...edgeStyle,
-              label: `${hop.format} → JSON`,
+              data: {
+                label: `${hop.format} → JSON`,
+                onEdgeClick: handleEdgeClick
+              },
               labelStyle: { fontSize: 11, fontWeight: 600 }
             });
 
@@ -497,7 +568,10 @@ function PaymentVisualizerFlow() {
               source: jsonId,
               target: nextHop.id,
               ...edgeStyle,
-              label: `JSON → ${nextHop.format}`,
+              data: {
+                label: `JSON → ${nextHop.format}`,
+                onEdgeClick: handleEdgeClick
+              },
               labelStyle: { fontSize: 11, fontWeight: 600 }
             });
           } else {
@@ -529,7 +603,10 @@ function PaymentVisualizerFlow() {
               source: hop.id,
               target: jsonId,
               ...edgeStyle,
-              label: `${hop.format} → JSON`,
+              data: {
+                label: `${hop.format} → JSON`,
+                onEdgeClick: handleEdgeClick
+              },
               labelStyle: { fontSize: 11, fontWeight: 600 }
             });
 
@@ -538,7 +615,10 @@ function PaymentVisualizerFlow() {
               source: jsonId,
               target: nextHop.id,
               ...edgeStyle,
-              label: `JSON → ${nextHop.format}`,
+              data: {
+                label: `JSON → ${nextHop.format}`,
+                onEdgeClick: handleEdgeClick
+              },
               labelStyle: { fontSize: 11, fontWeight: 600 }
             });
           }
@@ -693,12 +773,21 @@ function PaymentVisualizerFlow() {
 
 
       // Perform real conversion or simulation
-      if (useRealAPI && conversion.useRealAPI && currentMessage) {
+      if (useRealAPI && conversion.useRealAPI) {
+        // For subsequent steps, use the previous output
+        const inputMessage = i === 0 ? currentMessage : previousOutput;
+
+        // Check if we have a valid input message
+        if (!inputMessage) {
+          console.error(`No input message for conversion ${i}: ${conversion.from} → ${conversion.to}`);
+          console.error('Previous output was:', previousOutput);
+          // Skip this conversion if no input
+          continue;
+        }
+
         try {
           console.log(`Calling real API: ${conversion.from} → ${conversion.to}`);
-
-          // For subsequent steps, use the previous output
-          const inputMessage = i === 0 ? currentMessage : previousOutput;
+          console.log('Input message length:', inputMessage.length);
 
           // For crypto scenario with explicit conversions, don't use router for individual steps
           const useRouterForStep = false; // We're manually controlling the conversion flow
@@ -710,7 +799,14 @@ function PaymentVisualizerFlow() {
             useRouterForStep
           );
 
-          if (result.success) {
+          console.log(`Conversion result for ${conversion.from} → ${conversion.to}:`, {
+            success: result.success,
+            hasConvertedMessage: !!result.convertedMessage,
+            error: result.error,
+            resultKeys: Object.keys(result)
+          });
+
+          if (result.success && result.convertedMessage) {
             // Check if we have per-step stats from routing execution log
             let stepStats = result.processingStats;
             let stepConfidence = result.confidenceScores;
@@ -741,47 +837,73 @@ function PaymentVisualizerFlow() {
               stepStats = normalizedStats;
             }
 
-            // Capture data for JSON bridges based on conversion steps
-            // Map conversions to the correct JSON bridge based on visual layout
-            // Bridge 0: India → USA (MT103 → JSON → pacs.008)
-            // Bridge 1: USA → Mexico (pacs.008 → SPEI, then SPEI → JSON)
-            // Bridge 2: Mexico → Blockchain (JSON → USDC)
+            // Only capture data for conversions that actually involve JSON
+            if (conversion.to === 'JSON' || conversion.from === 'JSON' ||
+                conversion.to === 'USDC' || conversion.from === 'USDC') {
 
-            let jsonId;
+              // Determine which JSON bridge this conversion belongs to
+              let jsonId;
 
-            // Determine which JSON bridge this conversion belongs to
-            if (i <= 1) {
-              // Steps 0-1: India to USA bridge (MT103→JSON→pacs.008)
-              jsonId = 'json-0';
-            } else if (i >= 2 && i <= 3) {
-              // Steps 2-3: USA to Mexico bridge (pacs.008→SPEI→JSON)
-              jsonId = 'json-1';
-            } else {
-              // Step 4: Mexico to Blockchain bridge (JSON→USDC)
-              jsonId = 'json-2';
+              // Special case for crypto
+              if (conversion.to === 'USDC' || conversion.from === 'USDC') {
+                jsonId = 'json-crypto-bridge';
+              } else if (selectedScenario.hubAndSpoke) {
+                // Hub-and-spoke model uses a single central hub
+                jsonId = 'json-hub';
+              } else {
+                // Find which JSON bridge this belongs to
+                // JSON bridges are created between hops, and usually there's one bridge per hop transition
+
+                // For simple scenarios with 2 hops, there's only json-0
+                // For multi-hop scenarios, count which transition we're in
+
+                // Count JSON bridge transitions (pairs of to/from JSON)
+                let currentBridgeIndex = 0;
+                let inJsonBridge = false;
+
+                for (let j = 0; j < i; j++) {
+                  const prevConv = selectedScenario.conversions[j];
+                  if (prevConv.to === 'JSON' && !inJsonBridge) {
+                    inJsonBridge = true;
+                  } else if (prevConv.from === 'JSON' && inJsonBridge) {
+                    inJsonBridge = false;
+                    currentBridgeIndex++; // Move to next bridge after completing a pair
+                  }
+                }
+
+                // If we're currently entering or in a JSON bridge, use current index
+                jsonId = `json-${currentBridgeIndex}`;
+              }
+
+              bridgeData[jsonId] = bridgeData[jsonId] || {};
+
+              // Capture data based on conversion type
+              if (conversion.to === 'JSON') {
+                // Store the JSON output as afterJson
+                console.log(`Storing JSON output for bridge ${jsonId} (${conversion.from} → JSON)`);
+                bridgeData[jsonId].afterJson = result.convertedMessage;
+                // Also store the input as beforeJson
+                bridgeData[jsonId].beforeJson = inputMessage;
+              } else if (conversion.from === 'JSON') {
+                // Store the JSON input as beforeJson and output as afterJson
+                console.log(`Storing JSON input/output for bridge ${jsonId} (JSON → ${conversion.to})`);
+                bridgeData[jsonId].beforeJson = inputMessage;
+                bridgeData[jsonId].afterJson = result.convertedMessage;
+              } else if (conversion.to === 'USDC') {
+                // For crypto conversion, store the input JSON
+                console.log(`Storing crypto conversion for bridge ${jsonId}`);
+                bridgeData[jsonId].beforeJson = inputMessage;
+                bridgeData[jsonId].afterJson = result.convertedMessage;
+              }
+
+              console.log(`Bridge data for ${jsonId}:`, {
+                hasBeforeJson: !!bridgeData[jsonId].beforeJson,
+                hasAfterJson: !!bridgeData[jsonId].afterJson
+              });
+
+              // Update the JSON bridge data state
+              setJsonBridgeData({...bridgeData});
             }
-
-            bridgeData[jsonId] = bridgeData[jsonId] || {};
-
-            // Capture data based on conversion type
-            if (conversion.to === 'JSON') {
-              // Store the JSON output as afterJson
-              bridgeData[jsonId].afterJson = result.convertedMessage;
-              // Also store the input as beforeJson
-              bridgeData[jsonId].beforeJson = inputMessage;
-            } else if (conversion.from === 'JSON') {
-              // Store the JSON input as beforeJson and output as afterJson
-              bridgeData[jsonId].beforeJson = inputMessage;
-              bridgeData[jsonId].afterJson = result.convertedMessage;
-            } else if (conversion.from === 'pacs.008' && conversion.to === 'SPEI') {
-              // Special case: pacs.008→SPEI for USA→Mexico bridge
-              // Store pacs.008 as beforeJson and SPEI as intermediate
-              bridgeData[jsonId].beforeJson = inputMessage;
-              bridgeData[jsonId].intermediateFormat = result.convertedMessage;
-            }
-
-            // Update the JSON bridge data state
-            setJsonBridgeData({...bridgeData});
 
             results.push({
               step: i + 1,
@@ -796,18 +918,64 @@ function PaymentVisualizerFlow() {
             });
 
             // Store output for next step
-            previousOutput = result.convertedMessage;
+            if (result.convertedMessage) {
+              previousOutput = result.convertedMessage;
+              console.log(`Stored output for next step (length: ${previousOutput.length})`);
+            } else {
+              console.error('No convertedMessage in result:', result);
+              previousOutput = null;
+            }
 
             // Update results display
             setConversionResults([...results]);
 
           } else {
-            console.error('Conversion failed:', result.error);
-            // Continue with simulation if API fails
+            console.error(`Conversion failed at step ${i}:`, {
+              from: conversion.from,
+              to: conversion.to,
+              error: result.error || 'Unknown error',
+              success: result.success
+            });
+            // Stop the chain if a conversion fails
+            setIsExecuting(false);
+            setCurrentStep(null);
+
+            // Show error to user
+            results.push({
+              step: i + 1,
+              from: conversion.from,
+              to: conversion.to,
+              error: result.error || 'Conversion failed',
+              processingTime: 0,
+              processingStats: {},
+              success: false
+            });
+            setConversionResults([...results]);
+
+            return; // Exit the simulation
           }
         } catch (error) {
-          console.error('API call failed:', error);
-          // Continue with simulation if API fails
+          console.error(`API call failed at step ${i}:`, {
+            from: conversion.from,
+            to: conversion.to,
+            error: error.message
+          });
+          // Stop the chain on error
+          setIsExecuting(false);
+          setCurrentStep(null);
+
+          results.push({
+            step: i + 1,
+            from: conversion.from,
+            to: conversion.to,
+            error: error.message,
+            processingTime: 0,
+            processingStats: {},
+            success: false
+          });
+          setConversionResults([...results]);
+
+          return; // Exit the simulation
         }
       } else {
         // Simulation mode (original behavior)
@@ -950,6 +1118,7 @@ function PaymentVisualizerFlow() {
               onConnect={onConnect}
               onNodeClick={onNodeClick}
               nodeTypes={nodeTypes}
+              edgeTypes={edgeTypes}
               fitView
               fitViewOptions={{
                 padding: 0.3,
@@ -998,6 +1167,13 @@ function PaymentVisualizerFlow() {
         conversionResults={conversionResults}
         isExecuting={isExecuting}
         currentStep={currentStep}
+      />
+
+      {/* Conversion Details Modal */}
+      <ConversionDetailsModal
+        isOpen={isConversionModalOpen}
+        onClose={() => setIsConversionModalOpen(false)}
+        conversionData={conversionModalData}
       />
     </div>
   );
