@@ -27,68 +27,13 @@ COBADEFFXXX
 -}`
   },
   {
-    id: 'mt900_camt054',
-    name: 'MT900 → camt.054',
-    description: 'Debit Confirmation to Bank-to-Customer Debit/Credit Notification',
-    sourceFormat: 'MT900',
-    targetFormat: 'camt.054',
-    similarTo: 'MT103',
-    sampleMessage: `{1:F01CHASUS33AXXX0000000000}{2:I900DEUTDEFFXXXXN}{3:{108:DEBIT}}{4:
-:20:DEBIT001
-:21:REF001
-:25:US64209876543210987654
-:32A:241215USD50000,00
-:52A:CHASUS33XXX
-:72:/RFB/INVOICE PAYMENT
-/DTL/SUPPLIER PAYMENT
--}`
-  },
-  {
-    id: 'mt202cov_pacs009',
-    name: 'MT202COV → pacs.009',
-    description: 'Cover Payment to Financial Institution Credit Transfer',
-    sourceFormat: 'MT202COV',
-    targetFormat: 'pacs.009',
-    similarTo: 'MT',
-    sampleMessage: `{1:F01CHASUS33AXXX0000000000}{2:I202DEUTDEFFXXXXN}{3:{108:COVER}}{4:
-:20:COV2024001
-:21:PAYMENT001
-:32A:241215USD75000,00
-:52A:CHASUS33XXX
-:56A:INTBANKXXX
-:57A:DEUTDEFFXXX
-:58A:/DE89370400440532013000
-BENEFICIARY BANK
-:50K:/US64209876543210987654
-ORDERING CUSTOMER
-1234 MAIN STREET
-NEW YORK NY 10001
-:59:/DE12345678901234567890
-BENEFICIARY NAME
-BENEFICIARY ADDRESS
-:70:/INV/INVOICE 2024-001
-/RFB/PAYMENT FOR GOODS
-:72:/BNF/COVER PAYMENT
--}`
-  },
-  {
-    id: 'mt210_camt057',
-    name: 'MT210 → camt.057',
-    description: 'Notice to Receive to Account Notification',
-    sourceFormat: 'MT210',
-    targetFormat: 'camt.057',
-    similarTo: 'MT103',
-    sampleMessage: `{1:F01CHASUS33AXXX0000000000}{2:I210DEUTDEFFXXXXN}{3:{108:NOTICE}}{4:
-:20:NOTICE001
-:25:US64209876543210987654
-:30:241215
-:21:TRANS001
-:32B:USD50000,00
-:50K:ORDERING CUSTOMER
-CUSTOMER ADDRESS
-:52A:CHASUS33XXX
-:56A:DEUTDEFFXXX
--}`
+    id: 'iso8583_0220_cain001',
+    name: 'ISO8583_0220 → cain.001',
+    description: 'Card Financial Advice Transaction (Offline/Batch)',
+    sourceFormat: 'ISO8583_0220',
+    targetFormat: 'cain.001',
+    similarTo: 'ISO8583_0200',
+    sampleMessage: '0220|PAN:4916522800000000|PROC:000000|AMT:12000|CUR:826|DT:1215103045|STAN:123456|REF:BATCH0001234|TERM:TERM0001|MID:MERCHANT123|MERCHANT:STARBUCKS LONDON UK|EXP:2512|ACQ:00000123456|DATA:OFFLINE BATCH SETTLEMENT'
   },
   {
     id: 'custom',

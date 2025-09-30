@@ -910,10 +910,10 @@ ${formData.beneficiary_institution || 'BENEFICIARY INSTITUTION'}
         confidence_expected: 0.88
       },
       {
-        id: 'mt202cov_to_pacs009',
-        name: 'MT202COV Cover Payment',
-        source_format: 'MT202COV',
-        target_format: 'pacs.009',
+        id: 'iso8583_0220_to_cain001',
+        name: 'ISO8583 Financial Advice',
+        source_format: 'ISO8583_0220',
+        target_format: 'cain.001',
         confidence_expected: 0.90
       }
     ];

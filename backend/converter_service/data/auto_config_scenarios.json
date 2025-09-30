@@ -177,290 +177,145 @@
       ]
     },
     {
-      "id": "mt202cov_to_pacs009",
-      "display_name": "🏦 MT202COV Cover Payment",
-      "description": "Auto-configure MT202COV to pacs.009 conversion",
-      "icon": "🏦",
-      "source_format": "MT202COV",
-      "target_format": "pacs.009",
-      "similar_to": "MT202",
+      "id": "iso8583_0220_to_cain001",
+      "display_name": "💳 ISO8583_0220 Financial Advice",
+      "description": "Auto-configure ISO8583 0220 (Financial Transaction Advice) to cain.001",
+      "icon": "💳",
+      "source_format": "ISO8583_0220",
+      "target_format": "cain.001",
+      "similar_to": "ISO8583_0200",
       "confidence_expected": 0.90,
-      "sample_message": "{1:F01BOFAUS3NXXXX0000000000}{2:I202CHASUS33XXXXN}{3:{119:COV}}{4:\n:20:MT202COVTEST\n:21:COVER2024001\n:13C:/SNDTIME/0915+0500\n:32A:241215USD1000000,00\n:52A:BOFAUS3NXXX\n:53A:/NOSTRO123456\nCORRESPONDENT BANK\n:57A:CHASUS33XXX\n:58A:/US98765432109876543210\nJP MORGAN CHASE\nNEW YORK\n:72:/BNF/COVER PAYMENT\n/INS/UNDERLYING CUSTOMER TRANSFER\n/REC/CREDIT UPON RECEIPT\n:50A:/US11111111111111111111\nORIGINAL ORDERING CUSTOMER\nBOSTON MA\n:59A:/US22222222222222222222\nFINAL BENEFICIARY\nSAN FRANCISCO CA\n:70:PAYMENT FOR INVOICE INV-2024-9999\nCOVER FOR CUSTOMER WIRE\n:71A:SHA\n-}",
+      "sample_message": "0220|PAN:4916522800000000|PROC:000000|AMT:12000|CUR:826|DT:1215103045|STAN:123456|REF:BATCH0001234|TERM:TERM0001|MID:MERCHANT123|MERCHANT:STARBUCKS LONDON UK|EXP:2512|ACQ:00000123456|DATA:OFFLINE BATCH SETTLEMENT",
       "form_schema": {
         "sections": [
           {
-            "title": "Cover Payment Information",
+            "title": "Transaction Information",
             "fields": [
               {
-                "id": "reference",
-                "label": "Transaction Reference",
+                "id": "pan",
+                "label": "Card Number (PAN)",
                 "type": "text",
-                "placeholder": "MT202COVTEST",
+                "placeholder": "4916522800000000",
                 "required": true,
-                "value": "MT202COVTEST"
-              },
-              {
-                "id": "related_reference",
-                "label": "Cover Reference",
-                "type": "text",
-                "placeholder": "COVER2024001",
-                "required": true,
-                "value": "COVER2024001"
+                "value": "4916522800000000"
               },
               {
                 "id": "amount",
-                "label": "Cover Amount",
+                "label": "Amount (minor units)",
                 "type": "number",
-                "placeholder": "1000000.00",
+                "placeholder": "12000",
                 "required": true,
-                "value": 1000000.00
+                "value": 12000
               },
               {
                 "id": "currency",
-                "label": "Currency",
-                "type": "select",
-                "options": ["USD", "EUR", "GBP", "CHF"],
+                "label": "Currency Code (ISO 4217)",
+                "type": "text",
+                "placeholder": "826",
                 "required": true,
-                "value": "USD"
+                "value": "826"
+              },
+              {
+                "id": "processing_code",
+                "label": "Processing Code",
+                "type": "text",
+                "placeholder": "000000",
+                "required": true,
+                "value": "000000"
+              },
+              {
+                "id": "datetime",
+                "label": "Transaction DateTime (MMDDhhmmss)",
+                "type": "text",
+                "placeholder": "1215103045",
+                "required": true,
+                "value": "1215103045"
+              },
+              {
+                "id": "stan",
+                "label": "System Trace Number",
+                "type": "text",
+                "placeholder": "123456",
+                "required": true,
+                "value": "123456"
               }
             ]
           },
           {
-            "title": "Underlying Transaction",
+            "title": "Merchant & Terminal Details",
             "fields": [
               {
-                "id": "original_ordering_account",
-                "label": "Original Ordering Account",
+                "id": "merchant_info",
+                "label": "Merchant Name/Location",
                 "type": "text",
-                "placeholder": "US11111111111111111111",
+                "placeholder": "STARBUCKS LONDON UK",
                 "required": true,
-                "value": "US11111111111111111111"
+                "value": "STARBUCKS LONDON UK"
               },
               {
-                "id": "original_ordering_name",
-                "label": "Original Ordering Customer",
+                "id": "merchant_id",
+                "label": "Merchant ID",
                 "type": "text",
-                "placeholder": "ORIGINAL ORDERING CUSTOMER",
+                "placeholder": "MERCHANT123",
                 "required": true,
-                "value": "ORIGINAL ORDERING CUSTOMER"
+                "value": "MERCHANT123"
               },
               {
-                "id": "final_beneficiary_account",
-                "label": "Final Beneficiary Account",
-                "type": "text",
-                "placeholder": "US22222222222222222222",
-                "required": true,
-                "value": "US22222222222222222222"
-              },
-              {
-                "id": "final_beneficiary_name",
-                "label": "Final Beneficiary",
-                "type": "text",
-                "placeholder": "FINAL BENEFICIARY",
-                "required": true,
-                "value": "FINAL BENEFICIARY"
-              }
-            ]
-          },
-          {
-            "title": "Payment Details",
-            "fields": [
-              {
-                "id": "remittance_info",
-                "label": "Remittance Information",
-                "type": "textarea",
-                "placeholder": "Enter payment details...",
-                "required": true,
-                "value": "PAYMENT FOR INVOICE INV-2024-9999\nCOVER FOR CUSTOMER WIRE",
-                "rows": 3
-              },
-              {
-                "id": "instructions",
-                "label": "Bank Instructions",
-                "type": "textarea",
-                "placeholder": "Enter instructions...",
-                "required": false,
-                "value": "/BNF/COVER PAYMENT\n/INS/UNDERLYING CUSTOMER TRANSFER\n/REC/CREDIT UPON RECEIPT",
-                "rows": 4
-              }
-            ]
-          }
-        ]
-      },
-      "expected_fields_detected": 14,
-      "expected_fields_mapped": 12,
-      "showcase_features": [
-        "MT202COV specific handling",
-        "Underlying transaction extraction",
-        "High confidence pattern matching"
-      ]
-    },
-    {
-      "id": "mt940_to_camt053",
-      "display_name": "📊 MT940 Account Statement",
-      "description": "Auto-configure MT940 to camt.053 conversion",
-      "icon": "📊",
-      "source_format": "MT940",
-      "target_format": "camt.053",
-      "similar_to": "MT103",
-      "confidence_expected": 0.75,
-      "sample_message": "{1:F01CHASUS33XXXX0000000000}{2:I940CHASUS33XXXXN}{4:\n:20:STMT20241215\n:25:US64209876543210987654\n:28C:00012/001\n:60F:C241214USD845921,84\n:61:2412151215DR125750,50NTRF20241215001//PAYMENT001\n:86:WIRE TRANSFER TO GLOBAL SUPPLIES GMBH\n:61:2412151215CR50000,00NTRF20241215002//DEPOSIT001\n:86:INCOMING WIRE FROM ABC COMPANY\n:62F:C241215USD770171,34\n:64:C241215USD770171,34\n-}",
-      "form_schema": {
-        "sections": [
-          {
-            "title": "Statement Information",
-            "fields": [
-              {
-                "id": "statement_reference",
-                "label": "Statement Reference",
-                "type": "text",
-                "placeholder": "STMT20241215",
-                "required": true,
-                "value": "STMT20241215"
-              },
-              {
-                "id": "account_number",
-                "label": "Account Number",
-                "type": "text",
-                "placeholder": "US64209876543210987654",
-                "required": true,
-                "value": "US64209876543210987654"
-              },
-              {
-                "id": "statement_number",
-                "label": "Statement Number",
-                "type": "text",
-                "placeholder": "00012/001",
-                "required": true,
-                "value": "00012/001"
-              }
-            ]
-          },
-          {
-            "title": "Balance Information",
-            "fields": [
-              {
-                "id": "opening_balance",
-                "label": "Opening Balance",
-                "type": "number",
-                "placeholder": "845921.84",
-                "required": true,
-                "value": 845921.84
-              },
-              {
-                "id": "closing_balance",
-                "label": "Closing Balance",
-                "type": "number",
-                "placeholder": "770171.34",
-                "required": true,
-                "value": 770171.34
-              },
-              {
-                "id": "currency",
-                "label": "Currency",
-                "type": "select",
-                "options": ["USD", "EUR", "GBP", "CHF"],
-                "required": true,
-                "value": "USD"
-              }
-            ]
-          }
-        ]
-      },
-      "expected_fields_detected": 10,
-      "expected_fields_mapped": 7,
-      "showcase_features": [
-        "Statement format handling",
-        "Transaction entry parsing",
-        "Balance reconciliation"
-      ]
-    },
-    {
-      "id": "iso8583_to_json",
-      "display_name": "💳 ISO8583 Card Transaction",
-      "description": "Auto-configure ISO8583 to JSON conversion",
-      "icon": "💳",
-      "source_format": "ISO8583_0200",
-      "target_format": "JSON",
-      "similar_to": "ISO8583",
-      "confidence_expected": 0.82,
-      "sample_message": "ISO02004034442222222222222222000000012575012152024121510304142123456784523TERMINAL001MERCHANT_LOCATION_NAMEMERCHANT_CITYST840PURCHASE AT COFFEE SHOP",
-      "form_schema": {
-        "sections": [
-          {
-            "title": "Card Information",
-            "fields": [
-              {
-                "id": "card_number",
-                "label": "Card Number (Masked)",
-                "type": "text",
-                "placeholder": "4034442222222222",
-                "required": true,
-                "value": "4034442222222222"
-              },
-              {
-                "id": "transaction_amount",
-                "label": "Transaction Amount",
-                "type": "number",
-                "placeholder": "125.75",
-                "required": true,
-                "value": 125.75
-              },
-              {
-                "id": "transaction_date",
-                "label": "Transaction Date",
-                "type": "text",
-                "placeholder": "20241215",
-                "required": true,
-                "value": "20241215"
-              }
-            ]
-          },
-          {
-            "title": "Merchant Information",
-            "fields": [
-              {
-                "id": "terminal_id",
+                "id": "terminal",
                 "label": "Terminal ID",
                 "type": "text",
-                "placeholder": "TERMINAL001",
+                "placeholder": "TERM0001",
                 "required": true,
-                "value": "TERMINAL001"
+                "value": "TERM0001"
               },
               {
-                "id": "merchant_name",
-                "label": "Merchant Name",
+                "id": "retrieval_ref",
+                "label": "Retrieval Reference",
                 "type": "text",
-                "placeholder": "MERCHANT_LOCATION_NAME",
+                "placeholder": "BATCH0001234",
                 "required": true,
-                "value": "MERCHANT_LOCATION_NAME"
-              },
+                "value": "BATCH0001234"
+              }
+            ]
+          },
+          {
+            "title": "Additional Data",
+            "fields": [
               {
-                "id": "merchant_city",
-                "label": "Merchant City",
+                "id": "card_expiry",
+                "label": "Card Expiry (YYMM)",
                 "type": "text",
-                "placeholder": "MERCHANT_CITY",
-                "required": true,
-                "value": "MERCHANT_CITY"
-              },
-              {
-                "id": "transaction_description",
-                "label": "Transaction Description",
-                "type": "text",
-                "placeholder": "PURCHASE AT COFFEE SHOP",
+                "placeholder": "2512",
                 "required": false,
-                "value": "PURCHASE AT COFFEE SHOP"
+                "value": "2512"
+              },
+              {
+                "id": "acquirer",
+                "label": "Acquirer Institution ID",
+                "type": "text",
+                "placeholder": "00000123456",
+                "required": false,
+                "value": "00000123456"
+              },
+              {
+                "id": "additional_data",
+                "label": "Additional Transaction Data",
+                "type": "textarea",
+                "placeholder": "Enter additional data...",
+                "required": false,
+                "value": "OFFLINE BATCH SETTLEMENT",
+                "rows": 3
               }
             ]
           }
         ]
       },
-      "expected_fields_detected": 15,
+      "expected_fields_detected": 13,
       "expected_fields_mapped": 12,
       "showcase_features": [
-        "Binary format parsing",
-        "Card transaction mapping",
-        "JSON structure generation"
+        "Pattern learning from ISO8583_0200",
+        "Offline/batch transaction handling",
+        "High confidence pattern matching (0.90)"
       ]
     }
   ],
@@ -482,11 +337,11 @@
       "confidence_target": 0.88
     },
     {
-      "id": "high_confidence_mt202cov",
-      "name": "High Confidence MT202COV",
-      "description": "Best pattern matching demo",
-      "scenario_id": "mt202cov_to_pacs009",
-      "estimated_time": "6-10 seconds",
+      "id": "iso8583_0220_advice",
+      "name": "ISO8583 Financial Advice",
+      "description": "Card transaction advice with high confidence",
+      "scenario_id": "iso8583_0220_to_cain001",
+      "estimated_time": "6-8 seconds",
       "confidence_target": 0.90
     }
   ],

@@ -396,3 +396,4 @@ backend/converter_service/scripts/upload_corrected_mt103_to_json.py
 backend/converter_service/scripts/check_conversion_graph.py
 backend/PAYMENT_CONVERTER_V2_IMPLEMENTATION_GUIDE.md
 frontend/enhanced_mt205_sample.txt
+backend/converter_service/AUTO_CONFIG_DETAILED_RESPONSE_DESIGN.md
