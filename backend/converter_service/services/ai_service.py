@@ -248,8 +248,8 @@ class BedrockService:
             }
             
             # Capture AI reasoning for demo mode
-            from ..config.feature_flags import feature_flags
-            if feature_flags.SHOW_AI_REASONING:
+            import os
+            if os.getenv('SHOW_AI_REASONING', 'false').lower() == 'true':
                 result["ai_reasoning"] = self._capture_reasoning(
                     field_type=field_type,
                     model_name=model_name,

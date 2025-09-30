@@ -2,7 +2,7 @@
 Auto-configuration API endpoints for intelligent converter
 """
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Query
 from typing import Dict, Any, List, Optional
 from pydantic import BaseModel
 from datetime import datetime
@@ -10,7 +10,8 @@ import logging
 import os
 
 from ..services.db_service import get_mongodb_service as get_db_service
-from ..services.semantic_learning_service import SemanticLearningService
+from ..services.semantic_learning_service_simplified import SimplifiedSemanticLearningService
+from ..services.semantic_learning_service import SemanticLearningService  # Keep for /learn endpoint
 from ..services.ai_service import get_bedrock_service as get_ai_service
 from ..config.settings import get_settings
 from ..services.auto_config_builder import AutoConfigBuilder
@@ -72,6 +73,7 @@ class AutoConfigResponse(BaseModel):
     ready_to_save: bool
     detected_fields_detail: List[Dict[str, Any]] = []
     generation_metadata: Optional[Dict[str, Any]] = None
+    generation_details: Optional[Dict[str, Any]] = None  # NEW: Detailed generation tracking
 
 
 class ConfigValidation(BaseModel):
@@ -89,17 +91,25 @@ class LearningTrigger(BaseModel):
 @router.post("/auto-configure", response_model=AutoConfigResponse)
 async def auto_configure(
     request: AutoConfigRequest,
+    include_details: bool = Query(False, description="Include detailed generation tracking (LLM prompts, responses, timing)"),
     db_service=Depends(get_db),
     ai_service=Depends(get_ai_service)
 ):
     """
     Automatically generate configuration for a new payment format
-    
+
     This endpoint:
     1. Analyzes the sample message
     2. Identifies fields and their semantic concepts
     3. Generates a complete configuration
     4. Saves it to conversion_registry
+
+    Query Parameters:
+    - include_details: Set to true to get detailed generation tracking including:
+      * Field extraction details (method, patterns used)
+      * Mapping generation details (pattern vs LLM)
+      * Full LLM call details (prompts, responses, reasoning, timing)
+      * Processing statistics and breakdowns
     """
     
     start_time = datetime.utcnow()
@@ -162,38 +172,43 @@ async def auto_configure(
             detail=f"Configuration {config_id} already exists as a manual configuration"
         )
 
-    # Initialize learning service
-    learning_service = SemanticLearningService(db_service, ai_service)
-    
-    # Check patterns exist AND have learned data (not just empty documents)
-    patterns_with_data = db_service.db['semantic_patterns'].count_documents({
-        "learned_patterns": {"$ne": {}, "$exists": True}
+    # Initialize simplified learning service
+    learning_service = SimplifiedSemanticLearningService(db_service, ai_service)
+
+    # Check patterns exist with mappings (SimplifiedSemanticLearningService uses 'mappings', not 'learned_patterns')
+    patterns_with_mappings = db_service.db['semantic_patterns'].count_documents({
+        "mappings": {"$ne": {}, "$exists": True}
     })
 
-    if patterns_with_data == 0:
+    if patterns_with_mappings == 0:
         total_patterns = db_service.db['semantic_patterns'].count_documents({})
         if total_patterns == 0:
             error_msg = "No semantic patterns found. Run: cd backend/converter_service && uv run python scripts/populate_semantic_patterns.py"
         else:
-            error_msg = f"Found {total_patterns} semantic patterns but none have learned data. Run learning endpoint or populate script."
+            error_msg = f"Found {total_patterns} semantic patterns but none have mappings. Run: cd backend/converter_service && uv run python scripts/populate_semantic_patterns.py"
 
         raise HTTPException(
             status_code=400,
             detail=error_msg
         )
 
-    logger.info(f"Found {patterns_with_data} semantic patterns with learned data")
+    logger.info(f"Found {patterns_with_mappings} semantic patterns with mappings")
     
     try:
         # Generate configuration
         logger.info(f"Generating configuration for {request.source_format} to {request.target_format}")
-        
-        config, generation_metadata = learning_service.generate_config_for_new_format(
+        logger.info(f"Include detailed tracking: {include_details}")
+
+        config = learning_service.generate_config(
             source_format=request.source_format,
             target_format=request.target_format,
             sample_message=request.sample_message,
-            similar_to=request.similar_to
+            similar_to=request.similar_to,
+            include_details=include_details
         )
+
+        # Extract generation metadata from config (simplified service puts it in metadata)
+        generation_metadata = config.get('metadata', {})
 
         # Save to pending collection for testing (users can test before approval)
         config['metadata']['status'] = 'pending_approval'
@@ -235,7 +250,7 @@ async def auto_configure(
                 })
 
         # Check if ready to save (has minimum required mappings)
-        ready_to_save = fields_mapped > 0 and config['metadata']['generation_confidence'] > 0.5
+        ready_to_save = fields_mapped > 0 and config['metadata'].get('confidence', 0) > 0.5
 
         # Calculate generation time
         generation_time = (datetime.utcnow() - start_time).total_seconds()
@@ -244,18 +259,22 @@ async def auto_configure(
 
         # Convert datetime objects to strings for JSON serialization
         clean_config = _clean_config_for_response(config)
-        
+
+        # Extract generation_details if present (only when include_details=true)
+        generation_details = config.get('generation_details') if include_details else None
+
         return AutoConfigResponse(
             configuration_id=config['_id'],
             configuration=clean_config,
-            confidence=config['metadata']['generation_confidence'],
+            confidence=config['metadata'].get('confidence', 0),
             fields_detected=fields_detected,
             fields_mapped=fields_mapped,
             uncertain_fields=uncertain_fields,
             generation_time_seconds=generation_time,
             ready_to_save=ready_to_save,
             detected_fields_detail=detected_fields_detail,
-            generation_metadata=generation_metadata
+            generation_metadata=generation_metadata,
+            generation_details=generation_details
         )
         
     except ValueError as e:
@@ -271,14 +290,15 @@ async def get_semantic_patterns(
     db_service=Depends(get_db)
 ):
     """
-    Get all learned semantic patterns
-    
-    Returns list of all semantic concepts that have been learned
-    from existing configurations
+    Get all semantic patterns (SimplifiedSemanticLearningService structure)
+
+    Returns list of all semantic patterns with mappings for different formats.
+    Each pattern represents a semantic concept (e.g., transaction_reference, value_date)
+    and contains mappings showing how it appears in different payment formats.
     """
-    
+
     patterns = list(db_service.db['semantic_patterns'].find())
-    
+
     # Convert datetime objects for JSON serialization
     for pattern in patterns:
         if 'learning_metadata' in pattern:
@@ -287,20 +307,23 @@ async def get_semantic_patterns(
                 metadata['first_seen'] = metadata['first_seen'].isoformat() if metadata['first_seen'] else None
             if 'last_updated' in metadata:
                 metadata['last_updated'] = metadata['last_updated'].isoformat() if metadata['last_updated'] else None
-    
+
+    # Calculate summary statistics based on NEW structure (mappings)
+    formats_learned = set()
+    total_mappings = 0
+
+    for p in patterns:
+        mappings = p.get('mappings', {})
+        formats_learned.update(mappings.keys())
+        total_mappings += len(mappings)
+
     return {
         "total_patterns": len(patterns),
         "patterns": patterns,
         "summary": {
-            "formats_learned": list(set(
-                format_name 
-                for p in patterns 
-                for format_name in p.get('learned_patterns', {}).keys()
-            )),
-            "total_mappings": sum(
-                len(p.get('learned_patterns', {})) 
-                for p in patterns
-            )
+            "formats_learned": sorted(list(formats_learned)),
+            "total_mappings": total_mappings,
+            "avg_mappings_per_pattern": round(total_mappings / len(patterns), 2) if patterns else 0
         }
     }
 
@@ -374,86 +397,40 @@ async def trigger_learning(
     ai_service=Depends(get_ai_service)
 ):
     """
-    Trigger learning from existing configurations
-    
-    This endpoint initiates the learning process that extracts semantic patterns
-    from all existing configurations in conversion_registry
+    ⚠️ DEPRECATED: This endpoint is deprecated and will be removed in a future version.
+
+    The SimplifiedSemanticLearningService uses pre-defined seed patterns stored
+    in the semantic_patterns collection. Dynamic learning from configurations is
+    no longer needed.
+
+    To populate semantic patterns, use the script:
+    `cd backend/converter_service && uv run python scripts/populate_semantic_patterns.py`
+
+    This endpoint now returns the current pattern statistics without modification.
     """
-    
-    # Check if patterns already exist and have learned data
-    existing_patterns = db_service.db['semantic_patterns'].count_documents({})
-    patterns_with_learning = db_service.db['semantic_patterns'].count_documents({
-        "learned_patterns": {"$ne": {}}  # Has non-empty learned patterns
-    })
-    
-    if patterns_with_learning > 0 and not request.force_refresh:
-        return {
-            "status": "skipped",
-            "message": f"Semantic patterns already learned ({patterns_with_learning} patterns with data). Use force_refresh=true to re-learn",
-            "patterns_count": existing_patterns,
-            "learned_count": patterns_with_learning
-        }
-    
-    # If force refresh, clear only learned_patterns but keep seed structure
-    if request.force_refresh and existing_patterns > 0:
-        # Update patterns to clear learned data but keep seed structure
-        db_service.db['semantic_patterns'].update_many(
-            {},
-            {
-                "$set": {
-                    "learned_patterns": {},
-                    "field_variations": {},
-                    "learning_metadata.last_updated": datetime.utcnow()
-                }
-            }
-        )
-        logger.info(f"Cleared learned data from {existing_patterns} patterns, keeping seed structure")
-    
-    # Initialize learning service
-    learning_service = SemanticLearningService(db_service, ai_service)
-    
-    # Learn patterns from existing configurations
-    logger.info("Starting semantic pattern learning...")
-    learned_patterns = learning_service.learn_from_existing_configs()
-    
-    if not learned_patterns:
-        return {
-            "status": "failed",
-            "message": "No patterns could be learned. Ensure conversion configurations exist in conversion_registry",
-            "patterns_learned": 0
-        }
-    
-    # Save or update learned patterns in semantic_patterns collection
-    patterns_list = list(learned_patterns.values())
-    updated_count = 0
-    inserted_count = 0
-    
-    for pattern in patterns_list:
-        # Use upsert to update existing or insert new
-        result = db_service.db['semantic_patterns'].update_one(
-            {"_id": pattern["_id"]},
-            {"$set": pattern},
-            upsert=True
-        )
-        if result.upserted_id:
-            inserted_count += 1
-        elif result.modified_count > 0:
-            updated_count += 1
-    
-    logger.info(f"Pattern learning complete: {inserted_count} new, {updated_count} updated")
-    
-    # Get summary of what was learned
-    formats_seen = set()
-    for pattern in patterns_list:
-        formats_seen.update(pattern.get('learning_metadata', {}).get('seen_in_formats', []))
-    
+
+    # Return current pattern statistics
+    patterns = list(db_service.db['semantic_patterns'].find({}, {"_id": 1, "mappings": 1}))
+
+    formats_learned = set()
+    total_mappings = 0
+
+    for p in patterns:
+        mappings = p.get('mappings', {})
+        formats_learned.update(mappings.keys())
+        total_mappings += len(mappings)
+
+    logger.warning("DEPRECATED: /learn endpoint called. This endpoint is deprecated. Use populate_semantic_patterns.py script instead.")
+
     return {
-        "status": "success",
-        "patterns_learned": len(patterns_list),
-        "patterns_inserted": inserted_count,
-        "patterns_updated": updated_count,
-        "formats_analyzed": list(formats_seen),
-        "message": f"Successfully processed {len(patterns_list)} patterns ({inserted_count} new, {updated_count} updated) from {len(formats_seen)} formats"
+        "status": "deprecated",
+        "message": "⚠️ This endpoint is deprecated. SimplifiedSemanticLearningService uses static seed patterns. Use: uv run python scripts/populate_semantic_patterns.py",
+        "current_patterns": {
+            "total_patterns": len(patterns),
+            "formats_learned": sorted(list(formats_learned)),
+            "total_mappings": total_mappings
+        },
+        "recommendation": "To update patterns, modify and run scripts/populate_semantic_patterns.py"
     }
 
 
