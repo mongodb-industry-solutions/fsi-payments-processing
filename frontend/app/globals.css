@@ -32,6 +32,15 @@
   --blue-light2: #C3E7FE;
   --blue-light3: #E1F7FF;
 
+  /* Purple Palette - For AI/decorative elements */
+  --purple-dark3: #311B58;
+  --purple-dark2: #492F78;
+  --purple-dark1: #5C3C92;
+  --purple-base: #8955D9;
+  --purple-light1: #B891E8;
+  --purple-light2: #DBC8F0;
+  --purple-light3: #F3E8FF;
+
   /* Yellow Palette - For warnings and low confidence */
   --yellow-dark2: #7C4100;
   --yellow-dark1: #B35E00;

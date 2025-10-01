@@ -1,148 +1,104 @@
-/* Container */
-.container {
+/* Control Bar Container */
+.controlBar {
   display: flex;
-  align-items: center;
   justify-content: center;
-  padding: var(--spacing-2) var(--spacing-4);
+  align-items: center;
+  padding: var(--spacing-3) 0;
+  margin: 0;
+  position: relative;
+  z-index: 10;
   background: var(--white);
-  border-top: 1px solid var(--gray-light2);
-  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.04);
+  border-bottom: 1px solid var(--gray-light2);
 }
 
-/* Focus Control */
-.focusControl {
+/* Segmented Control */
+.segmentedControl {
+  display: flex;
+  background: var(--white);
+  border: 1px solid var(--gray-light2);
+  border-radius: 10px;
+  padding: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  gap: 2px;
+}
+
+/* Individual Segments */
+.segment {
   display: flex;
   align-items: center;
   gap: var(--spacing-2);
-  padding: var(--spacing-1);
-  background: var(--gray-light3);
-  border-radius: 24px;
-}
-
-.focusLabel {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--gray-dark1);
-  margin-left: var(--spacing-2);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.focusOptions {
-  display: flex;
-  gap: var(--spacing-1);
-}
-
-.focusButton {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-1);
-  padding: var(--spacing-1) var(--spacing-3);
-  font-size: 0.813rem;
-  font-weight: 500;
-  color: var(--gray-dark1);
+  padding: var(--spacing-2) var(--spacing-3);
   background: transparent;
   border: none;
-  border-radius: 20px;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--gray-dark1);
   cursor: pointer;
-  transition: all 200ms ease;
+  transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
   white-space: nowrap;
+  position: relative;
 }
 
-.focusButton:hover {
-  background: var(--gray-light2);
+.segment:hover:not(.active) {
+  background: var(--gray-light3);
+  color: var(--black);
 }
 
-.focusButton.active {
-  background: var(--white);
-  color: var(--green-dark1);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.focusIcon {
+.segment svg {
   width: 16px;
   height: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.875rem;
+  flex-shrink: 0;
+  transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Tooltip */
-.tooltip {
-  position: absolute;
-  bottom: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: var(--spacing-2) var(--spacing-3);
-  background: var(--gray-dark2);
+/* Active State */
+.segment.active {
+  background: var(--green-dark1);
   color: var(--white);
-  font-size: 0.75rem;
-  border-radius: 6px;
-  white-space: nowrap;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 200ms ease;
-  margin-bottom: var(--spacing-1);
+  box-shadow: 0 2px 4px rgba(0, 163, 92, 0.2);
 }
 
-.tooltip::after {
-  content: '';
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  border: 4px solid transparent;
-  border-top-color: var(--gray-dark2);
+.segment.active svg {
+  color: var(--white);
 }
 
-.focusButton:hover .tooltip {
-  opacity: 1;
+/* Center Segment Special Styling */
+.centerSegment {
+  border-left: 1px solid var(--gray-light2);
+  border-right: 1px solid var(--gray-light2);
+  margin: 0 2px;
 }
 
-/* Focus Mode Indicators */
-.focusIndicator {
-  display: flex;
-  gap: var(--spacing-1);
-  margin-left: var(--spacing-3);
+.centerSegment.active {
+  background: var(--blue-dark1);
+  border-color: transparent;
 }
 
-.panelIndicator {
-  width: 6px;
-  height: 20px;
-  background: var(--gray-light1);
-  border-radius: 3px;
-  transition: all 200ms ease;
+/* Animation for state changes */
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
-.panelIndicator.active {
-  background: var(--green-base);
-}
-
-.panelIndicator.expanded {
-  width: 12px;
+.segment.active {
+  animation: pulse 300ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Responsive */
 @media (max-width: 768px) {
-  .container {
+  .segment span {
+    display: none;
+  }
+
+  .segment {
     padding: var(--spacing-2);
-  }
-
-  .focusLabel {
-    display: none;
-  }
-
-  .focusButton {
-    padding: var(--spacing-1) var(--spacing-2);
-    font-size: 0.75rem;
-  }
-
-  .focusButton span {
-    display: none;
-  }
-
-  .focusIcon {
-    margin: 0;
   }
 }

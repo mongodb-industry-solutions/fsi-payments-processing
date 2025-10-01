@@ -959,7 +959,7 @@ ${formData.beneficiary_institution || 'BENEFICIARY INSTITUTION'}
       };
 
       const response = await withTimeout(
-        fetch(`${this.baseUrl}/api/v1/converter/auto-configure`, {
+        fetch(`${this.baseUrl}/api/v1/converter/auto-configure?include_details=true`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

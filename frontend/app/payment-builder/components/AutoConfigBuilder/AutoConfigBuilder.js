@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import styles from './AutoConfigBuilder.module.css';
 import ConfigInput from './components/ConfigInput/ConfigInput';
 import ConfigJourney from './components/ConfigJourney/ConfigJourney';
-import MongoDBPanel from './components/MongoDBPanel/MongoDBPanel';
 import FocusControl from './components/FocusControl/FocusControl';
 import { useAutoConfigBuilder } from './hooks/useAutoConfigBuilder';
 
@@ -19,8 +18,7 @@ export default function AutoConfigBuilder({
     updateMapping,
     runValidation,
     setActiveTab,
-    setFocusMode,
-    addMongoOperation
+    setFocusMode
   } = useAutoConfigBuilder();
 
   const handleGenerate = async () => {
@@ -50,6 +48,12 @@ export default function AutoConfigBuilder({
         )}
       </div>
 
+      {/* Focus Control Bar */}
+      <FocusControl
+        currentMode={state.focusMode}
+        onModeChange={handleFocusModeChange}
+      />
+
       {/* Main Content Area */}
       <div className={styles.mainContent}>
         {/* Configuration Input Panel */}
@@ -75,21 +79,7 @@ export default function AutoConfigBuilder({
             onValidate={runValidation}
           />
         </div>
-
-        {/* MongoDB Operations Panel */}
-        <div className={styles.mongoPanel}>
-          <MongoDBPanel
-            operations={state.mongodb.operations}
-            autoScroll={state.mongodb.autoScroll}
-          />
-        </div>
       </div>
-
-      {/* Focus Control Bar */}
-      <FocusControl
-        currentMode={state.focusMode}
-        onModeChange={handleFocusModeChange}
-      />
     </div>
   );
 }

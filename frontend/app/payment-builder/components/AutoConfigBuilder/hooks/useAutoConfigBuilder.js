@@ -32,12 +32,6 @@ export function useAutoConfigBuilder() {
       output: null
     },
 
-    // MongoDB operations
-    mongodb: {
-      operations: [],
-      autoScroll: true
-    },
-
     // UI state
     focusMode: 'full'
   });
@@ -53,20 +47,6 @@ export function useAutoConfigBuilder() {
     }));
   }, []);
 
-  // Add MongoDB operation
-  const addMongoOperation = useCallback((operation) => {
-    setState(prev => ({
-      ...prev,
-      mongodb: {
-        ...prev.mongodb,
-        operations: [...prev.mongodb.operations, {
-          ...operation,
-          timestamp: new Date().toISOString()
-        }]
-      }
-    }));
-  }, []);
-
   // Start configuration generation
   const startGeneration = useCallback(async () => {
     setState(prev => ({
@@ -77,16 +57,9 @@ export function useAutoConfigBuilder() {
         progress: 0,
         currentStep: 'Initializing...',
         error: null
-      }
+      },
+      focusMode: 'journeyFocus' // Auto-collapse input panel
     }));
-
-    // Add MongoDB operation
-    addMongoOperation({
-      type: 'read',
-      collection: 'semantic_patterns',
-      details: `Loading patterns similar to ${state.input.similarTo || 'base formats'}`,
-      query: { format: state.input.similarTo || 'MT103' }
-    });
 
     try {
       // Simulate progress updates
@@ -102,12 +75,6 @@ export function useAutoConfigBuilder() {
       };
 
       updateProgress(10, 'Parsing sample message...');
-      addMongoOperation({
-        type: 'read',
-        collection: 'conversion_registry',
-        details: 'Checking for existing configuration',
-        query: { _id: `${state.input.sourceFormat}_to_${state.input.targetFormat}` }
-      });
 
       updateProgress(30, 'Detecting fields in source format...');
 
@@ -120,17 +87,64 @@ export function useAutoConfigBuilder() {
       );
 
       updateProgress(50, 'Applying semantic patterns...');
-      addMongoOperation({
-        type: 'read',
-        collection: 'semantic_patterns',
-        details: `Applied ${result.fields_detected || 0} patterns`,
-        query: { confidence: { $gte: 0.8 } }
-      });
 
       updateProgress(70, 'Generating field mappings...');
 
       // Process the result into journey data using REAL generation_metadata
       const metadata = result.generation_metadata || {};
+
+      // Extract generation_details (NEW from include_details=true)
+      const generationDetails = result.generation_details || {};
+
+      // Helper function to calculate LLM cost (Note: tokens are estimates, not exact AWS counts)
+      const calculateLLMCost = (totalTokens) => {
+        if (!totalTokens) return 0;
+        // Haiku pricing: $0.00025 per 1k input, $0.00125 per 1k output
+        // Using average: $0.000687 per 1k tokens
+        return ((totalTokens / 1000) * 0.000687).toFixed(4);
+      };
+
+      // Process LLM insights
+      const aiInsights = {
+        totalCalls: generationDetails.mapping_generation?.llm_calls || 0,
+        totalTokens: generationDetails.statistics?.llm_total_tokens || 0,
+        totalTime: generationDetails.statistics?.llm_total_time_ms || 0,
+        estimatedCost: calculateLLMCost(generationDetails.statistics?.llm_total_tokens || 0),
+        llmCalls: [],
+        patternMatches: [],
+        statistics: generationDetails.statistics || {}
+      };
+
+      // Extract LLM call details (with null safety wrapper)
+      if (generationDetails?.mapping_generation?.details) {
+        generationDetails.mapping_generation.details.forEach(detail => {
+          if (detail.mapping_method === 'llm_suggestion' && detail.llm_details) {
+            aiInsights.llmCalls.push({
+              fieldId: detail.field_id,
+              targets: detail.targets,
+              confidence: detail.confidence,
+              prompt: detail.llm_details.prompt,
+              response: detail.llm_details.parsed_response,
+              reasoning: detail.llm_details.parsed_response?.reasoning,
+              tokens: {
+                prompt: detail.llm_details.prompt_tokens || 0,
+                response: detail.llm_details.response_tokens || 0,
+                total: (detail.llm_details.prompt_tokens || 0) + (detail.llm_details.response_tokens || 0)
+              },
+              time: detail.llm_details.call_time_ms,
+              model: detail.llm_details.model_used
+            });
+          } else if (detail.mapping_method === 'pattern_match') {
+            aiInsights.patternMatches.push({
+              fieldId: detail.field_id,
+              patternsTried: detail.patterns_tried || [],  // Note: Only pattern matches have this
+              targets: detail.targets,
+              confidence: detail.confidence,
+              time: detail.processing_time_ms
+            });
+          }
+        });
+      }
 
       // Build steps from REAL processing steps
       const steps = [];
@@ -221,28 +235,6 @@ export function useAutoConfigBuilder() {
             uncertain_fields_count: result.uncertain_fields?.length || 0
           }
         });
-      } else {
-        // Fallback to generic steps if no metadata
-        steps.push(
-          {
-            icon: '🔍',
-            title: 'Message Parsing',
-            duration: '~0.5s',
-            description: `Parsed ${state.input.sourceFormat} message structure`
-          },
-          {
-            icon: '📝',
-            title: 'Field Detection',
-            duration: '~1.0s',
-            description: `Identified ${result.fields_detected || 0} fields`
-          },
-          {
-            icon: '✓',
-            title: 'Configuration Built',
-            duration: `${result.generation_time_seconds?.toFixed(1) || '4.5'}s total`,
-            description: 'Generated complete configuration'
-          }
-        );
       }
 
       // Build mappings from REAL configuration data
@@ -302,13 +294,6 @@ export function useAutoConfigBuilder() {
 
       updateProgress(90, 'Finalizing configuration...');
 
-      addMongoOperation({
-        type: 'write',
-        collection: 'pending_configs',
-        details: `Configuration ${result.configuration_id} ready for review`,
-        query: { _id: result.configuration_id }
-      });
-
       updateProgress(100, 'Complete!');
 
       setState(prev => ({
@@ -319,7 +304,10 @@ export function useAutoConfigBuilder() {
           progress: 100,
           currentStep: 'Configuration generated successfully',
           steps,
-          result
+          result: {
+            ...result,
+            aiInsights  // Add processed insights for easy access
+          }
         },
         journey: {
           ...prev.journey,
@@ -329,13 +317,6 @@ export function useAutoConfigBuilder() {
       }));
     } catch (error) {
       console.error('Generation failed:', error);
-
-      addMongoOperation({
-        type: 'delete',
-        collection: 'pending_configs',
-        details: 'Configuration generation failed',
-        query: { error: error.message }
-      });
 
       setState(prev => ({
         ...prev,
@@ -348,7 +329,7 @@ export function useAutoConfigBuilder() {
         }
       }));
     }
-  }, [state.input, addMongoOperation]);
+  }, [state.input]);
 
   // Update mapping
   const updateMapping = useCallback((index, field, value) => {
@@ -400,14 +381,7 @@ export function useAutoConfigBuilder() {
         }
       }
     }));
-
-    addMongoOperation({
-      type: 'update',
-      collection: 'pending_configs',
-      details: 'Validation complete: Score 92%',
-      query: { validation_score: 92 }
-    });
-  }, [addMongoOperation]);
+  }, []);
 
   // Set active tab
   const setActiveTab = useCallback((tab) => {
@@ -435,7 +409,6 @@ export function useAutoConfigBuilder() {
     updateMapping,
     runValidation,
     setActiveTab,
-    setFocusMode,
-    addMongoOperation
+    setFocusMode
   };
 }

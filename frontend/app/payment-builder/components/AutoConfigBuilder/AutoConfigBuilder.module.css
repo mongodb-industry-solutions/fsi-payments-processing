@@ -26,7 +26,7 @@
   justify-content: space-between;
   padding: var(--spacing-4) var(--spacing-5);
   background: var(--white);
-  border-bottom: 2px solid var(--gray-light2);
+  border-bottom: 1px solid var(--gray-light2);
   position: relative;
 }
 
@@ -85,8 +85,7 @@
 
 /* Panel Styles */
 .inputPanel,
-.journeyPanel,
-.mongoPanel {
+.journeyPanel {
   display: flex;
   flex-direction: column;
   background: var(--white);
@@ -103,13 +102,6 @@
 .journeyPanel {
   flex: 1;
   min-width: 0;
-  border-right: 1px solid var(--gray-light2);
-}
-
-.mongoPanel {
-  width: 280px;
-  flex-shrink: 0;
-  background: var(--gray-light3);
 }
 
 /* Focus Modes */
@@ -117,57 +109,25 @@
   width: 320px;
 }
 
-.container.full .mongoPanel {
-  width: 280px;
-}
-
 .container.inputFocus .inputPanel {
-  width: 50%;
-  max-width: 600px;
+  flex: 1 1 auto !important;
+  width: 100% !important;
+  max-width: none !important;
+  border-right: none !important;
 }
 
 .container.inputFocus .journeyPanel {
-  flex: 1;
-}
-
-.container.inputFocus .mongoPanel {
-  width: 200px;
+  display: none !important;
 }
 
 .container.journeyFocus .inputPanel {
-  width: 200px;
+  width: 0;
+  opacity: 0;
+  overflow: hidden;
 }
 
 .container.journeyFocus .journeyPanel {
-  flex: 2;
-}
-
-.container.journeyFocus .mongoPanel {
-  width: 200px;
-}
-
-.container.mongoFocus .inputPanel {
-  width: 200px;
-}
-
-.container.mongoFocus .journeyPanel {
   flex: 1;
-}
-
-.container.mongoFocus .mongoPanel {
-  width: 400px;
-}
-
-.container.compact .header {
-  padding: var(--spacing-3) var(--spacing-4);
-}
-
-.container.compact .headerContent h2 {
-  font-size: 1.125rem;
-}
-
-.container.compact .headerContent p {
-  display: none;
 }
 
 /* Responsive adjustments */
@@ -175,29 +135,11 @@
   .inputPanel {
     width: 280px;
   }
-
-  .mongoPanel {
-    width: 250px;
-  }
 }
 
 @media (max-width: 1200px) {
   .container {
     height: 100vh;
     max-height: none;
-  }
-
-  .mongoPanel {
-    display: none;
-  }
-
-  .container.mongoFocus .mongoPanel {
-    display: flex;
-    position: absolute;
-    right: 0;
-    top: 0;
-    bottom: 0;
-    z-index: 10;
-    box-shadow: -4px 0 12px rgba(0, 0, 0, 0.1);
   }
 }

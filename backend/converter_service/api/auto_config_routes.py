@@ -210,6 +210,9 @@ async def auto_configure(
         # Extract generation metadata from config (simplified service puts it in metadata)
         generation_metadata = config.get('metadata', {})
 
+        # Extract generation_details for API response (should NOT be saved to DB)
+        generation_details_for_response = config.pop('generation_details', None)
+
         # Save to pending collection for testing (users can test before approval)
         config['metadata']['status'] = 'pending_approval'
         config['metadata']['saved_to_pending_at'] = datetime.utcnow()
@@ -260,9 +263,6 @@ async def auto_configure(
         # Convert datetime objects to strings for JSON serialization
         clean_config = _clean_config_for_response(config)
 
-        # Extract generation_details if present (only when include_details=true)
-        generation_details = config.get('generation_details') if include_details else None
-
         return AutoConfigResponse(
             configuration_id=config['_id'],
             configuration=clean_config,
@@ -274,7 +274,7 @@ async def auto_configure(
             ready_to_save=ready_to_save,
             detected_fields_detail=detected_fields_detail,
             generation_metadata=generation_metadata,
-            generation_details=generation_details
+            generation_details=generation_details_for_response if include_details else None
         )
         
     except ValueError as e:

@@ -11,7 +11,7 @@ const PRESET_SCENARIOS = [
     description: 'Financial Institution Transfer with unmapped fields showcase',
     sourceFormat: 'MT205',
     targetFormat: 'pacs.009',
-    similarTo: 'MT',
+    similarTo: 'MT202',
     sampleMessage: `{1:F01CHASUS33AXXX0000000000}{2:I205DEUTDEFFXXXXN}{3:{108:PRIORITY}}{4:
 :20:MT205TEST2024
 :21:RELREF20241115
@@ -34,15 +34,6 @@ COBADEFFXXX
     targetFormat: 'cain.001',
     similarTo: 'ISO8583_0200',
     sampleMessage: '0220|PAN:4916522800000000|PROC:000000|AMT:12000|CUR:826|DT:1215103045|STAN:123456|REF:BATCH0001234|TERM:TERM0001|MID:MERCHANT123|MERCHANT:STARBUCKS LONDON UK|EXP:2512|ACQ:00000123456|DATA:OFFLINE BATCH SETTLEMENT'
-  },
-  {
-    id: 'custom',
-    name: 'Custom Configuration',
-    description: 'Enter your own format details',
-    sourceFormat: '',
-    targetFormat: '',
-    similarTo: '',
-    sampleMessage: ''
   }
 ];
 
@@ -52,7 +43,7 @@ export default function ConfigInput({
   onChange,
   onGenerate
 }) {
-  const [selectedScenario, setSelectedScenario] = useState('custom');
+  const [selectedScenario, setSelectedScenario] = useState('mt205_pacs009');
   const [validation, setValidation] = useState({
     isValid: false,
     messages: []
@@ -153,7 +144,7 @@ export default function ConfigInput({
       <div className={styles.header}>
         <h3 className={styles.headerTitle}>Configuration Input</h3>
         <p className={styles.headerDescription}>
-          Select a preset scenario or define custom requirements
+          Select a preset scenario to generate configuration
         </p>
       </div>
 
@@ -215,10 +206,10 @@ export default function ConfigInput({
               onChange={(e) => onChange('sourceFormat', e.target.value)}
               placeholder="e.g., MT192"
               disabled={status === 'generating'}
-              readOnly={selectedScenario !== 'custom'}
+              readOnly={true}
             />
             <div className={styles.helperText}>
-              Format to convert from
+              Preset format from selected scenario
             </div>
           </div>
 
@@ -234,38 +225,11 @@ export default function ConfigInput({
               onChange={(e) => onChange('targetFormat', e.target.value)}
               placeholder="e.g., pacs.008"
               disabled={status === 'generating'}
-              readOnly={selectedScenario !== 'custom'}
+              readOnly={true}
             />
             <div className={styles.helperText}>
-              Format to convert to
+              Preset format from selected scenario
             </div>
-          </div>
-        </div>
-
-        {/* Similar To */}
-        <div className={styles.formGroup}>
-          <label className={styles.label}>
-            Similar To
-            {config.similarTo && (
-              <span className={styles.similarBadge}>
-                ⟳ {config.similarTo}
-              </span>
-            )}
-          </label>
-          <select
-            className={styles.select}
-            value={config.similarTo || ''}
-            onChange={(e) => onChange('similarTo', e.target.value)}
-            disabled={status === 'generating' || selectedScenario !== 'custom'}
-          >
-            <option value="">-- Select a similar format (optional) --</option>
-            <option value="MT103">MT103 - Customer Credit Transfer</option>
-            <option value="MT202">MT202 - Bank-to-Bank Transfer</option>
-            <option value="MT205">MT205 - Foreign Exchange</option>
-            <option value="ISO8583_0200">ISO8583_0200 - Card Payment</option>
-          </select>
-          <div className={styles.helperText}>
-            Base configuration on an existing format
           </div>
         </div>
 
@@ -281,10 +245,10 @@ export default function ConfigInput({
             onChange={(e) => onChange('sampleMessage', e.target.value)}
             placeholder="Paste a sample message in the source format..."
             disabled={status === 'generating'}
-            readOnly={selectedScenario !== 'custom'}
+            readOnly={true}
           />
           <div className={styles.helperText}>
-            Provide a complete sample message for analysis
+            Preset sample message from selected scenario
           </div>
         </div>
 

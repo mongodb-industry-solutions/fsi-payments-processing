@@ -6,77 +6,42 @@ export default function FocusControl({
   currentMode = 'full',
   onModeChange
 }) {
-  const modes = [
-    {
-      id: 'full',
-      label: 'Full View',
-      icon: '⊞',
-      tooltip: 'Show all panels equally',
-      panels: [true, true, true]
-    },
-    {
-      id: 'inputFocus',
-      label: 'Input Focus',
-      icon: '◧',
-      tooltip: 'Focus on configuration input',
-      panels: [true, false, false]
-    },
-    {
-      id: 'journeyFocus',
-      label: 'Journey Focus',
-      icon: '▭',
-      tooltip: 'Focus on configuration journey',
-      panels: [false, true, false]
-    },
-    {
-      id: 'mongoFocus',
-      label: 'MongoDB Focus',
-      icon: '◨',
-      tooltip: 'Focus on database operations',
-      panels: [false, false, true]
-    },
-    {
-      id: 'compact',
-      label: 'Compact',
-      icon: '▣',
-      tooltip: 'Minimize all panels',
-      panels: [true, true, true]
-    }
-  ];
-
-  const currentModeData = modes.find(m => m.id === currentMode) || modes[0];
-
   return (
-    <div className={styles.container}>
-      <div className={styles.focusControl}>
-        <span className={styles.focusLabel}>Focus</span>
+    <div className={styles.controlBar}>
+      <div className={styles.segmentedControl}>
+        <button
+          className={`${styles.segment} ${currentMode === 'inputFocus' ? styles.active : ''}`}
+          onClick={() => onModeChange('inputFocus')}
+          title="Focus on Configuration Input"
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M6 3L2 7L6 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          <span>Input Focus</span>
+        </button>
 
-        <div className={styles.focusOptions}>
-          {modes.map((mode) => (
-            <button
-              key={mode.id}
-              className={`${styles.focusButton} ${currentMode === mode.id ? styles.active : ''}`}
-              onClick={() => onModeChange(mode.id)}
-              title={mode.tooltip}
-            >
-              <span className={styles.focusIcon}>{mode.icon}</span>
-              <span>{mode.label}</span>
-            </button>
-          ))}
-        </div>
+        <button
+          className={`${styles.segment} ${styles.centerSegment} ${currentMode === 'full' ? styles.active : ''}`}
+          onClick={() => onModeChange('full')}
+          title="Normal View - Show Both Panels"
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <rect x="2" y="3" width="5" height="10" rx="1" stroke="currentColor" strokeWidth="1.5"/>
+            <rect x="9" y="3" width="5" height="10" rx="1" stroke="currentColor" strokeWidth="1.5"/>
+          </svg>
+          <span>Normal View</span>
+        </button>
 
-        <div className={styles.focusIndicator}>
-          {currentModeData.panels.map((active, idx) => (
-            <div
-              key={idx}
-              className={`${styles.panelIndicator} ${active ? styles.active : ''} ${
-                currentMode === 'inputFocus' && idx === 0 ? styles.expanded :
-                currentMode === 'journeyFocus' && idx === 1 ? styles.expanded :
-                currentMode === 'mongoFocus' && idx === 2 ? styles.expanded : ''
-              }`}
-            />
-          ))}
-        </div>
+        <button
+          className={`${styles.segment} ${currentMode === 'journeyFocus' ? styles.active : ''}`}
+          onClick={() => onModeChange('journeyFocus')}
+          title="Focus on Configuration Journey"
+        >
+          <span>Journey Focus</span>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M10 3L14 7L10 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </button>
       </div>
     </div>
   );
