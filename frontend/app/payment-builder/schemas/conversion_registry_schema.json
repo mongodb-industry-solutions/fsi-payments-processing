@@ -1,0 +1,327 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://payment-converter.com/schemas/conversion-registry.json",
+  "title": "Conversion Registry Configuration Schema",
+  "description": "Schema for payment format conversion configurations stored in MongoDB",
+  "type": "object",
+  "required": ["_id", "parser", "mappings", "builder"],
+  "properties": {
+    "_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._]+_to_[A-Za-z0-9._]+$",
+      "description": "Conversion identifier in format SOURCE_to_TARGET",
+      "examples": ["MT103_to_pacs.008", "MT202_to_pacs.009", "ISO8583_0200_to_cain.001"]
+    },
+    "parser": {
+      "type": "object",
+      "required": ["type", "fields"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["regex", "xml", "json", "csv", "binary"],
+          "description": "Parser type for source format"
+        },
+        "fields": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "pattern": {
+                "type": "string",
+                "description": "Regex pattern to extract field (required for regex parser, optional for JSON)"
+              },
+              "name": {
+                "type": "string",
+                "description": "Human-readable field name"
+              },
+              "multiline": {
+                "type": "boolean",
+                "default": false,
+                "description": "Whether field spans multiple lines"
+              },
+              "components": {
+                "type": "object",
+                "description": "Sub-components for composite fields",
+                "additionalProperties": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "required": ["pattern", "name"],
+                      "properties": {
+                        "pattern": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    {
+                      "type": "array",
+                      "description": "Position indices for component extraction"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "mappings": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["source", "targets"],
+        "properties": {
+          "source": {
+            "type": "string",
+            "description": "Source field name or path"
+          },
+          "targets": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "description": "Target field paths"
+          },
+          "transform": {
+            "type": "string",
+            "enum": [
+              "copy", "date_format", "map", "remove_comma",
+              "extract_account", "extract_name", "extract_lines",
+              "ai_extract", "extract_party", "constant",
+              "normalize_amount", "decimal_conversion",
+              "static", "split_lines", "truncate", "join_lines",
+              "conditional_value", "conditional_copy",
+              "join_array", "map_value", "spei_concept", "uppercase"
+            ],
+            "default": "copy"
+          },
+          "transform_config": {
+            "type": "object",
+            "description": "Configuration for the transform function"
+          },
+          "processing_lane": {
+            "type": "string",
+            "enum": ["RULES", "AI", "HUMAN"],
+            "default": "RULES"
+          },
+          "field_type": {
+            "type": "string",
+            "description": "Field type for AI processing",
+            "enum": [
+              "remittance", "party_details", "instructions", "charges",
+              "regulatory", "references", "sender_receiver_info",
+              "bank_to_bank_info", "merchant_details_cain", "transaction_notes",
+              "spei_concept"
+            ]
+          },
+          "confidence_threshold": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "default": 0.8
+          }
+        },
+        "if": {
+          "properties": {
+            "processing_lane": { "const": "AI" },
+            "transform": { "const": "ai_extract" }
+          }
+        },
+        "then": {
+          "required": ["field_type"]
+        }
+      }
+    },
+    "ai_service": {
+      "type": "object",
+      "properties": {
+        "provider": {
+          "type": "string",
+          "enum": ["bedrock", "openai", "claude"],
+          "default": "bedrock"
+        },
+        "region": {
+          "type": "string",
+          "default": "us-east-1"
+        },
+        "models": {
+          "type": "object",
+          "additionalProperties": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "model_id": {"type": "string"},
+                  "max_tokens": {"type": "integer"},
+                  "temperature": {"type": "number"},
+                  "cost_per_1k_input": {"type": "number"},
+                  "cost_per_1k_output": {"type": "number"},
+                  "complexity_threshold": {"type": "object"}
+                }
+              }
+            ]
+          }
+        },
+        "field_types": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "required": ["prompt_template"],
+            "properties": {
+              "prompt_template": {
+                "type": "string",
+                "minLength": 10,
+                "description": "Prompt template for AI extraction"
+              },
+              "expected_output": {
+                "type": "object",
+                "description": "Expected output structure"
+              },
+              "model_preference": {
+                "type": "string",
+                "enum": ["haiku", "sonnet", "opus"],
+                "default": "haiku"
+              },
+              "temperature": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1,
+                "default": 0.3
+              }
+            }
+          }
+        }
+      }
+    },
+    "builder": {
+      "type": "object",
+      "required": ["type", "template"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["xml", "json", "csv", "fixed"],
+          "description": "Output format type"
+        },
+        "template": {
+          "type": "object",
+          "description": "Template structure for building output"
+        },
+        "xml_config": {
+          "type": "object",
+          "properties": {
+            "namespace": {
+              "type": "string"
+            },
+            "root_element": {
+              "type": "string"
+            },
+            "pretty_print": {
+              "type": "boolean",
+              "default": true
+            }
+          }
+        }
+      }
+    },
+    "human_review": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "default_threshold": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0.8,
+          "description": "Default confidence threshold for human review"
+        },
+        "field_thresholds": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "description": "Field-specific confidence thresholds"
+        },
+        "review_reasons": {
+          "oneOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              }
+            }
+          ],
+          "default": ["low_confidence", "missing_required", "validation_failed"]
+        }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+(\\.\\d+)?$"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "created_by": {
+          "type": "string"
+        },
+        "auto_generated": {
+          "type": "boolean"
+        },
+        "base_config": {
+          "type": "string",
+          "description": "Base configuration this was derived from"
+        },
+        "confidence_score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "statistics": {
+      "type": "object",
+      "description": "Optional conversion statistics",
+      "properties": {
+        "fields_count": {"type": "integer"},
+        "ai_fields_count": {"type": "integer"},
+        "avg_conversion_time_ms": {"type": "number"}
+      }
+    },
+    "source_format": {
+      "type": "string",
+      "description": "Source format name"
+    },
+    "target_format": {
+      "type": "string",
+      "description": "Target format name"
+    }
+  },
+  "additionalProperties": false
+}

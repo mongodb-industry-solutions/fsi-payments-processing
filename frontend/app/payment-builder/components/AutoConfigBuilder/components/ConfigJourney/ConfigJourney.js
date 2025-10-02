@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Icon from '@leafygreen-ui/icon';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import ConfigurationEditor from '../ConfigurationEditor/ConfigurationEditor';
 import styles from './ConfigJourney.module.css';
 
 // Custom LeafyGreen-inspired syntax highlighting theme
@@ -240,6 +241,15 @@ export default function ConfigJourney({
     howItWorks: false
   });
 
+  // State for collapsible explainer steps
+  const [expandedExplainerSteps, setExpandedExplainerSteps] = useState({
+    step1: true,
+    step2: true,
+    step3: true,
+    step4: true,
+    step5: true
+  });
+
   const toggleSection = (sectionName) => {
     setExpandedSections(prev => ({
       ...prev,
@@ -247,12 +257,18 @@ export default function ConfigJourney({
     }));
   };
 
+  const toggleExplainerStep = (stepName) => {
+    setExpandedExplainerSteps(prev => ({
+      ...prev,
+      [stepName]: !prev[stepName]
+    }));
+  };
+
   // State for Output tab field breakdown visibility
   const [showBreakdown, setShowBreakdown] = useState(false);
   const tabs = [
     { id: 'flow', label: 'Flow', icon: '', count: generation?.steps?.length || 0 },
-    { id: 'validation', label: 'Validation', icon: '', count: validation?.checks?.length || 0 },
-    { id: 'output', label: 'Output', icon: '', count: null }
+    { id: 'configuration', label: 'Configuration', icon: '', count: null }
   ];
 
   const renderEmptyState = () => (
@@ -395,80 +411,334 @@ export default function ConfigJourney({
               <span className={styles.explainerIcon}>{expandedSections.howItWorks ? '▼' : '▶'}</span>
             </button>
 
-            {expandedSections.howItWorks && (
+{expandedSections.howItWorks && (
               <div className={styles.explainerContent}>
                 {/* Step 1: Format Detection */}
                 <div className={styles.explainerStep}>
-                  <div className={styles.stepNumber}>1</div>
-                  <div className={styles.stepContent}>
-                    <div className={styles.stepTitle}>Format Detection</div>
-                    <div className={styles.stepDescription}>
-                      Detected <strong>{formatFamily}</strong> format family.
-                      Using <strong>{baseConfigId}</strong> as base template.
+                  <div
+                    className={styles.stepHeader}
+                    onClick={() => toggleExplainerStep('step1')}
+                  >
+                    <div className={styles.stepNumber}>1</div>
+                    <div className={styles.stepTitle}>Format Detection & Base Template Selection</div>
+                    <div className={styles.stepExpandIcon}>
+                      {expandedExplainerSteps.step1 ? '▼' : '▶'}
                     </div>
                   </div>
+                  {expandedExplainerSteps.step1 && (
+                  <div className={styles.stepContent}>
+                    <div className={styles.stepDescription}>
+                      The system analyzes your source format (<strong>{sourceFormat}</strong>) to determine its format family: <strong>{formatFamily}</strong>.
+
+                      <div className={styles.stepDetail}>
+                        <div className={styles.detailLabel}>MongoDB Query:</div>
+                        <pre className={styles.codeSnippet}>
+{`db.conversion_registry.find({
+  "_id": { $regex: "^${sourceFormat.split(/\d/)[0]}.*_to_" }
+}).sort({ "_id": 1 }).limit(5)`}
+                        </pre>
+                      </div>
+
+                      <div className={styles.stepDetail}>
+                        <div className={styles.detailLabel}>Selected Base Template:</div>
+                        <div className={styles.highlightBox}>
+                          <code>{baseConfigId}</code>
+                        </div>
+                      </div>
+
+                      <div className={styles.stepDetail}>
+                        <div className={styles.detailLabel}>Why this template?</div>
+                        <p>This configuration contains the most similar field structure to your source format, providing the best foundation for auto-generation.</p>
+                      </div>
+                    </div>
+                  </div>
+                  )}
                 </div>
 
                 {/* Step 2: Field Extraction */}
                 <div className={styles.explainerStep}>
-                  <div className={styles.stepNumber}>2</div>
-                  <div className={styles.stepContent}>
-                    <div className={styles.stepTitle}>Field Extraction</div>
-                    <div className={styles.stepDescription}>
-                      Extracted <strong>{fieldExtraction?.total_fields || 0}</strong> fields from your sample message using regex patterns.
-                      {fieldExtraction?.fields?.filter(f => f.extraction_method === 'fallback').length > 0 && (
-                        <span> Discovered <strong>{fieldExtraction.fields.filter(f => f.extraction_method === 'fallback').length}</strong> new field(s) not in base template.</span>
-                      )}
+                  <div
+                    className={styles.stepHeader}
+                    onClick={() => toggleExplainerStep('step2')}
+                  >
+                    <div className={styles.stepNumber}>2</div>
+                    <div className={styles.stepTitle}>Field Extraction from Sample Message</div>
+                    <div className={styles.stepExpandIcon}>
+                      {expandedExplainerSteps.step2 ? '▼' : '▶'}
                     </div>
                   </div>
+                  {expandedExplainerSteps.step2 && (
+                  <div className={styles.stepContent}>
+                    <div className={styles.stepDescription}>
+                      Parsed your sample message and extracted <strong>{fieldExtraction?.total_fields || 0}</strong> fields using regex patterns from the base template's parser configuration.
+
+                      <div className={styles.stepDetail}>
+                        <div className={styles.detailLabel}>Extraction Methods:</div>
+                        <div className={styles.methodGrid}>
+                          <div className={styles.methodItem}>
+                            <span className={styles.methodBadge} style={{background: 'var(--green-light2)', color: 'var(--green-dark1)'}}>Base Template</span>
+                            <span className={styles.methodCount}>{fieldExtraction?.fields?.filter(f => f.extraction_method !== 'fallback').length || 0} fields</span>
+                          </div>
+                          {fieldExtraction?.fields?.filter(f => f.extraction_method === 'fallback').length > 0 && (
+                            <div className={styles.methodItem}>
+                              <span className={styles.methodBadge} style={{background: 'var(--blue-light2)', color: 'var(--blue-dark1)'}}>Auto-Detected</span>
+                              <span className={styles.methodCount}>{fieldExtraction.fields.filter(f => f.extraction_method === 'fallback').length} new fields</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {fieldExtraction?.fields?.filter(f => f.extraction_method === 'fallback').length > 0 && (
+                        <div className={styles.stepDetail}>
+                          <div className={styles.detailLabel}>Auto-Detected Fields:</div>
+                          <div className={styles.fieldTags}>
+                            {fieldExtraction.fields
+                              .filter(f => f.extraction_method === 'fallback')
+                              .map((field, idx) => (
+                                <span key={idx} className={styles.fieldTag}>
+                                  Field {field.field_id}
+                                </span>
+                              ))}
+                          </div>
+                          <p className={styles.helpText}>
+                            These fields were found in your message but not in the base template. The system automatically generated regex patterns to extract them.
+                          </p>
+                        </div>
+                      )}
+
+                      <div className={styles.stepDetail}>
+                        <div className={styles.detailLabel}>Sample Field Extraction:</div>
+                        {fieldExtraction?.fields?.slice(0, 3).map((field, idx) => (
+                          <div key={idx} className={styles.fieldExample}>
+                            <div className={styles.fieldExampleHeader}>
+                              <code className={styles.fieldCode}>Field {field.field_id}</code>
+                              <span className={styles.fieldBadge}>{field.is_composite ? 'Composite' : 'Simple'}</span>
+                            </div>
+                            {field.is_composite && field.components && (
+                              <div className={styles.compositeInfo}>
+                                Splits into: {field.components.join(', ')}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  )}
                 </div>
 
                 {/* Step 3: Pattern Matching */}
                 <div className={styles.explainerStep}>
-                  <div className={styles.stepNumber}>3</div>
-                  <div className={styles.stepContent}>
-                    <div className={styles.stepTitle}>Pattern Matching</div>
-                    <div className={styles.stepDescription}>
-                      Matched <strong>{mappingGeneration?.pattern_matches || 0}</strong> fields using semantic patterns
-                      learned from {statistics?.patterns_cache_size || 0} existing patterns.
-                      {mappingGeneration?.pattern_matches > 0 && (
-                        <span> Average confidence: <strong>~90%</strong>.</span>
-                      )}
+                  <div
+                    className={styles.stepHeader}
+                    onClick={() => toggleExplainerStep('step3')}
+                  >
+                    <div className={styles.stepNumber}>3</div>
+                    <div className={styles.stepTitle}>Semantic Pattern Matching</div>
+                    <div className={styles.stepExpandIcon}>
+                      {expandedExplainerSteps.step3 ? '▼' : '▶'}
                     </div>
                   </div>
+                  {expandedExplainerSteps.step3 && (
+                  <div className={styles.stepContent}>
+                    <div className={styles.stepDescription}>
+                      Matched <strong>{mappingGeneration?.pattern_matches || 0}</strong> fields by querying the <code>semantic_patterns</code> collection, which contains {statistics?.patterns_cache_size || 0} learned patterns from existing configurations.
+
+                      <div className={styles.stepDetail}>
+                        <div className={styles.detailLabel}>MongoDB Query Pattern:</div>
+                        <pre className={styles.codeSnippet}>
+{`db.semantic_patterns.find({
+  "source_field": { $in: ["20", "32A", "50K", ...] },
+  "format_hint": "${formatFamily}"
+}).sort({ "confidence": -1 })`}
+                        </pre>
+                      </div>
+
+                      <div className={styles.stepDetail}>
+                        <div className={styles.detailLabel}>Pattern Matching Results:</div>
+                        <div className={styles.resultGrid}>
+                          <div className={styles.resultCard}>
+                            <div className={styles.resultValue}>{mappingGeneration?.pattern_matches || 0}</div>
+                            <div className={styles.resultLabel}>Patterns Matched</div>
+                          </div>
+                          <div className={styles.resultCard}>
+                            <div className={styles.resultValue}>~90%</div>
+                            <div className={styles.resultLabel}>Avg Confidence</div>
+                          </div>
+                          <div className={styles.resultCard}>
+                            <div className={styles.resultValue}>{statistics?.pattern_lookup_time_ms?.toFixed(0) || 'N/A'}ms</div>
+                            <div className={styles.resultLabel}>Lookup Time</div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className={styles.stepDetail}>
+                        <div className={styles.detailLabel}>Example Pattern Match:</div>
+                        <div className={styles.patternExample}>
+                          <div className={styles.patternRow}>
+                            <span className={styles.patternLabel}>Source Field:</span>
+                            <code>20</code>
+                          </div>
+                          <div className={styles.patternRow}>
+                            <span className={styles.patternLabel}>Semantic Concept:</span>
+                            <span>transaction_reference</span>
+                          </div>
+                          <div className={styles.patternRow}>
+                            <span className={styles.patternLabel}>Target Mapping:</span>
+                            <code>CdtTrfTxInf.PmtId.EndToEndId</code>
+                          </div>
+                          <div className={styles.patternRow}>
+                            <span className={styles.patternLabel}>Learned From:</span>
+                            <span className={styles.formatBadge}>MT103</span>
+                            <span className={styles.formatBadge}>MT202</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  )}
                 </div>
 
                 {/* Step 4: AI Analysis (conditional) */}
                 {mappingGeneration?.llm_calls > 0 && (
                   <div className={styles.explainerStep}>
-                    <div className={styles.stepNumber}>4</div>
-                    <div className={styles.stepContent}>
-                      <div className={styles.stepTitle}>AI Analysis</div>
-                      <div className={styles.stepDescription}>
-                        Used LLM for <strong>{mappingGeneration.llm_calls}</strong> field{mappingGeneration.llm_calls > 1 ? 's' : ''} where no pattern matched.
-                        {statistics?.llm_total_tokens > 0 && (
-                          <span> Total tokens: <strong>{statistics.llm_total_tokens.toLocaleString()}</strong>.</span>
-                        )}
+                    <div
+                      className={styles.stepHeader}
+                      onClick={() => toggleExplainerStep('step4')}
+                    >
+                      <div className={styles.stepNumber}>4</div>
+                      <div className={styles.stepTitle}>AI-Powered Field Analysis</div>
+                      <div className={styles.stepExpandIcon}>
+                        {expandedExplainerSteps.step4 ? '▼' : '▶'}
                       </div>
                     </div>
+                    {expandedExplainerSteps.step4 && (
+                    <div className={styles.stepContent}>
+                      <div className={styles.stepDescription}>
+                        For <strong>{mappingGeneration.llm_calls}</strong> field{mappingGeneration.llm_calls > 1 ? 's' : ''} where no semantic pattern was found, the system invoked AWS Bedrock (Claude) to analyze the field and suggest appropriate target mappings.
+
+                        <div className={styles.stepDetail}>
+                          <div className={styles.detailLabel}>LLM Processing Stats:</div>
+                          <div className={styles.resultGrid}>
+                            <div className={styles.resultCard}>
+                              <div className={styles.resultValue}>{mappingGeneration.llm_calls}</div>
+                              <div className={styles.resultLabel}>LLM Calls</div>
+                            </div>
+                            <div className={styles.resultCard}>
+                              <div className={styles.resultValue}>{statistics?.llm_total_tokens?.toLocaleString() || 'N/A'}</div>
+                              <div className={styles.resultLabel}>Total Tokens</div>
+                            </div>
+                            <div className={styles.resultCard}>
+                              <div className={styles.resultValue}>{statistics?.llm_total_time_ms?.toFixed(0) || 'N/A'}ms</div>
+                              <div className={styles.resultLabel}>Processing Time</div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className={styles.stepDetail}>
+                          <div className={styles.detailLabel}>How AI Analysis Works:</div>
+                          <ol className={styles.processList}>
+                            <li>Extracts field value from sample message</li>
+                            <li>Sends field context + target format schema to Claude</li>
+                            <li>Receives suggested target path with reasoning</li>
+                            <li>Validates suggestion and assigns confidence score</li>
+                            <li>Stores suggestion in generated configuration</li>
+                          </ol>
+                        </div>
+
+                        <div className={styles.stepDetail}>
+                          <div className={styles.detailLabel}>Cost Optimization:</div>
+                          <p className={styles.helpText}>
+                            Only {Math.round((mappingGeneration.llm_calls / (fieldExtraction?.total_fields || 1)) * 100)}% of fields required AI processing. The majority were handled by fast pattern matching, keeping costs low.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    )}
                   </div>
                 )}
 
                 {/* Step 5: Configuration Built */}
                 <div className={styles.explainerStep}>
-                  <div className={styles.stepNumber}>{mappingGeneration?.llm_calls > 0 ? '5' : '4'}</div>
-                  <div className={styles.stepContent}>
-                    <div className={styles.stepTitle}>Configuration Built</div>
-                    <div className={styles.stepDescription}>
-                      Generated complete configuration with <strong>{mappingGeneration?.total_mappings || 0}</strong> mappings.
-                      Overall confidence: <strong>{Math.round(confidence * 100)}%</strong>.
-                      {uncertainFields.length > 0 && (
-                        <span className={styles.stepWarning}>
-                          {' ⚠️ '}{uncertainFields.length} field(s) need review.
-                        </span>
-                      )}
+                  <div
+                    className={styles.stepHeader}
+                    onClick={() => toggleExplainerStep('step5')}
+                  >
+                    <div className={styles.stepNumber}>{mappingGeneration?.llm_calls > 0 ? '5' : '4'}</div>
+                    <div className={styles.stepTitle}>Configuration Assembly & Validation</div>
+                    <div className={styles.stepExpandIcon}>
+                      {expandedExplainerSteps.step5 ? '▼' : '▶'}
                     </div>
                   </div>
+                  {expandedExplainerSteps.step5 && (
+                  <div className={styles.stepContent}>
+                    <div className={styles.stepDescription}>
+                      Assembled a complete conversion configuration with <strong>{mappingGeneration?.total_mappings || 0}</strong> field mappings, ready to be saved to the <code>conversion_registry</code> collection.
+
+                      <div className={styles.stepDetail}>
+                        <div className={styles.detailLabel}>Generated Configuration Structure:</div>
+                        <div className={styles.configStructure}>
+                          <div className={styles.structureItem}>
+                            <Icon glyph="Code" size="small" />
+                            <span><strong>Parser:</strong> {fieldExtraction?.total_fields || 0} field patterns</span>
+                          </div>
+                          <div className={styles.structureItem}>
+                            <Icon glyph="Connect" size="small" />
+                            <span><strong>Mappings:</strong> {mappingGeneration?.total_mappings || 0} field transformations</span>
+                          </div>
+                          <div className={styles.structureItem}>
+                            <Icon glyph="Settings" size="small" />
+                            <span><strong>Builder:</strong> Target format construction rules</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className={styles.stepDetail}>
+                        <div className={styles.detailLabel}>Quality Metrics:</div>
+                        <div className={styles.qualityGrid}>
+                          <div className={styles.qualityCard}>
+                            <div className={styles.qualityLabel}>Overall Confidence</div>
+                            <div className={styles.qualityValue} style={{
+                              color: confidence >= 0.8 ? 'var(--green-dark1)' : confidence >= 0.6 ? 'var(--yellow-dark1)' : 'var(--red-base)'
+                            }}>
+                              {Math.round(confidence * 100)}%
+                            </div>
+                          </div>
+                          <div className={styles.qualityCard}>
+                            <div className={styles.qualityLabel}>Pattern Coverage</div>
+                            <div className={styles.qualityValue}>
+                              {Math.round((mappingGeneration?.pattern_matches / (fieldExtraction?.total_fields || 1)) * 100)}%
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {uncertainFields.length > 0 && (
+                        <div className={styles.stepDetail}>
+                          <div className={styles.detailLabel}>
+                            <Icon glyph="Warning" size="small" />
+                            <span className={styles.stepWarning}>
+                              Review Required: {uncertainFields.length} field{uncertainFields.length > 1 ? 's' : ''}
+                            </span>
+                          </div>
+                          <p className={styles.helpText}>
+                            These fields have confidence below 80% and should be manually reviewed in the Configuration Editor before production use.
+                          </p>
+                        </div>
+                      )}
+
+                      <div className={styles.stepDetail}>
+                        <div className={styles.detailLabel}>Next Steps:</div>
+                        <ol className={styles.processList}>
+                          <li>Review uncertain fields in the Configuration tab</li>
+                          <li>Run validation to check schema compliance</li>
+                          <li>Test with sample messages</li>
+                          <li>Save to production when ready</li>
+                        </ol>
+                      </div>
+                    </div>
+                  </div>
+                  )}
                 </div>
               </div>
             )}
@@ -1066,6 +1336,174 @@ export default function ConfigJourney({
               </div>
             )}
           </>
+        )}
+
+        {/* Collapsible Output JSON Panel */}
+        {output && (
+          <div className={styles.outputJsonPanel}>
+            <div
+              className={styles.sectionHeader}
+              onClick={() => toggleSection('outputJson')}
+            >
+              <span className={styles.sectionExpandIcon}>
+                {expandedSections.outputJson ? '▼' : '▶'}
+              </span>
+              <Icon glyph="Code" className={styles.sectionIcon} />
+              <span className={styles.sectionTitle}>
+                Generated Configuration JSON
+              </span>
+            </div>
+
+            {expandedSections.outputJson && (() => {
+              // Build highlight metadata
+              const buildHighlightMetadata = () => {
+                const mappingGeneration = generationDetails?.mapping_generation;
+                if (!mappingGeneration?.details) return { patternMatched: [], aiSuggested: [] };
+
+                const patternMatched = [];
+                const aiSuggested = [];
+
+                mappingGeneration.details.forEach(detail => {
+                  const fieldInfo = {
+                    field_id: detail.field_id,
+                    source: detail.source,
+                    targets: detail.targets,
+                    confidence: detail.confidence,
+                    mapping_method: detail.mapping_method
+                  };
+
+                  if (detail.mapping_method === 'pattern_match') {
+                    patternMatched.push(fieldInfo);
+                  } else if (detail.mapping_method === 'llm_suggestion') {
+                    aiSuggested.push(fieldInfo);
+                  }
+                });
+
+                return { patternMatched, aiSuggested };
+              };
+
+              const highlightMetadata = buildHighlightMetadata();
+
+              // Build line highlights
+              const buildLineHighlights = () => {
+                const jsonString = JSON.stringify(output, null, 2);
+                const lines = jsonString.split('\n');
+                const lineHighlights = {};
+
+                let inMappingsArray = false;
+                let currentMappingStart = null;
+                let currentMappingType = null;
+
+                lines.forEach((line, idx) => {
+                  if (line.includes('"mappings":')) {
+                    inMappingsArray = true;
+                  }
+                  if (inMappingsArray && line.includes('"builder":')) {
+                    inMappingsArray = false;
+                  }
+
+                  if (inMappingsArray && line.trim() === '{') {
+                    currentMappingStart = idx;
+                  }
+
+                  if (inMappingsArray && line.includes('"source":')) {
+                    const match = line.match(/"source":\s*"([^"]+)"/);
+                    if (match) {
+                      const source = match[1];
+                      const baseFieldId = source.split('.')[0];
+
+                      const patternMatch = highlightMetadata.patternMatched.find(f => f.field_id === baseFieldId);
+                      const aiMatch = highlightMetadata.aiSuggested.find(f => f.field_id === baseFieldId);
+
+                      if (patternMatch) {
+                        currentMappingType = 'pattern';
+                      } else if (aiMatch) {
+                        currentMappingType = 'ai';
+                      }
+                    }
+                  }
+
+                  if (currentMappingStart !== null && currentMappingType) {
+                    for (let i = currentMappingStart; i <= idx; i++) {
+                      lineHighlights[i] = currentMappingType;
+                    }
+                  }
+
+                  if (inMappingsArray && line.trim().match(/^}\s*,?\s*$/)) {
+                    if (currentMappingType) {
+                      lineHighlights[idx] = currentMappingType;
+                    }
+                    currentMappingStart = null;
+                    currentMappingType = null;
+                  }
+                });
+
+                return lineHighlights;
+              };
+
+              const lineHighlights = buildLineHighlights();
+
+              return (
+                <div className={styles.outputJsonContent}>
+                  {/* Legend */}
+                  <div className={styles.legend}>
+                    <span className={styles.legendTitle}>Legend:</span>
+                    <span className={styles.legendItem}>
+                      <span className={styles.legendDot} style={{backgroundColor: 'var(--green-dark1)'}}></span>
+                      <span>Pattern Matched Mappings</span>
+                    </span>
+                    <span className={styles.legendItem}>
+                      <span className={styles.legendDot} style={{backgroundColor: 'var(--purple-dark1)'}}></span>
+                      <span>AI Suggested Mappings</span>
+                    </span>
+                  </div>
+
+                  {/* JSON Output */}
+                  <div className={styles.outputContent}>
+                    <SyntaxHighlighter
+                      language="json"
+                      style={leafyGreenTheme}
+                      showLineNumbers={true}
+                      wrapLines={true}
+                      lineProps={(lineNumber) => {
+                        const highlightType = lineHighlights[lineNumber - 1];
+
+                        if (highlightType === 'pattern') {
+                          return {
+                            style: {
+                              backgroundColor: 'rgba(0, 163, 92, 0.15)',
+                              borderLeft: '3px solid #00A35C',
+                              display: 'block',
+                              paddingLeft: '8px'
+                            }
+                          };
+                        } else if (highlightType === 'ai') {
+                          return {
+                            style: {
+                              backgroundColor: 'rgba(92, 60, 146, 0.15)',
+                              borderLeft: '3px solid #5C3C92',
+                              display: 'block',
+                              paddingLeft: '8px'
+                            }
+                          };
+                        }
+
+                        return { style: { display: 'block' } };
+                      }}
+                      customStyle={{
+                        margin: 0,
+                        borderRadius: '8px',
+                        fontSize: '13px',
+                        lineHeight: '1.5'
+                      }}
+                    >
+                      {JSON.stringify(output, null, 2)}
+                    </SyntaxHighlighter>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
         )}
       </div>
     );
@@ -1944,6 +2382,22 @@ export default function ConfigJourney({
     );
   };
 
+  const renderConfigurationTab = () => {
+    if (!output) return renderEmptyState();
+
+    return (
+      <ConfigurationEditor
+        configuration={output}
+        validationResult={validation}
+        onSave={onSave}
+        onValidate={onValidate}
+        onFieldUpdate={onFixError}
+        isValidating={validation?.loading || false}
+        isSaving={validation?.saving || false}
+      />
+    );
+  };
+
   const renderTabContent = () => {
     if (generation?.status === 'generating') {
       return renderLoadingState();
@@ -1952,10 +2406,8 @@ export default function ConfigJourney({
     switch (activeTab) {
       case 'flow':
         return renderFlowTab();
-      case 'validation':
-        return renderValidationTab();
-      case 'output':
-        return renderOutputTab();
+      case 'configuration':
+        return renderConfigurationTab();
       default:
         return renderEmptyState();
     }

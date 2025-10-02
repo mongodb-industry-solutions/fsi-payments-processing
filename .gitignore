@@ -399,3 +399,7 @@ frontend/enhanced_mt205_sample.txt
 backend/converter_service/AUTO_CONFIG_DETAILED_RESPONSE_DESIGN.md
 LEAFYGREEN_CONSISTENCY_ANALYSIS.md
 VALIDATION_TAB_IMPLEMENTATION.md
+backend/converter_service/scripts/extract_sample_configs.py
+.gitignore
+backend/converter_service/scripts/analyze_conversion_registry_schema.py
+backend/converter_service/conversion_registry_analysis_20251002_175651.json

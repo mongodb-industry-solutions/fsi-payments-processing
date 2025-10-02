@@ -14,7 +14,7 @@ from ..services.semantic_learning_service_simplified import SimplifiedSemanticLe
 from ..services.ai_service import get_bedrock_service as get_ai_service
 from ..config.settings import get_settings
 from ..services.auto_config_builder import AutoConfigBuilder
-from ..services.config_validator import ConfigValidator
+from ..services.schema_validator import SchemaValidator
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -431,13 +431,16 @@ async def validate_schema(
                 detail="Configuration is required in request body"
             )
 
-        # Create validator and validate
-        validator = ConfigValidator()
-        result = validator.validate_config(configuration)
+        # Use the new schema validator
+        schema_validator = SchemaValidator()
 
-        logger.info(f"Schema validation complete: valid={result.valid}, score={result.score}")
+        # Get validation result in frontend format
+        result = schema_validator.validate(configuration, return_frontend_format=True)
 
-        return result.to_dict()
+        # Log the validation result
+        logger.info(f"Schema validation complete: valid={result.get('valid')}, score={result.get('score')}")
+
+        return result
 
     except Exception as e:
         logger.error(f"Schema validation error: {e}")
@@ -485,17 +488,17 @@ async def save_validated_config(
                 detail="Configuration is required"
             )
 
-        # Validate first
-        validator = ConfigValidator()
-        validation_result = validator.validate_config(configuration)
+        # Validate using schema validator
+        schema_validator = SchemaValidator()
+        validation_result = schema_validator.validate(configuration, return_frontend_format=False)
 
         # Check if valid (or force save)
-        if not validation_result.valid and not force:
+        if not validation_result['valid'] and not force:
             return {
                 "success": False,
                 "configuration_id": configuration.get("_id"),
-                "validation": validation_result.to_dict(),
-                "message": f"Validation failed with score {validation_result.score}%. Fix errors or use force=true to save anyway."
+                "validation": validation_result,
+                "message": f"Validation failed with score {validation_result.get('score', 0)}%. Fix errors or use force=true to save anyway."
             }
 
         # Add validation metadata
@@ -506,7 +509,7 @@ async def save_validated_config(
 
         configuration["metadata"]["validated_at"] = datetime.utcnow()
         configuration["metadata"]["approved"] = True
-        configuration["metadata"]["validation_score"] = validation_result.score
+        configuration["metadata"]["validation_score"] = validation_result.get('score', 100)
         configuration["metadata"]["status"] = "approved"
 
         # Save to production registry
@@ -519,13 +522,13 @@ async def save_validated_config(
         # Remove from pending
         db_service.db['pending_auto_configs'].delete_one({"_id": config_id})
 
-        logger.info(f"Configuration {config_id} saved to production registry (score: {validation_result.score}%)")
+        logger.info(f"Configuration {config_id} saved to production registry (score: {validation_result.get('score', 100)}%)")
 
         return {
             "success": True,
             "configuration_id": config_id,
-            "validation": validation_result.to_dict(),
-            "message": f"Configuration saved successfully with validation score {validation_result.score}%"
+            "validation": validation_result,
+            "message": f"Configuration saved successfully with validation score {validation_result.get('score', 100)}%"
         }
 
     except Exception as e:
@@ -602,16 +605,16 @@ async def update_config_field(
             {"$set": config_without_id}
         )
 
-        # Auto-validate
-        validator = ConfigValidator()
-        validation_result = validator.validate_config(config)
+        # Auto-validate using schema validator
+        schema_validator = SchemaValidator()
+        validation_result = schema_validator.validate(config, return_frontend_format=False)
 
-        logger.info(f"Updated {field_path} in {config_id}, new validation score: {validation_result.score}%")
+        logger.info(f"Updated {field_path} in {config_id}, new validation score: {validation_result.get('score', 100)}%")
 
         return {
             "success": True,
             "updated_configuration": _clean_config_for_response(config),
-            "validation": validation_result.to_dict()
+            "validation": validation_result
         }
 
     except HTTPException:
