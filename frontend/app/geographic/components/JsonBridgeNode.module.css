@@ -202,7 +202,7 @@
   justify-content: space-between;
   padding: 20px 24px;
   border-bottom: 1px solid #e5e7eb;
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  background: #00684A; /* palette.green.dark2 - header background */
   border-radius: 16px 16px 0 0;
   color: white;
 }
@@ -250,27 +250,34 @@
   background: transparent;
   border: none;
   border-bottom: 2px solid transparent;
-  color: #6b7280;
+  color: #5C6C75; /* palette.gray.dark1 - secondary text */
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
   position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .tab:hover {
-  color: #374151;
-  background: #f9fafb;
+  color: #00684A; /* palette.green.dark2 */
+  background: #F9FBFA; /* palette.gray.light3 */
 }
 
 .activeTab {
-  color: #059669;
-  border-bottom-color: #059669;
+  color: #00684A; /* palette.green.dark2 */
+  border-bottom-color: #00684A;
   background: transparent;
 }
 
 .activeTab:hover {
   background: transparent;
+}
+
+.tabIcon {
+  flex-shrink: 0;
 }
 
 .modalBody {
@@ -331,7 +338,7 @@
   justify-content: center;
   width: 40px;
   font-size: 24px;
-  color: #10b981;
+  color: #00ED64; /* palette.green.base */
   animation: bounce 2s ease-in-out infinite;
 }
 
@@ -356,14 +363,13 @@
   align-items: flex-start;
   gap: 10px;
   font-size: 13px;
-  color: #6b7280;
+  color: #5C6C75; /* palette.gray.dark1 - secondary text */
   line-height: 1.5;
 }
 
 .infoIcon {
   flex-shrink: 0;
-  font-size: 16px;
-  margin-top: -1px;
+  color: #00684A; /* palette.green.dark2 - icon color */
 }
 
 /* MongoDB Config Styles */
@@ -387,16 +393,16 @@
 .introText {
   font-size: 14px;
   line-height: 1.6;
-  color: #374151;
+  color: #1C2D38; /* palette.gray.dark3 */
   margin-bottom: 24px;
   padding: 16px;
-  background: #f0fdf4;
-  border-left: 3px solid #10b981;
+  background: #C0FAE6; /* palette.green.light2 */
+  border-left: 3px solid #00ED64; /* palette.green.base */
   border-radius: 8px;
 }
 
 .introText strong {
-  color: #047857;
+  color: #00684A; /* palette.green.dark2 */
 }
 
 .jsonStructure {
@@ -429,9 +435,9 @@
 
 .schemaSection:hover {
   background: white;
-  border-color: #10b981;
+  border-color: #00ED64; /* palette.green.base */
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 237, 100, 0.1);
 }
 
 .sectionIcon {
@@ -500,13 +506,14 @@
   justify-content: space-between;
   align-items: center;
   padding: 12px 16px;
-  background: #1e3a2f;
+  background: linear-gradient(135deg, #e3f3e8 0%, #f0f9f2 100%); /* Light green gradient */
+  border: 1px solid #c3e6c9;
   border-radius: 8px 8px 0 0;
   margin-bottom: -1px;
 }
 
 .collectionName {
-  color: #00ed64;
+  color: #00684a; /* Dark green text */
   font-family: 'Courier New', monospace;
   font-size: 14px;
   font-weight: 600;
@@ -514,23 +521,25 @@
 
 .expandAllBtn {
   padding: 4px 12px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: white;
+  border: 1px solid #c3e6c9;
   border-radius: 4px;
-  color: white;
+  color: #00684a;
   font-size: 12px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .expandAllBtn:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: #13aa52;
+  color: white;
 }
 
 .jsonDocument {
-  background: #1e1e1e;
+  background: #F9FBFA; /* Light gray background - consistent with AutoConfigBuilder */
   padding: 20px;
   border-radius: 0 0 8px 8px;
+  border: 1px solid #E3E7E0;
   font-family: 'Courier New', monospace;
   font-size: 13px;
   line-height: 1.6;
@@ -558,46 +567,46 @@
 }
 
 .jsonToggle:hover {
-  color: #00ed64;
+  color: #059669; /* Green hover for light theme */
 }
 
 .jsonKey {
-  color: #00ed64;
+  color: #1254B7; /* Blue for keys - matching AutoConfigBuilder */
 }
 
 .mongoSystemField {
-  color: #ffa500;
+  color: #AD5E00; /* Orange for system fields */
   font-weight: 600;
 }
 
 .jsonColon {
-  color: #ffffff;
+  color: #1C2D38; /* Dark text */
   margin: 0 4px;
 }
 
 .jsonString {
-  color: #ce9178;
+  color: #00A35C; /* Green for strings - matching AutoConfigBuilder */
 }
 
 .jsonNumber {
-  color: #b5cea8;
+  color: #AD5E00; /* Orange for numbers - matching AutoConfigBuilder */
 }
 
 .jsonBoolean {
-  color: #569cd6;
+  color: #CD5B45; /* Red for booleans - matching AutoConfigBuilder */
 }
 
 .jsonNull {
-  color: #569cd6;
+  color: #CD5B45; /* Red for null - matching AutoConfigBuilder */
 }
 
 .jsonBracket {
-  color: #ffffff;
+  color: #5C3C92; /* Purple for brackets - matching AutoConfigBuilder */
   font-weight: 600;
 }
 
 .jsonComma {
-  color: #ffffff;
+  color: #1C2D38; /* Dark text */
 }
 
 .jsonChildren {

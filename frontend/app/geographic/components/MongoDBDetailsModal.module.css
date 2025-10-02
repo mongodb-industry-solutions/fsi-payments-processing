@@ -86,6 +86,47 @@
   font-size: 20px;
   font-weight: 600;
   color: #001E2B;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sectionIcon {
+  color: #00684A; /* palette.green.dark2 */
+}
+
+.subsectionIcon {
+  color: #00A35C; /* palette.green.base */
+  margin-right: 6px;
+}
+
+.stepIconLarge {
+  color: #00684A; /* palette.green.dark2 */
+  font-size: 32px;
+  margin-bottom: 12px;
+}
+
+.laneIcon {
+  color: #00684A; /* palette.green.dark2 */
+}
+
+.advantageIcon {
+  color: #00684A; /* palette.green.dark2 */
+  font-size: 32px;
+  margin-bottom: 12px;
+}
+
+.highlightIcon {
+  color: #00ED64; /* palette.green.base */
+  font-size: 24px;
+  margin-right: 8px;
+}
+
+.insightIcon {
+  color: #016BF8; /* palette.blue.base */
+  font-size: 20px;
+  margin-right: 8px;
+  flex-shrink: 0;
 }
 
 .intro {
@@ -209,6 +250,13 @@
   padding: 16px;
   margin: 20px 0;
   border-radius: 4px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.insight > div {
+  flex: 1;
 }
 
 .insight strong {
@@ -603,6 +651,17 @@
 .evolutionExample span {
   font-size: 13px;
   color: #1B2240;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.checkmarkIcon {
+  color: #00A35C; /* palette.green.base */
+  font-size: 14px;
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
 }
 
 .pipelineExample {
@@ -1202,4 +1261,211 @@
   .pathMetrics {
     grid-template-columns: 1fr;
   }
+}
+
+/* Highlight Box */
+.highlightBox {
+  background: #FEF4E7; /* palette.yellow.light2 */
+  border: 1px solid #FFC010; /* palette.yellow.base */
+  border-left: 4px solid #FFC010;
+  padding: 20px;
+  margin: 24px 0;
+  border-radius: 8px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.highlightBox > div {
+  flex: 1;
+}
+
+.highlightBox h4 {
+  margin: 0 0 12px 0;
+  color: #00684A; /* palette.green.dark2 */
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.highlightBox p {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  color: #3D4F58; /* palette.gray.dark2 */
+  line-height: 1.6;
+}
+
+.highlightBox p:last-child {
+  margin: 0;
+}
+
+/* Routing Insight */
+.routingInsight {
+  background: #E8F5FC;
+  border: 1px solid #016BF8;
+  border-left: 4px solid #016BF8;
+  padding: 20px;
+  margin: 24px 0;
+  border-radius: 8px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.routingInsight > div {
+  flex: 1;
+  font-size: 14px;
+  color: #1C2D38; /* palette.gray.dark3 */
+  line-height: 1.6;
+}
+
+.routingInsight strong {
+  color: #016BF8; /* palette.blue.base */
+  font-weight: 600;
+}
+
+.routingInsight code {
+  background: #F9FBFA;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  color: #00684A; /* palette.green.dark2 */
+}
+
+/* Path Options */
+.pathOption {
+  background: white;
+  border: 2px solid #E3E7E0;
+  border-radius: 12px;
+  padding: 16px;
+  transition: all 0.2s ease;
+}
+
+.pathOption:hover {
+  border-color: #C0FAE6; /* palette.green.light2 */
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 104, 74, 0.1);
+}
+
+.pathOption.selected {
+  border-color: #00ED64; /* palette.green.base */
+  background: linear-gradient(135deg, rgba(0, 237, 100, 0.05) 0%, rgba(0, 237, 100, 0.02) 100%);
+}
+
+.pathOption.unavailable {
+  opacity: 0.6;
+}
+
+.pathHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.pathName {
+  font-weight: 600;
+  font-size: 14px;
+  color: #1C2D38; /* palette.gray.dark3 */
+}
+
+.selectedBadge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  background: #C0FAE6; /* palette.green.light2 */
+  color: #00684A; /* palette.green.dark2 */
+}
+
+.unavailable {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  background: #FEE;
+  color: #C00;
+}
+
+.pathRoute {
+  font-size: 13px;
+  color: #3D4F58; /* palette.gray.dark2 */
+  margin-bottom: 12px;
+  font-family: 'Monaco', 'Courier New', monospace;
+}
+
+.pathMetrics {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.pathMetrics span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #5C6C75; /* palette.gray.dark1 */
+}
+
+.pathReason {
+  font-size: 12px;
+  color: #5C6C75; /* palette.gray.dark1 */
+  font-style: italic;
+  padding-top: 12px;
+  border-top: 1px solid #E3E7E0;
+}
+
+/* Algorithm Steps */
+.algoStep {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+}
+
+.algoStep .stepNum {
+  width: 28px;
+  height: 28px;
+  background: #016BF8; /* palette.blue.base */
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  flex-shrink: 0;
+  color: white;
+  font-size: 14px;
+}
+
+.algoStep > div {
+  flex: 1;
+}
+
+.algoStep strong {
+  display: block;
+  margin-bottom: 6px;
+  color: #E3E7E0;
+  font-size: 14px;
+}
+
+.algoStep code {
+  display: block;
+  color: #00ED64; /* palette.green.base */
+  font-family: 'Monaco', 'Courier New', monospace;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.successPath {
+  color: #00ED64 !important; /* palette.green.base */
+  font-weight: 600;
 }

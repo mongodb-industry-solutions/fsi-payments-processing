@@ -20,6 +20,7 @@ export default function UnifiedFlowView({
   });
 
   const [config, setConfig] = useState(null);
+  const [isLoadingConfig, setIsLoadingConfig] = useState(true);
   const [expandedConfigSections, setExpandedConfigSections] = useState({
     parser: true,
     mappings: false,
@@ -29,8 +30,12 @@ export default function UnifiedFlowView({
 
   useEffect(() => {
     const fetchConfig = async () => {
-      if (!sourceFormat || !targetFormat) return;
+      if (!sourceFormat || !targetFormat) {
+        setIsLoadingConfig(false);
+        return;
+      }
 
+      setIsLoadingConfig(true);
       try {
         const conversionId = `${sourceFormat}_to_${targetFormat}`;
         const response = await fetch(`http://localhost:8001/api/v1/converter/config/${conversionId}`);
@@ -40,6 +45,8 @@ export default function UnifiedFlowView({
         }
       } catch (error) {
         console.error('Failed to fetch config:', error);
+      } finally {
+        setIsLoadingConfig(false);
       }
     };
 
@@ -211,7 +218,27 @@ export default function UnifiedFlowView({
   return (
     <div className={styles.container}>
       {/* MongoDB Config Section */}
-      {config && (
+      {isLoadingConfig ? (
+        <div className={styles.configSection}>
+          <div className={styles.configHeader}>
+            <div className={styles.configHeaderLeft}>
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <path d="M3 3h14v14H3V3z" stroke="currentColor" strokeWidth="1.5" fill="none"/>
+                <path d="M7 7h6M7 10h6M7 13h4" stroke="currentColor" strokeWidth="1.5"/>
+              </svg>
+              <div className={styles.configInfo}>
+                <h4 className={styles.configTitle}>MongoDB Configuration</h4>
+                <p className={styles.configDesc}>Loading configuration...</p>
+              </div>
+            </div>
+          </div>
+          <div className={styles.loadingSkeleton}>
+            <div className={styles.skeletonLine}></div>
+            <div className={styles.skeletonLine}></div>
+            <div className={styles.skeletonLine}></div>
+          </div>
+        </div>
+      ) : config && (
         <div className={styles.configSection}>
           <div
             className={styles.configHeader}

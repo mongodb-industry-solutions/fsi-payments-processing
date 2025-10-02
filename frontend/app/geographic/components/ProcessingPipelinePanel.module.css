@@ -82,8 +82,9 @@
 
 /* MongoDB Advantages Section - Flat Design with MongoDB Colors */
 .mongoAdvantages {
-  background: linear-gradient(135deg, #F0F9F4 0%, #E8F5E9 100%);
-  border-left: 3px solid #00ED64;
+  background: #F9FBFA; /* palette.green.light3 */
+  border: 1px solid #C0FAE6; /* palette.green.light2 */
+  border-left: 3px solid #00ED64; /* palette.green.base */
   padding: 14px 20px;
   margin-bottom: 20px;
   border-radius: 6px;
@@ -91,7 +92,7 @@
 
 .leafIcon {
   font-size: 24px;
-  color: #13AA52;
+  color: #00A35C; /* palette.green.base (adjusted) */
   flex-shrink: 0;
   margin-top: 2px;
 }
@@ -108,7 +109,7 @@
   margin: 0;
   font-size: 14px;
   font-weight: 600;
-  color: #00684A;
+  color: #00684A; /* palette.green.dark2 */
   letter-spacing: -0.02em;
 }
 
@@ -116,8 +117,7 @@
   margin: 0;
   font-size: 13px;
   line-height: 1.6;
-  color: #00684A;
-  opacity: 0.85;
+  color: #3D4F58; /* palette.gray.dark2 */
 }
 
 .pipelineHeader {
@@ -348,20 +348,44 @@
 
 .hint {
   margin-top: 16px;
-  padding: 12px;
-  background: #FEF3C7;
-  border: 1px solid #FCD34D;
+  padding: 12px 16px;
+  background: #FEF4E7; /* palette.yellow.light2 */
+  border: 1px solid #FFC010; /* palette.yellow.base */
   border-radius: 8px;
-  text-align: center;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.hintIcon {
+  flex-shrink: 0;
+  color: #AD5E00; /* palette.yellow.dark2 */
+  margin-top: 2px;
 }
 
 .hint p {
   margin: 0;
   font-size: 13px;
-  color: #78350F;
+  color: #1C2D38; /* palette.gray.dark3 */
+  flex: 1;
 }
 
 .hint strong {
-  color: #92400E;
+  color: #00684A; /* palette.green.dark2 */
+  font-weight: 600;
+}
+
+/* Icon Styling */
+.storyIcon {
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #00A35C; /* palette.green.base */
+  font-size: 11px;
   font-weight: 600;
 }

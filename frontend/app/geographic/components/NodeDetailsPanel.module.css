@@ -279,10 +279,11 @@
 }
 
 .codeBlock {
-  background: #1e293b;
-  color: #e2e8f0;
+  background: #F9FBFA; /* Light gray background - consistent with AutoConfigBuilder */
+  color: #1C2D38; /* Dark text for readability */
   padding: 1rem;
   border-radius: 8px;
+  border: 1px solid #E3E7E0; /* Light border */
   overflow-x: auto;
   font-size: 0.75rem;
   max-width: 100%;
@@ -294,6 +295,7 @@
   font-family: 'Monaco', 'Menlo', monospace;
   white-space: pre-wrap;
   word-break: break-all;
+  color: inherit; /* Inherit the dark color */
 }
 
 .mappingList {

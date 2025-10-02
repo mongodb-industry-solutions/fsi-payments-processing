@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useEffect } from 'react';
+import Icon from '@leafygreen-ui/icon';
+import { palette } from '@leafygreen-ui/palette';
 import styles from './MongoDBDetailsModal.module.css';
 
 const MongoDBDetailsModal = ({ isOpen, onClose, conversionResults, selectedScenario }) => {
@@ -25,6 +27,11 @@ const MongoDBDetailsModal = ({ isOpen, onClose, conversionResults, selectedScena
 
   if (!isOpen) return null;
 
+  // Remove emojis from scenario name for professional display
+  const cleanScenarioName = selectedScenario?.name
+    ? selectedScenario.name.replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, '').trim()
+    : 'How MongoDB Powers';
+
   // Use scenario-specific data or calculate from conversion results
   const scenarioConfig = selectedScenario?.mongodbConfig;
   const totalFields = scenarioConfig?.mapping?.totalFields ||
@@ -46,7 +53,7 @@ const MongoDBDetailsModal = ({ isOpen, onClose, conversionResults, selectedScena
       {/* Modal */}
       <div className={styles.modal}>
         <div className={styles.modalHeader}>
-          <h2>🍃 {selectedScenario?.name || 'How MongoDB Powers'} - MongoDB Configuration</h2>
+          <h2>{cleanScenarioName} - MongoDB Configuration</h2>
           <button className={styles.closeButton} onClick={onClose}>
             ✕
           </button>
@@ -55,7 +62,10 @@ const MongoDBDetailsModal = ({ isOpen, onClose, conversionResults, selectedScena
         <div className={styles.modalContent}>
           {/* Introduction */}
           <div className={styles.section}>
-            <h3>📦 The Magic of MongoDB's conversion_registry</h3>
+            <h3>
+              <Icon glyph="Database" className={styles.sectionIcon} />
+              The Magic of MongoDB's conversion_registry
+            </h3>
             <p className={styles.intro}>
               This entire payment conversion happens through a <strong>100% generic, configuration-driven engine</strong>.
               MongoDB's <code>conversion_registry</code> collection acts as the brain, storing all format-specific
@@ -66,7 +76,10 @@ const MongoDBDetailsModal = ({ isOpen, onClose, conversionResults, selectedScena
 
           {/* Canonical JSON - The Universal Bridge */}
           <div className={styles.section}>
-            <h3>🌉 The Secret: Canonical JSON Format</h3>
+            <h3>
+              <Icon glyph="Building" className={styles.sectionIcon} />
+              The Secret: Canonical JSON Format
+            </h3>
             <div className={styles.canonicalExplanation}>
               <p className={styles.canonicalIntro}>
                 The genius behind any-to-any format conversion is our <strong>Canonical JSON Format</strong> -
@@ -74,7 +87,10 @@ const MongoDBDetailsModal = ({ isOpen, onClose, conversionResults, selectedScena
               </p>
 
               <div className={styles.canonicalStructure}>
-                <h4>📝 Universal Structure (stored in MongoDB)</h4>
+                <h4>
+                  <Icon glyph="Code" size="small" className={styles.subsectionIcon} />
+                  Universal Structure (stored in MongoDB)
+                </h4>
                 <div className={styles.jsonPreview}>
                   <pre>{`{
   "header": {},        // Message metadata
@@ -95,7 +111,10 @@ const MongoDBDetailsModal = ({ isOpen, onClose, conversionResults, selectedScena
 
               <div className={styles.conversionFlow}>
                 <div className={styles.conversionExample}>
-                  <h4>🔄 How Any-to-Any Works</h4>
+                  <h4>
+                    <Icon glyph="Refresh" size="small" className={styles.subsectionIcon} />
+                    How Any-to-Any Works
+                  </h4>
                   <div className={styles.flowDiagram}>
                     <div className={styles.formatNode}>MT103</div>
                     <span className={styles.arrow}>→</span>
@@ -122,9 +141,12 @@ const MongoDBDetailsModal = ({ isOpen, onClose, conversionResults, selectedScena
               </div>
 
               <div className={styles.insight}>
-                🎯 <strong>Key Innovation:</strong> New formats only need to define mappings to/from
-                this JSON structure. The system automatically enables conversion to ALL other formats
-                through JSON as the bridge. New formats can be added immediately without development cycles!
+                <Icon glyph="ImportantWithCircle" className={styles.insightIcon} />
+                <div>
+                  <strong>Key Innovation:</strong> New formats only need to define mappings to/from
+                  this JSON structure. The system automatically enables conversion to ALL other formats
+                  through JSON as the bridge. New formats can be added immediately without development cycles!
+                </div>
               </div>
             </div>
           </div>
@@ -132,7 +154,10 @@ const MongoDBDetailsModal = ({ isOpen, onClose, conversionResults, selectedScena
           {/* Special Section for Remote Island Routing */}
           {selectedScenario?.id === 'remote-island-routing' && (
             <div className={styles.routingSection}>
-              <h3>🧭 BFS Path Discovery - Finding Route to Fiji</h3>
+              <h3>
+                <Icon glyph="Charts" className={styles.sectionIcon} />
+                BFS Path Discovery - Finding Route to Fiji
+              </h3>
 
               <div className={styles.bfsVisualization}>
                 <h4>Graph-Based Routing Algorithm</h4>
@@ -176,18 +201,23 @@ const MongoDBDetailsModal = ({ isOpen, onClose, conversionResults, selectedScena
               </div>
 
               <div className={styles.pathComparison}>
-                <h4>📊 Path Evaluation (4 routes analyzed)</h4>
+                <h4>
+                  <Icon glyph="Charts" size="small" className={styles.subsectionIcon} />
+                  Path Evaluation (4 routes analyzed)
+                </h4>
                 <div className={styles.pathGrid}>
                   <div className={`${styles.pathOption} ${styles.selected}`}>
                     <div className={styles.pathHeader}>
                       <span className={styles.pathName}>Via Australia</span>
-                      <span className={styles.selectedBadge}>✅ Selected</span>
+                      <span className={styles.selectedBadge}>
+                        <Icon glyph="Checkmark" size="small" /> Selected
+                      </span>
                     </div>
                     <div className={styles.pathRoute}>USA → Australia → Fiji</div>
                     <div className={styles.pathMetrics}>
-                      <span>💰 $5</span>
-                      <span>⚡ Fast</span>
-                      <span>🛡️ 95%</span>
+                      <span><Icon glyph="CreditCard" size="xsmall" /> $5</span>
+                      <span><Icon glyph="LightningBolt" size="xsmall" /> Fast</span>
+                      <span><Icon glyph="CheckmarkWithCircle" size="xsmall" /> 95%</span>
                     </div>
                     <div className={styles.pathReason}>
                       Commonwealth banking corridor since 1970s
@@ -197,46 +227,52 @@ const MongoDBDetailsModal = ({ isOpen, onClose, conversionResults, selectedScena
                   <div className={styles.pathOption}>
                     <div className={styles.pathHeader}>
                       <span className={styles.pathName}>Via New Zealand</span>
-                      <span className={styles.unavailable}>❌ No Config</span>
+                      <span className={styles.unavailable}>
+                        <Icon glyph="XWithCircle" size="small" /> No Config
+                      </span>
                     </div>
                     <div className={styles.pathRoute}>USA → New Zealand → Fiji</div>
                     <div className={styles.pathMetrics}>
-                      <span>💰 $8</span>
-                      <span>⚡ Faster</span>
-                      <span>🛡️ 92%</span>
+                      <span><Icon glyph="CreditCard" size="xsmall" /> $8</span>
+                      <span><Icon glyph="LightningBolt" size="xsmall" /> Faster</span>
+                      <span><Icon glyph="CheckmarkWithCircle" size="xsmall" /> 92%</span>
                     </div>
                   </div>
 
                   <div className={styles.pathOption}>
                     <div className={styles.pathHeader}>
                       <span className={styles.pathName}>Via Singapore</span>
-                      <span className={styles.unavailable}>❌ No Config</span>
+                      <span className={styles.unavailable}>
+                        <Icon glyph="XWithCircle" size="small" /> No Config
+                      </span>
                     </div>
                     <div className={styles.pathRoute}>USA → Singapore → Australia → Fiji</div>
                     <div className={styles.pathMetrics}>
-                      <span>💰 $12</span>
-                      <span>⚡ Moderate</span>
-                      <span>🛡️ 98%</span>
+                      <span><Icon glyph="CreditCard" size="xsmall" /> $12</span>
+                      <span><Icon glyph="LightningBolt" size="xsmall" /> Moderate</span>
+                      <span><Icon glyph="CheckmarkWithCircle" size="xsmall" /> 98%</span>
                     </div>
                   </div>
 
                   <div className={styles.pathOption}>
                     <div className={styles.pathHeader}>
                       <span className={styles.pathName}>Via Hong Kong</span>
-                      <span className={styles.unavailable}>❌ No Config</span>
+                      <span className={styles.unavailable}>
+                        <Icon glyph="XWithCircle" size="small" /> No Config
+                      </span>
                     </div>
                     <div className={styles.pathRoute}>USA → HK → Philippines → Fiji</div>
                     <div className={styles.pathMetrics}>
-                      <span>💰 $4</span>
-                      <span>⚡ Slower</span>
-                      <span>🛡️ 75%</span>
+                      <span><Icon glyph="CreditCard" size="xsmall" /> $4</span>
+                      <span><Icon glyph="LightningBolt" size="xsmall" /> Slower</span>
+                      <span><Icon glyph="CheckmarkWithCircle" size="xsmall" /> 75%</span>
                     </div>
                   </div>
                 </div>
               </div>
 
               <div className={styles.routingInsight}>
-                <div className={styles.insightIcon}>💡</div>
+                <Icon glyph="Bulb" className={styles.insightIcon} />
                 <div>
                   <strong>MongoDB's Graph Advantage:</strong> The <code>conversion_graph</code> collection stores
                   edges between payment formats with metadata (cost, latency, reliability). BFS algorithm evaluated
@@ -251,19 +287,19 @@ const MongoDBDetailsModal = ({ isOpen, onClose, conversionResults, selectedScena
           {/* Three-Step Process */}
           <div className={styles.processFlow}>
             <div className={styles.processStep}>
-              <div className={styles.stepIcon}>📖</div>
+              <Icon glyph="InfoWithCircle" className={styles.stepIconLarge} />
               <h4>Step 1: Parse</h4>
               <p>Extract fields using regex patterns</p>
             </div>
             <div className={styles.processArrow}>→</div>
             <div className={styles.processStep}>
-              <div className={styles.stepIcon}>🔄</div>
+              <Icon glyph="Refresh" className={styles.stepIconLarge} />
               <h4>Step 2: Transform</h4>
               <p>Apply mappings via 3 lanes</p>
             </div>
             <div className={styles.processArrow}>→</div>
             <div className={styles.processStep}>
-              <div className={styles.stepIcon}>🏗️</div>
+              <Icon glyph="Building" className={styles.stepIconLarge} />
               <h4>Step 3: Build</h4>
               <p>Construct target format</p>
             </div>
@@ -271,7 +307,10 @@ const MongoDBDetailsModal = ({ isOpen, onClose, conversionResults, selectedScena
 
           {/* Parser Section */}
           <div className={styles.section}>
-            <h3>1️⃣ The Parser - Reading Instructions from MongoDB</h3>
+            <h3>
+              <span className={styles.stepNumber}>1</span>
+              The Parser - Reading Instructions from MongoDB
+            </h3>
             <div className={styles.detailBox}>
               <p>
                 MongoDB stores <strong>{totalFields} regex patterns</strong> that act like reading instructions.
@@ -296,20 +335,26 @@ const MongoDBDetailsModal = ({ isOpen, onClose, conversionResults, selectedScena
                 </li>
               </ul>
               <div className={styles.insight}>
-                💡 <strong>Business Impact:</strong> To support MT192 or any new format,
-                just add regex patterns to MongoDB. No developers, no deployments, no downtime.
+                <Icon glyph="Bulb" className={styles.insightIcon} />
+                <div>
+                  <strong>Business Impact:</strong> To support MT192 or any new format,
+                  just add regex patterns to MongoDB. No developers, no deployments, no downtime.
+                </div>
               </div>
             </div>
           </div>
 
           {/* Transformer Section */}
           <div className={styles.section}>
-            <h3>2️⃣ The Transformer - 3-Lane Intelligence Highway</h3>
+            <h3>
+              <span className={styles.stepNumber}>2</span>
+              The Transformer - 3-Lane Intelligence Highway
+            </h3>
             <div className={styles.laneContainer}>
               {/* Rules Lane */}
               <div className={styles.laneCard}>
                 <div className={styles.laneHeader}>
-                  <span className={styles.laneEmoji}>📋</span>
+                  <Icon glyph="Menu" className={styles.laneIcon} />
                   <h4>Rules Lane</h4>
                   <span className={styles.laneCount}>{rulesFields} fields</span>
                 </div>
@@ -319,13 +364,15 @@ const MongoDBDetailsModal = ({ isOpen, onClose, conversionResults, selectedScena
                   <li>Field 32A → InstdAmt (extract amount)</li>
                   <li>Field 50K → Debtor (parse name & account)</li>
                 </ul>
-                <div className={styles.performance}>⚡ Instant processing</div>
+                <div className={styles.performance}>
+                  <Icon glyph="LightningBolt" size="small" /> Instant processing
+                </div>
               </div>
 
               {/* AI Lane */}
               <div className={styles.laneCard}>
                 <div className={styles.laneHeader}>
-                  <span className={styles.laneEmoji}>🤖</span>
+                  <Icon glyph="Sparkle" className={styles.laneIcon} />
                   <h4>AI Lane</h4>
                   <span className={styles.laneCount}>{aiFields} fields</span>
                 </div>
@@ -335,13 +382,15 @@ const MongoDBDetailsModal = ({ isOpen, onClose, conversionResults, selectedScena
                   <li>Field 72 → Sender instructions parsing</li>
                   <li>Unstructured text → Structured data</li>
                 </ul>
-                <div className={styles.performance}>🧠 AI-powered processing</div>
+                <div className={styles.performance}>
+                  <Icon glyph="Sparkle" size="small" /> AI-powered processing
+                </div>
               </div>
 
               {/* Human Lane */}
               <div className={styles.laneCard}>
                 <div className={styles.laneHeader}>
-                  <span className={styles.laneEmoji}>👤</span>
+                  <Icon glyph="Person" className={styles.laneIcon} />
                   <h4>Human Lane</h4>
                   <span className={styles.laneCount}>Low confidence</span>
                 </div>
@@ -351,14 +400,19 @@ const MongoDBDetailsModal = ({ isOpen, onClose, conversionResults, selectedScena
                   <li>Critical compliance fields</li>
                   <li>Anomaly detection triggers</li>
                 </ul>
-                <div className={styles.performance}>📝 Manual review</div>
+                <div className={styles.performance}>
+                  <Icon glyph="Edit" size="small" /> Manual review
+                </div>
               </div>
             </div>
           </div>
 
           {/* Builder Section */}
           <div className={styles.section}>
-            <h3>3️⃣ The Builder - Output Blueprint from MongoDB</h3>
+            <h3>
+              <span className={styles.stepNumber}>3</span>
+              The Builder - Output Blueprint from MongoDB
+            </h3>
             <div className={styles.codeBlock}>
               <pre>{`<!-- MongoDB stores this XML template -->
 <Document>
@@ -386,7 +440,10 @@ const MongoDBDetailsModal = ({ isOpen, onClose, conversionResults, selectedScena
           {/* Scenario-Specific Bridge */}
           {scenarioConfig?.bridge && (
             <div className={styles.section}>
-              <h3>🌉 {scenarioConfig.bridge.title}</h3>
+              <h3>
+                <Icon glyph="Building" className={styles.sectionIcon} />
+                {scenarioConfig.bridge.title}
+              </h3>
               <div className={styles.bridgeFlow}>
                 <div className={styles.bridgeNode}>
                   <strong>{scenarioConfig.bridge.from.split(' ')[0]}</strong>
@@ -404,7 +461,10 @@ const MongoDBDetailsModal = ({ isOpen, onClose, conversionResults, selectedScena
                 </div>
               </div>
               <div className={styles.insight}>
-                💡 <strong>Scenario Impact:</strong> {scenarioConfig.bridge.description}
+                <Icon glyph="Bulb" className={styles.insightIcon} />
+                <div>
+                  <strong>Scenario Impact:</strong> {scenarioConfig.bridge.description}
+                </div>
               </div>
             </div>
           )}
@@ -412,13 +472,17 @@ const MongoDBDetailsModal = ({ isOpen, onClose, conversionResults, selectedScena
           {/* Scenario-Specific Mappings */}
           {scenarioConfig?.mapping?.examples && (
             <div className={styles.section}>
-              <h3>📋 Field Mapping Examples</h3>
+              <h3>
+                <Icon glyph="Menu" className={styles.sectionIcon} />
+                Field Mapping Examples
+              </h3>
               <div className={styles.mappingGrid}>
                 {scenarioConfig.mapping.examples.map((example, idx) => (
                   <div key={idx} className={styles.mappingCard}>
                     <div className={styles.mappingHeader}>
                       <span className={example.type === 'ai' ? styles.aiLabel : styles.rulesLabel}>
-                        {example.type === 'ai' ? '🤖 AI' : '📋 Rules'}
+                        <Icon glyph={example.type === 'ai' ? 'Sparkle' : 'Menu'} size="small" />
+                        {example.type === 'ai' ? ' AI' : ' Rules'}
                       </span>
                       <span className={styles.mappingDesc}>{example.description}</span>
                     </div>
@@ -436,7 +500,10 @@ const MongoDBDetailsModal = ({ isOpen, onClose, conversionResults, selectedScena
           {/* Scenario-Specific Metrics */}
           {scenarioConfig?.metrics && (
             <div className={styles.section}>
-              <h3>📊 Conversion Metrics</h3>
+              <h3>
+                <Icon glyph="Charts" className={styles.sectionIcon} />
+                Conversion Metrics
+              </h3>
               <div className={styles.metricsGrid}>
                 <div className={styles.metricCard}>
                   <span className={styles.metricValue}>{scenarioConfig.metrics.accuracy}</span>
@@ -461,18 +528,24 @@ const MongoDBDetailsModal = ({ isOpen, onClose, conversionResults, selectedScena
           {/* Scenario Insights */}
           {scenarioConfig?.insights && (
             <div className={styles.highlightBox}>
-              <h4>🚀 {scenarioConfig.insights.key}</h4>
-              <p>{scenarioConfig.insights.value}</p>
-              <p className={styles.impactText}>
-                <strong>Business Impact:</strong> {scenarioConfig.insights.impact}
-              </p>
+              <Icon glyph="Sparkle" className={styles.highlightIcon} />
+              <div>
+                <h4>{scenarioConfig.insights.key}</h4>
+                <p>{scenarioConfig.insights.value}</p>
+                <p className={styles.impactText}>
+                  <strong>Business Impact:</strong> {scenarioConfig.insights.impact}
+                </p>
+              </div>
             </div>
           )}
 
           {/* Generic Canonical JSON Bridge (fallback) */}
           {!scenarioConfig?.bridge && (
             <div className={styles.section}>
-              <h3>🌉 The Canonical JSON Bridge</h3>
+              <h3>
+                <Icon glyph="Building" className={styles.sectionIcon} />
+                The Canonical JSON Bridge
+              </h3>
               <div className={styles.bridgeFlow}>
                 <div className={styles.bridgeNode}>
                   <strong>MT103</strong>
@@ -490,19 +563,25 @@ const MongoDBDetailsModal = ({ isOpen, onClose, conversionResults, selectedScena
                 </div>
               </div>
               <div className={styles.insight}>
-                💡 <strong>Why This Matters:</strong> Without JSON as a universal bridge,
-                you'd need N×N converters (MT103→pacs.008, MT103→CHAPS, MT202→pacs.009, etc.).
-                With MongoDB's approach, you only need 2N converters (each format to/from JSON).
+                <Icon glyph="Bulb" className={styles.insightIcon} />
+                <div>
+                  <strong>Why This Matters:</strong> Without JSON as a universal bridge,
+                  you'd need N×N converters (MT103→pacs.008, MT103→CHAPS, MT202→pacs.009, etc.).
+                  With MongoDB's approach, you only need 2N converters (each format to/from JSON).
+                </div>
               </div>
             </div>
           )}
 
           {/* MongoDB Advantages */}
           <div className={styles.bottomLine}>
-            <h3>💚 Why MongoDB Makes This Possible</h3>
+            <h3>
+              <Icon glyph="Favorite" className={styles.sectionIcon} style={{ color: palette.green.base }} />
+              Why MongoDB Makes This Possible
+            </h3>
             <div className={styles.mongoAdvantages}>
               <div className={styles.advantageCard}>
-                <div className={styles.advantageIcon}>📄</div>
+                <Icon glyph="Folder" className={styles.advantageIcon} />
                 <h4>Document Model Perfect Fit</h4>
                 <p>
                   Payment messages are naturally nested documents. MongoDB stores complete conversion
@@ -520,7 +599,7 @@ const MongoDBDetailsModal = ({ isOpen, onClose, conversionResults, selectedScena
               </div>
 
               <div className={styles.advantageCard}>
-                <div className={styles.advantageIcon}>🔍</div>
+                <Icon glyph="MagnifyingGlass" className={styles.advantageIcon} />
                 <h4>Flexible Schema Evolution</h4>
                 <p>
                   Payment standards evolve constantly. MongoDB's schema flexibility lets us add
@@ -528,14 +607,14 @@ const MongoDBDetailsModal = ({ isOpen, onClose, conversionResults, selectedScena
                   MT103 version 2023? Just add new fields to the document.
                 </p>
                 <div className={styles.evolutionExample}>
-                  <span>✅ Add field 119 for sanctions screening</span>
-                  <span>✅ Support both old & new formats simultaneously</span>
-                  <span>✅ No downtime, no data migration</span>
+                  <span><Icon glyph="Checkmark" className={styles.checkmarkIcon} /> Add field 119 for sanctions screening</span>
+                  <span><Icon glyph="Checkmark" className={styles.checkmarkIcon} /> Support both old & new formats simultaneously</span>
+                  <span><Icon glyph="Checkmark" className={styles.checkmarkIcon} /> No downtime, no data migration</span>
                 </div>
               </div>
 
               <div className={styles.advantageCard}>
-                <div className={styles.advantageIcon}>⚡</div>
+                <Icon glyph="LightningBolt" className={styles.advantageIcon} />
                 <h4>Aggregation Pipeline Power</h4>
                 <p>
                   Complex payment routing decisions happen in-database using aggregation pipelines.
@@ -548,7 +627,7 @@ const MongoDBDetailsModal = ({ isOpen, onClose, conversionResults, selectedScena
               </div>
 
               <div className={styles.advantageCard}>
-                <div className={styles.advantageIcon}>🌍</div>
+                <Icon glyph="GlobeAmericas" className={styles.advantageIcon} />
                 <h4>Global Distribution</h4>
                 <p>
                   MongoDB Atlas enables payment configs to be globally distributed yet centrally
@@ -560,7 +639,7 @@ const MongoDBDetailsModal = ({ isOpen, onClose, conversionResults, selectedScena
 
             <div className={styles.bottomInsight}>
               <div className={styles.insightHeader}>
-                <span className={styles.insightIcon}>💡</span>
+                <Icon glyph="Bulb" className={styles.insightIcon} />
                 <strong>The Perfect Match:</strong>
               </div>
               <p>

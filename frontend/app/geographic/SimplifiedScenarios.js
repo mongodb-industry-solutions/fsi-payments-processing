@@ -132,7 +132,7 @@ INVOICE INV-FJ-2024-089
 :72:/REC/NOTIFY FINANCE@PACIFICSOFTWARE.FJ
 -}`,
     mongoDbAdvantages: {
-      title: '🧭 MongoDB: Intelligent Path Finding',
+      title: 'MongoDB: Intelligent Path Finding',
       message: "MongoDB's graph capabilities enable BFS routing to find optimal paths even to remote locations with no direct payment rails. The system evaluates multiple paths based on cost, speed, and reliability."
     },
     pipelineStory: {
@@ -349,7 +349,7 @@ ORDER PO-8934567 QTY 5000 UNITS
 /REC/NOTIFY ACCOUNTS@GLOBALSUPPLIES.DE
 -}`,
     mongoDbAdvantages: {
-      title: '🍃 MongoDB: Universal Payment Hub',
+      title: 'MongoDB: Universal Payment Hub',
       message: "MongoDB's Canonical JSON format eliminates N×N conversion complexity. Instead of building direct MT103→CHAPS converters, payments flow through a universal JSON structure, enabling instant support for new formats with zero code changes."
     },
     pipelineStory: {
@@ -472,7 +472,7 @@ ROUTING VIA UK
 -}`,
     useRealAPI: true,
     mongoDbAdvantages: {
-      title: '🍃 MongoDB: Intelligent Routing Engine',
+      title: 'MongoDB: Intelligent Routing Engine',
       message: "MongoDB's graph-based routing finds optimal paths through multiple payment networks. The conversion_graph collection enables real-time path discovery while caching successful routes for instant subsequent conversions."
     },
     pipelineStory: {
@@ -620,7 +620,7 @@ REMOTE ENGINEERING TEAM
 -}`,
     useRealAPI: true,
     mongoDbAdvantages: {
-      title: '🍃 MongoDB: Bridging Traditional & Digital Finance',
+      title: 'MongoDB: Bridging Traditional & Digital Finance',
       message: "MongoDB seamlessly handles both traditional (MT103, SPEI) and blockchain formats (USDC). The same universal JSON structure processes payroll from Indian banks to Mexican wallets, with AI extracting complex remittance data in real-time."
     },
     pipelineStory: {

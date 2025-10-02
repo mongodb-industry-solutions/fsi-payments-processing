@@ -2,6 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
+import Icon from '@leafygreen-ui/icon';
+import Button from '@leafygreen-ui/button';
+import { palette } from '@leafygreen-ui/palette';
+import { Body, H2, H3, Overline } from '@leafygreen-ui/typography';
 import { getFormatInfo } from '../data/formatInfo';
 import styles from './FormatInfoModal.module.css';
 
@@ -209,19 +213,22 @@ const FormatInfoModal = ({ isOpen, onClose, format, country, city }) => {
             className={`${styles.tab} ${activeTab === 'about' ? styles.activeTab : ''}`}
             onClick={() => setActiveTab('about')}
           >
-            📖 About
+            <Icon glyph="InfoWithCircle" size="small" className={styles.tabIcon} />
+            About
           </button>
           <button
             className={`${styles.tab} ${activeTab === 'format' ? styles.activeTab : ''}`}
             onClick={() => setActiveTab('format')}
           >
-            📝 Sample Format
+            <Icon glyph="Code" size="small" className={styles.tabIcon} />
+            Sample Format
           </button>
           <button
             className={`${styles.tab} ${activeTab === 'mongodb' ? styles.activeTab : ''}`}
             onClick={() => setActiveTab('mongodb')}
           >
-            🍃 MongoDB Config
+            <Icon glyph="Database" size="small" className={styles.tabIcon} />
+            MongoDB Config
           </button>
         </div>
 
@@ -247,7 +254,7 @@ const FormatInfoModal = ({ isOpen, onClose, format, country, city }) => {
               </div>
 
               <div className={styles.infoBox}>
-                <div className={styles.infoIcon}>💡</div>
+                <Icon glyph="Bulb" className={styles.infoIcon} />
                 <p>
                   This format is configured in MongoDB's <strong>conversion_registry</strong> collection,
                   enabling zero-code conversion to any other format through the universal JSON bridge.
@@ -266,7 +273,7 @@ const FormatInfoModal = ({ isOpen, onClose, format, country, city }) => {
               </div>
 
               <div className={styles.note}>
-                <span className={styles.noteIcon}>📌</span>
+                <Icon glyph="ImportantWithCircle" className={styles.noteIcon} />
                 <span>
                   This is a simplified example. Actual messages may contain additional fields
                   and comply with specific network requirements.
@@ -278,7 +285,10 @@ const FormatInfoModal = ({ isOpen, onClose, format, country, city }) => {
           {activeTab === 'mongodb' && (
             <div className={styles.mongoContent}>
               <div className={styles.section}>
-                <h3>🍃 MongoDB conversion_registry Collection</h3>
+                <h3>
+                  <Icon glyph="Database" className={styles.sectionIcon} />
+                  MongoDB conversion_registry Collection
+                </h3>
                 <p className={styles.pipelineDesc}>
                   Configuration document that enables {format} conversion
                 </p>
@@ -335,35 +345,35 @@ const FormatInfoModal = ({ isOpen, onClose, format, country, city }) => {
                       <h4>Configuration Structure</h4>
                       <div className={styles.schemaGrid}>
                         <div className={styles.schemaSection}>
-                          <span className={styles.sectionIcon}>📖</span>
+                          <Icon glyph="Code" className={styles.schemaIcon} />
                           <div>
                             <strong>parser</strong>
                             <span>Regex patterns to extract fields from source format</span>
                           </div>
                         </div>
                         <div className={styles.schemaSection}>
-                          <span className={styles.sectionIcon}>🔄</span>
+                          <Icon glyph="Refresh" className={styles.schemaIcon} />
                           <div>
                             <strong>transformer.mappings</strong>
                             <span>Field transformation rules with processing lanes</span>
                           </div>
                         </div>
                         <div className={styles.schemaSection}>
-                          <span className={styles.sectionIcon}>🏗️</span>
+                          <Icon glyph="Building" className={styles.schemaIcon} />
                           <div>
                             <strong>builder</strong>
                             <span>Output template with placeholders for target format</span>
                           </div>
                         </div>
                         <div className={styles.schemaSection}>
-                          <span className={styles.sectionIcon}>🤖</span>
+                          <Icon glyph="Sparkle" className={styles.schemaIcon} />
                           <div>
                             <strong>ai_config</strong>
                             <span>AI prompts for complex field extraction</span>
                           </div>
                         </div>
                         <div className={styles.schemaSection}>
-                          <span className={styles.sectionIcon}>📋</span>
+                          <Icon glyph="Menu" className={styles.schemaIcon} />
                           <div>
                             <strong>metadata</strong>
                             <span>Version, description, and compatibility info</span>
@@ -406,7 +416,7 @@ const FormatInfoModal = ({ isOpen, onClose, format, country, city }) => {
               )}
 
               <div className={styles.mongoNote}>
-                <span className={styles.mongoIcon}>✨</span>
+                <Icon glyph="Sparkle" className={styles.mongoIcon} />
                 <p>
                   This configuration in <strong>conversion_registry</strong> enables zero-code conversion.
                   Just add a document like this to support any new format!

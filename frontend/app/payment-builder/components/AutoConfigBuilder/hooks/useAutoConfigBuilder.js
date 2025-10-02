@@ -346,42 +346,141 @@ export function useAutoConfigBuilder() {
 
   // Run validation
   const runValidation = useCallback(async () => {
+    // Set loading state
     setState(prev => ({
       ...prev,
       journey: {
         ...prev.journey,
         validation: {
-          score: 92,
-          checks: [
-            {
-              icon: '📋',
-              name: 'Field Coverage',
-              status: 'passed',
-              details: 'All required fields are mapped'
-            },
-            {
-              icon: '🔗',
-              name: 'Mapping Validity',
-              status: 'passed',
-              details: 'All mappings use valid transforms'
-            },
-            {
-              icon: '🧠',
-              name: 'AI Configuration',
-              status: 'warning',
-              details: '2 fields require AI processing'
-            },
-            {
-              icon: '✓',
-              name: 'Output Format',
-              status: 'passed',
-              details: 'Target format structure is valid'
-            }
-          ]
+          loading: true,
+          score: 0,
+          checks: []
         }
       }
     }));
-  }, []);
+
+    try {
+      // Call backend validation endpoint with actual config
+      const validationResult = await paymentBuilderService.validateConfigSchema(
+        state.journey.output
+      );
+
+      // Update state with real validation results
+      setState(prev => ({
+        ...prev,
+        journey: {
+          ...prev.journey,
+          validation: {
+            ...validationResult,
+            loading: false
+          }
+        }
+      }));
+
+      console.log('Validation complete:', validationResult);
+    } catch (error) {
+      console.error('Validation failed:', error);
+
+      // Show error state
+      setState(prev => ({
+        ...prev,
+        journey: {
+          ...prev.journey,
+          validation: {
+            loading: false,
+            valid: false,
+            score: 0,
+            checks: [{
+              name: 'Validation Error',
+              status: 'failed',
+              details: error.message || 'Failed to validate configuration',
+              icon: '❌',
+              errors: []
+            }],
+            errors: [],
+            warnings: []
+          }
+        }
+      }));
+    }
+  }, [state.journey.output]);
+
+  // Save validated configuration
+  const saveValidatedConfig = useCallback(async (force = false) => {
+    setState(prev => ({
+      ...prev,
+      journey: {
+        ...prev.journey,
+        saving: true,
+        saveError: null
+      }
+    }));
+
+    try {
+      const result = await paymentBuilderService.saveValidatedConfig(
+        state.journey.output,
+        force
+      );
+
+      if (result.success) {
+        setState(prev => ({
+          ...prev,
+          journey: {
+            ...prev.journey,
+            saving: false,
+            saved: true,
+            saveResult: result
+          }
+        }));
+
+        console.log('Configuration saved successfully:', result);
+      } else {
+        throw new Error(result.message || 'Save failed');
+      }
+    } catch (error) {
+      console.error('Save failed:', error);
+
+      setState(prev => ({
+        ...prev,
+        journey: {
+          ...prev.journey,
+          saving: false,
+          saveError: error.message
+        }
+      }));
+    }
+  }, [state.journey.output]);
+
+  // Fix validation error by updating field
+  const fixValidationError = useCallback(async (fieldPath, newValue) => {
+    try {
+      const configId = state.journey.output?._id;
+      if (!configId) {
+        throw new Error('Configuration ID not found');
+      }
+
+      // Update field via API
+      const result = await paymentBuilderService.updateConfigField(
+        configId,
+        fieldPath,
+        newValue
+      );
+
+      // Update local state with new config and validation
+      setState(prev => ({
+        ...prev,
+        journey: {
+          ...prev.journey,
+          output: result.updated_configuration,
+          validation: result.validation
+        }
+      }));
+
+      console.log('Field updated successfully:', fieldPath);
+    } catch (error) {
+      console.error('Failed to fix validation error:', error);
+    }
+  }, [state.journey.output]);
 
   // Set active tab
   const setActiveTab = useCallback((tab) => {
@@ -408,6 +507,8 @@ export function useAutoConfigBuilder() {
     startGeneration,
     updateMapping,
     runValidation,
+    saveValidatedConfig,
+    fixValidationError,
     setActiveTab,
     setFocusMode
   };

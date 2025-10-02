@@ -279,65 +279,32 @@ BENEFICIARY INSTITUTION // Beneficiary Institution
       "Micropayments and subscription services",
       "NFT marketplaces and gaming economies"
     ],
-    structure: `// Full Web3 Transaction Template for USDC Transfer on Polygon
+    structure: `// Circle API Transfer Request Format
 {
-  // Network Configuration
-  "chainId": 137,              // Polygon Mainnet (alternatives: 1=Ethereum, 56=BSC, 42161=Arbitrum)
-  "network": "polygon",         // Human-readable network name
-  "rpcUrl": "https://polygon-rpc.com",
+  "idempotencyKey": "transfer-2024-12-15-001",
 
-  // Transaction Participants
-  "from": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb7",  // Sender wallet address
-  "to": "0x5aAeb6053f3E94C9b9A09f33669435E7Ef1BeAed",    // Recipient wallet address
-
-  // Token Contract Details
-  "tokenAddress": "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174",  // USDC on Polygon
-  "tokenSymbol": "USDC",
-  "tokenDecimals": 6,          // USDC uses 6 decimal places (not 18 like ETH)
-
-  // Transfer Amount
-  "amount": "50000",            // Human-readable amount (50,000 USDC)
-  "value": "50000000000",       // Wei equivalent (amount * 10^6 for USDC)
-
-  // Smart Contract Call
-  "data": "0xa9059cbb0000000000000000000000005aAeb6053f3E94C9b9A09f33669435E7Ef1BeAed000000000000000000000000000000000000000000000000000000ba43b7400",
-  // Breakdown of data field:
-  // 0xa9059cbb = transfer(address,uint256) function selector
-  // Next 64 chars = recipient address (padded)
-  // Last 64 chars = amount in hex (padded)
-
-  // Gas Configuration
-  "gasLimit": "100000",         // Maximum gas units for transaction
-  "maxFeePerGas": "30000000000",        // Max fee per gas in wei (30 Gwei)
-  "maxPriorityFeePerGas": "2000000000", // Priority fee for miners (2 Gwei)
-  "estimatedGas": "65000",      // Typical USDC transfer uses ~65k gas
-
-  // Transaction Metadata
-  "nonce": 145,                 // Transaction count for sender address
-  "type": 2,                    // EIP-1559 transaction type
-
-  // Additional Context
-  "memo": "Payroll batch #2024-12-001",
-  "recipient_email": "contractor@example.com",
-  "compliance": {
-    "kycStatus": "verified",
-    "amlCheck": "passed",
-    "sanctionsScreening": "clear"
+  "source": {
+    "type": "wallet",           // Source type: wallet or card
+    "id": "1000000001"          // Circle wallet ID
   },
 
-  // MongoDB Conversion Metadata
-  "conversion_id": "JSON_to_USDC",
-  "source_format": "JSON",
-  "target_format": "USDC",
-  "processing_timestamp": "2024-12-15T14:30:00Z"
-}
+  "destination": {
+    "type": "blockchain",       // Destination type: blockchain, wallet, or wire
+    "address": "0x5aAeb6053f3E94C9b9A09f33669435E7Ef1BeAed",
+    "chain": "MATIC"            // Blockchain: ETH, MATIC, AVAX, etc.
+  },
 
-// Alternative: Simple Transfer Template
-{
-  "to": "0x5aAeb6053f3E94C9b9A09f33669435E7Ef1BeAed",
-  "amount": "50000",
-  "tokenAddress": "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174",
-  "chainId": 137
+  "amount": {
+    "amount": "50000.00",       // Transfer amount
+    "currency": "USD"           // Currency: USD for USDC
+  },
+
+  "metadata": {
+    "beneficiaryName": "Merchant Corp",
+    "reference": "INV-2024-001",
+    "memo": "Payment for services",
+    "paymentPurpose": "B2B Payment"
+  }
 }`,
     mongoConfig: {
       parser: {

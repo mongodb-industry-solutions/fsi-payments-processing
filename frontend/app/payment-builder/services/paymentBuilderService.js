@@ -966,7 +966,7 @@ ${formData.beneficiary_institution || 'BENEFICIARY INSTITUTION'}
           },
           body: JSON.stringify(payload),
         }),
-        30000 // 30 second timeout for auto-configuration
+        90000 // 90 second timeout for auto-configuration (AI processing can take time)
       );
 
       if (!response.ok) {
@@ -1043,6 +1043,93 @@ ${formData.beneficiary_institution || 'BENEFICIARY INSTITUTION'}
           configuration_id: configurationId
         };
       }
+      throw error;
+    }
+  }
+
+  // Validate configuration schema
+  async validateConfigSchema(configuration) {
+    try {
+      const response = await withTimeout(
+        fetch(`${this.baseUrl}/api/v1/converter/validate-schema`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            configuration: configuration
+          }),
+        }),
+        15000 // 15 second timeout
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.detail || `Validation failed: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error validating config schema:', error);
+      throw error;
+    }
+  }
+
+  // Save validated configuration to production
+  async saveValidatedConfig(configuration, force = false) {
+    try {
+      const response = await withTimeout(
+        fetch(`${this.baseUrl}/api/v1/converter/save-validated-config`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            configuration: configuration,
+            force: force
+          }),
+        }),
+        15000
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.detail || `Save failed: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error saving validated config:', error);
+      throw error;
+    }
+  }
+
+  // Update a specific field in the configuration
+  async updateConfigField(configurationId, fieldPath, value) {
+    try {
+      const response = await withTimeout(
+        fetch(`${this.baseUrl}/api/v1/converter/update-config-field`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            configuration_id: configurationId,
+            field_path: fieldPath,
+            value: value
+          }),
+        }),
+        10000
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.detail || `Update failed: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error updating config field:', error);
       throw error;
     }
   }

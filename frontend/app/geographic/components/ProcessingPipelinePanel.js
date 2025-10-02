@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import Icon from '@leafygreen-ui/icon';
+import { palette } from '@leafygreen-ui/palette';
 import styles from './ProcessingPipelinePanel.module.css';
 import MongoDBDetailsModal from './MongoDBDetailsModal';
 
@@ -92,16 +94,18 @@ const ProcessingPipelinePanel = ({ selectedScenario, conversionResults, isExecut
                   <h4>{formatConversionStep(result.from, result.to)}</h4>
                   <div className={styles.stepDetails}>
                     <span className={styles.status}>
-                      ✅ Complete
+                      <Icon glyph="Checkmark" size="small" /> Complete
                     </span>
                     {result.processingStats && (
                       <span className={styles.lanes}>
-                        📋 Rules: {result.processingStats.rules_lane || 0} |
-                        🤖 AI: {result.processingStats.ai_lane || 0}
+                        <Icon glyph="Menu" size="small" /> Rules: {result.processingStats.rules_lane || 0} |
+                        <Icon glyph="Sparkle" size="small" /> AI: {result.processingStats.ai_lane || 0}
                       </span>
                     )}
                     {result.humanReviewRequired && (
-                      <span className={styles.review}>👤 Review Required</span>
+                      <span className={styles.review}>
+                        <Icon glyph="Person" size="small" /> Review Required
+                      </span>
                     )}
                   </div>
                 </div>
@@ -112,10 +116,16 @@ const ProcessingPipelinePanel = ({ selectedScenario, conversionResults, isExecut
 
         <div className={`${styles.storyLine} ${styles.success}`}>
           {isRemoteIslandScenario ? (
-            <p>✅ Payment successfully routed to Fiji via Australia! MongoDB's BFS algorithm discovered the optimal path through {conversionResults.length} hops.</p>
+            <p>
+              <Icon glyph="Checkmark" className={styles.storyIcon} />
+              Payment successfully routed to Fiji via Australia! MongoDB's BFS algorithm discovered the optimal path through {conversionResults.length} hops.
+            </p>
           ) : (
-            <p>✅ Payment successfully converted through MongoDB's universal JSON format.
-               {conversionResults.length} transformation{conversionResults.length > 1 ? 's' : ''} completed successfully.</p>
+            <p>
+              <Icon glyph="Checkmark" className={styles.storyIcon} />
+              Payment successfully converted through MongoDB's universal JSON format.
+              {conversionResults.length} transformation{conversionResults.length > 1 ? 's' : ''} completed successfully.
+            </p>
           )}
         </div>
 
@@ -125,7 +135,8 @@ const ProcessingPipelinePanel = ({ selectedScenario, conversionResults, isExecut
             className={styles.detailsButton}
             onClick={() => setShowModal(true)}
           >
-            🔍 How MongoDB Makes This Work
+            <Icon glyph="MagnifyingGlass" size="small" />
+            How MongoDB Makes This Work
           </button>
         </div>
 
@@ -268,9 +279,15 @@ const ProcessingPipelinePanel = ({ selectedScenario, conversionResults, isExecut
 
         <div className={styles.storyLine}>
           {isRemoteIslandScenario ? (
-            <p>🔄 Discovering optimal route to Fiji through MongoDB's graph-based routing engine...</p>
+            <p>
+              <Icon glyph="Refresh" className={styles.storyIcon} />
+              Discovering optimal route to Fiji through MongoDB's graph-based routing engine...
+            </p>
           ) : (
-            <p>🔄 Processing payment through MongoDB's intelligent conversion engine...</p>
+            <p>
+              <Icon glyph="Refresh" className={styles.storyIcon} />
+              Processing payment through MongoDB's intelligent conversion engine...
+            </p>
           )}
         </div>
         </div>
@@ -350,7 +367,8 @@ const ProcessingPipelinePanel = ({ selectedScenario, conversionResults, isExecut
 
       {/* Static state hint */}
       <div className={styles.hint}>
-        <p>💡 Click <strong>Execute Route</strong> to see MongoDB's zero-code conversion engine in action.
+        <Icon glyph="Bulb" className={styles.hintIcon} />
+        <p>Click <strong>Execute Route</strong> to see MongoDB's zero-code conversion engine in action.
            Every step is powered by configurations stored in MongoDB - no hardcoded logic!</p>
       </div>
       </div>

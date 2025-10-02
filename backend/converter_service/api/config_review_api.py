@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from datetime import datetime
 import logging
 from services.db_service import MongoDBService
-from services.semantic_learning_service import SemanticLearningService
+from services.semantic_learning_service_simplified import SimplifiedSemanticLearningService
 from config.settings import get_settings
 
 settings = get_settings()
@@ -146,7 +146,7 @@ async def review_config(request: ConfigReviewRequest) -> ConfigReviewResponse:
     """
     try:
         db_service = MongoDBService(settings.mongodb_uri, settings.database_name)
-        learning_service = SemanticLearningService(db_service)
+        learning_service = SimplifiedSemanticLearningService(db_service, None)  # ai_service not needed for review
         
         # Get the configuration
         config = db_service.get_conversion_config(request.config_id)

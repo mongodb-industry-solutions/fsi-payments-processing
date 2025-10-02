@@ -60,23 +60,17 @@
 
 .configContent {
   padding: 0;
-  background: #1e1e1e;
+  background: var(--white);
   max-height: 600px;
   overflow-y: auto;
 }
 
 .documentHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 16px;
-  background: #1e3a2f;
-  border-radius: 8px 8px 0 0;
-  margin-bottom: -1px;
+  display: none;
 }
 
 .collectionName {
-  color: #00ed64;
+  color: #00ED64;
   font-family: 'Courier New', monospace;
   font-size: 14px;
   font-weight: 600;
@@ -98,12 +92,14 @@
 }
 
 .jsonDocument {
-  background: #1e1e1e;
+  background: var(--white);
   padding: 20px;
   font-family: 'Courier New', monospace;
   font-size: 13px;
   line-height: 1.6;
   overflow-x: auto;
+  border: 1px solid var(--gray-light2);
+  border-top: none;
 }
 
 .jsonNode {
@@ -118,53 +114,53 @@
 .jsonToggle {
   display: inline-block;
   width: 16px;
-  color: #6b7280;
+  color: var(--gray-base);
   cursor: pointer;
   user-select: none;
   margin-right: 4px;
 }
 
 .jsonToggle:hover {
-  color: #00ed64;
+  color: var(--green-dark2);
 }
 
 .jsonKey {
-  color: #00ed64;
+  color: var(--blue-dark1); /* Blue for keys - palette.blue.dark1 */
 }
 
 .mongoSystemField {
-  color: #ffa500;
+  color: var(--yellow-dark2); /* Yellow for system fields - palette.yellow.dark2 */
   font-weight: 600;
 }
 
 .jsonColon {
-  color: #ffffff;
+  color: var(--black); /* Default text color */
   margin: 0 4px;
 }
 
 .jsonString {
-  color: #ce9178;
+  color: var(--green-dark2); /* Green for strings - palette.green.dark2 */
 }
 
 .jsonNumber {
-  color: #b5cea8;
+  color: var(--blue-base); /* Blue for numbers - palette.blue.base */
 }
 
 .jsonBoolean {
-  color: #569cd6;
+  color: var(--green-dark2); /* Green for booleans - palette.green.dark2 */
 }
 
 .jsonNull {
-  color: #569cd6;
+  color: var(--gray-dark1); /* Gray for null - palette.gray.dark1 */
 }
 
 .jsonBracket {
-  color: #ffffff;
+  color: var(--black); /* Default text color */
   font-weight: 600;
 }
 
 .jsonComma {
-  color: #ffffff;
+  color: var(--black); /* Default text color */
 }
 
 .jsonChildren {
@@ -172,7 +168,7 @@
 }
 
 .jsonCollapsed {
-  color: #6b7280;
+  color: var(--gray-dark1); /* Secondary text - palette.gray.dark1 */
   font-style: italic;
 }
 
@@ -497,6 +493,47 @@
   font-size: 0.875rem;
   font-weight: 600;
   color: var(--black);
+}
+
+.loadingSkeleton {
+  padding: var(--spacing-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+}
+
+.skeletonLine {
+  height: 12px;
+  background: linear-gradient(
+    90deg,
+    var(--gray-light2) 0%,
+    var(--gray-light3) 50%,
+    var(--gray-light2) 100%
+  );
+  background-size: 200% 100%;
+  border-radius: 4px;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+.skeletonLine:nth-child(1) {
+  width: 80%;
+}
+
+.skeletonLine:nth-child(2) {
+  width: 60%;
+}
+
+.skeletonLine:nth-child(3) {
+  width: 70%;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 .laneCount {

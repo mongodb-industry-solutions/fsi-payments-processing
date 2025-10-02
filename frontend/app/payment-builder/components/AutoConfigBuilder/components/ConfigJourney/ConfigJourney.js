@@ -206,7 +206,9 @@ export default function ConfigJourney({
   output,
   onTabChange,
   onMappingUpdate,
-  onValidate
+  onValidate,
+  onSave,
+  onFixError
 }) {
   const [expandedSteps, setExpandedSteps] = useState({});
   const [expandAll, setExpandAll] = useState(false);
@@ -1139,15 +1141,112 @@ export default function ConfigJourney({
     );
   };
 
+  // Validation Error Component (inline editing)
+  const ValidationError = ({ error, onFix }) => {
+    const [editing, setEditing] = useState(false);
+    const [value, setValue] = useState('');
+
+    const handleFix = () => {
+      if (value.trim()) {
+        onFix(error.field, value);
+        setEditing(false);
+      }
+    };
+
+    return (
+      <div className={`${styles.validationError} ${styles[error.severity]}`}>
+        <div className={styles.errorHeader}>
+          <span className={styles.errorIcon}>
+            {error.severity === 'error' ? '🔴' : '🟡'}
+          </span>
+          <code className={styles.errorField}>{error.field}</code>
+        </div>
+
+        <div className={styles.errorMessage}>
+          {error.message}
+        </div>
+
+        {error.suggestion && (
+          <div className={styles.errorSuggestion}>
+            <Icon glyph="Bulb" size="small" />
+            <span>{error.suggestion}</span>
+          </div>
+        )}
+
+        {error.severity === 'error' && (
+          <div className={styles.errorActions}>
+            {!editing ? (
+              <button
+                className={styles.fixButton}
+                onClick={() => setEditing(true)}
+              >
+                <Icon glyph="Edit" size="small" />
+                Fix This Error
+              </button>
+            ) : (
+              <div className={styles.fixEditor}>
+                <input
+                  type="text"
+                  className={styles.fixInput}
+                  placeholder="Enter new value..."
+                  value={value}
+                  onChange={(e) => setValue(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') handleFix();
+                  }}
+                  autoFocus
+                />
+                <button
+                  className={styles.applyButton}
+                  onClick={handleFix}
+                  disabled={!value.trim()}
+                >
+                  Apply
+                </button>
+                <button
+                  className={styles.cancelButton}
+                  onClick={() => {
+                    setEditing(false);
+                    setValue('');
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const renderValidationTab = () => {
-    if (!validation) {
+    // Show loading state
+    if (validation?.loading) {
       return (
         <div className={styles.validationContainer}>
-          <div className={styles.validationHeader}>
-            <div className={styles.validationScore}>
-              <span className={styles.scoreLabel}>Ready for validation</span>
+          <div className={styles.loadingState}>
+            <div className={styles.spinner} />
+            <div className={styles.loadingText}>Validating Configuration...</div>
+          </div>
+        </div>
+      );
+    }
+
+    // Show initial state (before validation runs)
+    if (!validation || !validation.checks) {
+      return (
+        <div className={styles.validationContainer}>
+          <div className={styles.validationEmptyState}>
+            <div className={styles.emptyStateIcon}>
+              <Icon glyph="Checkmark" size="xlarge" />
+            </div>
+            <div className={styles.emptyStateTitle}>Ready for Validation</div>
+            <div className={styles.emptyStateDescription}>
+              Click "Run Validation" to check this configuration against the MongoDB schema
             </div>
             <button className={styles.validateButton} onClick={onValidate}>
+              <Icon glyph="Play" size="small" />
               Run Validation
             </button>
           </div>
@@ -1155,31 +1254,176 @@ export default function ConfigJourney({
       );
     }
 
+    // Determine score color
+    const getScoreColor = (score) => {
+      if (score >= 90) return '#00A35C'; // Green
+      if (score >= 70) return '#FFB81C'; // Yellow
+      return '#CD5B45'; // Red
+    };
+
+    const scoreColor = getScoreColor(validation.score);
+
     return (
       <div className={styles.validationContainer}>
+        {/* Validation Header */}
         <div className={styles.validationHeader}>
-          <div className={styles.validationScore}>
-            <span className={styles.scoreLabel}>Validation Score</span>
-            <span className={styles.scoreValue}>{validation.score}%</span>
+          <div className={styles.validationScoreCard}>
+            <div className={styles.scoreLabel}>Validation Score</div>
+            <div
+              className={styles.scoreValue}
+              style={{ color: scoreColor }}
+            >
+              {validation.score}%
+            </div>
+            <div className={styles.scoreStatus}>
+              {validation.valid ? (
+                <span className={styles.statusValid}>
+                  <Icon glyph="Checkmark" size="small" /> Valid
+                </span>
+              ) : (
+                <span className={styles.statusInvalid}>
+                  <Icon glyph="X" size="small" /> Invalid
+                </span>
+              )}
+            </div>
           </div>
-          <button className={styles.validateButton} onClick={onValidate}>
-            Re-validate
-          </button>
+
+          <div className={styles.validationActions}>
+            <button
+              className={styles.revalidateButton}
+              onClick={onValidate}
+            >
+              <Icon glyph="Refresh" size="small" />
+              Re-validate
+            </button>
+
+            <button
+              className={`${styles.saveButton} ${validation.valid ? styles.enabled : styles.disabled}`}
+              onClick={() => onSave && onSave(false)}
+              disabled={!validation.valid || validation.saving}
+            >
+              {validation.saving ? (
+                <>
+                  <div className={styles.buttonSpinner} />
+                  Saving...
+                </>
+              ) : validation.saved ? (
+                <>
+                  <Icon glyph="Checkmark" size="small" />
+                  Saved
+                </>
+              ) : (
+                <>
+                  <Icon glyph="Save" size="small" />
+                  Save to Production
+                </>
+              )}
+            </button>
+
+            {!validation.valid && (
+              <button
+                className={styles.forceSaveButton}
+                onClick={() => onSave && onSave(true)}
+                disabled={validation.saving}
+                title="Save anyway (not recommended)"
+              >
+                <Icon glyph="ImportantWithCircle" size="small" />
+                Force Save
+              </button>
+            )}
+          </div>
         </div>
 
+        {/* Save Success Message */}
+        {validation.saved && (
+          <div className={styles.successBanner}>
+            <Icon glyph="Checkmark" size="small" />
+            <span>Configuration successfully saved to production registry!</span>
+          </div>
+        )}
+
+        {/* Save Error Message */}
+        {validation.saveError && (
+          <div className={styles.errorBanner}>
+            <Icon glyph="Warning" size="small" />
+            <span>{validation.saveError}</span>
+          </div>
+        )}
+
+        {/* Summary Stats */}
+        <div className={styles.validationSummary}>
+          <div className={styles.summaryItem}>
+            <Icon glyph="Checkmark" className={styles.summaryIcon} style={{ color: '#00A35C' }} />
+            <div className={styles.summaryContent}>
+              <div className={styles.summaryLabel}>Passed</div>
+              <div className={styles.summaryValue}>
+                {validation.checks.filter(c => c.status === 'passed').length}
+              </div>
+            </div>
+          </div>
+          <div className={styles.summaryItem}>
+            <Icon glyph="ImportantWithCircle" className={styles.summaryIcon} style={{ color: '#FFB81C' }} />
+            <div className={styles.summaryContent}>
+              <div className={styles.summaryLabel}>Warnings</div>
+              <div className={styles.summaryValue}>
+                {validation.warnings?.length || 0}
+              </div>
+            </div>
+          </div>
+          <div className={styles.summaryItem}>
+            <Icon glyph="X" className={styles.summaryIcon} style={{ color: '#CD5B45' }} />
+            <div className={styles.summaryContent}>
+              <div className={styles.summaryLabel}>Errors</div>
+              <div className={styles.summaryValue}>
+                {validation.errors?.length || 0}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Validation Checks */}
         <div className={styles.validationResults}>
           {validation.checks?.map((check, idx) => (
-            <div key={idx} className={styles.validationCategory}>
-              <div className={styles.categoryHeader}>
-                <span className={styles.categoryIcon}>{check.icon}</span>
-                <span className={styles.categoryTitle}>{check.name}</span>
-                <span className={`${styles.categoryStatus} ${styles[check.status]}`}>
-                  {check.status}
-                </span>
+            <div key={idx} className={styles.validationCheck}>
+              <div
+                className={`${styles.checkHeader} ${styles[check.status]}`}
+                onClick={() => toggleStep(idx)}
+              >
+                <div className={styles.checkLeft}>
+                  <span className={styles.checkIcon}>{check.icon}</span>
+                  <span className={styles.checkName}>{check.name}</span>
+                  {check.errors && check.errors.length > 0 && (
+                    <span className={styles.errorCount}>
+                      {check.errors.length} issue{check.errors.length > 1 ? 's' : ''}
+                    </span>
+                  )}
+                </div>
+                <div className={styles.checkRight}>
+                  <span className={`${styles.checkStatus} ${styles[check.status]}`}>
+                    {check.status === 'passed' ? '✓' : check.status === 'warning' ? '⚠' : '✗'}
+                    {' '}
+                    {check.status}
+                  </span>
+                  <span className={styles.expandIcon}>
+                    {expandedSteps[idx] ? '▼' : '▶'}
+                  </span>
+                </div>
               </div>
-              {check.details && (
-                <div className={styles.categoryContent}>
-                  {check.details}
+
+              <div className={styles.checkDetails}>
+                {check.details}
+              </div>
+
+              {/* Expanded Error Details */}
+              {expandedSteps[idx] && check.errors && check.errors.length > 0 && (
+                <div className={styles.checkErrors}>
+                  {check.errors.map((error, errorIdx) => (
+                    <ValidationError
+                      key={errorIdx}
+                      error={error}
+                      onFix={onFixError}
+                    />
+                  ))}
                 </div>
               )}
             </div>

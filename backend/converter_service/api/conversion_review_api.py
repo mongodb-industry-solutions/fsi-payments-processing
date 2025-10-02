@@ -209,18 +209,9 @@ async def review_conversion(request: ConversionReviewRequest) -> ConversionRevie
                         logger.info(f"Updated pattern {pattern_id} based on conversion review")
                         break
         
-        # Trigger learning to propagate updates
-        from services.semantic_learning_service import SemanticLearningService
-        learning_service = SemanticLearningService(db_service)
-        learned_patterns = learning_service.learn_from_existing_configs()
-        
-        # Save learned patterns
-        for pattern_id, pattern_doc in learned_patterns.items():
-            db_service.db['semantic_patterns'].update_one(
-                {"_id": pattern_id},
-                {"$set": pattern_doc},
-                upsert=True
-            )
+        # Note: Semantic pattern learning is now handled by populate_semantic_patterns.py script
+        # The SimplifiedSemanticLearningService uses static seed patterns
+        # No dynamic learning needed here
         
         return ConversionReviewResponse(
             success=True,

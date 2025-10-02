@@ -3,6 +3,8 @@
 import { useState, memo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Handle, Position } from 'reactflow';
+import Icon from '@leafygreen-ui/icon';
+import { palette } from '@leafygreen-ui/palette';
 import styles from './JsonBridgeNode.module.css';
 
 function JsonBridgeNode({ data }) {
@@ -276,12 +278,14 @@ function JsonBridgeNode({ data }) {
             className={`${styles.tab} ${activeTab === 'json' ? styles.activeTab : ''}`}
             onClick={() => setActiveTab('json')}
           >
+            <Icon glyph="Code" size="small" className={styles.tabIcon} />
             JSON Data
           </button>
           <button
             className={`${styles.tab} ${activeTab === 'mongodb' ? styles.activeTab : ''}`}
             onClick={() => setActiveTab('mongodb')}
           >
+            <Icon glyph="Database" size="small" className={styles.tabIcon} />
             MongoDB Config
           </button>
         </div>
@@ -639,7 +643,7 @@ function JsonBridgeNode({ data }) {
 
         <div className={styles.modalFooter}>
           <div className={styles.info}>
-            <span className={styles.infoIcon}></span>
+            <Icon glyph="InfoWithCircle" className={styles.infoIcon} />
             <span>
               {activeTab === 'json'
                 ? 'The MongoDB Bridge uses a universal Canonical JSON format to enable seamless multi-hop conversions between any payment formats.'

@@ -17,6 +17,8 @@ export default function AutoConfigBuilder({
     startGeneration,
     updateMapping,
     runValidation,
+    saveValidatedConfig,
+    fixValidationError,
     setActiveTab,
     setFocusMode
   } = useAutoConfigBuilder();
@@ -77,6 +79,8 @@ export default function AutoConfigBuilder({
             onTabChange={setActiveTab}
             onMappingUpdate={updateMapping}
             onValidate={runValidation}
+            onSave={saveValidatedConfig}
+            onFixError={fixValidationError}
           />
         </div>
       </div>

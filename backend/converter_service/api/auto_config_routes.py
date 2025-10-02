@@ -11,10 +11,10 @@ import os
 
 from ..services.db_service import get_mongodb_service as get_db_service
 from ..services.semantic_learning_service_simplified import SimplifiedSemanticLearningService
-from ..services.semantic_learning_service import SemanticLearningService  # Keep for /learn endpoint
 from ..services.ai_service import get_bedrock_service as get_ai_service
 from ..config.settings import get_settings
 from ..services.auto_config_builder import AutoConfigBuilder
+from ..services.config_validator import ConfigValidator
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -388,6 +388,240 @@ async def validate_config(
             "configuration_id": validation.configuration_id,
             "message": "Configuration rejected and not saved"
         }
+
+
+@router.post("/validate-schema")
+async def validate_schema(
+    request: Dict[str, Any],
+    db_service=Depends(get_db)
+):
+    """
+    Validate configuration against MongoDB schema
+
+    This endpoint validates the structure and content of a configuration
+    without saving it. Use this before saving to catch errors early.
+
+    Request body:
+    {
+        "configuration": {...}  // The config to validate
+    }
+
+    Returns:
+    {
+        "valid": true|false,
+        "score": 0-100,
+        "checks": [
+            {
+                "name": "Required Fields",
+                "status": "passed|warning|failed",
+                "details": "...",
+                "icon": "📋",
+                "errors": [...]
+            }
+        ],
+        "errors": [...],
+        "warnings": [...]
+    }
+    """
+    try:
+        configuration = request.get("configuration")
+        if not configuration:
+            raise HTTPException(
+                status_code=400,
+                detail="Configuration is required in request body"
+            )
+
+        # Create validator and validate
+        validator = ConfigValidator()
+        result = validator.validate_config(configuration)
+
+        logger.info(f"Schema validation complete: valid={result.valid}, score={result.score}")
+
+        return result.to_dict()
+
+    except Exception as e:
+        logger.error(f"Schema validation error: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Validation failed: {str(e)}"
+        )
+
+
+@router.post("/save-validated-config")
+async def save_validated_config(
+    request: Dict[str, Any],
+    db_service=Depends(get_db)
+):
+    """
+    Validate and save configuration to production registry
+
+    This endpoint:
+    1. Validates the configuration
+    2. If valid, saves to conversion_registry
+    3. Removes from pending_auto_configs
+    4. Adds metadata (validated_at, approved, etc.)
+
+    Request body:
+    {
+        "configuration": {...},
+        "force": false  // Set to true to save even with warnings
+    }
+
+    Returns:
+    {
+        "success": true|false,
+        "configuration_id": "...",
+        "validation": {...},
+        "message": "..."
+    }
+    """
+    try:
+        configuration = request.get("configuration")
+        force = request.get("force", False)
+
+        if not configuration:
+            raise HTTPException(
+                status_code=400,
+                detail="Configuration is required"
+            )
+
+        # Validate first
+        validator = ConfigValidator()
+        validation_result = validator.validate_config(configuration)
+
+        # Check if valid (or force save)
+        if not validation_result.valid and not force:
+            return {
+                "success": False,
+                "configuration_id": configuration.get("_id"),
+                "validation": validation_result.to_dict(),
+                "message": f"Validation failed with score {validation_result.score}%. Fix errors or use force=true to save anyway."
+            }
+
+        # Add validation metadata
+        config_id = configuration["_id"]
+
+        if "metadata" not in configuration:
+            configuration["metadata"] = {}
+
+        configuration["metadata"]["validated_at"] = datetime.utcnow()
+        configuration["metadata"]["approved"] = True
+        configuration["metadata"]["validation_score"] = validation_result.score
+        configuration["metadata"]["status"] = "approved"
+
+        # Save to production registry
+        db_service.db['conversion_registry'].replace_one(
+            {"_id": config_id},
+            configuration,
+            upsert=True
+        )
+
+        # Remove from pending
+        db_service.db['pending_auto_configs'].delete_one({"_id": config_id})
+
+        logger.info(f"Configuration {config_id} saved to production registry (score: {validation_result.score}%)")
+
+        return {
+            "success": True,
+            "configuration_id": config_id,
+            "validation": validation_result.to_dict(),
+            "message": f"Configuration saved successfully with validation score {validation_result.score}%"
+        }
+
+    except Exception as e:
+        logger.error(f"Error saving validated config: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to save configuration: {str(e)}"
+        )
+
+
+@router.post("/update-config-field")
+async def update_config_field(
+    request: Dict[str, Any],
+    db_service=Depends(get_db)
+):
+    """
+    Update a specific field in a configuration
+
+    This endpoint allows updating individual fields without sending
+    the entire configuration. Useful for inline error corrections.
+
+    Request body:
+    {
+        "configuration_id": "MT192_to_pacs.008",
+        "field_path": "parser.type",
+        "value": "regex"
+    }
+
+    Returns:
+    {
+        "success": true,
+        "updated_configuration": {...},
+        "validation": {...}  // Auto-validates after update
+    }
+    """
+    try:
+        config_id = request.get("configuration_id")
+        field_path = request.get("field_path")
+        value = request.get("value")
+
+        if not all([config_id, field_path, value is not None]):
+            raise HTTPException(
+                status_code=400,
+                detail="configuration_id, field_path, and value are required"
+            )
+
+        # Fetch config from pending
+        config = db_service.db['pending_auto_configs'].find_one({"_id": config_id})
+
+        if not config:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Configuration {config_id} not found in pending configs"
+            )
+
+        # Update field using dot notation path
+        path_parts = field_path.split(".")
+        current = config
+
+        # Navigate to parent
+        for part in path_parts[:-1]:
+            if part not in current:
+                current[part] = {}
+            current = current[part]
+
+        # Set value
+        current[path_parts[-1]] = value
+
+        # Save updated config using $set to avoid _id immutability error
+        # Remove _id from config before updating
+        config_without_id = {k: v for k, v in config.items() if k != '_id'}
+        db_service.db['pending_auto_configs'].update_one(
+            {"_id": config_id},
+            {"$set": config_without_id}
+        )
+
+        # Auto-validate
+        validator = ConfigValidator()
+        validation_result = validator.validate_config(config)
+
+        logger.info(f"Updated {field_path} in {config_id}, new validation score: {validation_result.score}%")
+
+        return {
+            "success": True,
+            "updated_configuration": _clean_config_for_response(config),
+            "validation": validation_result.to_dict()
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating config field: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to update field: {str(e)}"
+        )
 
 
 @router.post("/learn")

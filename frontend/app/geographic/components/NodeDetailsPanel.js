@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import styles from './NodeDetailsPanel.module.css';
 
 const FORMAT_INFO = {
@@ -172,14 +174,22 @@ export default function NodeDetailsPanel({ selectedNode, nodePosition, onClose }
         <>
           <div className={styles.section}>
             <h5>Parser Configuration</h5>
-            <div className={styles.codeBlock}>
-              <pre>{JSON.stringify({
+            <SyntaxHighlighter
+              language="json"
+              style={oneLight}
+              customStyle={{
+                borderRadius: '8px',
+                fontSize: '0.75rem',
+                border: '1px solid #E3E7E0'
+              }}
+            >
+              {JSON.stringify({
                 type: mongoConfig.parser?.type || 'regex',
                 fields: Object.keys(mongoConfig.parser?.fields || {}).slice(0, 3).map(key => ({
                   [key]: mongoConfig.parser.fields[key].pattern
                 }))
-              }, null, 2)}</pre>
-            </div>
+              }, null, 2)}
+            </SyntaxHighlighter>
           </div>
 
           <div className={styles.section}>
@@ -262,8 +272,16 @@ export default function NodeDetailsPanel({ selectedNode, nodePosition, onClose }
 
       <div className={styles.section}>
         <h5>Canonical Structure</h5>
-        <div className={styles.codeBlock}>
-          <pre>{JSON.stringify({
+        <SyntaxHighlighter
+          language="json"
+          style={oneLight}
+          customStyle={{
+            borderRadius: '8px',
+            fontSize: '0.75rem',
+            border: '1px solid #E3E7E0'
+          }}
+        >
+          {JSON.stringify({
             header: {
               message_id: "Unique identifier",
               creation_date: "ISO timestamp",
@@ -282,8 +300,8 @@ export default function NodeDetailsPanel({ selectedNode, nodePosition, onClose }
             remittance: {
               unstructured: ["Payment details"]
             }
-          }, null, 2)}</pre>
-        </div>
+          }, null, 2)}
+        </SyntaxHighlighter>
       </div>
 
       <div className={styles.section}>

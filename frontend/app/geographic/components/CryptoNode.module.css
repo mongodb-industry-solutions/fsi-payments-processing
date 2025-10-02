@@ -218,28 +218,23 @@
 
 /* Crypto info display */
 .cryptoInfo {
-  position: absolute;
-  top: calc(100% + 10px);
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(0, 0, 0, 0.8);
+  margin-top: 12px;
+  background: rgba(0, 0, 0, 0.3);
   border-radius: 8px;
   padding: 8px 12px;
-  min-width: 150px;
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(102, 126, 234, 0.3);
-  z-index: 10;
+  border: 1px solid rgba(255, 255, 255, 0.2);
   animation: fadeIn 0.3s ease-in;
 }
 
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateX(-50%) translateY(-10px);
+    transform: translateY(-5px);
   }
   to {
     opacity: 1;
-    transform: translateX(-50%) translateY(0);
+    transform: translateY(0);
   }
 }
 

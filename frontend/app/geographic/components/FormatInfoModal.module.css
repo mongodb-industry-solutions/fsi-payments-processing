@@ -37,7 +37,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 16px 20px;
-  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+  background: #00684A; /* palette.green.dark2 - header background */
   color: white;
 }
 
@@ -92,7 +92,7 @@
   background: transparent;
   border: none;
   border-bottom: 2px solid transparent;
-  color: #6b7280;
+  color: #5C6C75; /* palette.gray.dark1 */
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
@@ -104,14 +104,18 @@
 }
 
 .tab:hover {
-  color: #374151;
+  color: #00684A; /* palette.green.dark2 */
   background: rgba(255, 255, 255, 0.5);
 }
 
 .activeTab {
-  color: #764ba2;
-  border-bottom-color: #764ba2;
+  color: #00684A; /* palette.green.dark2 */
+  border-bottom-color: #00684A;
   background: white;
+}
+
+.tabIcon {
+  flex-shrink: 0;
 }
 
 /* Modal Body */
@@ -179,27 +183,27 @@
   display: flex;
   gap: 10px;
   padding: 12px;
-  background: #f0f9ff;
-  border: 1px solid #bae6fd;
+  background: #C0FAE6; /* palette.green.light2 */
+  border: 1px solid #00ED64; /* palette.green.base */
   border-radius: 6px;
   margin-top: 16px;
 }
 
 .infoIcon {
-  font-size: 20px;
   flex-shrink: 0;
+  color: #00684A; /* palette.green.dark2 */
 }
 
 .infoBox p {
   margin: 0;
   font-size: 12px;
-  color: #0c4a6e;
+  color: #1C2D38; /* palette.gray.dark3 */
   line-height: 1.4;
 }
 
 .infoBox strong {
   font-weight: 600;
-  color: #075985;
+  color: #00684A; /* palette.green.dark2 */
 }
 
 /* Format Tab Content */
@@ -208,7 +212,8 @@
 }
 
 .codeBlock {
-  background: #1e1e1e;
+  background: #F9FBFA; /* Light gray background - consistent with other components */
+  border: 1px solid #E3E7E0;
   border-radius: 6px;
   padding: 16px;
   overflow-x: auto;
@@ -220,7 +225,7 @@
   font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
   font-size: 11px;
   line-height: 1.5;
-  color: #d4d4d4;
+  color: #1C2D38; /* Dark text for readability */
   white-space: pre;
 }
 
@@ -229,20 +234,20 @@
   align-items: flex-start;
   gap: 8px;
   padding: 10px;
-  background: #fef3c7;
-  border: 1px solid #fbbf24;
+  background: #FEF4E7; /* palette.yellow.light2 - warning background */
+  border: 1px solid #FFC010; /* palette.yellow.base */
   border-radius: 6px;
   margin-top: 12px;
 }
 
 .noteIcon {
-  font-size: 14px;
   flex-shrink: 0;
+  color: #AD5E00; /* palette.yellow.dark2 - warning icon */
 }
 
 .note span:last-child {
   font-size: 12px;
-  color: #92400e;
+  color: #3D4F58; /* palette.gray.dark2 */
   line-height: 1.4;
 }
 
@@ -342,7 +347,8 @@
 
 /* MongoDB Document Display */
 .mongoDocument {
-  background: #1e1e1e;
+  background: #F9FBFA; /* Light gray background */
+  border: 1px solid #E3E7E0;
   border-radius: 6px;
   padding: 0;
   margin-bottom: 16px;
@@ -356,11 +362,11 @@
 }
 
 .documentHeader {
-  background: #2d2d2d;
+  background: linear-gradient(135deg, #e3f3e8 0%, #f0f9f2 100%); /* Light green gradient */
   padding: 10px 16px;
-  border-bottom: 1px solid #3d3d3d;
+  border-bottom: 1px solid #c3e6c9;
   font-size: 12px;
-  color: #9ca3af;
+  color: #00684a; /* Dark green text */
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -371,22 +377,23 @@
 
 .collectionName {
   font-weight: 600;
-  color: #10b981;
+  color: #00684a; /* Dark green */
 }
 
 .expandAllBtn {
   padding: 4px 8px;
-  background: #374151;
-  border: none;
+  background: white;
+  border: 1px solid #c3e6c9;
   border-radius: 4px;
-  color: #9ca3af;
+  color: #00684a;
   font-size: 11px;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: all 0.2s;
 }
 
 .expandAllBtn:hover {
-  background: #4b5563;
+  background: #13aa52;
+  color: white;
 }
 
 /* JSON Document Styles */
@@ -420,40 +427,42 @@
 }
 
 .mongoSystemField {
-  color: #fbbf24;
+  color: #AD5E00; /* Orange for system fields */
+  font-weight: 600;
 }
 
 .jsonKey {
-  color: #60a5fa;
+  color: #1254B7; /* Blue for keys - matching light theme */
 }
 
 .jsonColon {
-  color: #9ca3af;
+  color: #1C2D38; /* Dark text */
   margin: 0 4px;
 }
 
 .jsonString {
-  color: #86efac;
+  color: #00A35C; /* Green for strings */
 }
 
 .jsonNumber {
-  color: #fbbf24;
+  color: #AD5E00; /* Orange for numbers */
 }
 
 .jsonBoolean {
-  color: #f87171;
+  color: #CD5B45; /* Red for booleans */
 }
 
 .jsonNull {
-  color: #94a3b8;
+  color: #CD5B45; /* Red for null */
 }
 
 .jsonBracket {
-  color: #e5e7eb;
+  color: #5C3C92; /* Purple for brackets */
+  font-weight: 600;
 }
 
 .jsonComma {
-  color: #9ca3af;
+  color: #1C2D38; /* Dark text */
 }
 
 .jsonChildren {
@@ -472,21 +481,21 @@
 }
 
 .mongoDocument::-webkit-scrollbar-track {
-  background: #2d2d2d;
+  background: #f1f5f9;
   border-radius: 4px;
 }
 
 .mongoDocument::-webkit-scrollbar-thumb {
-  background: #4a4a4a;
+  background: #cbd5e1;
   border-radius: 4px;
 }
 
 .mongoDocument::-webkit-scrollbar-thumb:hover {
-  background: #5a5a5a;
+  background: #94a3b8;
 }
 
 .mongoDocument::-webkit-scrollbar-corner {
-  background: #2d2d2d;
+  background: #f1f5f9;
 }
 
 .jsonContent {
@@ -856,14 +865,22 @@
 }
 
 .sectionIcon {
-  font-size: 20px;
   flex-shrink: 0;
+  color: #00684A; /* palette.green.dark2 */
+  margin-right: 4px;
+  display: inline-flex;
+  vertical-align: middle;
+}
+
+.schemaIcon {
+  flex-shrink: 0;
+  color: #00684A; /* palette.green.dark2 */
 }
 
 .schemaSection strong {
   display: block;
   font-size: 13px;
-  color: #047857;
+  color: #00684A; /* palette.green.dark2 */
   font-family: 'SF Mono', Monaco, monospace;
   margin-bottom: 4px;
 }
@@ -911,27 +928,27 @@
   gap: 10px;
   align-items: flex-start;
   padding: 12px;
-  background: #e8f5e9;
-  border: 1px solid #4caf50;
+  background: #C0FAE6; /* palette.green.light2 */
+  border: 1px solid #00ED64; /* palette.green.base */
   border-radius: 6px;
   margin-top: 16px;
 }
 
 .mongoIcon {
-  font-size: 20px;
   flex-shrink: 0;
+  color: #00684A; /* palette.green.dark2 */
 }
 
 .mongoNote p {
   margin: 0;
   font-size: 12px;
-  color: #1b5e20;
+  color: #1C2D38; /* palette.gray.dark3 */
   line-height: 1.4;
 }
 
 .mongoNote strong {
   font-weight: 600;
-  color: #2e7d32;
+  color: #00684A; /* palette.green.dark2 */
 }
 
 /* Animations */
