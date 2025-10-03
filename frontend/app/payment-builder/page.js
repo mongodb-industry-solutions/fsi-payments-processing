@@ -27,6 +27,7 @@ export default function PaymentBuilder() {
       setSelectedPaymentType(null);
       setExecutionResult(null);
       setFormData({});
+      setConvertedMessage(null);
       setFocusedPanel('none');
       setShowAutoConfig(false);
       // Optionally expand panel when deselecting
@@ -37,6 +38,7 @@ export default function PaymentBuilder() {
     setSelectedPaymentType(paymentType);
     setExecutionResult(null);
     setFormData({});
+    setConvertedMessage(null);
     // Auto-collapse panel after selection
     setIsPanelCollapsed(true);
     setIsFormCollapsed(false);
@@ -52,6 +54,7 @@ export default function PaymentBuilder() {
     setSelectedPaymentType(null);
     setExecutionResult(null);
     setFormData({});
+    setConvertedMessage(null);
   };
 
   const handleAutoConfigClick = () => {
@@ -65,6 +68,7 @@ export default function PaymentBuilder() {
     setSelectedPaymentType(autoConfigType);
     setExecutionResult(null);
     setFormData({});
+    setConvertedMessage(null);
     setIsPanelCollapsed(true); // Collapse panel like normal selection
     setIsFormCollapsed(false);
     setFocusedPanel('none');
@@ -177,6 +181,8 @@ export default function PaymentBuilder() {
                 isFormCollapsed={isFormCollapsed}
                 onToggleFormCollapse={toggleFormCollapse}
                 focusedPanel={focusedPanel}
+                convertedMessage={convertedMessage}
+                setConvertedMessage={setConvertedMessage}
               />
             )
           )}

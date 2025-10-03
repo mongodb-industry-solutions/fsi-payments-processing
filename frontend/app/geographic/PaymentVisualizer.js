@@ -20,6 +20,7 @@ import CryptoNode from './components/CryptoNode';
 import JsonBridgeNode from './components/JsonBridgeNode';
 import ProcessingPipelinePanel from './components/ProcessingPipelinePanel';
 import ConversionDetailsModal from './components/ConversionDetailsModal';
+import CanonicalJsonExplainer from './components/CanonicalJsonExplainer';
 import AnimatedEdge from './CustomEdges';
 import { getLayoutedElements, getRadialLayout, getRoutingTreeLayout, determineLayoutStrategy } from './utils/layoutUtils';
 import { convertPayment } from './services/conversionService';
@@ -1143,11 +1144,7 @@ function PaymentVisualizerFlow() {
 
         {!selectedScenario && (
           <div className={styles.emptyState}>
-            <div className={styles.emptyContent}>
-              <span className={styles.emptyIcon}>👈</span>
-              <h3>Select a Payment Scenario</h3>
-              <p>Choose from wild multi-hop routes or simple transfers to visualize the payment journey</p>
-            </div>
+            <CanonicalJsonExplainer />
           </div>
         )}
       </div>

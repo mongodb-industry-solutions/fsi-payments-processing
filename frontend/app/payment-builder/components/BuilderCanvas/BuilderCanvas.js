@@ -16,17 +16,17 @@ export default function BuilderCanvas({
   setFormData,
   isFormCollapsed,
   onToggleFormCollapse,
-  focusedPanel
+  focusedPanel,
+  convertedMessage,
+  setConvertedMessage
 }) {
   const [isFormValid, setIsFormValid] = useState(false);
   const [executionResult, setExecutionResult] = useState(null);
-  const [convertedMessage, setConvertedMessage] = useState(null);
   const [isConverting, setIsConverting] = useState(false);
   const [sessionId, setSessionId] = useState(null);
 
-  // Reset converted message when payment type changes
+  // Reset execution result when payment type changes
   useEffect(() => {
-    setConvertedMessage(null);
     setExecutionResult(null);
   }, [selectedPaymentType]);
 
@@ -40,7 +40,9 @@ export default function BuilderCanvas({
 
   const handleNewPayment = () => {
     setExecutionResult(null);
-    setConvertedMessage(null);
+    if (setConvertedMessage) {
+      setConvertedMessage(null);
+    }
     setFormData({});
   };
 
@@ -50,7 +52,9 @@ export default function BuilderCanvas({
     onExecute(true); // Start processing
     setExecutionResult(null);
     setIsConverting(true);
-    setConvertedMessage(null);
+    if (setConvertedMessage) {
+      setConvertedMessage(null);
+    }
 
     try {
       // Generate a session ID for tracking
@@ -66,8 +70,8 @@ export default function BuilderCanvas({
 
       setExecutionResult(result);
 
-      // Store the converted message
-      if (result && result.converted_message) {
+      // Store the converted message in parent state
+      if (result && result.converted_message && setConvertedMessage) {
         setConvertedMessage(result.converted_message);
       }
 
