@@ -227,99 +227,103 @@ INVOICE INV-FJ-2024-089
   simpleTransfer: {
     id: 'simple-transfer',
     name: '🌐 Cross-Border Transfer',
-    description: 'Hub-and-spoke model: USA to UK/France via Canonical JSON',
+    description: 'USA to UK via Correspondent Bank with JSON conversion',
     complexity: 'simple',
 
     // Hub and spoke configuration
     hubAndSpoke: true,
-    selectedDestination: 'uk', // Default to UK, can be changed to 'france'
+    selectedDestination: 'lloyds', // Default to Lloyds, can be changed to 'barclays'
 
     // All possible nodes in the hub-spoke model
     allNodes: {
-      usa: { id: 'usa', country: 'USA', format: 'MT103', icon: '🇺🇸', city: 'New York' },
-      uk: { id: 'uk', country: 'UK', format: 'CHAPS', icon: '🇬🇧', city: 'London' },
-      france: { id: 'france', country: 'France', format: 'ISO 20022 (pacs.008)', icon: '🇫🇷', city: 'Paris' }
+      usa: { id: 'usa', country: 'USA Bank', format: 'MT103 (SWIFT)', icon: '🇺🇸', city: 'New York', info: 'Originating Bank' },
+      correspondent: { id: 'correspondent', country: 'UK Correspondent', format: 'HSBC London', icon: '🏦', city: 'London', info: 'CHAPS & FPS Participant', isCorrespondent: true },
+      lloyds: { id: 'lloyds', country: 'Lloyds Bank', format: 'CHAPS', icon: '🇬🇧', city: 'London', info: 'Beneficiary Bank' },
+      barclays: { id: 'barclays', country: 'Barclays', format: 'FPS', icon: '🇬🇧', city: 'London', info: 'Faster Payments' }
     },
 
-    // Default hops (for UK)
+    // Default hops (for Lloyds)
     hops: [
-      { id: 'usa', country: 'USA', format: 'MT103', icon: '🇺🇸', city: 'New York' },
-      { id: 'uk', country: 'UK', format: 'CHAPS', icon: '🇬🇧', city: 'London' }
+      { id: 'usa', country: 'USA Bank', format: 'MT103 (SWIFT)', icon: '🇺🇸', city: 'New York' },
+      { id: 'correspondent', country: 'UK Correspondent', format: 'HSBC London', icon: '🏦', city: 'London' },
+      { id: 'lloyds', country: 'Lloyds Bank', format: 'CHAPS', icon: '🇬🇧', city: 'London' }
     ],
     // Conversion paths for different destinations
     conversionPaths: {
-      uk: {
+      lloyds: {
         hops: [
-          { id: 'usa', country: 'USA', format: 'MT103', icon: '🇺🇸', city: 'New York' },
-          { id: 'uk', country: 'UK', format: 'CHAPS', icon: '🇬🇧', city: 'London' }
+          { id: 'usa', country: 'USA Bank', format: 'MT103 (SWIFT)', icon: '🇺🇸', city: 'New York' },
+          { id: 'correspondent', country: 'UK Correspondent', format: 'HSBC London', icon: '🏦', city: 'London' },
+          { id: 'lloyds', country: 'Lloyds Bank', format: 'CHAPS', icon: '🇬🇧', city: 'London' }
         ],
         conversions: [
           {
             from: 'MT103',
             to: 'JSON',
-            location: 'Processing',
+            location: 'UK Correspondent Bank',
             time: 2000,
-            description: 'Extracting payment fields',
-            details: 'Converting SWIFT MT103 format to universal JSON structure',
+            description: 'Extracting SWIFT fields',
+            details: 'UK Correspondent receives MT103 from USA via SWIFT, converts to JSON',
             useRealAPI: true
           },
           {
             from: 'JSON',
             to: 'CHAPS',
-            location: 'UK Gateway',
+            location: 'UK Correspondent Bank',
             time: 2000,
-            description: 'Building UK format',
-            details: 'Transforming JSON to UK CHAPS payment message',
+            description: 'Creating CHAPS message',
+            details: 'Converting to CHAPS format for domestic UK settlement to Lloyds',
             useRealAPI: true
           }
         ]
       },
-      france: {
+      barclays: {
         hops: [
-          { id: 'usa', country: 'USA', format: 'MT103', icon: '🇺🇸', city: 'New York' },
-          { id: 'france', country: 'France', format: 'ISO 20022 (pacs.008)', icon: '🇫🇷', city: 'Paris' }
+          { id: 'usa', country: 'USA Bank', format: 'MT103 (SWIFT)', icon: '🇺🇸', city: 'New York' },
+          { id: 'correspondent', country: 'UK Correspondent', format: 'HSBC London', icon: '🏦', city: 'London' },
+          { id: 'barclays', country: 'Barclays', format: 'FPS', icon: '🇬🇧', city: 'London' }
         ],
         conversions: [
           {
             from: 'MT103',
             to: 'JSON',
-            location: 'Processing',
+            location: 'UK Correspondent Bank',
             time: 2000,
-            description: 'Extracting payment fields',
-            details: 'Converting SWIFT MT103 format to universal JSON structure',
+            description: 'Extracting SWIFT fields',
+            details: 'UK Correspondent receives MT103 from USA via SWIFT, converts to JSON',
             useRealAPI: true
           },
           {
             from: 'JSON',
-            to: 'pacs.008',
-            location: 'EU Gateway',
-            time: 2000,
-            description: 'Building ISO 20022',
-            details: 'Transforming JSON to ISO 20022 pacs.008 payment message',
+            to: 'FPS',
+            location: 'UK Correspondent Bank',
+            time: 1500,
+            description: 'Creating FPS message',
+            details: 'Converting to Faster Payments format for instant UK settlement to Barclays',
             useRealAPI: true
           }
         ]
       }
     },
 
-    // Default conversions (for UK)
+    // Default conversions (for Lloyds)
     conversions: [
       {
         from: 'MT103',
         to: 'JSON',
-        location: 'Processing',
+        location: 'UK Correspondent Bank',
         time: 2000,
-        description: 'Extracting payment fields',
-        details: 'Converting SWIFT MT103 format to universal JSON structure',
+        description: 'Extracting SWIFT fields',
+        details: 'UK Correspondent receives MT103 from USA via SWIFT, converts to JSON',
         useRealAPI: true
       },
       {
         from: 'JSON',
         to: 'CHAPS',
-        location: 'UK Gateway',
+        location: 'UK Correspondent Bank',
         time: 2000,
-        description: 'Building UK format',
-        details: 'Transforming JSON to UK CHAPS payment message',
+        description: 'Creating CHAPS message',
+        details: 'Converting to CHAPS format for domestic UK settlement',
         useRealAPI: true
       }
     ],
@@ -349,23 +353,23 @@ ORDER PO-8934567 QTY 5000 UNITS
 /REC/NOTIFY ACCOUNTS@GLOBALSUPPLIES.DE
 -}`,
     mongoDbAdvantages: {
-      title: 'MongoDB: Universal Payment Hub',
-      message: "MongoDB's Canonical JSON format eliminates N×N conversion complexity. Instead of building direct MT103→CHAPS converters, payments flow through a universal JSON structure, enabling instant support for new formats with zero code changes."
+      title: 'MongoDB: Correspondent Bank Conversion Hub',
+      message: "UK Correspondent Banks use MongoDB to convert incoming SWIFT messages to domestic CHAPS or FPS. The JSON bridge enables intelligent routing between payment rails - CHAPS for high-value settlements, FPS for instant payments - all without separate converters."
     },
     pipelineStory: {
-      source: 'MT103 SWIFT message from USA with 21 payment fields',
-      mongodb: 'Transforms to Canonical JSON - a universal payment language',
-      target: 'Outputs as UK CHAPS format for local clearing',
-      story: 'MongoDB eliminates the need for direct MT103→CHAPS converters. Every payment flows through JSON, making new format support instant and code-free.'
+      source: 'MT103 arrives at UK Correspondent via SWIFT from USA',
+      mongodb: 'Correspondent converts: MT103 → JSON → CHAPS/FPS',
+      target: 'CHAPS or FPS message sent to beneficiary UK bank',
+      story: 'This is the actual conversion point! UK Correspondent Banks receive international SWIFT and use MongoDB to intelligently route via CHAPS (high-value) or FPS (instant) for domestic settlement.'
     },
     // MongoDB configuration details for this scenario
     mongodbConfig: {
       bridge: {
-        title: 'Universal JSON Bridge',
-        from: 'MT103 (SWIFT)',
-        through: 'Canonical JSON',
-        to: 'CHAPS (UK)',
-        description: 'Eliminates need for MT103→CHAPS direct converter'
+        title: 'Correspondent Bank Conversion',
+        from: 'MT103 (International)',
+        through: 'JSON at UK Correspondent',
+        to: 'CHAPS/FPS (Domestic)',
+        description: 'UK Correspondent converts to CHAPS or FPS based on destination'
       },
       mapping: {
         totalFields: 21,
@@ -375,29 +379,31 @@ ORDER PO-8934567 QTY 5000 UNITS
         examples: [
           { source: ':20:', target: 'transaction_reference', type: 'rules', description: 'Transaction ID' },
           { source: ':32A:', target: 'value_date + amount', type: 'rules', description: 'Payment amount' },
-          { source: ':50K:', target: 'debtor.name + account', type: 'rules', description: 'Ordering customer' },
+          { source: ':50K:', target: 'debtor.name + account', type: 'rules', description: 'US ordering customer' },
+          { source: ':59:', target: 'creditor.name + account', type: 'rules', description: 'UK beneficiary' },
           { source: ':70:', target: 'remittance.unstructured', type: 'ai', description: 'Invoice details' }
         ]
       },
       conversion: {
         steps: [
-          { step: 1, action: 'Parse MT103', details: 'Extract 21 fields using regex' },
-          { step: 2, action: 'Transform to JSON', details: '18 rules + 3 AI mappings' },
-          { step: 3, action: 'Build CHAPS', details: 'XML template population' }
+          { step: 1, action: 'Receive MT103', details: 'UK Correspondent receives SWIFT from USA' },
+          { step: 2, action: 'Parse & Convert to JSON', details: 'Extract fields at correspondent bank' },
+          { step: 3, action: 'Transform JSON to CHAPS/FPS', details: 'Create domestic payment message' },
+          { step: 4, action: 'Send CHAPS/FPS', details: 'Settle to beneficiary UK bank' }
         ],
-        processingSteps: 3
+        processingSteps: 4
       },
       metrics: {
         accuracy: '99.8%',
         straightThrough: '95%',
         aiConfidence: '88%',
         costSaving: '92%',
-        setupMode: 'Instant'
+        correspondentEfficiency: '10x faster'
       },
       insights: {
-        key: 'Zero-Code Architecture',
-        value: 'Adding MT192 support is instant with auto-config vs traditional lengthy development cycles',
-        impact: 'New payment formats added instantly without deploying code'
+        key: 'Correspondent Banking Reality',
+        value: 'UK correspondents can route via CHAPS (high-value) or FPS (instant payments) based on requirements.',
+        impact: 'MongoDB enables intelligent routing between multiple UK payment rails at correspondent banks'
       }
     }
   },

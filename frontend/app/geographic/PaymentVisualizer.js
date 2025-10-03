@@ -78,7 +78,7 @@ function PaymentVisualizerFlow() {
   const [jsonBridgeData, setJsonBridgeData] = useState({});
   const [bfsState, setBfsState] = useState({ queue: [], visited: [], current: null });
   const [selectedPath, setSelectedPath] = useState(null);
-  const [selectedDestination, setSelectedDestination] = useState('uk'); // For hub-and-spoke scenarios
+  const [selectedDestination, setSelectedDestination] = useState('lloyds'); // For hub-and-spoke scenarios
   const [conversionModalData, setConversionModalData] = useState(null);
   const [isConversionModalOpen, setIsConversionModalOpen] = useState(false);
   const { fitView } = useReactFlow();
@@ -385,30 +385,12 @@ function PaymentVisualizerFlow() {
       }, 100);
 
     } else if (scenario.hubAndSpoke) {
-      // Hub-and-spoke model for cross-border transfers
-      // Central JSON hub with multiple destination spokes
+      // Hub-and-spoke model for cross-border transfers via correspondent bank
       const hubId = 'json-hub';
+      const correspondentId = 'correspondent';
 
       // Use selectedDestination from state
-      const activeDestination = selectedDestination || 'uk';
-
-      // Add central JSON hub
-      initialNodes.push({
-        id: hubId,
-        type: 'jsonBridge',
-        position: { x: 0, y: 0 }, // Will be positioned by layout
-        data: {
-          country: 'JSON',
-          format: 'Canonical',
-          icon: '🔄',
-          isHub: true,
-          city: 'Universal Hub',
-          status: executionProgress[hubId] || 'idle',
-          beforeJson: jsonBridgeData[hubId]?.beforeJson || null,
-          afterJson: jsonBridgeData[hubId]?.afterJson || null,
-          selectedScenario: scenario
-        }
-      });
+      const activeDestination = selectedDestination || 'lloyds';
 
       // Add source node (USA)
       const sourceNode = scenario.allNodes.usa;
@@ -423,10 +405,55 @@ function PaymentVisualizerFlow() {
         }
       });
 
-      // Add edge from USA to JSON hub (always active as it's the source)
+      // Add correspondent bank node
+      const correspondentNode = scenario.allNodes.correspondent;
+      initialNodes.push({
+        id: correspondentId,
+        type: 'country',
+        position: { x: 0, y: 0 },
+        data: {
+          ...correspondentNode,
+          mongoConfig: true,
+          status: executionProgress[correspondentId] || 'idle',
+          isCorrespondent: true
+        }
+      });
+
+      // Add central JSON hub (at correspondent bank)
+      initialNodes.push({
+        id: hubId,
+        type: 'jsonBridge',
+        position: { x: 0, y: 0 },
+        data: {
+          country: 'JSON',
+          format: 'Conversion Hub',
+          icon: '🔄',
+          isHub: true,
+          city: 'At Correspondent',
+          status: executionProgress[hubId] || 'idle',
+          beforeJson: jsonBridgeData[hubId]?.beforeJson || null,
+          afterJson: jsonBridgeData[hubId]?.afterJson || null,
+          selectedScenario: scenario
+        }
+      });
+
+      // Add edge from USA to Correspondent (SWIFT network)
       initialEdges.push({
-        id: `${sourceNode.id}-${hubId}`,
+        id: `${sourceNode.id}-${correspondentId}`,
         source: sourceNode.id,
+        target: correspondentId,
+        ...edgeOptions,
+        data: {
+          label: `MT103 (SWIFT)`,
+          onEdgeClick: handleEdgeClick
+        },
+        labelStyle: { fontSize: 11, fontWeight: 600, color: '#00A35C' }
+      });
+
+      // Add edge from Correspondent to JSON hub
+      initialEdges.push({
+        id: `${correspondentId}-${hubId}`,
+        source: correspondentId,
         target: hubId,
         ...edgeOptions,
         data: {
@@ -436,8 +463,8 @@ function PaymentVisualizerFlow() {
         labelStyle: { fontSize: 11, fontWeight: 600, color: '#00A35C' }
       });
 
-      // Add destination nodes (UK and France)
-      const destinations = [scenario.allNodes.uk, scenario.allNodes.france];
+      // Add destination nodes (Lloyds and Barclays)
+      const destinations = [scenario.allNodes.lloyds, scenario.allNodes.barclays];
       destinations.forEach(dest => {
         // Check if this destination is selected
         const isDestinationSelected = activeDestination === dest.id;
@@ -451,7 +478,6 @@ function PaymentVisualizerFlow() {
             ...dest,
             mongoConfig: true,
             status: executionProgress[dest.id] || 'idle',
-            // Mark selected destination
             isSelected: isDestinationSelected
           }
         });
@@ -467,28 +493,30 @@ function PaymentVisualizerFlow() {
           target: dest.id,
           ...edgeStyle,
           data: {
-            label: dest.format === 'CHAPS' ? `JSON → CHAPS` : `JSON → ISO 20022`,
+            label: dest.id === 'barclays' ? `JSON → FPS` : `JSON → CHAPS`,
             onEdgeClick: handleEdgeClick
           },
           labelStyle: { fontSize: 11, fontWeight: 600, color: isDestinationSelected ? '#00A35C' : '#9ca3af' }
         });
       });
 
-      // Custom layout for hub-and-spoke pattern with more spacing
-      // Position nodes in a triangular pattern with JSON at center
+      // Custom layout for correspondent banking flow with maximum spacing
       const layoutedNodes = initialNodes.map(node => {
-        if (node.id === hubId) {
-          // JSON hub at center
-          return { ...node, position: { x: 500, y: 300 } };
-        } else if (node.id === 'usa') {
-          // USA on the left with more distance
-          return { ...node, position: { x: 50, y: 300 } };
-        } else if (node.id === 'uk') {
-          // UK on top-right with more spacing
-          return { ...node, position: { x: 950, y: 100 } };
-        } else if (node.id === 'france') {
-          // France on bottom-right with more spacing
-          return { ...node, position: { x: 950, y: 500 } };
+        if (node.id === 'usa') {
+          // USA on the far left with maximum space
+          return { ...node, position: { x: 150, y: 400 } };
+        } else if (node.id === correspondentId) {
+          // Correspondent bank with large spacing from USA (500px gap)
+          return { ...node, position: { x: 650, y: 400 } };
+        } else if (node.id === hubId) {
+          // JSON hub at center with clear separation (450px gap)
+          return { ...node, position: { x: 1100, y: 400 } };
+        } else if (node.id === 'lloyds') {
+          // Lloyds on top-right with very wide separation (500px gap, 200px up)
+          return { ...node, position: { x: 1600, y: 200 } };
+        } else if (node.id === 'barclays') {
+          // Barclays on bottom-right with very wide separation (500px gap, 200px down)
+          return { ...node, position: { x: 1600, y: 600 } };
         }
         return node;
       });
@@ -496,12 +524,13 @@ function PaymentVisualizerFlow() {
       setNodes(layoutedNodes);
       setEdges(initialEdges);
 
-      // Auto-fit view
+      // Auto-fit view with perfect framing for maximum spacing
       setTimeout(() => {
         fitView({
-          padding: 0.2,
+          padding: 0.1,
           duration: 800,
-          maxZoom: 0.9
+          maxZoom: 0.5,
+          minZoom: 0.2
         });
       }, 100);
 
@@ -653,7 +682,7 @@ function PaymentVisualizerFlow() {
   const handleSelectScenario = (scenario) => {
     // Set the default destination for hub-and-spoke scenarios
     if (scenario.hubAndSpoke) {
-      const defaultDest = scenario.selectedDestination || 'uk';
+      const defaultDest = scenario.selectedDestination || 'lloyds';
       setSelectedDestination(defaultDest);
       // Update scenario with the correct conversion path
       scenario = {
@@ -1059,19 +1088,19 @@ function PaymentVisualizerFlow() {
       {/* Destination Selector for Hub-and-Spoke scenarios */}
       {selectedScenario?.hubAndSpoke && (
         <div className={styles.destinationSelector}>
-          <h3>Select Destination</h3>
+          <h3>Select UK Destination Bank</h3>
           <div className={styles.destinationButtons}>
             <button
-              className={`${styles.destinationButton} ${selectedDestination === 'uk' ? styles.selected : ''}`}
+              className={`${styles.destinationButton} ${selectedDestination === 'lloyds' ? styles.selected : ''}`}
               onClick={() => {
-                setSelectedDestination('uk');
+                setSelectedDestination('lloyds');
                 // Update the scenario with new destination
                 if (selectedScenario) {
                   const updatedScenario = {
                     ...selectedScenario,
-                    selectedDestination: 'uk',
-                    hops: selectedScenario.conversionPaths.uk.hops,
-                    conversions: selectedScenario.conversionPaths.uk.conversions
+                    selectedDestination: 'lloyds',
+                    hops: selectedScenario.conversionPaths.lloyds.hops,
+                    conversions: selectedScenario.conversionPaths.lloyds.conversions
                   };
                   setSelectedScenario(updatedScenario);
                   buildScenarioFlow(updatedScenario);
@@ -1079,31 +1108,31 @@ function PaymentVisualizerFlow() {
               }}
             >
               <span className={styles.flag}>🇬🇧</span>
-              <span>UK (CHAPS)</span>
+              <span>Lloyds Bank (CHAPS)</span>
             </button>
             <button
-              className={`${styles.destinationButton} ${selectedDestination === 'france' ? styles.selected : ''}`}
+              className={`${styles.destinationButton} ${selectedDestination === 'barclays' ? styles.selected : ''}`}
               onClick={() => {
-                setSelectedDestination('france');
+                setSelectedDestination('barclays');
                 // Update the scenario with new destination
                 if (selectedScenario) {
                   const updatedScenario = {
                     ...selectedScenario,
-                    selectedDestination: 'france',
-                    hops: selectedScenario.conversionPaths.france.hops,
-                    conversions: selectedScenario.conversionPaths.france.conversions
+                    selectedDestination: 'barclays',
+                    hops: selectedScenario.conversionPaths.barclays.hops,
+                    conversions: selectedScenario.conversionPaths.barclays.conversions
                   };
                   setSelectedScenario(updatedScenario);
                   buildScenarioFlow(updatedScenario);
                 }
               }}
             >
-              <span className={styles.flag}>🇫🇷</span>
-              <span>France (ISO 20022)</span>
+              <span className={styles.flag}>🇬🇧</span>
+              <span>Barclays (FPS)</span>
             </button>
           </div>
           <p className={styles.destinationInfo}>
-            The Canonical JSON hub enables any-to-any conversion. Select a destination to see the conversion path.
+            UK Correspondent Bank (HSBC) receives MT103 via SWIFT and converts to CHAPS or FPS for domestic settlement.
           </p>
         </div>
       )}
@@ -1122,18 +1151,18 @@ function PaymentVisualizerFlow() {
               edgeTypes={edgeTypes}
               fitView
               fitViewOptions={{
-                padding: 0.3,
+                padding: 0.2,
                 includeHiddenNodes: false,
-                maxZoom: 1.0,
-                minZoom: 0.5,
+                maxZoom: 0.8,
+                minZoom: 0.3,
                 duration: 800
               }}
-              defaultViewport={{ x: 200, y: 50, zoom: 0.65 }}
+              defaultViewport={{ x: 0, y: 50, zoom: 0.38 }}
               minZoom={0.1}
               maxZoom={2}
               proOptions={{ hideAttribution: true }}
-              translateExtent={[[-500, -500], [4000, 1200]]}
-              nodeExtent={[[-200, -200], [3800, 1000]]}
+              translateExtent={[[-500, -500], [6000, 1500]]}
+              nodeExtent={[[-200, -200], [5800, 1300]]}
               zoomOnScroll={true}
               panOnDrag={true}
             >

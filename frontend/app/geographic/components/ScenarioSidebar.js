@@ -21,7 +21,10 @@ export default function ScenarioSidebar({ onSelectScenario, selectedScenario, on
       const abbreviations = {
         'TARGET2': 'T2',
         'pacs.008': 'pacs008',
-        'pacs.009': 'pacs009'
+        'pacs.009': 'pacs009',
+        'MT103 (SWIFT)': 'MT103',
+        'ISO 20022 (pacs.008)': 'pacs008',
+        'HSBC London': 'Correspondent'
       };
       return abbreviations[format] || format;
     };
