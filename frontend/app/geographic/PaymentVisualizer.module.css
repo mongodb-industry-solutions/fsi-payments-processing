@@ -134,6 +134,7 @@
   min-height: 450px; /* Increased minimum height */
 }
 
+/* Empty State Panel - Consistent with other panels */
 .emptyState {
   position: absolute;
   top: 0;
@@ -143,12 +144,29 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  background: var(--white);
+  justify-content: flex-start;
+  background: var(--gray-light3); /* Consistent with sidebar background */
   z-index: 10;
   overflow-y: auto;
+  padding: var(--spacing-6);
 }
 
+/* Scrollbar styling - consistent with other panels */
+.emptyState::-webkit-scrollbar {
+  width: 6px;
+}
+
+.emptyState::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.emptyState::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+/* Legacy styles kept for compatibility */
 .emptyContent {
   width: 100%;
   max-width: 1200px;
@@ -158,7 +176,7 @@
 
 .emptyIcon {
   font-size: 2rem;
-  color: var(--gray-light1);
+  color: var(--green-dark1); /* MongoDB green instead of gray */
   margin-bottom: var(--spacing-4);
 }
 

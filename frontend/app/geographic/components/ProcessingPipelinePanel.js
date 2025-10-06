@@ -84,6 +84,34 @@ const ProcessingPipelinePanel = ({ selectedScenario, conversionResults, isExecut
 
 
         <div className={styles.pipelineFlow}>
+          {/* Show Self-Healing Step if Applied */}
+          {conversionResults?.[0]?.selfHealingApplied && (
+            <>
+              <div className={`${styles.step} ${styles.selfHealing}`}>
+                <div className={styles.stepNumber}>🔧</div>
+                <div className={styles.stepContent}>
+                  <h4>MongoDB Self-Healing Rule Creation</h4>
+                  <div className={styles.stepDetails}>
+                    <span className={styles.status}>
+                      <Icon glyph="Settings" size="small" /> Pattern Mismatch Detected
+                    </span>
+                    <span className={styles.lanes}>
+                      <Icon glyph="Database" size="small" /> BIC: {conversionResults[0].problematicBIC || 'CORRBANKXXX'}
+                    </span>
+                    <span className={styles.review}>
+                      <Icon glyph="Sparkle" size="small" /> LLM Created Rule
+                    </span>
+                  </div>
+                  <div className={styles.selfHealingDetails}>
+                    <p>Detected delimiter: <code>///</code> in field 59 (Beneficiary)</p>
+                    <p>Created BIC-specific parsing rule in MongoDB</p>
+                  </div>
+                </div>
+              </div>
+              <div className={styles.arrow}>→</div>
+            </>
+          )}
+
           {conversionResults.map((result, index) => (
             <React.Fragment key={index}>
               {index > 0 && <div className={styles.arrow}>→</div>}
@@ -105,6 +133,11 @@ const ProcessingPipelinePanel = ({ selectedScenario, conversionResults, isExecut
                     {result.humanReviewRequired && (
                       <span className={styles.review}>
                         <Icon glyph="Person" size="small" /> Review Required
+                      </span>
+                    )}
+                    {result.selfHealingApplied && (
+                      <span className={styles.selfHealed}>
+                        <Icon glyph="Settings" size="small" /> Self-Healed
                       </span>
                     )}
                   </div>

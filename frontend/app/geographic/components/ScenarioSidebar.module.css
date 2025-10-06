@@ -166,6 +166,85 @@
   line-height: 1.4;
 }
 
+/* Variation Selector - Compact Professional Style */
+.variationSelector {
+  margin: 10px 0 12px 0;
+  padding: 0;
+}
+
+.variationHeader {
+  display: none; /* Not used anymore */
+}
+
+.variationLabel {
+  display: none; /* Not used anymore */
+}
+
+.variationDropdown {
+  width: 100%;
+  padding: 7px 32px 7px 10px;
+  background: white;
+  border: 1px solid #D6DADE;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #001E2B;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%23889397' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+}
+
+.variationDropdown:hover {
+  border-color: #00684A;
+  background-color: #FAFBFC;
+}
+
+.variationDropdown:focus {
+  outline: none;
+  border-color: #00684A;
+  box-shadow: 0 0 0 1px rgba(0, 104, 74, 0.15);
+}
+
+.variationInfo {
+  margin-top: 8px;
+  padding: 8px 10px;
+  background: #F9FBFA;
+  border-radius: 4px;
+  border: 1px solid #E8EDEB;
+}
+
+.variationDescription {
+  font-size: 11px;
+  color: #5E6C84;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.variationBadge {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 2px 6px;
+  background: #5E3DA1;
+  color: white;
+  border-radius: 3px;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+/* Unused card styles - keeping for reference */
+.variationOptions,
+.variationOption,
+.variationOption:hover,
+.variationSelected,
+.variationOptionHeader,
+.variationName {
+  display: none;
+}
+
 .miniFlow {
   display: flex;
   align-items: center;

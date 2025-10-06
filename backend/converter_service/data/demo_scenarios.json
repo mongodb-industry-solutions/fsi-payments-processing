@@ -275,6 +275,27 @@
             "remittance_info": "MEDICAL EQUIPMENT ORDER MED-9876\nMRI SCANNER COMPONENTS\nURGENT HOSPITAL DELIVERY",
             "sender_to_receiver_info": "/PRIORITY/HUMANITARIAN AID\n/CLEARANCE/EXPEDITED"
           }
+        },
+        {
+          "scenario_name": "Correspondent Bank - Non-Standard Format",
+          "values": {
+            "sender_name": "GLOBAL CORRESPONDENT BANK LLC",
+            "sender_account": "US98765432109876543",
+            "sender_address": "500 WALL STREET///NEW YORK NY 10005///USA",
+            "sender_bic": "CORRBANKXXX",
+            "sender_bank_bic": "CORRBANKXXX",
+            "beneficiary_name": "SOUTH AFRICAN HEALTH SUPPLIES PTY LTD",
+            "beneficiary_account": "ZA123456789012345678901",
+            "beneficiary_address": "123 MEDICAL PLAZA SANDTON///JOHANNESBURG 2001///SOUTH AFRICA",
+            "receiver_bic": "ABSAZAJJXXX",
+            "intermediary_bic": "ABSAZAJJXXX",
+            "amount": "250000.00",
+            "currency": "USD",
+            "reference": "CORR-BANK-2024-789",
+            "value_date": "241215",
+            "remittance_info": "CORRESPONDENT BANKING SETTLEMENT///HIGH VOLUME TRANSACTION///REQUIRES SPECIAL PROCESSING",
+            "sender_to_receiver_info": "/BIC_OVERRIDE/NON_STANDARD_FORMAT\n/DELIMITER/TRIPLE_SLASH\n/PROCESSING/REQUIRES_PATTERN_FIX"
+          }
         }
       ],
       "possible_journeys": [

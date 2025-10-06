@@ -1,12 +1,17 @@
-/* Container and Layout */
+/* Container and Layout - Consistent with panel styling */
 .container {
   width: 100%;
-  height: 100%;
+  max-width: 1400px; /* Constrain width for better readability */
+  height: auto;
   display: flex;
   flex-direction: column;
   padding: var(--spacing-6);
-  background: linear-gradient(135deg, var(--gray-light3) 0%, var(--white) 100%);
+  margin: 0 auto; /* Center the container */
+  background: var(--white); /* Clean white background consistent with panels */
   overflow-y: auto;
+  border-radius: 12px; /* Rounded corners like other panels */
+  border: 1px solid var(--gray-light2); /* Subtle border like other panels */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); /* Subtle shadow for depth */
 }
 
 /* Header Section */

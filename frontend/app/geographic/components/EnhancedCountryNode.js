@@ -10,6 +10,7 @@ const EnhancedCountryNode = ({ data, selected }) => {
   const isJsonBridge = data.format === 'Bridge' || data.format === 'JSON' || data.isHub;
   const isProcessing = data.status === 'processing';
   const isCompleted = data.status === 'completed';
+  const isError = data.status === 'error';
 
   const handleNodeClick = (e) => {
     // Stop event from bubbling to ReactFlow's node click handler
@@ -24,7 +25,7 @@ const EnhancedCountryNode = ({ data, selected }) => {
   return (
     <>
       <div
-        className={`${styles.nodeWrapper} ${selected ? styles.selected : ''} ${isProcessing ? styles.processing : ''} ${isCompleted ? styles.completed : ''} ${!isJsonBridge ? styles.clickable : ''}`}
+        className={`${styles.nodeWrapper} ${selected ? styles.selected : ''} ${isProcessing ? styles.processing : ''} ${isCompleted ? styles.completed : ''} ${isError ? styles.error : ''} ${!isJsonBridge ? styles.clickable : ''}`}
         onClick={handleNodeClick}
       >
       <Handle
@@ -46,6 +47,13 @@ const EnhancedCountryNode = ({ data, selected }) => {
             <div className={styles.completedIndicator}>
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
                 <path d="M5 13L9 17L19 7" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+          )}
+          {isError && (
+            <div className={styles.errorIndicator}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M12 9V13M12 17H12.01M12 3L22 20H2L12 3Z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </div>
           )}

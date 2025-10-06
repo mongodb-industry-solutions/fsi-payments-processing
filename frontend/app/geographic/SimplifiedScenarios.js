@@ -234,6 +234,28 @@ INVOICE INV-FJ-2024-089
     hubAndSpoke: true,
     selectedDestination: 'lloyds', // Default to Lloyds, can be changed to 'barclays'
 
+    // Scenario variations
+    hasVariations: true,
+    selectedVariation: 'standard', // Default variation
+    variations: [
+      {
+        id: 'standard',
+        name: 'Standard Format',
+        description: 'Normal SWIFT MT103 with standard field delimiters',
+        icon: '✅'
+      },
+      {
+        id: 'non-standard',
+        name: 'Non-Standard Format (Self-Healing Demo)',
+        description: 'Correspondent bank using /// delimiter - triggers MongoDB self-healing',
+        icon: '🔧',
+        hasProblematicBank: true,
+        problematicBIC: 'CORRBANKXXX',
+        malformedField59: true,
+        triggerSelfHealing: true
+      }
+    ],
+
     // All possible nodes in the hub-spoke model
     allNodes: {
       usa: { id: 'usa', country: 'USA Bank', format: 'MT103 (SWIFT)', icon: '🇺🇸', city: 'New York', info: 'Originating Bank' },

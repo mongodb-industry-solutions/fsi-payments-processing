@@ -97,6 +97,49 @@
   margin-top: 2px;
 }
 
+/* Self-Healing Step Styles */
+.selfHealing {
+  background: linear-gradient(135deg, #FFF5E6 0%, #FFF8F0 100%);
+  border: 1px solid #FFD080;
+  box-shadow: 0 2px 4px rgba(255, 152, 0, 0.1);
+}
+
+.selfHealing .stepNumber {
+  background: linear-gradient(135deg, #FF9800 0%, #FFB74D 100%);
+}
+
+.selfHealingDetails {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #FFE0B2;
+  font-size: 12px;
+  color: #E65100;
+}
+
+.selfHealingDetails p {
+  margin: 4px 0;
+}
+
+.selfHealingDetails code {
+  background: #FFF3E0;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-weight: 600;
+  color: #E65100;
+}
+
+.selfHealed {
+  color: #FF6F00;
+  font-size: 11px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #FFF3E0;
+  padding: 2px 8px;
+  border-radius: 12px;
+}
+
 .advantagesContent {
   flex: 1;
 }

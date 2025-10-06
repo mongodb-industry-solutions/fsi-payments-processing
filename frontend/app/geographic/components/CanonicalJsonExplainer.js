@@ -67,7 +67,6 @@ const CanonicalJsonExplainer = () => {
     <div className={styles.container}>
       <div className={styles.header}>
         <h2>Understanding the Canonical JSON Format</h2>
-        <p className={styles.subtitle}>The Universal Language for Payment Conversion</p>
       </div>
 
       <div className={styles.mainVisualization}>

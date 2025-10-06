@@ -8,6 +8,7 @@ from pydantic import BaseModel
 from datetime import datetime
 import logging
 import os
+import re
 
 from ..services.db_service import get_mongodb_service as get_db_service
 from ..services.semantic_learning_service_simplified import SimplifiedSemanticLearningService
@@ -21,6 +22,15 @@ logger = logging.getLogger(__name__)
 
 # Initialize the auto-config builder for demo scenarios
 auto_config_builder = AutoConfigBuilder()
+
+# Request model for fixing parser patterns
+class FixParserRequest(BaseModel):
+    """Request model for fixing parser patterns with ambiguous delimiters"""
+    conversion_id: str  # e.g., "MT103_to_pacs.008"
+    field_id: str  # e.g., "59" for beneficiary field
+    sample_data: str  # The malformed data sample
+    sender_bic: Optional[str] = None  # BIC to scope the rule
+    detected_delimiter: Optional[str] = None  # Detected delimiter pattern (e.g., "///")
 
 def _clean_config_for_response(config: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -1001,3 +1011,127 @@ async def get_scenario_metadata(scenario_id: str):
         )
 
     return metadata
+
+
+@router.post("/fix-parser-pattern")
+async def fix_parser_pattern(
+    request: FixParserRequest,
+    db_service=Depends(get_db),
+    ai_service=Depends(get_ai_service)
+):
+    """
+    Fix parser pattern for a field with ambiguous party information
+
+    This endpoint demonstrates MongoDB's dynamic schema discovery by:
+    1. Detecting non-standard delimiters in payment fields
+    2. Creating BIC-specific parser rules
+    3. Storing rules as JSON documents in MongoDB
+    4. Enabling self-healing payment processing
+    """
+    try:
+        # Fetch the existing configuration
+        config = db_service.db['conversion_registry'].find_one({"_id": request.conversion_id})
+
+        if not config:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Configuration {request.conversion_id} not found"
+            )
+
+        # Analyze the sample data to detect pattern
+        delimiter = request.detected_delimiter
+        if not delimiter:
+            # Auto-detect delimiter pattern
+            if "///" in request.sample_data:
+                delimiter = "///"
+            elif "||" in request.sample_data:
+                delimiter = "||"
+            elif "~~" in request.sample_data:
+                delimiter = "~~"
+            else:
+                delimiter = "\n"  # Default to newline
+
+        logger.info(f"Detected delimiter '{delimiter}' in field {request.field_id}")
+
+        # Create a new parser pattern for the problematic field
+        field_config = config.get('parser', {}).get('fields', {}).get(request.field_id, {})
+        original_pattern = field_config.get('pattern', '')
+
+        # Modify pattern to handle the new delimiter
+        if delimiter == "///":
+            new_pattern = f":{{request.field_id}}:([^:]+(?:{delimiter}[^:]+)*)"
+        else:
+            new_pattern = original_pattern.replace(r'\n', f'(?:\n|{re.escape(delimiter)})')
+
+        # Store BIC-specific override in metadata
+        if 'metadata' not in config:
+            config['metadata'] = {}
+
+        if 'bic_overrides' not in config['metadata']:
+            config['metadata']['bic_overrides'] = {}
+
+        # Create BIC-specific rule
+        bic_rule = {
+            'field_id': request.field_id,
+            'pattern': new_pattern,
+            'delimiter': delimiter,
+            'created_at': datetime.utcnow().isoformat(),
+            'created_by': 'LLM_Resolution_Agent',
+            'confidence': 0.95,
+            'sample_data': request.sample_data[:100]  # Store sample for reference
+        }
+
+        # Store rule scoped to BIC if provided
+        if request.sender_bic:
+            config['metadata']['bic_overrides'][request.sender_bic] = bic_rule
+            logger.info(f"Created BIC-specific rule for {request.sender_bic}")
+        else:
+            # Apply globally if no BIC specified
+            config['parser']['fields'][request.field_id]['pattern'] = new_pattern
+            config['parser']['fields'][request.field_id]['delimiter_variants'] = [delimiter]
+            logger.info(f"Updated global pattern for field {request.field_id}")
+
+        # Add self-healing metadata
+        config['metadata']['self_healing_applied'] = True
+        config['metadata']['last_self_heal'] = datetime.utcnow().isoformat()
+
+        # Save the updated configuration
+        db_service.db['conversion_registry'].replace_one(
+            {"_id": request.conversion_id},
+            config
+        )
+
+        # Log to a separate collection for audit trail
+        db_service.db['dynamic_parsing_rules'].insert_one({
+            'conversion_id': request.conversion_id,
+            'field_id': request.field_id,
+            'sender_bic': request.sender_bic,
+            'delimiter': delimiter,
+            'pattern': new_pattern,
+            'sample_data': request.sample_data,
+            'created_at': datetime.utcnow(),
+            'status': 'active'
+        })
+
+        return {
+            'success': True,
+            'conversion_id': request.conversion_id,
+            'field_id': request.field_id,
+            'sender_bic': request.sender_bic,
+            'delimiter_detected': delimiter,
+            'new_pattern': new_pattern,
+            'rule_scope': 'BIC-specific' if request.sender_bic else 'Global',
+            'message': f"Successfully created {('BIC-specific' if request.sender_bic else 'global')} parsing rule for field {request.field_id}",
+            'mongodb_showcase': {
+                'schema_flexibility': 'Stored complex parsing rule as JSON document',
+                'bic_scoping': f'Rule applies only to {request.sender_bic}' if request.sender_bic else 'Global rule',
+                'self_healing': 'System can now process similar malformed data automatically'
+            }
+        }
+
+    except Exception as e:
+        logger.error(f"Error fixing parser pattern: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to fix parser pattern: {str(e)}"
+        )

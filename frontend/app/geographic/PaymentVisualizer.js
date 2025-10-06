@@ -21,6 +21,8 @@ import JsonBridgeNode from './components/JsonBridgeNode';
 import ProcessingPipelinePanel from './components/ProcessingPipelinePanel';
 import ConversionDetailsModal from './components/ConversionDetailsModal';
 import CanonicalJsonExplainer from './components/CanonicalJsonExplainer';
+import SelfHealingModal from './components/SelfHealingModal';
+import NodeErrorPopup from './components/NodeErrorPopup';
 import AnimatedEdge from './CustomEdges';
 import { getLayoutedElements, getRadialLayout, getRoutingTreeLayout, determineLayoutStrategy } from './utils/layoutUtils';
 import { convertPayment } from './services/conversionService';
@@ -81,6 +83,11 @@ function PaymentVisualizerFlow() {
   const [selectedDestination, setSelectedDestination] = useState('lloyds'); // For hub-and-spoke scenarios
   const [conversionModalData, setConversionModalData] = useState(null);
   const [isConversionModalOpen, setIsConversionModalOpen] = useState(false);
+  const [showSelfHealingModal, setShowSelfHealingModal] = useState(false);
+  const [selfHealingComplete, setSelfHealingComplete] = useState(false);
+  const [showErrorPopup, setShowErrorPopup] = useState(false);
+  const [errorNodePosition, setErrorNodePosition] = useState(null);
+  const [errorNodeId, setErrorNodeId] = useState(null);
   const { fitView } = useReactFlow();
 
   const onConnect = useCallback((params) => setEdges((eds) => addEdge(params, eds)), [setEdges]);
@@ -679,6 +686,80 @@ function PaymentVisualizerFlow() {
     }
   };
 
+  const continueFromErrorPoint = async () => {
+    console.log('[continueFromErrorPoint] Continuing execution from correspondent bank');
+
+    setIsExecuting(true);
+    const progress = { ...executionProgress };
+    const results = [];
+
+    // Step 1: Fix correspondent bank - change from error to processing
+    progress['correspondent'] = 'processing';
+    setExecutionProgress({ ...progress });
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    // Step 2: Complete correspondent bank successfully
+    progress['correspondent'] = 'completed';
+    setExecutionProgress({ ...progress });
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // Step 3: Process through JSON hub (if exists)
+    const jsonHub = selectedScenario?.hops?.find(h => h.id === 'json-hub');
+    if (jsonHub) {
+      progress['json-hub'] = 'processing';
+      setExecutionProgress({ ...progress });
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      progress['json-hub'] = 'completed';
+      setExecutionProgress({ ...progress });
+    }
+
+    // Step 4: Process destination bank (find the last hop - usually lloyds)
+    const destinationNode = selectedScenario?.hops?.[selectedScenario.hops.length - 1];
+    if (destinationNode) {
+      progress[destinationNode.id] = 'processing';
+      setExecutionProgress({ ...progress });
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      progress[destinationNode.id] = 'completed';
+      setExecutionProgress({ ...progress });
+    }
+
+    // Add conversion results with self-healing flag
+    results.push({
+      step: 1,
+      from: 'MT103',
+      to: 'JSON',
+      processingStats: { rules_lane: 18, ai_lane: 3 },
+      processingTime: 2.5,
+      selfHealingApplied: true,
+      problematicBIC: 'CORRBANKXXX'
+    });
+
+    results.push({
+      step: 2,
+      from: 'JSON',
+      to: 'CHAPS',
+      processingStats: { rules_lane: 22, ai_lane: 0 },
+      processingTime: 1.2,
+      selfHealingApplied: true,
+      problematicBIC: 'CORRBANKXXX'
+    });
+
+    setConversionResults(results);
+    setIsExecuting(false);
+    setCurrentStep(null);
+    setShowResultsSummary(true);
+  };
+
+  const handleFixWithLLM = () => {
+    console.log('[handleFixWithLLM] User clicked Fix with LLM button');
+
+    // Hide error popup
+    setShowErrorPopup(false);
+
+    // Show self-healing modal
+    setShowSelfHealingModal(true);
+  };
+
   const handleSelectScenario = (scenario) => {
     // Set the default destination for hub-and-spoke scenarios
     if (scenario.hubAndSpoke) {
@@ -698,11 +779,75 @@ function PaymentVisualizerFlow() {
     setConversionResults([]); // Clear conversion results when switching scenarios
     setCurrentStep(null); // Reset current step
     setIsExecuting(false); // Ensure execution state is reset
+    setSelfHealingComplete(false); // Reset self-healing flag when switching scenarios
     buildScenarioFlow(scenario);
   };
 
   const simulateExecution = async () => {
     if (!selectedScenario) return;
+
+    // Prevent double execution if already executing
+    if (isExecuting) {
+      console.log('[simulateExecution] Already executing, skipping...');
+      return;
+    }
+
+    // Check if non-standard variation is selected
+    const isNonStandard = selectedScenario.currentVariation?.triggerSelfHealing ||
+                          selectedScenario.selectedVariation === 'non-standard';
+
+    console.log('[simulateExecution] isNonStandard:', isNonStandard, 'selfHealingComplete:', selfHealingComplete);
+
+    // If non-standard AND not yet fixed, simulate failure at correspondent bank
+    if (isNonStandard && !selfHealingComplete) {
+      console.log('[simulateExecution] Starting execution that will fail at correspondent bank');
+
+      setIsExecuting(true);
+      setCurrentStep(0);
+      setConversionResults([]);
+      setJsonBridgeData({});
+      setShowErrorPopup(false);
+
+      // Simulate execution from USA to correspondent bank
+      const progress = {};
+
+      // Step 1: USA bank processing
+      progress['usa'] = 'processing';
+      setExecutionProgress({ ...progress });
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      progress['usa'] = 'completed';
+      setExecutionProgress({ ...progress });
+
+      // Step 2: Move to correspondent bank
+      progress['correspondent'] = 'processing';
+      setExecutionProgress({ ...progress });
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      // Step 3: FAIL at correspondent bank when trying to convert to JSON
+      progress['correspondent'] = 'error';
+      setExecutionProgress({ ...progress });
+
+      // Find the correspondent node position
+      const correspondentNode = nodes.find(n => n.id === 'correspondent');
+      if (correspondentNode) {
+        const position = {
+          x: correspondentNode.position.x + 650, // Position popup further to the right of node
+          y: correspondentNode.position.y
+        };
+        setErrorNodePosition(position);
+        setErrorNodeId('correspondent');
+        setShowErrorPopup(true);
+      }
+
+      setIsExecuting(false);
+      setCurrentStep(null);
+
+      // Stop here and wait for user to click "Fix with LLM"
+      return;
+    }
+
+    // Normal execution flow (either standard variation OR after self-healing is complete)
+    const selfHealingApplied = isNonStandard && selfHealingComplete;
 
     setIsExecuting(true);
     setCurrentStep(0);
@@ -944,7 +1089,9 @@ function PaymentVisualizerFlow() {
               processingStats: stepStats,
               confidenceScores: stepConfidence,
               processingTime: result.processingTime,
-              humanReviewRequired: result.humanReviewRequired
+              humanReviewRequired: result.humanReviewRequired,
+              selfHealingApplied: selfHealingApplied,
+              problematicBIC: selfHealingApplied ? 'CORRBANKXXX' : undefined
             });
 
             // Store output for next step
@@ -1083,6 +1230,19 @@ function PaymentVisualizerFlow() {
         selectedScenario={selectedScenario}
         onExecuteScenario={simulateExecution}
         isExecuting={isExecuting}
+        onSelectVariation={(scenario, variationId) => {
+          // Update selected scenario with chosen variation
+          const variation = scenario.variations?.find(v => v.id === variationId);
+          if (variation) {
+            // Reset self-healing flag when variation changes
+            setSelfHealingComplete(false);
+            setSelectedScenario({
+              ...scenario,
+              selectedVariation: variationId,
+              currentVariation: variation
+            });
+          }
+        }}
       />
 
       {/* Destination Selector for Hub-and-Spoke scenarios */}
@@ -1193,6 +1353,34 @@ function PaymentVisualizerFlow() {
         conversionResults={conversionResults}
         isExecuting={isExecuting}
         currentStep={currentStep}
+      />
+
+      {/* Self-Healing Modal */}
+      <SelfHealingModal
+        isOpen={showSelfHealingModal}
+        onClose={() => {
+          console.log('[Modal] onClose called');
+          setShowSelfHealingModal(false);
+        }}
+        onComplete={() => {
+          console.log('[Modal] onComplete called - continuing from error point');
+          setShowSelfHealingModal(false);
+          setSelfHealingComplete(true);
+          setErrorNodeId(null);
+
+          // Continue execution from where it failed (correspondent bank)
+          setTimeout(() => {
+            continueFromErrorPoint();
+          }, 500);
+        }}
+      />
+
+      {/* Error Popup for Failed Node */}
+      <NodeErrorPopup
+        isOpen={showErrorPopup}
+        position={errorNodePosition}
+        onFix={handleFixWithLLM}
+        onClose={() => setShowErrorPopup(false)}
       />
 
       {/* Conversion Details Modal */}

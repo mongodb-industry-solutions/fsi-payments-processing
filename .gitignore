@@ -8,6 +8,9 @@ by_claude/
 
 # task-def.json
 **/task-def.json
+backend/converter_service/schemas/
+backend/converter_service/scripts
+backend/converter_service/tests
 
 # Environments
 backend/converter_service_copy
@@ -17,6 +20,7 @@ backend/payment_converter_v2
 .venv
 env/
 .serena/
+help-for-me/
 venv/
 ENV/
 backend/comverter_service/tests/

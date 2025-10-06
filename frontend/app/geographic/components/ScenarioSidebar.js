@@ -1,11 +1,15 @@
 'use client';
 
 import { useState } from 'react';
+import Icon from '@leafygreen-ui/icon';
+import { palette } from '@leafygreen-ui/palette';
+import { Body, Label } from '@leafygreen-ui/typography';
 import styles from './ScenarioSidebar.module.css';
 import { SIMPLIFIED_SCENARIOS } from '../SimplifiedScenarios';
 
-export default function ScenarioSidebar({ onSelectScenario, selectedScenario, onExecuteScenario, isExecuting }) {
+export default function ScenarioSidebar({ onSelectScenario, selectedScenario, onExecuteScenario, isExecuting, onSelectVariation }) {
   const scenarios = Object.values(SIMPLIFIED_SCENARIOS);
+  const [selectedVariationId, setSelectedVariationId] = useState(null);
 
   // Sort scenarios to put remote island routing at the bottom - commented out for now
   const sortedScenarios = scenarios.sort((a, b) => {
@@ -51,6 +55,15 @@ export default function ScenarioSidebar({ onSelectScenario, selectedScenario, on
     }
   };
 
+  const handleVariationChange = (event, scenario) => {
+    event.stopPropagation();
+    const variationId = event.target.value;
+    setSelectedVariationId(variationId);
+    if (onSelectVariation) {
+      onSelectVariation(scenario, variationId);
+    }
+  };
+
   const renderScenarioCard = (scenario) => {
     const isSelected = selectedScenario?.id === scenario.id;
 
@@ -68,6 +81,35 @@ export default function ScenarioSidebar({ onSelectScenario, selectedScenario, on
         </div>
 
         <p className={styles.scenarioDescription}>{scenario.description}</p>
+
+        {/* Variation Selector */}
+        {scenario.hasVariations && scenario.variations && isSelected && (
+          <div className={styles.variationSelector} onClick={(e) => e.stopPropagation()}>
+            <select
+              className={styles.variationDropdown}
+              value={selectedVariationId || scenario.selectedVariation || scenario.variations[0]?.id}
+              onChange={(e) => handleVariationChange(e, scenario)}
+            >
+              {scenario.variations.map(variation => (
+                <option key={variation.id} value={variation.id}>
+                  {variation.name}
+                </option>
+              ))}
+            </select>
+            {(selectedVariationId || scenario.selectedVariation) && (
+              <div className={styles.variationInfo}>
+                <p className={styles.variationDescription}>
+                  {scenario.variations.find(v => v.id === (selectedVariationId || scenario.selectedVariation))?.description}
+                </p>
+                {scenario.variations.find(v => v.id === (selectedVariationId || scenario.selectedVariation))?.id === 'non-standard' && (
+                  <div className={styles.variationBadge}>
+                    SELF-HEALING DEMO
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Mini visualization preview */}
         <div className={styles.miniFlow}>
