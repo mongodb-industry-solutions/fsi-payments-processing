@@ -1,6 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Button from '@leafygreen-ui/button';
+import TextInput from '@leafygreen-ui/text-input';
+import TextArea from '@leafygreen-ui/text-area';
+import { Select, Option } from '@leafygreen-ui/select';
+import Banner from '@leafygreen-ui/banner';
+import { Body, Label } from '@leafygreen-ui/typography';
 import styles from './ConfigInput.module.css';
 
 // Predefined scenarios for quick configuration
@@ -44,6 +50,7 @@ export default function ConfigInput({
   onGenerate
 }) {
   const [selectedScenario, setSelectedScenario] = useState('mt205_pacs009');
+  const [isCustomMode, setIsCustomMode] = useState(false);
   const [validation, setValidation] = useState({
     isValid: false,
     messages: []
@@ -136,6 +143,20 @@ export default function ConfigInput({
     }
   };
 
+  const handleModeToggle = (customMode) => {
+    setIsCustomMode(customMode);
+    if (!customMode) {
+      // Switching back to preset mode - load first scenario
+      handleScenarioChange('mt205_pacs009');
+    } else {
+      // Switching to custom mode - clear fields
+      onChange('sourceFormat', '');
+      onChange('targetFormat', 'pacs.008');
+      onChange('similarTo', 'MT103');
+      onChange('sampleMessage', '');
+    }
+  };
+
   const statusInfo = getStatusIndicator();
 
   return (
@@ -144,7 +165,7 @@ export default function ConfigInput({
       <div className={styles.header}>
         <h3 className={styles.headerTitle}>Configuration Input</h3>
         <p className={styles.headerDescription}>
-          Select a preset scenario to generate configuration
+          {isCustomMode ? 'Enter your custom format details' : 'Select a preset scenario to generate configuration'}
         </p>
       </div>
 
@@ -156,112 +177,171 @@ export default function ConfigInput({
           <span>{statusInfo.text}</span>
         </div>
 
-        {/* Scenario Selector */}
-        <div className={styles.formGroup}>
-          <label className={styles.label}>
-            Quick Start Scenario
-          </label>
-          <div
-            className={styles.scenarioSelector}
-            onClick={() => {
-              // Cycle to next scenario
-              const currentIndex = PRESET_SCENARIOS.findIndex(s => s.id === selectedScenario);
-              const nextIndex = (currentIndex + 1) % PRESET_SCENARIOS.length;
-              handleScenarioChange(PRESET_SCENARIOS[nextIndex].id);
-            }}
+        {/* Mode Toggle */}
+        <div className={styles.modeToggle}>
+          <Button
+            variant={!isCustomMode ? 'primary' : 'default'}
+            size="default"
+            onClick={() => handleModeToggle(false)}
+            disabled={status === 'generating'}
+            className={styles.modeButton}
           >
-            <div className={styles.scenarioContent}>
-              <div className={styles.scenarioHeader}>
-                <span className={styles.scenarioName}>
-                  {PRESET_SCENARIOS.find(s => s.id === selectedScenario)?.name || 'Select a scenario'}
-                </span>
-                <span className={styles.scenarioCycle}>⟳</span>
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" className={styles.modeIcon}>
+              <rect x="2" y="3" width="12" height="10" rx="1" stroke="currentColor" strokeWidth="1.5" fill="none"/>
+              <path d="M2 6h12" stroke="currentColor" strokeWidth="1.5"/>
+              <circle cx="4" cy="4.5" r="0.5" fill="currentColor"/>
+              <circle cx="6" cy="4.5" r="0.5" fill="currentColor"/>
+              <circle cx="8" cy="4.5" r="0.5" fill="currentColor"/>
+            </svg>
+            <span className={styles.buttonText}>Preset Scenarios</span>
+          </Button>
+          <Button
+            variant={isCustomMode ? 'primary' : 'default'}
+            size="default"
+            onClick={() => handleModeToggle(true)}
+            disabled={status === 'generating'}
+            className={styles.modeButton}
+          >
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" className={styles.modeIcon}>
+              <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.5" fill="none"/>
+              <path d="M8 5v6M5 8h6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+            <span className={styles.buttonText}>Custom Format</span>
+          </Button>
+        </div>
+
+        {/* Scenario Selector - Only show in preset mode */}
+        {!isCustomMode && (
+          <div className={styles.formGroup}>
+            <label className={styles.label}>
+              Quick Start Scenario
+            </label>
+            <div
+              className={styles.scenarioSelector}
+              onClick={() => {
+                // Cycle to next scenario
+                const currentIndex = PRESET_SCENARIOS.findIndex(s => s.id === selectedScenario);
+                const nextIndex = (currentIndex + 1) % PRESET_SCENARIOS.length;
+                handleScenarioChange(PRESET_SCENARIOS[nextIndex].id);
+              }}
+            >
+              <div className={styles.scenarioContent}>
+                <div className={styles.scenarioHeader}>
+                  <span className={styles.scenarioName}>
+                    {PRESET_SCENARIOS.find(s => s.id === selectedScenario)?.name || 'Select a scenario'}
+                  </span>
+                  <span className={styles.scenarioCycle}>⟳</span>
+                </div>
+                <div className={styles.scenarioDescription}>
+                  {PRESET_SCENARIOS.find(s => s.id === selectedScenario)?.description || 'Click to cycle through available scenarios'}
+                </div>
               </div>
-              <div className={styles.scenarioDescription}>
-                {PRESET_SCENARIOS.find(s => s.id === selectedScenario)?.description || 'Click to cycle through available scenarios'}
+              <div className={styles.scenarioIndicator}>
+                {PRESET_SCENARIOS.map((scenario, index) => (
+                  <span
+                    key={scenario.id}
+                    className={`${styles.indicatorDot} ${selectedScenario === scenario.id ? styles.active : ''}`}
+                  />
+                ))}
               </div>
-            </div>
-            <div className={styles.scenarioIndicator}>
-              {PRESET_SCENARIOS.map((scenario, index) => (
-                <span
-                  key={scenario.id}
-                  className={`${styles.indicatorDot} ${selectedScenario === scenario.id ? styles.active : ''}`}
-                />
-              ))}
             </div>
           </div>
-        </div>
+        )}
 
         {/* Format Selection */}
         <div className={styles.formatRow}>
           <div className={styles.formGroup}>
-            <label className={styles.label}>
-              Source Format
-              <span className={styles.required}>*</span>
-            </label>
-            <input
-              type="text"
-              className={styles.input}
+            <TextInput
+              label="Source Format"
+              description={isCustomMode ? 'Enter any payment format name' : 'Preset format from selected scenario'}
               value={config.sourceFormat || ''}
               onChange={(e) => onChange('sourceFormat', e.target.value)}
-              placeholder="e.g., MT192"
+              placeholder={isCustomMode ? "e.g., MT940, pain.001, ISO8583_0220" : "e.g., MT192"}
               disabled={status === 'generating'}
-              readOnly={true}
+              state={!isCustomMode ? 'none' : 'none'}
+              aria-label="Source Format"
             />
-            <div className={styles.helperText}>
-              Preset format from selected scenario
-            </div>
           </div>
 
           <div className={styles.formGroup}>
-            <label className={styles.label}>
-              Target Format
-              <span className={styles.required}>*</span>
-            </label>
-            <input
-              type="text"
-              className={styles.input}
-              value={config.targetFormat || ''}
-              onChange={(e) => onChange('targetFormat', e.target.value)}
-              placeholder="e.g., pacs.008"
-              disabled={status === 'generating'}
-              readOnly={true}
-            />
-            <div className={styles.helperText}>
-              Preset format from selected scenario
-            </div>
+            {isCustomMode ? (
+              <Select
+                label="Target Format"
+                description="Select target format from dropdown"
+                value={config.targetFormat || 'pacs.008'}
+                onChange={(value) => onChange('targetFormat', value)}
+                disabled={status === 'generating'}
+                aria-label="Target Format"
+              >
+                <Option value="pacs.008">pacs.008 - Credit Transfer</Option>
+                <Option value="pacs.009">pacs.009 - FI Credit Transfer</Option>
+                <Option value="pacs.004">pacs.004 - Payment Return</Option>
+                <Option value="cain.001">cain.001 - Card Acquirer</Option>
+                <Option value="JSON">JSON - Canonical Format</Option>
+                <Option value="TARGET2">TARGET2 - ECB System</Option>
+                <Option value="CHAPS">CHAPS - UK Clearing</Option>
+              </Select>
+            ) : (
+              <TextInput
+                label="Target Format"
+                description="Preset format from selected scenario"
+                value={config.targetFormat || ''}
+                onChange={(e) => onChange('targetFormat', e.target.value)}
+                placeholder="e.g., pacs.008"
+                disabled={status === 'generating'}
+                aria-label="Target Format"
+              />
+            )}
           </div>
         </div>
 
+        {/* Similar To - Only in custom mode */}
+        {isCustomMode && (
+          <div className={styles.formGroup}>
+            <Select
+              label="Similar To"
+              description="Select a similar format to help with pattern matching"
+              value={config.similarTo || 'MT103'}
+              onChange={(value) => onChange('similarTo', value)}
+              disabled={status === 'generating'}
+              aria-label="Similar To Format"
+            >
+              <Option value="MT103">MT103 - Wire Transfer</Option>
+              <Option value="MT202">MT202 - Bank Transfer</Option>
+              <Option value="MT205">MT205 - FI Transfer</Option>
+              <Option value="MT">MT - Any SWIFT MT Format</Option>
+              <Option value="ISO8583_0200">ISO8583_0200 - Card Auth</Option>
+            </Select>
+          </div>
+        )}
+
         {/* Sample Message */}
         <div className={styles.formGroup}>
-          <label className={styles.label}>
-            Sample Message
-            <span className={styles.required}>*</span>
-          </label>
-          <textarea
-            className={styles.textarea}
+          <TextArea
+            label="Sample Message"
+            description={isCustomMode
+              ? 'Paste your actual payment message for analysis'
+              : 'Preset sample message from selected scenario'}
             value={config.sampleMessage || ''}
             onChange={(e) => onChange('sampleMessage', e.target.value)}
-            placeholder="Paste a sample message in the source format..."
+            placeholder={isCustomMode
+              ? "Paste a sample message in your source format..."
+              : "Paste a sample message in the source format..."}
             disabled={status === 'generating'}
-            readOnly={true}
+            aria-label="Sample Message"
           />
-          <div className={styles.helperText}>
-            Preset sample message from selected scenario
-          </div>
         </div>
 
         {/* Validation Messages */}
         {validation.messages.length > 0 && (
-          <div>
+          <div className={styles.validationContainer}>
             {validation.messages.map((msg, idx) => (
-              <div key={idx} className={`${styles.validationMessage} ${styles[msg.type]}`}>
-                <span className={styles.validationIcon}>
-                  {msg.type === 'error' ? '⚠' : msg.type === 'warning' ? '!' : 'ⓘ'}
-                </span>
-                <span>{msg.text}</span>
-              </div>
+              <Banner
+                key={idx}
+                variant={msg.type === 'error' ? 'danger' : msg.type === 'warning' ? 'warning' : 'info'}
+              >
+                {msg.text}
+              </Banner>
             ))}
           </div>
         )}
@@ -269,22 +349,24 @@ export default function ConfigInput({
 
       {/* Actions */}
       <div className={styles.actions}>
-        <button
-          className={`${styles.generateButton} ${status === 'generating' ? styles.loading : ''}`}
+        <Button
+          variant="primary"
+          size="large"
           onClick={onGenerate}
           disabled={!validation.isValid || status === 'generating'}
+          className={styles.generateButton}
         >
-          {status === 'generating' ? '' : 'Generate Configuration'}
-        </button>
+          {status === 'generating' ? 'Generating...' : 'Generate Configuration'}
+        </Button>
 
         {status === 'generating' && (
-          <div>
+          <div className={styles.progressContainer}>
             <div className={styles.progressBar}>
               <div className={styles.progressFill} style={{ width: '60%' }} />
             </div>
-            <div className={styles.progressText}>
+            <Body className={styles.progressText}>
               Analyzing message structure...
-            </div>
+            </Body>
           </div>
         )}
       </div>

@@ -73,10 +73,18 @@ const ProcessingPipelinePanel = ({ selectedScenario, conversionResults, isExecut
           <div className={styles.mongoAdvantages}>
             <div className={styles.advantagesContent}>
               <div className={styles.advantagesHeader}>
-                <h4>{selectedScenario.mongoDbAdvantages.title}</h4>
+                <h4>
+                  {(selectedScenario?.currentVariation?.id === 'non-standard' || selectedScenario?.selectedVariation === 'non-standard')
+                    ? 'MongoDB: Self-Healing via Change Streams'
+                    : selectedScenario.mongoDbAdvantages.title
+                  }
+                </h4>
               </div>
               <p className={styles.advantagesText}>
-                {selectedScenario.mongoDbAdvantages.message}
+                {(selectedScenario?.currentVariation?.id === 'non-standard' || selectedScenario?.selectedVariation === 'non-standard')
+                  ? 'When non-standard formats are detected, the LLM Agent writes BIC-specific overrides directly to conversion_registry. MongoDB change streams instantly propagate these updates to the conversion engine—no code deploy, no downtime. Future payments from the same correspondent process straight-through, improving STP rates automatically.'
+                  : selectedScenario.mongoDbAdvantages.message
+                }
               </p>
             </div>
           </div>

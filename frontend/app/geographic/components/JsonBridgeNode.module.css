@@ -386,6 +386,29 @@
 }
 
 /* Canonical JSON Explanation Styles */
+
+/* Self-healing explanation callout */
+.selfHealingExplanation {
+  background: #f0fdf4; /* green-50 */
+  border: 1px solid #bbf7d0; /* green-200 */
+  border-radius: 8px;
+  padding: 16px;
+  color: #065f46; /* green-900 */
+  font-size: 13px;
+  line-height: 1.6;
+  margin-bottom: 12px;
+}
+.selfHealingExplanation p {
+  margin: 0 0 8px 0;
+}
+.selfHealingExplanation ol {
+  margin: 8px 0 0;
+  padding-left: 20px;
+}
+.selfHealingExplanation li {
+  margin: 6px 0;
+}
+
 .canonicalExplanation {
   margin-top: 16px;
 }

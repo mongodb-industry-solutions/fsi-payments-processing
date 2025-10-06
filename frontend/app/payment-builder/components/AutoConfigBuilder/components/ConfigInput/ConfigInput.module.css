@@ -32,6 +32,38 @@
   overflow-y: auto;
 }
 
+/* Mode Toggle */
+.modeToggle {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.modeButton {
+  flex: 1;
+  min-height: 40px;
+  padding: 8px 12px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.modeIcon {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+}
+
+.buttonText {
+  flex-shrink: 0;
+  font-size: 12px !important;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
 /* Scenario Selector */
 .scenarioSelector {
   background: var(--white);
@@ -124,7 +156,37 @@
 
 /* Form Fields */
 .formGroup {
+  margin-bottom: var(--spacing-5);
+}
+
+/* Make TextArea larger for sample message */
+.formGroup :global(textarea) {
+  min-height: 300px !important;
+  max-height: 500px !important;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro', monospace !important;
+  font-size: 13px !important;
+  line-height: 1.6 !important;
+  resize: vertical !important;
+}
+
+.formatRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-4);
+  margin-bottom: var(--spacing-5);
+}
+
+/* Validation Container */
+.validationContainer {
   margin-bottom: var(--spacing-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+}
+
+/* Progress Container */
+.progressContainer {
+  margin-top: var(--spacing-3);
 }
 
 .label {

@@ -1,24 +1,21 @@
 .errorPopup {
-  position: absolute;
+  position: fixed;
   z-index: 1000;
-  width: 380px;
+  width: 420px;
+  max-width: 90vw;
   background: white;
-  border: 2px solid #E5302F;
+  border: 1px solid #E2E8F0;
   border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(229, 48, 47, 0.2), 0 2px 8px rgba(0, 0, 0, 0.1);
-  animation: popupAppear 0.3s ease-out;
-  transform-origin: top left;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+  animation: popupAppear 0.2s ease-out;
+  top: 10%;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 @keyframes popupAppear {
-  0% {
-    opacity: 0;
-    transform: scale(0.8);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
+  0% { opacity: 0; }
+  100% { opacity: 1; }
 }
 
 .popupHeader {
@@ -143,27 +140,3 @@
   line-height: 1.4;
 }
 
-/* Arrow pointing to the node */
-.errorPopup::before {
-  content: '';
-  position: absolute;
-  left: -10px;
-  top: 30px;
-  width: 0;
-  height: 0;
-  border-top: 10px solid transparent;
-  border-bottom: 10px solid transparent;
-  border-right: 10px solid #E5302F;
-}
-
-.errorPopup::after {
-  content: '';
-  position: absolute;
-  left: -8px;
-  top: 30px;
-  width: 0;
-  height: 0;
-  border-top: 10px solid transparent;
-  border-bottom: 10px solid transparent;
-  border-right: 10px solid white;
-}

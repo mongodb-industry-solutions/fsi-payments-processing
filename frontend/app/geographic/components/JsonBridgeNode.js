@@ -10,7 +10,7 @@ import styles from './JsonBridgeNode.module.css';
 function JsonBridgeNode({ data }) {
   const [showJsonModal, setShowJsonModal] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const [activeTab, setActiveTab] = useState('json'); // 'json' or 'mongodb'
+  const [activeTab, setActiveTab] = useState('mongodb'); // default to MongoDB only
   const [viewMode, setViewMode] = useState('document'); // 'document' or 'schema' for MongoDB tab
   const [expandedSections, setExpandedSections] = useState({
     header: true,
@@ -31,6 +31,8 @@ function JsonBridgeNode({ data }) {
   const afterConversion = data.afterJson || null;
   const selectedScenario = data.selectedScenario || null;
   const mongoConfig = selectedScenario?.mongodbConfig || null;
+
+  const isNonStandard = selectedScenario?.currentVariation?.id === 'non-standard' || selectedScenario?.selectedVariation === 'non-standard';
 
   // Sample Canonical JSON MongoDB Document
   const canonicalJsonDocument = {
@@ -273,382 +275,345 @@ function JsonBridgeNode({ data }) {
           <button className={styles.closeButton} onClick={closeModal}>×</button>
         </div>
 
-        <div className={styles.tabContainer}>
-          <button
-            className={`${styles.tab} ${activeTab === 'json' ? styles.activeTab : ''}`}
-            onClick={() => setActiveTab('json')}
-          >
-            <Icon glyph="Code" size="small" className={styles.tabIcon} />
-            JSON Data
-          </button>
-          <button
-            className={`${styles.tab} ${activeTab === 'mongodb' ? styles.activeTab : ''}`}
-            onClick={() => setActiveTab('mongodb')}
-          >
-            <Icon glyph="Database" size="small" className={styles.tabIcon} />
-            MongoDB Config
-          </button>
-        </div>
+        {/* Removed JSON Data tab; showing only MongoDB content */}
 
         <div className={styles.modalBody}>
-          {activeTab === 'json' ? (
-            <>
-              <div className={styles.jsonSection}>
-                <h3>Before Conversion (Input)</h3>
-                <div className={styles.jsonContent}>
-                  {beforeConversion ? (
-                    <pre>{formatJson(beforeConversion)}</pre>
-                  ) : (
-                    <div className={styles.placeholder}>
-                      Canonical JSON will appear here after execution
-                    </div>
-                  )}
-                </div>
-              </div>
+          <div className={styles.mongoConfigContent}>
+            {mongoConfig ? (
+              <>
+                {/* Canonical JSON Format Section */}
+                <div className={styles.configSection}>
+                  <h3>Canonical JSON - The Universal Payment Language</h3>
+                  <div className={styles.canonicalExplanation}>
+                    <p className={styles.introText}>
+                      Canonical JSON is OmniPay's <strong>universal interchange format</strong> for payment messages.
+                      Instead of building hundreds of direct converters between format pairs,
+                      every format converts to and from this single JSON structure stored in MongoDB.
+                    </p>
 
-              <div className={styles.arrowDivider}>
-                <span>↓</span>
-              </div>
-
-              <div className={styles.jsonSection}>
-                <h3>After Conversion (Output)</h3>
-                <div className={styles.jsonContent}>
-                  {afterConversion ? (
-                    <pre>{formatJson(afterConversion)}</pre>
-                  ) : (
-                    <div className={styles.placeholder}>
-                      Converted JSON will appear here after execution
-                    </div>
-                  )}
-                </div>
-              </div>
-            </>
-          ) : (
-            <div className={styles.mongoConfigContent}>
-              {mongoConfig ? (
-                <>
-                  {/* Canonical JSON Format Section */}
-                  <div className={styles.configSection}>
-                    <h3>Canonical JSON - The Universal Payment Language</h3>
-                    <div className={styles.canonicalExplanation}>
-                      <p className={styles.introText}>
-                        Canonical JSON is OmniPay's <strong>universal interchange format</strong> for payment messages.
-                        Instead of building hundreds of direct converters between format pairs,
-                        every format converts to and from this single JSON structure stored in MongoDB.
-                      </p>
-
-                      {/* Why JSON? Section */}
-                      <div className={styles.whyJsonSection}>
-                        <h4>Why Use JSON as an Intermediate Format?</h4>
-                        <div className={styles.comparisonGrid}>
-                          <div className={styles.comparisonCard}>
-                            <h5 style={{color: '#dc2626'}}>Direct Conversion Approach</h5>
-                            <ul className={styles.comparisonList}>
-                              <li><strong>For any-to-any conversion:</strong></li>
-                              <li>MT103 → pacs.008 (1 converter)</li>
-                              <li>MT103 → TARGET2 (1 converter)</li>
-                              <li>MT103 → CHAPS (1 converter)</li>
-                              <li>pacs.008 → TARGET2 (1 converter)</li>
-                              <li><strong>10 formats = 90 separate converters</strong></li>
-                              <li>Each pair needs custom code</li>
-                            </ul>
-                          </div>
-                          <div className={styles.comparisonCard}>
-                            <h5 style={{color: '#059669'}}>JSON Bridge Approach</h5>
-                            <ul className={styles.comparisonList}>
-                              <li><strong>For any-to-any conversion:</strong></li>
-                              <li>MT103 → JSON (1 converter)</li>
-                              <li>JSON → pacs.008 (1 converter)</li>
-                              <li>JSON → TARGET2 (1 converter)</li>
-                              <li>JSON → CHAPS (1 converter)</li>
-                              <li><strong>10 formats = 20 converters total</strong></li>
-                              <li>All formats connect via JSON</li>
-                            </ul>
-                          </div>
+                    {/* Why JSON? Section */}
+                    <div className={styles.whyJsonSection}>
+                      <h4>Why Use JSON as an Intermediate Format?</h4>
+                      <div className={styles.comparisonGrid}>
+                        <div className={styles.comparisonCard}>
+                          <h5 style={{color: '#dc2626'}}>Direct Conversion Approach</h5>
+                          <ul className={styles.comparisonList}>
+                            <li><strong>For any-to-any conversion:</strong></li>
+                            <li>MT103 → pacs.008 (1 converter)</li>
+                            <li>MT103 → TARGET2 (1 converter)</li>
+                            <li>MT103 → CHAPS (1 converter)</li>
+                            <li>pacs.008 → TARGET2 (1 converter)</li>
+                            <li><strong>10 formats = 90 separate converters</strong></li>
+                            <li>Each pair needs custom code</li>
+                          </ul>
                         </div>
-                        <div className={styles.mathExplanation}>
-                          <div className={styles.formula}>
-                            <span>Direct: N × (N-1) converters for full connectivity</span>
-                            <span className={styles.vs}>versus</span>
-                            <span>JSON: 2N converters for full connectivity</span>
-                          </div>
-                          <p className={styles.networkEffect}>
-                            <strong>Key Insight:</strong> With direct conversion, to convert MT103 to any of 9 other formats requires 9 separate converters.
-                            With JSON bridge, MT103 needs only 1 converter (to JSON), then JSON handles conversion to all 9 targets.
-                            This creates a hub-and-spoke model where JSON is the universal hub.
-                          </p>
+                        <div className={styles.comparisonCard}>
+                          <h5 style={{color: '#059669'}}>JSON Bridge Approach</h5>
+                          <ul className={styles.comparisonList}>
+                            <li><strong>For any-to-any conversion:</strong></li>
+                            <li>MT103 → JSON (1 converter)</li>
+                            <li>JSON → pacs.008 (1 converter)</li>
+                            <li>JSON → TARGET2 (1 converter)</li>
+                            <li>JSON → CHAPS (1 converter)</li>
+                            <li><strong>10 formats = 20 converters total</strong></li>
+                            <li>All formats connect via JSON</li>
+                          </ul>
                         </div>
                       </div>
-
-                      {/* View Mode Toggle */}
-                      <div className={styles.viewToggle}>
-                        <button
-                          className={`${styles.viewButton} ${viewMode === 'document' ? styles.activeView : ''}`}
-                          onClick={() => setViewMode('document')}
-                        >
-                          Document View
-                        </button>
-                        <button
-                          className={`${styles.viewButton} ${viewMode === 'schema' ? styles.activeView : ''}`}
-                          onClick={() => setViewMode('schema')}
-                        >
-                          Schema View
-                        </button>
+                      <div className={styles.mathExplanation}>
+                        <div className={styles.formula}>
+                          <span>Direct: N × (N-1) converters for full connectivity</span>
+                          <span className={styles.vs}>versus</span>
+                          <span>JSON: 2N converters for full connectivity</span>
+                        </div>
+                        <p className={styles.networkEffect}>
+                          <strong>Key Insight:</strong> With direct conversion, to convert MT103 to any of 9 other formats requires 9 separate converters.
+                          With JSON bridge, MT103 needs only 1 converter (to JSON), then JSON handles conversion to all 9 targets.
+                          This creates a hub-and-spoke model where JSON is the universal hub.
+                        </p>
                       </div>
+                    </div>
 
-                      {viewMode === 'document' ? (
-                        <div className={styles.mongoDocument}>
-                          <div className={styles.documentHeader}>
-                            <span className={styles.collectionName}>Canonical JSON</span>
-                            <button
-                              className={styles.expandAllBtn}
-                              onClick={() => {
-                                const allExpanded = Object.values(expandedSections).every(v => v);
-                                const newState = {};
-                                Object.keys(expandedSections).forEach(key => {
-                                  newState[key] = !allExpanded;
-                                });
-                                setExpandedSections(newState);
-                              }}
-                            >
-                              {Object.values(expandedSections).every(v => v) ? 'Collapse All' : 'Expand All'}
-                            </button>
+                    {/* View Mode Toggle */}
+                    <div className={styles.viewToggle}>
+                      <button
+                        className={`${styles.viewButton} ${viewMode === 'document' ? styles.activeView : ''}`}
+                        onClick={() => setViewMode('document')}
+                      >
+                        Document View
+                      </button>
+                      <button
+                        className={`${styles.viewButton} ${viewMode === 'schema' ? styles.activeView : ''}`}
+                        onClick={() => setViewMode('schema')}
+                      >
+                        Schema View
+                      </button>
+                    </div>
+
+                    {viewMode === 'document' ? (
+                      <div className={styles.mongoDocument}>
+                        <div className={styles.documentHeader}>
+                          <span className={styles.collectionName}>Canonical JSON</span>
+                          <button
+                            className={styles.expandAllBtn}
+                            onClick={() => {
+                              const allExpanded = Object.values(expandedSections).every(v => v);
+                              const newState = {};
+                              Object.keys(expandedSections).forEach(key => {
+                                newState[key] = !allExpanded;
+                              });
+                              setExpandedSections(newState);
+                            }}
+                          >
+                            {Object.values(expandedSections).every(v => v) ? 'Collapse All' : 'Expand All'}
+                          </button>
+                        </div>
+                        <div className={styles.jsonDocument}>
+                          <div className={styles.jsonBracket}>{'{'}</div>
+                          {Object.entries(canonicalJsonDocument).map(([key, value]) =>
+                            renderJsonSection(key, value)
+                          )}
+                          <div className={styles.jsonBracket}>{'}'}</div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className={styles.jsonStructure}>
+                        <h4>The 12 Universal Sections</h4>
+                        <div className={styles.sectionsGrid}>
+                          <div className={styles.schemaSection}>
+                            <span className={styles.sectionIcon}>▪</span>
+                            <div>
+                              <strong>header</strong>
+                              <span>Message type, ID, priority</span>
+                            </div>
                           </div>
-                          <div className={styles.jsonDocument}>
-                            <div className={styles.jsonBracket}>{'{'}</div>
-                            {Object.entries(canonicalJsonDocument).map(([key, value]) =>
-                              renderJsonSection(key, value)
-                            )}
-                            <div className={styles.jsonBracket}>{'}'}</div>
+                          <div className={styles.schemaSection}>
+                            <span className={styles.sectionIcon}>▪</span>
+                            <div>
+                              <strong>transaction</strong>
+                              <span>Transaction ID, type, status</span>
+                            </div>
+                          </div>
+                          <div className={styles.schemaSection}>
+                            <span className={styles.sectionIcon}>▪</span>
+                            <div>
+                              <strong>parties</strong>
+                              <span>Sender, receiver, banks</span>
+                            </div>
+                          </div>
+                          <div className={styles.schemaSection}>
+                            <span className={styles.sectionIcon}>▪</span>
+                            <div>
+                              <strong>amounts</strong>
+                              <span>Payment amount, currency</span>
+                            </div>
+                          </div>
+                          <div className={styles.schemaSection}>
+                            <span className={styles.sectionIcon}>▪</span>
+                            <div>
+                              <strong>dates</strong>
+                              <span>Value date, execution date</span>
+                            </div>
+                          </div>
+                          <div className={styles.schemaSection}>
+                            <span className={styles.sectionIcon}>▪</span>
+                            <div>
+                              <strong>remittance</strong>
+                              <span>Invoice, payment details</span>
+                            </div>
+                          </div>
+                          <div className={styles.schemaSection}>
+                            <span className={styles.sectionIcon}>▪</span>
+                            <div>
+                              <strong>instructions</strong>
+                              <span>Processing instructions</span>
+                            </div>
+                          </div>
+                          <div className={styles.schemaSection}>
+                            <span className={styles.sectionIcon}>▪</span>
+                            <div>
+                              <strong>references</strong>
+                              <span>Reference numbers</span>
+                            </div>
+                          </div>
+                          <div className={styles.schemaSection}>
+                            <span className={styles.sectionIcon}>▪</span>
+                            <div>
+                              <strong>charges</strong>
+                              <span>Fees and charges</span>
+                            </div>
+                          </div>
+                          <div className={styles.schemaSection}>
+                            <span className={styles.sectionIcon}>▪</span>
+                            <div>
+                              <strong>regulatory</strong>
+                              <span>Compliance info</span>
+                            </div>
+                          </div>
+                          <div className={styles.schemaSection}>
+                            <span className={styles.sectionIcon}>▪</span>
+                            <div>
+                              <strong>processing_metadata</strong>
+                              <span>Conversion details</span>
+                            </div>
+                          </div>
+                          <div className={styles.schemaSection}>
+                            <span className={styles.sectionIcon}>▪</span>
+                            <div>
+                              <strong>original_fields</strong>
+                              <span>Preserved source data</span>
+                            </div>
                           </div>
                         </div>
-                      ) : (
-                        <div className={styles.jsonStructure}>
-                          <h4>The 12 Universal Sections</h4>
-                          <div className={styles.sectionsGrid}>
-                            <div className={styles.schemaSection}>
-                              <span className={styles.sectionIcon}>▪</span>
-                              <div>
-                                <strong>header</strong>
-                                <span>Message type, ID, priority</span>
-                              </div>
-                            </div>
-                            <div className={styles.schemaSection}>
-                              <span className={styles.sectionIcon}>▪</span>
-                              <div>
-                                <strong>transaction</strong>
-                                <span>Transaction ID, type, status</span>
-                              </div>
-                            </div>
-                            <div className={styles.schemaSection}>
-                              <span className={styles.sectionIcon}>▪</span>
-                              <div>
-                                <strong>parties</strong>
-                                <span>Sender, receiver, banks</span>
-                              </div>
-                            </div>
-                            <div className={styles.schemaSection}>
-                              <span className={styles.sectionIcon}>▪</span>
-                              <div>
-                                <strong>amounts</strong>
-                                <span>Payment amount, currency</span>
-                              </div>
-                            </div>
-                            <div className={styles.schemaSection}>
-                              <span className={styles.sectionIcon}>▪</span>
-                              <div>
-                                <strong>dates</strong>
-                                <span>Value date, execution date</span>
-                              </div>
-                            </div>
-                            <div className={styles.schemaSection}>
-                              <span className={styles.sectionIcon}>▪</span>
-                              <div>
-                                <strong>remittance</strong>
-                                <span>Invoice, payment details</span>
-                              </div>
-                            </div>
-                            <div className={styles.schemaSection}>
-                              <span className={styles.sectionIcon}>▪</span>
-                              <div>
-                                <strong>instructions</strong>
-                                <span>Processing instructions</span>
-                              </div>
-                            </div>
-                            <div className={styles.schemaSection}>
-                              <span className={styles.sectionIcon}>▪</span>
-                              <div>
-                                <strong>references</strong>
-                                <span>Reference numbers</span>
-                              </div>
-                            </div>
-                            <div className={styles.schemaSection}>
-                              <span className={styles.sectionIcon}>▪</span>
-                              <div>
-                                <strong>charges</strong>
-                                <span>Fees and charges</span>
-                              </div>
-                            </div>
-                            <div className={styles.schemaSection}>
-                              <span className={styles.sectionIcon}>▪</span>
-                              <div>
-                                <strong>regulatory</strong>
-                                <span>Compliance info</span>
-                              </div>
-                            </div>
-                            <div className={styles.schemaSection}>
-                              <span className={styles.sectionIcon}>▪</span>
-                              <div>
-                                <strong>processing_metadata</strong>
-                                <span>Conversion details</span>
-                              </div>
-                            </div>
-                            <div className={styles.schemaSection}>
-                              <span className={styles.sectionIcon}>▪</span>
-                              <div>
-                                <strong>original_fields</strong>
-                                <span>Preserved source data</span>
-                              </div>
-                            </div>
+                      </div>
+                    )}
+
+                    <div className={styles.whyMatters}>
+                      <h4>Key Benefits</h4>
+                      <div className={styles.benefitsList}>
+                        <div className={styles.benefit}>
+                          <span className={styles.benefitIcon}>•</span>
+                          <div>
+                            <strong>No Data Loss</strong>
+                            <span>Every field preserved in original_fields</span>
                           </div>
                         </div>
-                      )}
-
-                      <div className={styles.whyMatters}>
-                        <h4>Key Benefits</h4>
-                        <div className={styles.benefitsList}>
-                          <div className={styles.benefit}>
-                            <span className={styles.benefitIcon}>•</span>
-                            <div>
-                              <strong>No Data Loss</strong>
-                              <span>Every field preserved in original_fields</span>
-                            </div>
-                          </div>
-                          <div className={styles.benefit}>
-                            <span className={styles.benefitIcon}>•</span>
-                            <div>
-                              <strong>Instant New Formats</strong>
-                              <span>Just map to same JSON structure</span>
-                            </div>
+                        <div className={styles.benefit}>
+                          <span className={styles.benefitIcon}>•</span>
+                          <div>
+                            <strong>Instant New Formats</strong>
+                            <span>Just map to same JSON structure</span>
                           </div>
                         </div>
                       </div>
                     </div>
                   </div>
-
-                  {/* Scenario-Specific Configuration */}
-                  {mongoConfig.bridge && (
-                    <div className={styles.configSection}>
-                      <h3>{mongoConfig.bridge.title}</h3>
-                      <div className={styles.bridgeFlow}>
-                        <div className={styles.bridgeItem}>
-                          <strong>{mongoConfig.bridge.from}</strong>
-                        </div>
-                        <span className={styles.arrow}>→</span>
-                        <div className={styles.bridgeItem}>
-                          <strong>{mongoConfig.bridge.through}</strong>
-                        </div>
-                        <span className={styles.arrow}>→</span>
-                        <div className={styles.bridgeItem}>
-                          <strong>{mongoConfig.bridge.to}</strong>
-                        </div>
-                      </div>
-                      <p className={styles.bridgeDesc}>{mongoConfig.bridge.description}</p>
-                    </div>
-                  )}
-
-                  {/* Field Processing Details */}
-                  {mongoConfig.mapping && (
-                    <div className={styles.configSection}>
-                      <h3>How This Scenario Works</h3>
-
-                      {/* Processing Stats */}
-                      <div className={styles.mappingStats}>
-                        <span>Total Fields: {mongoConfig.mapping.totalFields}</span>
-                        <span>Rules Lane: {mongoConfig.mapping.rulesLane}</span>
-                        <span>AI Lane: {mongoConfig.mapping.aiLane}</span>
-                        {mongoConfig.mapping.humanLane > 0 && (
-                          <span>Human Review: {mongoConfig.mapping.humanLane}</span>
-                        )}
-                      </div>
-
-                      {/* Example Mappings */}
-                      {mongoConfig.mapping.examples && (
-                        <>
-                          <h4 style={{fontSize: '14px', marginTop: '16px', marginBottom: '12px'}}>Example Field Mappings:</h4>
-                          <div className={styles.mappingExamples}>
-                            {mongoConfig.mapping.examples.map((example, idx) => (
-                              <div key={idx} className={styles.mappingRow}>
-                                <span className={example.type === 'ai' ? styles.aiLabel : styles.rulesLabel}>
-                                  {example.type === 'ai' ? 'AI' : 'RULES'}
-                                </span>
-                                <code>{example.source}</code>
-                                <span className={styles.mappingArrow}>→</span>
-                                <code>{example.target}</code>
-                                <span style={{fontSize: '11px', color: '#6b7280', marginLeft: '8px'}}>
-                                  {example.description}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Metrics */}
-                  {mongoConfig.metrics && (
-                    <div className={styles.configSection}>
-                      <h3>Performance Metrics</h3>
-                      <div className={styles.metricsGrid}>
-                        <div className={styles.metric}>
-                          <span className={styles.metricValue}>{mongoConfig.metrics.accuracy}</span>
-                          <span className={styles.metricLabel}>Accuracy</span>
-                        </div>
-                        <div className={styles.metric}>
-                          <span className={styles.metricValue}>{mongoConfig.metrics.straightThrough}</span>
-                          <span className={styles.metricLabel}>Straight-Through</span>
-                        </div>
-                        <div className={styles.metric}>
-                          <span className={styles.metricValue}>{mongoConfig.metrics.costSaving}</span>
-                          <span className={styles.metricLabel}>Cost Savings</span>
-                        </div>
-                        <div className={styles.metric}>
-                          <span className={styles.metricValue}>{mongoConfig.metrics.setupTime}</span>
-                          <span className={styles.metricLabel}>Setup Time</span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Insights */}
-                  {mongoConfig.insights && (
-                    <div className={styles.insightBox}>
-                      <h4>{mongoConfig.insights.key}</h4>
-                      <p>{mongoConfig.insights.value}</p>
-                      <p className={styles.impact}>
-                        <strong>Impact:</strong> {mongoConfig.insights.impact}
-                      </p>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div className={styles.placeholder}>
-                  Select a scenario to view MongoDB configuration details
                 </div>
-              )}
-            </div>
-          )}
+
+                {/* Scenario-Specific Configuration */}
+                {mongoConfig.bridge && (
+                  <div className={styles.configSection}>
+                    <h3>{mongoConfig.bridge.title}</h3>
+                    <div className={styles.bridgeFlow}>
+                      <div className={styles.bridgeItem}>
+                        <strong>{mongoConfig.bridge.from}</strong>
+                      </div>
+                      <span className={styles.arrow}>→</span>
+                      <div className={styles.bridgeItem}>
+                        <strong>{mongoConfig.bridge.through}</strong>
+                      </div>
+                      <span className={styles.arrow}>→</span>
+                      <div className={styles.bridgeItem}>
+                        <strong>{mongoConfig.bridge.to}</strong>
+                      </div>
+                    </div>
+                    <p className={styles.bridgeDesc}>{mongoConfig.bridge.description}</p>
+                  </div>
+                )}
+
+                {/* Field Processing Details */}
+                {mongoConfig.mapping && (
+                  <div className={styles.configSection}>
+                    <h3>How This Scenario Works</h3>
+
+                    {isNonStandard ? (
+                      <div className={styles.selfHealingExplanation}>
+                        <p><strong>Self-Healing Flow:</strong></p>
+                        <ol>
+                          <li>UK Correspondent receives MT103 with non-standard Field 59 delimiter (///)</li>
+                          <li>Parser fails → LLM Agent writes BIC-specific override to MongoDB</li>
+                          <li>Override applies instantly via change streams (no code deploy)</li>
+                          <li>Retry succeeds: MT103 → JSON → CHAPS completes</li>
+                          <li>Future payments from this BIC process straight-through</li>
+                        </ol>
+                      </div>
+                    ) : (
+                      <>
+                        {/* Processing Stats */}
+                        <div className={styles.mappingStats}>
+                          <span>Total Fields: {mongoConfig.mapping.totalFields}</span>
+                          <span>Rules Lane: {mongoConfig.mapping.rulesLane}</span>
+                          <span>AI Lane: {mongoConfig.mapping.aiLane}</span>
+                          {mongoConfig.mapping.humanLane > 0 && (
+                            <span>Human Review: {mongoConfig.mapping.humanLane}</span>
+                          )}
+                        </div>
+
+                        {/* Example Mappings */}
+                        {mongoConfig.mapping.examples && (
+                          <>
+                            <h4 style={{fontSize: '14px', marginTop: '16px', marginBottom: '12px'}}>Example Field Mappings:</h4>
+                            <div className={styles.mappingExamples}>
+                              {mongoConfig.mapping.examples.map((example, idx) => (
+                                <div key={idx} className={styles.mappingRow}>
+                                  <span className={example.type === 'ai' ? styles.aiLabel : styles.rulesLabel}>
+                                    {example.type === 'ai' ? 'AI' : 'RULES'}
+                                  </span>
+                                  <code>{example.source}</code>
+                                  <span className={styles.mappingArrow}>→</span>
+                                  <code>{example.target}</code>
+                                  <span style={{fontSize: '11px', color: '#6b7280', marginLeft: '8px'}}>
+                                    {example.description}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </>
+                        )}
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {/* Metrics */}
+                {mongoConfig.metrics && (
+                  <div className={styles.configSection}>
+                    <h3>Performance Metrics</h3>
+                    <div className={styles.metricsGrid}>
+                      <div className={styles.metric}>
+                        <span className={styles.metricValue}>{mongoConfig.metrics.accuracy}</span>
+                        <span className={styles.metricLabel}>Accuracy</span>
+                      </div>
+                      <div className={styles.metric}>
+                        <span className={styles.metricValue}>{mongoConfig.metrics.straightThrough}</span>
+                        <span className={styles.metricLabel}>Straight-Through</span>
+                      </div>
+                      <div className={styles.metric}>
+                        <span className={styles.metricValue}>{mongoConfig.metrics.costSaving}</span>
+                        <span className={styles.metricLabel}>Cost Savings</span>
+                      </div>
+                      <div className={styles.metric}>
+                        <span className={styles.metricValue}>{mongoConfig.metrics.setupTime}</span>
+                        <span className={styles.metricLabel}>Setup Time</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Insights */}
+                {mongoConfig.insights && (
+                  <div className={styles.insightBox}>
+                    <h4>{mongoConfig.insights.key}</h4>
+                    <p>{mongoConfig.insights.value}</p>
+                    <p className={styles.impact}>
+                      <strong>Impact:</strong> {mongoConfig.insights.impact}
+                    </p>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className={styles.placeholder}>
+                Select a scenario to view MongoDB configuration details
+              </div>
+            )}
+          </div>
         </div>
 
         <div className={styles.modalFooter}>
           <div className={styles.info}>
             <Icon glyph="InfoWithCircle" className={styles.infoIcon} />
             <span>
-              {activeTab === 'json'
-                ? 'The MongoDB Bridge uses a universal Canonical JSON format to enable seamless multi-hop conversions between any payment formats.'
-                : 'MongoDB stores all conversion logic, enabling zero-code payment format transformations.'
-              }
+              MongoDB stores all conversion logic, enabling zero-code payment format transformations.
             </span>
           </div>
         </div>

@@ -74,6 +74,12 @@ const EnhancedCountryNode = ({ data, selected }) => {
               {data.compliance}
             </div>
           )}
+
+          {data.selfHealed && (
+            <div className={styles.selfHealedBadge}>
+              ✅ Self-healed
+            </div>
+          )}
         </div>
 
         {isJsonBridge && (

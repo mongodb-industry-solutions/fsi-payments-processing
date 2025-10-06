@@ -10,13 +10,7 @@ const NodeErrorPopup = ({ isOpen, position, onFix, onClose }) => {
   if (!isOpen) return null;
 
   return (
-    <div
-      className={styles.errorPopup}
-      style={{
-        left: `${position?.x || 0}px`,
-        top: `${position?.y || 0}px`,
-      }}
-    >
+    <div className={styles.errorPopup}>
       <div className={styles.popupHeader}>
         <Icon glyph="Warning" size="small" fill={palette.red.base} />
         <span className={styles.errorTitle}>Parsing Error Detected</span>

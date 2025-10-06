@@ -88,9 +88,42 @@ function PaymentVisualizerFlow() {
   const [showErrorPopup, setShowErrorPopup] = useState(false);
   const [errorNodePosition, setErrorNodePosition] = useState(null);
   const [errorNodeId, setErrorNodeId] = useState(null);
-  const { fitView } = useReactFlow();
+  const { fitView, project } = useReactFlow();
 
   const onConnect = useCallback((params) => setEdges((eds) => addEdge(params, eds)), [setEdges]);
+
+  // Function to update error popup position based on current viewport
+  const updateErrorPopupPosition = useCallback(() => {
+    if (!showErrorPopup || !errorNodeId) return;
+
+    const correspondentNode = nodes.find(n => n.id === errorNodeId);
+    if (correspondentNode) {
+      // Convert node position to screen coordinates (accounts for zoom/pan)
+      const screenPosition = project({
+        x: correspondentNode.position.x + 250, // 250px to the right of node in flow coordinates
+        y: correspondentNode.position.y
+      });
+      setErrorNodePosition(screenPosition);
+    }
+  }, [showErrorPopup, errorNodeId, nodes, project]);
+
+  // Update popup position when it's shown or nodes change
+  useEffect(() => {
+    if (showErrorPopup && errorNodeId) {
+      updateErrorPopupPosition();
+    }
+  }, [showErrorPopup, errorNodeId, updateErrorPopupPosition]);
+  // Keep JSON Bridge node in sync with jsonBridgeData
+  useEffect(() => {
+    const hubId = 'json-hub';
+    const bd = jsonBridgeData[hubId];
+    if (bd) {
+      setNodes(prev => prev.map(n => (
+        n.id === hubId ? { ...n, data: { ...n.data, beforeJson: bd.beforeJson, afterJson: bd.afterJson } } : n
+      )));
+    }
+  }, [jsonBridgeData, setNodes]);
+
 
   const handleEdgeClick = useCallback(async (edgeId, edgeData) => {
     // Parse the edge label to get source and target formats
@@ -693,61 +726,97 @@ function PaymentVisualizerFlow() {
     const progress = { ...executionProgress };
     const results = [];
 
-    // Step 1: Fix correspondent bank - change from error to processing
+    // Visually fix correspondent node then actually run conversions
     progress['correspondent'] = 'processing';
     setExecutionProgress({ ...progress });
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    // Step 2: Complete correspondent bank successfully
+    await new Promise(resolve => setTimeout(resolve, 600));
     progress['correspondent'] = 'completed';
     setExecutionProgress({ ...progress });
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise(resolve => setTimeout(resolve, 300));
 
-    // Step 3: Process through JSON hub (if exists)
-    const jsonHub = selectedScenario?.hops?.find(h => h.id === 'json-hub');
-    if (jsonHub) {
-      progress['json-hub'] = 'processing';
-      setExecutionProgress({ ...progress });
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      progress['json-hub'] = 'completed';
-      setExecutionProgress({ ...progress });
+    try {
+      // Run real conversions now that self-healing completed
+      const useRealAPI = selectedScenario?.sampleMessage && selectedScenario?.conversions?.[0]?.useRealAPI;
+      let currentMessage = selectedScenario?.sampleMessage;
+      let previousOutput = null;
+      const bridgeData = {};
+
+      for (let i = 0; i < (selectedScenario?.conversions?.length || 0); i++) {
+        setCurrentStep(i);
+        const conversion = selectedScenario.conversions[i];
+
+        // Progress update for source node of this step
+        const fromNode = selectedScenario.hops.find(h => h.format === conversion.from);
+        if (fromNode) {
+          progress[fromNode.id] = 'processing';
+          setExecutionProgress({ ...progress });
+        }
+
+        const inputMessage = i === 0 ? currentMessage : previousOutput;
+        if (!inputMessage) {
+          console.error(`No input message for conversion ${i}: ${conversion.from} → ${conversion.to}`);
+          continue;
+        }
+
+        if (useRealAPI && conversion.useRealAPI) {
+          try {
+            const result = await convertPayment(
+              conversion.from,
+              conversion.to,
+              inputMessage,
+              false // do not use router for individual steps
+            );
+
+            if (result.success && result.convertedMessage) {
+              // Map to JSON bridge (hub-and-spoke uses a single 'json-hub')
+              if (conversion.to === 'JSON' || conversion.from === 'JSON') {
+                const jsonId = 'json-hub';
+                bridgeData[jsonId] = bridgeData[jsonId] || {};
+                if (conversion.to === 'JSON') {
+                  bridgeData[jsonId].beforeJson = inputMessage;
+                  bridgeData[jsonId].afterJson = result.convertedMessage;
+                } else {
+                  bridgeData[jsonId].beforeJson = inputMessage;
+                  bridgeData[jsonId].afterJson = result.convertedMessage;
+                }
+                setJsonBridgeData({ ...bridgeData });
+              }
+
+              results.push({
+                step: i + 1,
+                from: conversion.from,
+                to: conversion.to,
+                input: inputMessage,
+                output: result.convertedMessage,
+                processingStats: result.processingStats,
+                confidenceScores: result.confidenceScores,
+                processingTime: result.processingTime,
+                selfHealingApplied: true,
+                problematicBIC: 'CORRBANKXXX'
+              });
+
+              previousOutput = result.convertedMessage;
+            } else {
+              console.error('Conversion failed:', { conversion, result });
+            }
+          } catch (e) {
+            console.error('Conversion error:', e);
+          }
+        }
+
+        // Mark destination node as completed for this step
+        const toNode = selectedScenario.hops.find(h => h.format === conversion.to);
+        if (toNode) {
+          progress[toNode.id] = 'completed';
+          setExecutionProgress({ ...progress });
+        }
+      }
+    } finally {
+      setConversionResults(results);
+      setIsExecuting(false);
+      setCurrentStep(null);
+      setShowResultsSummary(true);
     }
-
-    // Step 4: Process destination bank (find the last hop - usually lloyds)
-    const destinationNode = selectedScenario?.hops?.[selectedScenario.hops.length - 1];
-    if (destinationNode) {
-      progress[destinationNode.id] = 'processing';
-      setExecutionProgress({ ...progress });
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      progress[destinationNode.id] = 'completed';
-      setExecutionProgress({ ...progress });
-    }
-
-    // Add conversion results with self-healing flag
-    results.push({
-      step: 1,
-      from: 'MT103',
-      to: 'JSON',
-      processingStats: { rules_lane: 18, ai_lane: 3 },
-      processingTime: 2.5,
-      selfHealingApplied: true,
-      problematicBIC: 'CORRBANKXXX'
-    });
-
-    results.push({
-      step: 2,
-      from: 'JSON',
-      to: 'CHAPS',
-      processingStats: { rules_lane: 22, ai_lane: 0 },
-      processingTime: 1.2,
-      selfHealingApplied: true,
-      problematicBIC: 'CORRBANKXXX'
-    });
-
-    setConversionResults(results);
-    setIsExecuting(false);
-    setCurrentStep(null);
-    setShowResultsSummary(true);
   };
 
   const handleFixWithLLM = () => {
@@ -827,17 +896,22 @@ function PaymentVisualizerFlow() {
       progress['correspondent'] = 'error';
       setExecutionProgress({ ...progress });
 
-      // Find the correspondent node position
+      // Find the correspondent node and show error popup
       const correspondentNode = nodes.find(n => n.id === 'correspondent');
       if (correspondentNode) {
-        const position = {
-          x: correspondentNode.position.x + 650, // Position popup further to the right of node
-          y: correspondentNode.position.y
-        };
-        setErrorNodePosition(position);
         setErrorNodeId('correspondent');
         setShowErrorPopup(true);
+        // Position will be calculated by useEffect -> updateErrorPopupPosition
       }
+
+        // Prefill JSON Bridge panel with input before conversion, even on failure
+        setJsonBridgeData(prev => ({
+          ...prev,
+          ['json-hub']: {
+            beforeJson: selectedScenario?.sampleMessage || null,
+            afterJson: null
+          }
+        }));
 
       setIsExecuting(false);
       setCurrentStep(null);
@@ -1307,6 +1381,7 @@ function PaymentVisualizerFlow() {
               onEdgesChange={onEdgesChange}
               onConnect={onConnect}
               onNodeClick={onNodeClick}
+              onMove={updateErrorPopupPosition}
               nodeTypes={nodeTypes}
               edgeTypes={edgeTypes}
               fitView
@@ -1366,6 +1441,12 @@ function PaymentVisualizerFlow() {
           console.log('[Modal] onComplete called - continuing from error point');
           setShowSelfHealingModal(false);
           setSelfHealingComplete(true);
+
+          // Mark correspondent node as self-healed for UI badge
+          setNodes(prev => prev.map(n => (
+            n.id === 'correspondent' ? { ...n, data: { ...n.data, selfHealed: true } } : n
+          )));
+
           setErrorNodeId(null);
 
           // Continue execution from where it failed (correspondent bank)

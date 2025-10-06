@@ -151,6 +151,28 @@ const MongoDBDetailsModal = ({ isOpen, onClose, conversionResults, selectedScena
             </div>
           </div>
 
+
+          {/* Self-Healing section for non-standard format variation */}
+          {(selectedScenario?.currentVariation?.id === 'non-standard' || selectedScenario?.selectedVariation === 'non-standard') && (
+            <div className={styles.section}>
+              <h3>
+                <Icon glyph="Refresh" className={styles.sectionIcon} />
+                How This Scenario Works
+              </h3>
+              <p className={styles.intro}>
+                <strong>Self-Healing Flow:</strong> UK Correspondent receives MT103 with non-standard Field 59 delimiter (///).
+                MongoDB enables instant configuration-only fix without code changes.
+              </p>
+              <ol className={styles.selfHealingSteps}>
+                <li>Parser fails at UK Correspondent (Field 59 unrecognized)</li>
+                <li>LLM Agent writes BIC-specific override to <code>conversion_registry</code></li>
+                <li>Override applies instantly via MongoDB change streams</li>
+                <li>Retry succeeds: MT103 → JSON → CHAPS completes</li>
+                <li>Future payments from this BIC process straight-through</li>
+              </ol>
+            </div>
+          )}
+
           {/* Special Section for Remote Island Routing */}
           {selectedScenario?.id === 'remote-island-routing' && (
             <div className={styles.routingSection}>
