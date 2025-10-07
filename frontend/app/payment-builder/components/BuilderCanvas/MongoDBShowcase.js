@@ -14,7 +14,7 @@ export default function MongoDBShowcase() {
     <div className={styles.showcase}>
       {/* Header */}
       <div className={styles.header}>
-        <h2>MongoDB in Action: 100% Generic Payment Converter</h2>
+        <h2>MongoDB in Action: Adaptive Payment Converter</h2>
         <p className={styles.subtitle}>
           Explore how MongoDB's flexible document model enables zero-code payment format conversion
         </p>
