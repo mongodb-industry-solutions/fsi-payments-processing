@@ -50,6 +50,58 @@
   background: transparent;
 }
 
+/* LeafyGreen-style Tabs */
+.tabsWrapper {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid #E8EDEB;
+  background: var(--white);
+  padding: 0 var(--spacing-4);
+}
+
+.leafyTab {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: 12px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: 'Euclid Circular A', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  color: #5C6C75;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  transition: all 150ms ease-in-out;
+  white-space: nowrap;
+  outline: none;
+}
+
+.leafyTab:hover {
+  color: #1C2D38;
+}
+
+.leafyTab:focus-visible {
+  outline: 2px solid #00ED64;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.leafyTabActive {
+  color: #00684A;
+  border-bottom-color: #00ED64;
+}
+
+.leafyTabActive:hover {
+  color: #00684A;
+}
+
+.leafyTabBadge {
+  font-size: 11px;
+  font-weight: 600;
+}
+
 .tabIcon {
   display: inline-flex;
   align-items: center;

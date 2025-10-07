@@ -6,18 +6,83 @@ import TextInput from '@leafygreen-ui/text-input';
 import TextArea from '@leafygreen-ui/text-area';
 import { Select, Option } from '@leafygreen-ui/select';
 import Banner from '@leafygreen-ui/banner';
+import Icon from '@leafygreen-ui/icon';
 import { Body, Label } from '@leafygreen-ui/typography';
 import styles from './ConfigInput.module.css';
 
 // Predefined scenarios for quick configuration
 const PRESET_SCENARIOS = [
   {
+    id: 'mt101_pacs008',
+    name: 'MT101 → pacs.008',
+    description: 'Request for Transfer - Field 70 uses AI for remittance info',
+    sourceFormat: 'MT101',
+    targetFormat: 'pacs.008',
+    sampleMessage: `{1:F01CHASUS33AXXX0000000000}{2:I101DEUTDEFFXXXXN}{4:
+:20:BATCH2024120701
+:28D:1/1
+:50H:/US12345678901234567890
+ACME CORPORATION
+123 MAIN STREET
+NEW YORK NY 10001
+:30:241207
+:21:TRANS001
+:32B:USD50000,00
+:50H:/US98765432109876543210
+ACME CORPORATION
+:59:/DE12345678901234567890
+GLOBAL SUPPLIES GMBH
+FRANKFURT GERMANY
+:70:INVOICE INV-2024-12345
+PAYMENT FOR MANUFACTURING SERVICES
+CONTRACT NO MFG-2024-789
+DELIVERY DATE 2024-12-15
+-}`
+  },
+  {
+    id: 'mt204_pacs009',
+    name: 'MT204 → pacs.009',
+    description: 'Financial Markets Direct Debit - Field 58D uses AI extraction',
+    sourceFormat: 'MT204',
+    targetFormat: 'pacs.009',
+    sampleMessage: `{1:F01CHASUS33AXXX0000000000}{2:I204DEUTDEFFXXXXN}{4:
+:19:125000,00
+:30:241207
+:57A:DEUTDEFFXXX
+:58D:/DE98765432109876543210
+DEUTSCHE BANK AG
+TAUNUSANLAGE 12
+60325 FRANKFURT AM MAIN
+GERMANY
+:72:/BNF/FINANCIAL MARKET SETTLEMENT
+/INS/PRIORITY PROCESSING REQUIRED
+/ACC/SAME DAY VALUE
+-}`
+  },
+  {
+    id: 'mt201_pacs009',
+    name: 'MT201 → pacs.009',
+    description: 'Multiple FI Transfer - Field 72 uses AI for instructions',
+    sourceFormat: 'MT201',
+    targetFormat: 'pacs.009',
+    sampleMessage: `{1:F01CHASUS33AXXX0000000000}{2:I201DEUTDEFFXXXXN}{4:
+:20:MULTI2024120701
+:21:RELREF001
+:19:250000,00
+:30:241207
+:57A:DEUTDEFFXXX
+:58A:COBADEFFXXX
+:72:/BNF/MULTIPLE INSTITUTION TRANSFER
+/INS/BATCH PROCESSING REQUESTED
+/REC/CONFIRM RECEIPT TO OPS TEAM
+-}`
+  },
+  {
     id: 'mt205_pacs009',
     name: 'MT205 → pacs.009',
     description: 'Financial Institution Transfer with unmapped fields showcase',
     sourceFormat: 'MT205',
     targetFormat: 'pacs.009',
-    similarTo: 'MT202',
     sampleMessage: `{1:F01CHASUS33AXXX0000000000}{2:I205DEUTDEFFXXXXN}{3:{108:PRIORITY}}{4:
 :20:MT205TEST2024
 :21:RELREF20241115
@@ -38,7 +103,6 @@ COBADEFFXXX
     description: 'Card Financial Advice Transaction (Offline/Batch)',
     sourceFormat: 'ISO8583_0220',
     targetFormat: 'cain.001',
-    similarTo: 'ISO8583_0200',
     sampleMessage: '0220|PAN:4916522800000000|PROC:000000|AMT:12000|CUR:826|DT:1215103045|STAN:123456|REF:BATCH0001234|TERM:TERM0001|MID:MERCHANT123|MERCHANT:STARBUCKS LONDON UK|EXP:2512|ACQ:00000123456|DATA:OFFLINE BATCH SETTLEMENT'
   }
 ];
@@ -85,14 +149,6 @@ export default function ConfigInput({
       }
     }
 
-    // Info about similar format
-    if (config.similarTo) {
-      messages.push({
-        type: 'info',
-        text: `Configuration will be based on ${config.similarTo} patterns`
-      });
-    }
-
     setValidation({ isValid, messages });
   }, [config]);
 
@@ -100,34 +156,34 @@ export default function ConfigInput({
     if (status === 'idle') {
       return {
         class: 'idle',
-        icon: '○',
+        icon: <Icon glyph="Circle" size="small" />,
         text: 'Ready to configure'
       };
     }
     if (status === 'generating') {
       return {
         class: 'validating',
-        icon: '◐',
+        icon: <Icon glyph="Refresh" size="small" />,
         text: 'Generating configuration...'
       };
     }
     if (status === 'complete') {
       return {
         class: 'ready',
-        icon: '✓',
+        icon: <Icon glyph="Checkmark" size="small" />,
         text: 'Configuration generated'
       };
     }
     if (status === 'error') {
       return {
         class: 'error',
-        icon: '✗',
+        icon: <Icon glyph="X" size="small" />,
         text: 'Generation failed'
       };
     }
     return {
       class: 'idle',
-      icon: '○',
+      icon: <Icon glyph="Circle" size="small" />,
       text: 'Ready'
     };
   };
@@ -138,7 +194,6 @@ export default function ConfigInput({
     if (scenario) {
       onChange('sourceFormat', scenario.sourceFormat);
       onChange('targetFormat', scenario.targetFormat);
-      onChange('similarTo', scenario.similarTo);
       onChange('sampleMessage', scenario.sampleMessage);
     }
   };
@@ -152,7 +207,6 @@ export default function ConfigInput({
       // Switching to custom mode - clear fields
       onChange('sourceFormat', '');
       onChange('targetFormat', 'pacs.008');
-      onChange('similarTo', 'MT103');
       onChange('sampleMessage', '');
     }
   };
@@ -294,26 +348,6 @@ export default function ConfigInput({
             )}
           </div>
         </div>
-
-        {/* Similar To - Only in custom mode */}
-        {isCustomMode && (
-          <div className={styles.formGroup}>
-            <Select
-              label="Similar To"
-              description="Select a similar format to help with pattern matching"
-              value={config.similarTo || 'MT103'}
-              onChange={(value) => onChange('similarTo', value)}
-              disabled={status === 'generating'}
-              aria-label="Similar To Format"
-            >
-              <Option value="MT103">MT103 - Wire Transfer</Option>
-              <Option value="MT202">MT202 - Bank Transfer</Option>
-              <Option value="MT205">MT205 - FI Transfer</Option>
-              <Option value="MT">MT - Any SWIFT MT Format</Option>
-              <Option value="ISO8583_0200">ISO8583_0200 - Card Auth</Option>
-            </Select>
-          </div>
-        )}
 
         {/* Sample Message */}
         <div className={styles.formGroup}>

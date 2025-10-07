@@ -1,14 +1,16 @@
 import React, { useState, useMemo } from 'react';
+import Icon from '@leafygreen-ui/icon';
 import styles from './TreeNavigator.module.css';
 
 const getIcon = (iconName) => {
-  const icons = {
-    'Code': '💻',
-    'ArrowRight': '→',
-    'Sparkle': '✨',
-    'Wrench': '🔧'
+  const iconMap = {
+    'Code': 'Code',
+    'ArrowRight': 'ArrowRight',
+    'Sparkle': 'Sparkle',
+    'Wrench': 'Wrench'
   };
-  return icons[iconName] || '';
+  const glyphName = iconMap[iconName];
+  return glyphName ? <Icon glyph={glyphName} size="small" /> : null;
 };
 
 const TreeNavigator = ({ configuration, validationResult, onSelect, selectedPath }) => {
@@ -111,17 +113,23 @@ const TreeNavigator = ({ configuration, validationResult, onSelect, selectedPath
           }}
         >
           {hasChildren && (
-            <span className={styles.icon}>{isExpanded ? '▼' : '▶'}</span>
+            <span className={styles.icon}>
+              <Icon glyph={isExpanded ? 'ChevronDown' : 'ChevronRight'} size="small" />
+            </span>
           )}
           {node.icon && (
             <span className={styles.icon}>{getIcon(node.icon)}</span>
           )}
           <span className={styles.label}>{node.label}</span>
           {node.status === 'error' && (
-            <span className={styles.errorIcon}>✗</span>
+            <span className={styles.errorIcon}>
+              <Icon glyph="X" size="small" />
+            </span>
           )}
           {node.status === 'warning' && (
-            <span className={styles.warningIcon}>⚠</span>
+            <span className={styles.warningIcon}>
+              <Icon glyph="Warning" size="small" />
+            </span>
           )}
         </div>
         {hasChildren && isExpanded && (

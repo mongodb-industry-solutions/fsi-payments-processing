@@ -288,3 +288,48 @@
   color: var(--gray-base);
   font-style: italic;
 }
+
+/* Example Messages Section */
+.examplesSection {
+  margin-bottom: var(--spacing-4);
+  padding: var(--spacing-3);
+  background: var(--gray-light3);
+  border-radius: 8px;
+  border: 1px solid var(--gray-light2);
+}
+
+.examplesSection label {
+  display: block;
+  margin-bottom: var(--spacing-2);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--gray-dark2);
+}
+
+.exampleButtons {
+  display: flex;
+  gap: var(--spacing-2);
+  flex-wrap: wrap;
+}
+
+.exampleButton {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: var(--spacing-2) var(--spacing-4);
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 200ms ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.exampleButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+}
+
+.exampleButton:active {
+  transform: translateY(0);
+}

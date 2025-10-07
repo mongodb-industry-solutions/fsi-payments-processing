@@ -1,13 +1,16 @@
 .container {
-  height: 100%;
   display: flex;
   flex-direction: column;
   background: #ffffff;
   border-top: 1px solid #e8e8e8;
+  transition: all 0.2s ease;
+  height: 100%;
+  overflow: hidden;
 }
 
 .container.collapsed {
-  height: auto;
+  height: 49px;
+  overflow: hidden;
 }
 
 .header {

@@ -501,11 +501,14 @@ class SimplifiedSemanticLearningService:
             logger.warning(f"No AI service available for mapping {field_id}")
             return {"targets": [], "confidence": 0}
 
-        # Truncate content for prompt (avoid token limits)
-        content_preview = content[:200] if content else ""
+        # Truncate content for prompt (avoid token limits) - increased from 200 to 500 to preserve multi-line content
+        content_preview = content[:1000] if content else ""
 
-        # Get format-specific context
+        # Get format-specific context with examples
         format_context = self._get_format_context(format_family, target_format)
+
+        # Add SWIFT MT field catalog if applicable
+        field_catalog = self._get_swift_field_catalog(field_id, format_family)
 
         prompt = f"""
         Analyze this payment field and suggest target mappings:
@@ -516,7 +519,26 @@ class SimplifiedSemanticLearningService:
         Format Family: {format_family}
         Target Format: {target_format}
 
+        {field_catalog}
+
         {format_context}
+
+        **CRITICAL MAPPING RULES:**
+        1. Identify the field TYPE first (Amount, Date, Party, Reference, Batch Control, Instructions)
+        2. Map based on semantic meaning, NOT just field ID
+        3. Amount fields (32X) → InstdAmt.Amt + InstdAmt.Ccy (SEPARATE fields for value and currency)
+        4. Date fields (30, 32A date part) → ReqdExctnDt, IntrBkSttlmDt, ValDt
+        5. Party fields (50, 52, 59) → Dbtr.*/Cdtr.* with Nm, Acct.Id, PstlAdr
+        6. **Field 28D (batch n/m)** → MUST return empty targets [] - NO equivalent in pacs.008
+        7. Transaction references (21, TRN) → EndToEndId, TxId, InstrId
+        8. Remittance (70) → RmtInf.Ustrd
+        9. Instructions (72) → InstrForCdtrAgt, InstrForNxtAgt
+
+        **MANDATORY RULES - DO NOT VIOLATE:**
+        - Field 28D content like "1/1" is MESSAGE SEQUENCING ONLY → targets MUST be []
+        - NEVER map 28D to amount fields (IntrBkSttlmAmt, InstdAmt) - it contains NO amount data
+        - NEVER map 28D to MsgId, NbOfTxs, MsgIdx, TtlNb - these don't exist or are inappropriate in pacs.008
+        - If a field contains only metadata/control information with NO business data, return empty targets: []
 
         Based on the field content and format family, suggest the most likely target field(s).
 
@@ -526,7 +548,19 @@ class SimplifiedSemanticLearningService:
             "confidence": 0.7,
             "reasoning": "brief explanation"
         }}
+
+        If the field has no clear mapping to {target_format}, return:
+        {{
+            "targets": [],
+            "confidence": 0.5,
+            "reasoning": "This field contains MT-specific metadata with no direct equivalent in {target_format}"
+        }}
         """
+
+        logger.info(f"🔍 LLM PROMPT FOR FIELD {field_id}:")
+        logger.info(f"{'='*80}")
+        logger.info(prompt)
+        logger.info(f"{'='*80}")
 
         try:
             import time
@@ -538,6 +572,11 @@ class SimplifiedSemanticLearningService:
                 field_type="field_mapping_suggestion",
                 prompt_template=prompt  # Pass prompt as template to override default
             )
+
+            logger.info(f"🤖 LLM RESPONSE FOR FIELD {field_id}:")
+            logger.info(f"{'='*80}")
+            logger.info(f"Response: {json.dumps(response, indent=2)}")
+            logger.info(f"{'='*80}")
 
             call_time = (time.time() - call_start) * 1000
 
@@ -597,6 +636,67 @@ class SimplifiedSemanticLearningService:
                 }
 
             return result
+
+    def _get_swift_field_catalog(self, field_id: str, format_family: str) -> str:
+        """
+        Get SWIFT MT field definitions to help LLM understand field semantics.
+
+        Args:
+            field_id: The SWIFT field identifier (e.g., "20", "28D", "50H")
+            format_family: Format family (only returns catalog if SWIFT_MT)
+
+        Returns:
+            Field definition string if found, empty string otherwise
+        """
+        if format_family != "SWIFT_MT":
+            return ""
+
+        # Common SWIFT MT field catalog with semantic descriptions
+        swift_field_catalog = {
+            "20": "Sending Reference - unique message identifier",
+            "21": "Related Reference - customer-specified transaction reference",
+            "23B": "Bank Operation Code - transaction type",
+            "28": "Statement Number - sequence number",
+            "28D": "Message Index/Total - batch control in n/m format (e.g., 1/1 means message 1 of 1) - METADATA ONLY, no pacs.008 mapping",
+            "30": "Requested Execution Date - YYMMDD format",
+            "32A": "Value Date/Currency/Amount - composite field YYMMDD+CCY+amount",
+            "32B": "Transaction Amount - CCYamount format (e.g., USD50000.00)",
+            "33B": "Currency/Instructed Amount",
+            "50A": "Ordering Customer - BIC",
+            "50F": "Ordering Customer - name, address, account",
+            "50H": "Ordering Customer - account number + name + postal address (multi-line)",
+            "50K": "Ordering Customer - account + name + address (multi-line)",
+            "52A": "Ordering Institution - BIC code",
+            "52D": "Ordering Institution - name and address",
+            "53A": "Sender's Correspondent - BIC",
+            "53B": "Sender's Correspondent - party identifier",
+            "54A": "Receiver's Correspondent - BIC",
+            "56A": "Intermediary Institution - BIC",
+            "56C": "Intermediary Institution - party identifier",
+            "56D": "Intermediary Institution - name and address",
+            "57A": "Account With Institution - BIC",
+            "57B": "Account With Institution - party identifier",
+            "57C": "Account With Institution - party identifier",
+            "57D": "Account With Institution - name and address",
+            "58A": "Beneficiary Institution - BIC",
+            "58D": "Beneficiary Institution - name and address",
+            "59": "Beneficiary Customer - account + name + address (multi-line)",
+            "59A": "Beneficiary Customer - account + identifier",
+            "70": "Remittance Information - unstructured payment details (multi-line)",
+            "71A": "Charges Code - SHA/OUR/BEN",
+            "71F": "Sender's Charges",
+            "71G": "Receiver's Charges",
+            "72": "Sender to Receiver Information - bank-to-bank instructions (multi-line)",
+            "77B": "Regulatory Reporting"
+        }
+
+        if field_id in swift_field_catalog:
+            return f"""
+**SWIFT MT FIELD DEFINITION:**
+Field {field_id}: {swift_field_catalog[field_id]}
+"""
+
+        return ""
 
     def _get_format_context(self, format_family: str, target_format: str) -> str:
         """

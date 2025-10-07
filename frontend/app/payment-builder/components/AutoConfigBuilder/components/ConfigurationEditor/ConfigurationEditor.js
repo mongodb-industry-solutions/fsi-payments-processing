@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
+import Icon from '@leafygreen-ui/icon';
 import TreeNavigator from './components/TreeNavigator/TreeNavigator';
 import JsonEditorPanel from './components/JsonEditorPanel/JsonEditorPanel';
 import PropertyInspector from './components/PropertyInspector/PropertyInspector';
@@ -25,6 +26,12 @@ const ConfigurationEditor = ({
   const monacoRef = useRef(null);
   const validationTriggeredRef = useRef(false);
   const validationTimeoutRef = useRef(null);
+  const problemsPanelRef = useRef(null);
+
+  // Log validation result prop changes
+  useEffect(() => {
+    console.log('ConfigurationEditor - validationResult prop changed:', validationResult);
+  }, [validationResult]);
 
   // Auto-trigger validation on mount if not already validated
   useEffect(() => {
@@ -79,7 +86,15 @@ const ConfigurationEditor = ({
   const transformedValidationResult = useMemo(() => {
     // Use local validation result if available (from editor changes), otherwise use prop
     const resultToUse = localValidationResult || validationResult;
-    return transformValidationResult(resultToUse);
+    console.log('ConfigurationEditor - Computing transformedValidationResult:', {
+      hasLocalValidation: !!localValidationResult,
+      hasValidationProp: !!validationResult,
+      resultToUse: resultToUse
+    });
+    const transformed = transformValidationResult(resultToUse);
+    console.log('ConfigurationEditor - Transformed result:', transformed);
+    console.log('ConfigurationEditor - Save button should be enabled:', transformed?.is_valid);
+    return transformed;
   }, [localValidationResult, validationResult, transformValidationResult]);
 
   // Sync editor value when configuration changes
@@ -172,7 +187,6 @@ const ConfigurationEditor = ({
             check: 'JSON Syntax',
             status: 'failed',
             details: 'Invalid JSON syntax',
-            icon: '❌',
             errors: [{
               field: 'root',
               message: e.message,
@@ -218,20 +232,40 @@ const ConfigurationEditor = ({
         <h3>Configuration Editor: {configuration._id}</h3>
         <div className={styles.actions}>
           <span className={`${styles.badge} ${transformedValidationResult?.is_valid ? styles.badgeSuccess : styles.badgeError}`}>
-            {transformedValidationResult?.is_valid ? '✓ Valid' : `${transformedValidationResult?.error_count || 0} Errors`}
+            {transformedValidationResult?.is_valid ? (
+              <>
+                <Icon glyph="Checkmark" size="small" /> Valid
+              </>
+            ) : (
+              `${transformedValidationResult?.error_count || 0} Errors`
+            )}
           </span>
+          <button
+            className={styles.validateButton}
+            onClick={() => {
+              console.log('Validate button clicked', { onValidate, isValidating });
+              if (onValidate) {
+                onValidate();
+              } else {
+                console.error('onValidate is not defined!');
+              }
+            }}
+            disabled={isValidating}
+          >
+            <Icon glyph="InviteUser" size="small" /> {isValidating ? 'Validating...' : 'Validate'}
+          </button>
           <button
             className={styles.saveButton}
             onClick={() => onSave(false)}
             disabled={!transformedValidationResult?.is_valid || isSaving}
           >
-            💾 {isSaving ? 'Saving...' : 'Save to Production'}
+            <Icon glyph="Save" size="small" /> {isSaving ? 'Saving...' : 'Save to Production'}
           </button>
         </div>
       </div>
 
       <PanelGroup direction="vertical" className={styles.mainContent}>
-        <Panel defaultSize={75} minSize={30}>
+        <Panel defaultSize={70} minSize={30}>
           <PanelGroup direction="horizontal">
             <Panel defaultSize={20} minSize={15} maxSize={35}>
               <TreeNavigator
@@ -260,32 +294,53 @@ const ConfigurationEditor = ({
             <PanelResizeHandle className={styles.resizeHandle} />
 
             <Panel defaultSize={30} minSize={20} maxSize={40}>
-              <PropertyInspector
-                path={selectedPath}
-                configuration={configuration}
-                validationResult={transformedValidationResult}
-                onFieldUpdate={onFieldUpdate}
-              />
+              <PanelGroup direction="vertical">
+                <Panel defaultSize={75} minSize={50}>
+                  <PropertyInspector
+                    path={selectedPath}
+                    configuration={configuration}
+                    validationResult={transformedValidationResult}
+                    onFieldUpdate={onFieldUpdate}
+                  />
+                </Panel>
+
+                <PanelResizeHandle className={styles.resizeHandleHorizontal} />
+
+                <Panel
+                  ref={problemsPanelRef}
+                  defaultSize={25}
+                  minSize={5}
+                  maxSize={50}
+                  collapsible={true}
+                  collapsedSize={5}
+                >
+                  <ProblemsPanel
+                    validationResult={transformedValidationResult}
+                    validationSource={validationSource}
+                    onProblemClick={(problem) => {
+                      // Jump to problem in editor
+                      if (editorRef.current && problem.line) {
+                        editorRef.current.revealLineInCenter(problem.line);
+                        editorRef.current.setPosition({ lineNumber: problem.line, column: 1 });
+                      }
+                    }}
+                    isVisible={showProblems}
+                    onToggle={() => {
+                      setShowProblems(!showProblems);
+                      // Trigger panel collapse/expand via imperative API
+                      if (problemsPanelRef.current) {
+                        if (showProblems) {
+                          problemsPanelRef.current.collapse();
+                        } else {
+                          problemsPanelRef.current.expand();
+                        }
+                      }
+                    }}
+                  />
+                </Panel>
+              </PanelGroup>
             </Panel>
           </PanelGroup>
-        </Panel>
-
-        <PanelResizeHandle className={styles.resizeHandleHorizontal} />
-
-        <Panel defaultSize={25} minSize={10} maxSize={50}>
-          <ProblemsPanel
-            validationResult={transformedValidationResult}
-            validationSource={validationSource}
-            onProblemClick={(problem) => {
-              // Jump to problem in editor
-              if (editorRef.current && problem.line) {
-                editorRef.current.revealLineInCenter(problem.line);
-                editorRef.current.setPosition({ lineNumber: problem.line, column: 1 });
-              }
-            }}
-            isVisible={showProblems}
-            onToggle={() => setShowProblems(!showProblems)}
-          />
         </Panel>
       </PanelGroup>
     </div>

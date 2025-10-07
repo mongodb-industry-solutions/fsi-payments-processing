@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Icon from '@leafygreen-ui/icon';
 import styles from './AutoConfigBuilder.module.css';
 import ConfigInput from './components/ConfigInput/ConfigInput';
 import ConfigJourney from './components/ConfigJourney/ConfigJourney';
@@ -44,8 +45,8 @@ export default function AutoConfigBuilder({
           <p>Generate intelligent payment format configurations</p>
         </div>
         {!embedded && (
-          <button className={styles.closeButton} onClick={onClose}>
-            ✕
+          <button className={styles.closeButton} onClick={onClose} aria-label="Close">
+            <Icon glyph="X" size="small" />
           </button>
         )}
       </div>

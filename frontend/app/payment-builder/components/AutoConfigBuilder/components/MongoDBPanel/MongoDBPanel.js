@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import Icon from '@leafygreen-ui/icon';
 import styles from './MongoDBPanel.module.css';
 
 export default function MongoDBPanel({
@@ -31,11 +32,11 @@ export default function MongoDBPanel({
 
   const getOperationIcon = (type) => {
     switch (type) {
-      case 'read': return '👁';
-      case 'write': return '✍';
-      case 'update': return '🔄';
-      case 'delete': return '🗑';
-      default: return '📝';
+      case 'read': return <Icon glyph="Visibility" size="small" />;
+      case 'write': return <Icon glyph="Edit" size="small" />;
+      case 'update': return <Icon glyph="Refresh" size="small" />;
+      case 'delete': return <Icon glyph="Trash" size="small" />;
+      default: return <Icon glyph="Note" size="small" />;
     }
   };
 

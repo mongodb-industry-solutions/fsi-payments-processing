@@ -14,6 +14,69 @@ export default function SetupStage({
 }) {
   const [isEditing, setIsEditing] = useState(false);
 
+  // Example messages for quick load (with AI-processable fields)
+  const EXAMPLE_MESSAGES = {
+    MT192: {
+      format: 'MT192',
+      target: 'pacs.009',
+      similarTo: 'MT202',
+      description: 'Request for Cancellation',
+      message: `{1:F01CHASUS33AXXX0000000000}{2:I192DEUTDEFFXXXXN}{4:
+:20:CANCEL2024120701
+:21:ORIG2024120601
+:11S:192
+241207
+:79:URGENT CANCELLATION REQUEST
+ORIGINAL PAYMENT REF ORIG2024120601
+AMOUNT USD 75000.00
+PLEASE CANCEL AND CONFIRM
+CONTACT: OPS@USBANK.COM
+-}`
+    },
+    MT900: {
+      format: 'MT900',
+      target: 'pacs.009',
+      similarTo: 'MT202',
+      description: 'Confirmation of Debit',
+      message: `{1:F01CHASUS33AXXX0000000000}{2:I900DEUTDEFFXXXXN}{4:
+:20:DEBIT2024120701
+:21:REF2024120601
+:25:US123456789012345678
+:32A:241207USD50000,00
+:52A:CHASUS33XXX
+:86:WIRE TRANSFER DEBIT CONFIRMATION
+INVOICE INV-2024-12345
+BENEFICIARY: GLOBAL SUPPLIES GMBH
+REFERENCE: PO-987654
+-}`
+    },
+    MT910: {
+      format: 'MT910',
+      target: 'pacs.009',
+      similarTo: 'MT202',
+      description: 'Confirmation of Credit',
+      message: `{1:F01CHASUS33AXXX0000000000}{2:I910DEUTDEFFXXXXN}{4:
+:20:CREDIT2024120701
+:21:REF2024120601
+:25:US123456789012345678
+:32A:241207USD50000,00
+:52A:CHASUS33XXX
+:86:WIRE TRANSFER CREDIT RECEIVED
+FROM: ACME CORPORATION
+PAYMENT FOR SERVICES RENDERED
+CONTRACT NO: SVC-2024-001
+-}`
+    }
+  };
+
+  const loadExample = (exampleKey) => {
+    const example = EXAMPLE_MESSAGES[exampleKey];
+    handleCustomConfigChange('sourceFormat', example.format);
+    handleCustomConfigChange('targetFormat', example.target);
+    handleCustomConfigChange('similarTo', example.similarTo);
+    handleCustomConfigChange('sampleMessage', example.message);
+  };
+
   const handleCustomConfigChange = (field, value) => {
     onCustomConfigChange({
       ...customConfig,
@@ -33,6 +96,24 @@ export default function SetupStage({
           <p className={styles.description}>
             Define your payment format and provide a sample message for analysis.
           </p>
+
+          {/* Load Example Buttons */}
+          <div className={styles.examplesSection}>
+            <label>Load Example Messages:</label>
+            <div className={styles.exampleButtons}>
+              {Object.keys(EXAMPLE_MESSAGES).map((key) => (
+                <button
+                  key={key}
+                  type="button"
+                  className={styles.exampleButton}
+                  onClick={() => loadExample(key)}
+                  title={EXAMPLE_MESSAGES[key].description}
+                >
+                  {key}
+                </button>
+              ))}
+            </div>
+          </div>
 
           <div className={styles.formGroup}>
             <label>Source Format</label>

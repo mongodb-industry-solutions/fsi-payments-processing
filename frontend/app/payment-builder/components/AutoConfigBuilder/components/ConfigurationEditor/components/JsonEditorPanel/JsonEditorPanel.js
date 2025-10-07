@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import Editor from '@monaco-editor/react';
+import Icon from '@leafygreen-ui/icon';
 import styles from './JsonEditorPanel.module.css';
 
 const JsonEditorPanel = ({ value, onChange, markers, onEditorMount, theme = 'vs-light' }) => {
@@ -68,7 +69,7 @@ const JsonEditorPanel = ({ value, onChange, markers, onEditorMount, theme = 'vs-
         <h4>Configuration JSON</h4>
         <div className={styles.actions}>
           <button className={styles.formatButton} onClick={handleFormat}>
-            📝 Format
+            <Icon glyph="Edit" size="small" /> Format
           </button>
         </div>
       </div>

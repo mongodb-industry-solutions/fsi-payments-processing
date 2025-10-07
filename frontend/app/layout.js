@@ -48,12 +48,16 @@ function Navigation() {
         </div>
 
         <div className="nav-actions">
-          <button className="nav-button-secondary">
+          <Link
+            href="/documentation"
+            className={`nav-button-secondary ${pathname === '/documentation' ? 'active' : ''}`}
+          >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <path d="M8 2V8M8 11V11.01M14 8C14 11.3137 11.3137 14 8 14C4.68629 14 2 11.3137 2 8C2 4.68629 4.68629 2 8 2C11.3137 2 14 4.68629 14 8Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+              <path d="M4 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z" stroke="currentColor" strokeWidth="1.5" fill="none"/>
+              <path d="M5 5h6M5 8h6M5 11h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
             </svg>
             <span>Documentation</span>
-          </button>
+          </Link>
         </div>
       </div>
     </nav>

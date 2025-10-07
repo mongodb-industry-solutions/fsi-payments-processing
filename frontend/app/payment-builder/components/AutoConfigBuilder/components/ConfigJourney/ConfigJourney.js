@@ -2,9 +2,12 @@
 
 import { useState } from 'react';
 import Icon from '@leafygreen-ui/icon';
+import { Tab, Tabs } from '@leafygreen-ui/tabs';
+import Badge from '@leafygreen-ui/badge';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import ConfigurationEditor from '../ConfigurationEditor/ConfigurationEditor';
+import RegistryConsole from '../RegistryConsole/RegistryConsole';
 import styles from './ConfigJourney.module.css';
 
 // Custom LeafyGreen-inspired syntax highlighting theme
@@ -137,7 +140,7 @@ const LLMFieldDetail = ({ llmCall }) => {
           <span className={styles.tokens}>{llmCall.tokens.total} tokens</span>
           <span className={styles.time}>{(llmCall.time / 1000).toFixed(2)}s</span>
           <span className={styles.confidence}>{Math.round(llmCall.confidence * 100)}%</span>
-          <span className={styles.expandIcon}>{expanded ? '▼' : '▶'}</span>
+          <span className={styles.expandIcon}>{expanded ? <Icon glyph="ChevronDown" size="small" /> : <Icon glyph="ChevronRight" size="small" />}</span>
         </div>
       </div>
 
@@ -213,6 +216,8 @@ export default function ConfigJourney({
 }) {
   const [expandedSteps, setExpandedSteps] = useState({});
   const [expandAll, setExpandAll] = useState(false);
+  const [lastSavedConfigId, setLastSavedConfigId] = useState(null);
+  const [sessionId, setSessionId] = useState(null);
 
   const toggleStep = (idx) => {
     setExpandedSteps(prev => ({
@@ -408,7 +413,7 @@ export default function ConfigJourney({
             >
               <Icon glyph="InfoWithCircle" size="small" />
               <span className={styles.explainerTitle}>How Auto-Configuration Works</span>
-              <span className={styles.explainerIcon}>{expandedSections.howItWorks ? '▼' : '▶'}</span>
+              <span className={styles.explainerIcon}>{expandedSections.howItWorks ? <Icon glyph="ChevronDown" size="small" /> : <Icon glyph="ChevronRight" size="small" />}</span>
             </button>
 
 {expandedSections.howItWorks && (
@@ -422,7 +427,7 @@ export default function ConfigJourney({
                     <div className={styles.stepNumber}>1</div>
                     <div className={styles.stepTitle}>Format Detection & Base Template Selection</div>
                     <div className={styles.stepExpandIcon}>
-                      {expandedExplainerSteps.step1 ? '▼' : '▶'}
+                      {expandedExplainerSteps.step1 ? <Icon glyph="ChevronDown" size="small" /> : <Icon glyph="ChevronRight" size="small" />}
                     </div>
                   </div>
                   {expandedExplainerSteps.step1 && (
@@ -464,7 +469,7 @@ export default function ConfigJourney({
                     <div className={styles.stepNumber}>2</div>
                     <div className={styles.stepTitle}>Field Extraction from Sample Message</div>
                     <div className={styles.stepExpandIcon}>
-                      {expandedExplainerSteps.step2 ? '▼' : '▶'}
+                      {expandedExplainerSteps.step2 ? <Icon glyph="ChevronDown" size="small" /> : <Icon glyph="ChevronRight" size="small" />}
                     </div>
                   </div>
                   {expandedExplainerSteps.step2 && (
@@ -536,7 +541,7 @@ export default function ConfigJourney({
                     <div className={styles.stepNumber}>3</div>
                     <div className={styles.stepTitle}>Semantic Pattern Matching</div>
                     <div className={styles.stepExpandIcon}>
-                      {expandedExplainerSteps.step3 ? '▼' : '▶'}
+                      {expandedExplainerSteps.step3 ? <Icon glyph="ChevronDown" size="small" /> : <Icon glyph="ChevronRight" size="small" />}
                     </div>
                   </div>
                   {expandedExplainerSteps.step3 && (
@@ -609,7 +614,7 @@ export default function ConfigJourney({
                       <div className={styles.stepNumber}>4</div>
                       <div className={styles.stepTitle}>AI-Powered Field Analysis</div>
                       <div className={styles.stepExpandIcon}>
-                        {expandedExplainerSteps.step4 ? '▼' : '▶'}
+                        {expandedExplainerSteps.step4 ? <Icon glyph="ChevronDown" size="small" /> : <Icon glyph="ChevronRight" size="small" />}
                       </div>
                     </div>
                     {expandedExplainerSteps.step4 && (
@@ -667,7 +672,7 @@ export default function ConfigJourney({
                     <div className={styles.stepNumber}>{mappingGeneration?.llm_calls > 0 ? '5' : '4'}</div>
                     <div className={styles.stepTitle}>Configuration Assembly & Validation</div>
                     <div className={styles.stepExpandIcon}>
-                      {expandedExplainerSteps.step5 ? '▼' : '▶'}
+                      {expandedExplainerSteps.step5 ? <Icon glyph="ChevronDown" size="small" /> : <Icon glyph="ChevronRight" size="small" />}
                     </div>
                   </div>
                   {expandedExplainerSteps.step5 && (
@@ -749,7 +754,15 @@ export default function ConfigJourney({
         {generation.steps.length > 0 && (
           <div className={styles.flowControls}>
             <button className={styles.expandAllButton} onClick={toggleAllSteps}>
-              {expandAll ? '▼ Collapse All' : '▶ Expand All'}
+              {expandAll ? (
+                <>
+                  <Icon glyph="ChevronDown" size="small" /> Collapse All
+                </>
+              ) : (
+                <>
+                  <Icon glyph="ChevronRight" size="small" /> Expand All
+                </>
+              )}
             </button>
           </div>
         )}
@@ -862,7 +875,7 @@ export default function ConfigJourney({
                 style={{ cursor: 'pointer' }}
               >
                 <div className={styles.flowStageExpand}>
-                  {isExpanded ? '▼' : '▶'}
+                  {isExpanded ? <Icon glyph="ChevronDown" size="small" /> : <Icon glyph="ChevronRight" size="small" />}
                 </div>
                 <div className={styles.flowStageIcon}>{step.icon}</div>
                 <div className={styles.flowStageTitle}>{step.title}</div>
@@ -1281,7 +1294,7 @@ export default function ConfigJourney({
                   onClick={() => toggleSection('patternMatched')}
                 >
                   <span className={styles.sectionExpandIcon}>
-                    {expandedSections.patternMatched ? '▼' : '▶'}
+                    {expandedSections.patternMatched ? <Icon glyph="ChevronDown" size="small" /> : <Icon glyph="ChevronRight" size="small" />}
                   </span>
                   <Icon glyph="Favorite" className={styles.sectionIcon} />
                   <span className={styles.sectionTitle}>
@@ -1323,7 +1336,7 @@ export default function ConfigJourney({
                   onClick={() => toggleSection('llmSuggested')}
                 >
                   <span className={styles.sectionExpandIcon}>
-                    {expandedSections.llmSuggested ? '▼' : '▶'}
+                    {expandedSections.llmSuggested ? <Icon glyph="ChevronDown" size="small" /> : <Icon glyph="ChevronRight" size="small" />}
                   </span>
                   <Icon glyph="Sparkle" className={styles.sectionIcon} />
                   <span className={styles.sectionTitle}>
@@ -1346,11 +1359,11 @@ export default function ConfigJourney({
               onClick={() => toggleSection('outputJson')}
             >
               <span className={styles.sectionExpandIcon}>
-                {expandedSections.outputJson ? '▼' : '▶'}
+                {expandedSections.outputJson ? <Icon glyph="ChevronDown" size="small" /> : <Icon glyph="ChevronRight" size="small" />}
               </span>
               <Icon glyph="Code" className={styles.sectionIcon} />
               <span className={styles.sectionTitle}>
-                Generated Configuration JSON
+                Generated Conversion Logic in JSON
               </span>
             </div>
 
@@ -1838,12 +1851,12 @@ export default function ConfigJourney({
                 </div>
                 <div className={styles.checkRight}>
                   <span className={`${styles.checkStatus} ${styles[check.status]}`}>
-                    {check.status === 'passed' ? '✓' : check.status === 'warning' ? '⚠' : '✗'}
+                    <Icon glyph={check.status === 'passed' ? 'Checkmark' : check.status === 'warning' ? 'Warning' : 'X'} size="small" />
                     {' '}
                     {check.status}
                   </span>
                   <span className={styles.expandIcon}>
-                    {expandedSteps[idx] ? '▼' : '▶'}
+                    {expandedSteps[idx] ? <Icon glyph="ChevronDown" size="small" /> : <Icon glyph="ChevronRight" size="small" />}
                   </span>
                 </div>
               </div>
@@ -2147,7 +2160,7 @@ export default function ConfigJourney({
             <Icon glyph="Warning" size="small" />
             <div className={styles.warningContent}>
               <div className={styles.warningTitle}>
-                ⚠️ {uncertainFields.length} field{uncertainFields.length > 1 ? 's have' : ' has'} low confidence (&lt;80%)
+                {uncertainFields.length} field{uncertainFields.length > 1 ? 's have' : ' has'} low confidence (&lt;80%)
               </div>
               <div className={styles.warningSubtitle}>
                 These fields may need manual review before using this configuration
@@ -2176,7 +2189,7 @@ export default function ConfigJourney({
               className={styles.breakdownToggle}
               onClick={() => setShowBreakdown(!showBreakdown)}
             >
-              <span className={styles.breakdownIcon}>{showBreakdown ? '▼' : '▶'}</span>
+              <span className={styles.breakdownIcon}>{showBreakdown ? <Icon glyph="ChevronDown" size="small" /> : <Icon glyph="ChevronRight" size="small" />}</span>
               <span className={styles.breakdownTitle}>Field Breakdown</span>
               <span className={styles.breakdownCount}>
                 ({highlightMetadata.patternMatched.length + highlightMetadata.aiSuggested.length} fields)
@@ -2383,18 +2396,39 @@ export default function ConfigJourney({
   };
 
   const renderConfigurationTab = () => {
-    if (!output) return renderEmptyState();
+    // Wrap onSave to track the saved config ID and pass session_id
+    const handleSaveWithTracking = async (force) => {
+      // Pass session_id to onSave if available
+      const result = await onSave(force, sessionId);
+      if (result && output?._id) {
+        setLastSavedConfigId(output._id);
+      }
+      return result;
+    };
 
     return (
-      <ConfigurationEditor
-        configuration={output}
-        validationResult={validation}
-        onSave={onSave}
-        onValidate={onValidate}
-        onFieldUpdate={onFixError}
-        isValidating={validation?.loading || false}
-        isSaving={validation?.saving || false}
-      />
+      <>
+        {!output ? (
+          renderEmptyState()
+        ) : (
+          <ConfigurationEditor
+            configuration={output}
+            validationResult={validation}
+            onSave={handleSaveWithTracking}
+            onValidate={onValidate}
+            onFieldUpdate={onFixError}
+            isValidating={validation?.loading || false}
+            isSaving={validation?.saving || false}
+          />
+        )}
+        <RegistryConsole
+          lastSavedConfig={lastSavedConfigId}
+          onRefresh={() => {
+            console.log('Registry refreshed');
+          }}
+          onSessionIdGenerated={(id) => setSessionId(id)}
+        />
+      </>
     );
   };
 
@@ -2415,23 +2449,25 @@ export default function ConfigJourney({
 
   return (
     <div className={styles.container}>
-      {/* Tabs Header */}
-      <div className={styles.tabsHeader}>
-        <div className={styles.tabsList}>
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              className={`${styles.tab} ${activeTab === tab.id ? styles.active : ''}`}
-              onClick={() => onTabChange(tab.id)}
-            >
-              {tab.icon && <span className={styles.tabIcon}>{tab.icon}</span>}
-              {tab.label}
-              {tab.count !== null && tab.count > 0 && (
-                <span className={styles.tabBadge}>{tab.count}</span>
-              )}
-            </button>
-          ))}
-        </div>
+      {/* Tabs using LeafyGreen-styled buttons */}
+      <div className={styles.tabsWrapper}>
+        <button
+          className={`${styles.leafyTab} ${activeTab === 'flow' ? styles.leafyTabActive : ''}`}
+          onClick={() => onTabChange('flow')}
+        >
+          Flow
+          {generation?.steps?.length > 0 && (
+            <Badge variant="lightgray" className={styles.leafyTabBadge}>
+              {generation.steps.length}
+            </Badge>
+          )}
+        </button>
+        <button
+          className={`${styles.leafyTab} ${activeTab === 'configuration' ? styles.leafyTabActive : ''}`}
+          onClick={() => onTabChange('configuration')}
+        >
+          Configuration
+        </button>
       </div>
 
       {/* Tab Content */}

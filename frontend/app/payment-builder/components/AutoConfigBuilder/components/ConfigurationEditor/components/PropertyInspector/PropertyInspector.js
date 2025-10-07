@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import Icon from '@leafygreen-ui/icon';
 import styles from './PropertyInspector.module.css';
 
 const PropertyInspector = ({ path, configuration, validationResult, onFieldUpdate }) => {
@@ -98,7 +99,9 @@ const PropertyInspector = ({ path, configuration, validationResult, onFieldUpdat
           <h4>Property Inspector</h4>
         </div>
         <div className={styles.empty}>
-          <span className={styles.emptyIcon}>ℹ️</span>
+          <span className={styles.emptyIcon}>
+            <Icon glyph="InfoWithCircle" size={32} />
+          </span>
           <p>Select a field from the tree to inspect and edit its properties</p>
         </div>
       </div>
@@ -123,7 +126,7 @@ const PropertyInspector = ({ path, configuration, validationResult, onFieldUpdat
 
         {validation && !validation.is_valid && (
           <div className={styles.validation}>
-            <span>⚠️</span>
+            <Icon glyph="Warning" size="small" />
             <div className={styles.errors}>
               {validation.errors.map((error, i) => (
                 <div key={i} className={styles.error}>
@@ -165,7 +168,7 @@ const PropertyInspector = ({ path, configuration, validationResult, onFieldUpdat
 
         {fieldInfo?.description && (
           <div className={styles.help}>
-            <span>ℹ️</span>
+            <Icon glyph="InfoWithCircle" size="small" />
             <span>{fieldInfo.description}</span>
           </div>
         )}

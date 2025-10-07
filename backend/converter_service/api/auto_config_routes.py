@@ -5,10 +5,11 @@ Auto-configuration API endpoints for intelligent converter
 from fastapi import APIRouter, HTTPException, Depends, Query
 from typing import Dict, Any, List, Optional
 from pydantic import BaseModel
-from datetime import datetime
+from datetime import datetime, timedelta
 import logging
 import os
 import re
+import uuid
 
 from ..services.db_service import get_mongodb_service as get_db_service
 from ..services.semantic_learning_service_simplified import SimplifiedSemanticLearningService
@@ -67,7 +68,7 @@ class AutoConfigRequest(BaseModel):
     source_format: str  # e.g., "MT192"
     target_format: str  # e.g., "pacs.008"
     sample_message: str  # Sample message in the new format
-    similar_to: str  # Which existing format this is similar to (e.g., "MT103")
+    similar_to: Optional[str] = None  # Optional: Which existing format this is similar to (e.g., "MT103"). If not provided, auto-detected from source_format
     target_template: Optional[Dict[str, Any]] = None  # Optional: provide custom target template
 
 
@@ -98,6 +99,83 @@ class LearningTrigger(BaseModel):
     force_refresh: bool = False  # Force re-learning even if patterns exist
 
 
+def _auto_detect_similar_format(source_format: str, target_format: str, db_service) -> str:
+    """
+    Auto-detect similar_to format based on source_format family.
+
+    Logic:
+    - MT10X (MT101, MT103, MT192, etc.) → MT103
+    - MT20X (MT202, MT205, MT210, etc.) → MT202
+    - ISO8583_XXXX → ISO8583_0200 (if exists)
+    - Fallback: Search for any config with same format family
+
+    Args:
+        source_format: Source format (e.g., "MT101")
+        target_format: Target format (e.g., "pacs.008")
+        db_service: MongoDB service to query existing configs
+
+    Returns:
+        Similar format string (e.g., "MT103")
+    """
+    source_upper = source_format.upper()
+
+    # SWIFT MT formats
+    if source_upper.startswith('MT') and len(source_upper) >= 5:
+        mt_number = source_upper[2:5]
+        if mt_number.isdigit():
+            first_two_digits = mt_number[:2]
+
+            # MT10X family → MT103
+            if first_two_digits == '10':
+                return "MT103"
+            # MT20X family → MT202
+            elif first_two_digits == '20':
+                return "MT202"
+            # MT90X, MT19X, others → try MT103 as fallback
+            else:
+                # Check if MT103 config exists for this target
+                if db_service.db['conversion_registry'].find_one({"_id": f"MT103_to_{target_format}"}):
+                    return "MT103"
+
+    # ISO 8583 formats
+    if 'ISO8583' in source_upper or 'ISO_8583' in source_upper:
+        # Try ISO8583_0200 first (most common)
+        if db_service.db['conversion_registry'].find_one({"_id": f"ISO8583_0200_to_{target_format}"}):
+            return "ISO8583_0200"
+
+    # ISO 20022 formats (pacs, pain, camt)
+    source_lower = source_format.lower()
+    iso20022_prefixes = ['pacs', 'pain', 'camt']
+    for prefix in iso20022_prefixes:
+        if source_lower.startswith(prefix):
+            # Look for same prefix config
+            pattern = f"^{prefix}\\."
+            config = db_service.db['conversion_registry'].find_one(
+                {"_id": {"$regex": f"{pattern}.*_to_{target_format}"}}
+            )
+            if config:
+                # Extract similar format from found config ID
+                similar = config['_id'].split('_to_')[0]
+                return similar
+
+    # Fallback: Search for any existing config with same format family prefix
+    # Extract first 2-4 characters as family prefix
+    prefix_length = min(4, len(source_format))
+    for length in range(prefix_length, 1, -1):
+        prefix = source_format[:length]
+        config = db_service.db['conversion_registry'].find_one(
+            {"_id": {"$regex": f"^{prefix}.*_to_{target_format}"}}
+        )
+        if config:
+            similar = config['_id'].split('_to_')[0]
+            logger.info(f"Auto-detected similar format {similar} using prefix {prefix}")
+            return similar
+
+    # Ultimate fallback: MT103 (most common)
+    logger.warning(f"Could not auto-detect similar format for {source_format}, falling back to MT103")
+    return "MT103"
+
+
 @router.post("/auto-configure", response_model=AutoConfigResponse)
 async def auto_configure(
     request: AutoConfigRequest,
@@ -123,6 +201,11 @@ async def auto_configure(
     """
     
     start_time = datetime.utcnow()
+
+    # Auto-detect similar_to if not provided
+    if not request.similar_to:
+        request.similar_to = _auto_detect_similar_format(request.source_format, request.target_format, db_service)
+        logger.info(f"Auto-detected similar_to: {request.similar_to} for source format {request.source_format}")
 
     # Validate similar_to configuration exists
     base_config = None
@@ -466,18 +549,20 @@ async def save_validated_config(
     db_service=Depends(get_db)
 ):
     """
-    Validate and save configuration to production registry
+    Validate and save configuration to production registry (or pending in demo mode)
 
     This endpoint:
     1. Validates the configuration
-    2. If valid, saves to conversion_registry
-    3. Removes from pending_auto_configs
-    4. Adds metadata (validated_at, approved, etc.)
+    2. If valid:
+       - Demo mode: saves to pending_auto_configs with session_id
+       - Production mode: saves to conversion_registry
+    3. Adds metadata (validated_at, approved, etc.)
 
     Request body:
     {
         "configuration": {...},
-        "force": false  // Set to true to save even with warnings
+        "force": false,  // Set to true to save even with warnings
+        "session_id": "..."  // Optional session ID for demo isolation
     }
 
     Returns:
@@ -491,6 +576,7 @@ async def save_validated_config(
     try:
         configuration = request.get("configuration")
         force = request.get("force", False)
+        session_id = request.get("session_id")  # Accept session_id from request
 
         if not configuration:
             raise HTTPException(
@@ -517,35 +603,224 @@ async def save_validated_config(
         if "metadata" not in configuration:
             configuration["metadata"] = {}
 
-        configuration["metadata"]["validated_at"] = datetime.utcnow()
+        now = datetime.utcnow()
+        configuration["metadata"]["validated_at"] = now
         configuration["metadata"]["approved"] = True
         configuration["metadata"]["validation_score"] = validation_result.get('score', 100)
         configuration["metadata"]["status"] = "approved"
 
-        # Save to production registry
-        db_service.db['conversion_registry'].replace_one(
-            {"_id": config_id},
-            configuration,
-            upsert=True
-        )
+        # Check if ENABLE_DEMO_MODE is true in environment
+        enable_demo_mode = os.getenv('ENABLE_DEMO_MODE', 'false').lower() == 'true'
 
-        # Remove from pending
-        db_service.db['pending_auto_configs'].delete_one({"_id": config_id})
+        if enable_demo_mode:
+            # Demo mode: save to pending_auto_configs with session isolation
+            configuration["metadata"]["is_demo"] = True
+            configuration["metadata"]["demo_expires_at"] = now + timedelta(hours=1)
 
-        logger.info(f"Configuration {config_id} saved to production registry (score: {validation_result.get('score', 100)}%)")
+            # Generate or use provided session_id
+            if not session_id:
+                session_id = str(uuid.uuid4())
+            configuration["metadata"]["session_id"] = session_id
 
-        return {
-            "success": True,
-            "configuration_id": config_id,
-            "validation": validation_result,
-            "message": f"Configuration saved successfully with validation score {validation_result.get('score', 100)}%"
-        }
+            # Save to pending_auto_configs (NOT production)
+            # Use only _id in filter since it's the unique key
+            db_service.db['pending_auto_configs'].replace_one(
+                {"_id": config_id},
+                configuration,
+                upsert=True
+            )
+
+            logger.info(f"Demo mode: Config {config_id} saved to pending_auto_configs (session: {session_id[:8]}..., expires: {configuration['metadata']['demo_expires_at']})")
+
+            return {
+                "success": True,
+                "configuration_id": config_id,
+                "session_id": session_id,
+                "validation": validation_result,
+                "message": f"Configuration saved to demo environment (expires in 1 hour)"
+            }
+        else:
+            # Production mode: save to conversion_registry
+            configuration["metadata"]["is_demo"] = False
+
+            # Save to production registry
+            db_service.db['conversion_registry'].replace_one(
+                {"_id": config_id},
+                configuration,
+                upsert=True
+            )
+
+            # Remove from pending if exists
+            db_service.db['pending_auto_configs'].delete_one({"_id": config_id})
+
+            logger.info(f"Production mode: Config {config_id} saved to conversion_registry (score: {validation_result.get('score', 100)}%)")
+
+            return {
+                "success": True,
+                "configuration_id": config_id,
+                "validation": validation_result,
+                "message": f"Configuration saved successfully with validation score {validation_result.get('score', 100)}%"
+            }
 
     except Exception as e:
         logger.error(f"Error saving validated config: {e}")
         raise HTTPException(
             status_code=500,
             detail=f"Failed to save configuration: {str(e)}"
+        )
+
+
+@router.get("/production-registry")
+async def get_production_registry(
+    limit: int = 50,
+    session_id: Optional[str] = Query(None),
+    db_service=Depends(get_db)
+):
+    """
+    Get saved configurations from both conversion_registry and pending_auto_configs
+
+    Returns a merged list of configurations with metadata, sorted by most recent.
+    In demo mode with session_id, filters pending configs to only show user's session.
+
+    Query params:
+    - limit: Maximum number of configs to return (default: 50)
+    - session_id: Optional session ID for filtering demo configs
+
+    Returns:
+    {
+        "success": true,
+        "count": 5,
+        "configs": [
+            {
+                "_id": "MT205_to_pacs.009",
+                "validated_at": "2024-01-15T10:30:00",
+                "validation_score": 95,
+                "status": "approved",
+                "source_format": "MT205",
+                "target_format": "pacs.009",
+                "is_demo": false,
+                "session_id": "..."  // Only for demo configs
+            },
+            ...
+        ]
+    }
+    """
+    try:
+        configs = []
+
+        # 1. Fetch from conversion_registry (production configs)
+        production_cursor = db_service.db['conversion_registry'].find(
+            {},  # No filter - get ALL production configs
+            {
+                "_id": 1,
+                "source_format": 1,
+                "target_format": 1,
+                "metadata.validated_at": 1,
+                "metadata.validation_score": 1,
+                "metadata.status": 1,
+                "metadata.created_at": 1,
+                "metadata.approved": 1,
+                "metadata.is_demo": 1
+            }
+        )
+
+        for config in production_cursor:
+            metadata = config.get("metadata", {})
+            timestamp = metadata.get("validated_at") or metadata.get("created_at")
+
+            # Convert timestamp to string if it's a datetime object
+            if timestamp and hasattr(timestamp, 'isoformat'):
+                timestamp_str = timestamp.isoformat()
+            elif timestamp:
+                timestamp_str = str(timestamp)
+            else:
+                timestamp_str = None
+
+            configs.append({
+                "_id": config["_id"],
+                "source_format": config.get("source_format", "Unknown"),
+                "target_format": config.get("target_format", "Unknown"),
+                "validated_at": timestamp_str,
+                "validation_score": metadata.get("validation_score", 0),
+                "status": metadata.get("status", "unknown"),
+                "created_at": metadata.get("created_at"),
+                "approved": metadata.get("approved", False),
+                "is_demo": metadata.get("is_demo", False),
+                "collection": "production",
+                "sort_key": timestamp_str or ""
+            })
+
+        # 2. Fetch from pending_auto_configs (demo configs)
+        # Filter by session_id if provided
+        pending_filter = {}
+        if session_id:
+            pending_filter["metadata.session_id"] = session_id
+
+        pending_cursor = db_service.db['pending_auto_configs'].find(
+            pending_filter,
+            {
+                "_id": 1,
+                "source_format": 1,
+                "target_format": 1,
+                "metadata.validated_at": 1,
+                "metadata.validation_score": 1,
+                "metadata.status": 1,
+                "metadata.created_at": 1,
+                "metadata.approved": 1,
+                "metadata.is_demo": 1,
+                "metadata.session_id": 1
+            }
+        )
+
+        for config in pending_cursor:
+            metadata = config.get("metadata", {})
+            timestamp = metadata.get("validated_at") or metadata.get("created_at")
+
+            # Convert timestamp to string if it's a datetime object
+            if timestamp and hasattr(timestamp, 'isoformat'):
+                timestamp_str = timestamp.isoformat()
+            elif timestamp:
+                timestamp_str = str(timestamp)
+            else:
+                timestamp_str = None
+
+            configs.append({
+                "_id": config["_id"],
+                "source_format": config.get("source_format", "Unknown"),
+                "target_format": config.get("target_format", "Unknown"),
+                "validated_at": timestamp_str,
+                "validation_score": metadata.get("validation_score", 0),
+                "status": metadata.get("status", "unknown"),
+                "created_at": metadata.get("created_at"),
+                "approved": metadata.get("approved", False),
+                "is_demo": metadata.get("is_demo", True),
+                "session_id": metadata.get("session_id"),
+                "collection": "pending",
+                "sort_key": timestamp_str or ""
+            })
+
+        # Sort in Python by timestamp descending (most recent first)
+        configs.sort(key=lambda x: x.get("sort_key", ""), reverse=True)
+
+        # Apply limit after merging and sorting
+        configs = configs[:limit]
+
+        # Remove the sort_key field before returning
+        for config in configs:
+            config.pop("sort_key", None)
+
+        return {
+            "success": True,
+            "count": len(configs),
+            "configs": configs,
+            "session_id": session_id  # Echo back for debugging
+        }
+
+    except Exception as e:
+        logger.error(f"Error fetching production registry: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to fetch production registry: {str(e)}"
         )
 
 

@@ -10,8 +10,7 @@ export function useAutoConfigBuilder() {
     input: {
       sourceFormat: '',
       targetFormat: '',
-      sampleMessage: '',
-      similarTo: ''
+      sampleMessage: ''
     },
 
     // Generation state
@@ -78,12 +77,11 @@ export function useAutoConfigBuilder() {
 
       updateProgress(30, 'Detecting fields in source format...');
 
-      // Call the actual auto-configure API
+      // Call the actual auto-configure API (similarTo will be auto-detected by backend)
       const result = await paymentBuilderService.autoConfigureFormat(
         state.input.sourceFormat,
         state.input.targetFormat,
-        state.input.sampleMessage,
-        state.input.similarTo || 'MT103'
+        state.input.sampleMessage
       );
 
       updateProgress(50, 'Applying semantic patterns...');
@@ -346,6 +344,8 @@ export function useAutoConfigBuilder() {
 
   // Run validation
   const runValidation = useCallback(async () => {
+    console.log('useAutoConfigBuilder - runValidation called');
+
     // Set loading state
     setState(prev => ({
       ...prev,
@@ -361,9 +361,13 @@ export function useAutoConfigBuilder() {
 
     try {
       // Call backend validation endpoint with actual config
+      console.log('useAutoConfigBuilder - Calling validateConfigSchema...');
       const validationResult = await paymentBuilderService.validateConfigSchema(
         state.journey.output
       );
+
+      console.log('useAutoConfigBuilder - Backend validation result:', validationResult);
+      console.log('useAutoConfigBuilder - Result has valid flag:', validationResult?.valid);
 
       // Update state with real validation results
       setState(prev => ({
@@ -377,9 +381,9 @@ export function useAutoConfigBuilder() {
         }
       }));
 
-      console.log('Validation complete:', validationResult);
+      console.log('useAutoConfigBuilder - State updated with validation result');
     } catch (error) {
-      console.error('Validation failed:', error);
+      console.error('useAutoConfigBuilder - Validation failed:', error);
 
       // Show error state
       setState(prev => ({
@@ -406,7 +410,7 @@ export function useAutoConfigBuilder() {
   }, [state.journey.output]);
 
   // Save validated configuration
-  const saveValidatedConfig = useCallback(async (force = false) => {
+  const saveValidatedConfig = useCallback(async (force = false, sessionId = null) => {
     setState(prev => ({
       ...prev,
       journey: {
@@ -419,7 +423,8 @@ export function useAutoConfigBuilder() {
     try {
       const result = await paymentBuilderService.saveValidatedConfig(
         state.journey.output,
-        force
+        force,
+        sessionId
       );
 
       if (result.success) {
@@ -434,6 +439,7 @@ export function useAutoConfigBuilder() {
         }));
 
         console.log('Configuration saved successfully:', result);
+        return result;
       } else {
         throw new Error(result.message || 'Save failed');
       }
@@ -448,6 +454,7 @@ export function useAutoConfigBuilder() {
           saveError: error.message
         }
       }));
+      throw error;
     }
   }, [state.journey.output]);
 

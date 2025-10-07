@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import Icon from '@leafygreen-ui/icon';
 import styles from './ProblemsPanel.module.css';
 
 const ProblemsPanel = ({ validationResult, validationSource, onProblemClick, isVisible, onToggle }) => {
@@ -35,11 +36,13 @@ const ProblemsPanel = ({ validationResult, validationSource, onProblemClick, isV
     <div className={`${styles.container} ${!isVisible ? styles.collapsed : ''}`}>
       <div className={styles.header} onClick={onToggle}>
         <div className={styles.title}>
-          <span className={styles.chevron}>{isVisible ? '▼' : '▲'}</span>
+          <span className={styles.chevron}>
+            <Icon glyph={isVisible ? 'ChevronDown' : 'ChevronUp'} size="small" />
+          </span>
           <h4>Problems</h4>
           {validationSource && validationSource !== 'none' && (
             <span className={styles.validationSource} title={`Validated by ${validationSource}`}>
-              {validationSource === 'client' ? '⚡' : '🌐'} {validationSource}
+              <Icon glyph={validationSource === 'client' ? 'Laptop' : 'Cloud'} size="small" /> {validationSource}
             </span>
           )}
           {errorCount > 0 && (
@@ -61,7 +64,7 @@ const ProblemsPanel = ({ validationResult, validationSource, onProblemClick, isV
               // Clear problems action
             }}
           >
-            ✕
+            <Icon glyph="X" size="small" />
           </button>
         </div>
       </div>
@@ -70,7 +73,9 @@ const ProblemsPanel = ({ validationResult, validationSource, onProblemClick, isV
         <div className={styles.problemsList}>
           {problems.length === 0 ? (
             <div className={styles.empty}>
-              <span className={styles.successIcon}>✓</span>
+              <span className={styles.successIcon}>
+                <Icon glyph="Checkmark" size={48} />
+              </span>
               <p>No problems detected. Configuration is valid!</p>
             </div>
           ) : (
@@ -81,7 +86,7 @@ const ProblemsPanel = ({ validationResult, validationSource, onProblemClick, isV
                 onClick={() => onProblemClick(problem)}
               >
                 <span className={styles.problemIcon}>
-                  {problem.type === 'error' ? '✗' : '⚠'}
+                  <Icon glyph={problem.type === 'error' ? 'X' : 'Warning'} size="small" />
                 </span>
                 <div className={styles.problemContent}>
                   <span className={styles.problemLocation}>

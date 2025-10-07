@@ -945,18 +945,17 @@ ${formData.beneficiary_institution || 'BENEFICIARY INSTITUTION'}
 
   // Auto-configure a new payment format
   async autoConfigureFormat(sourceFormat, targetFormat, sampleMessage, similarTo = null) {
-    // Validate required parameter
-    if (!similarTo) {
-      throw new Error('similarTo parameter is required for auto-configuration');
-    }
-
     try {
       const payload = {
         source_format: sourceFormat,
         target_format: targetFormat,
-        sample_message: sampleMessage,
-        similar_to: similarTo
+        sample_message: sampleMessage
       };
+
+      // Only include similar_to if explicitly provided (backend will auto-detect if not provided)
+      if (similarTo) {
+        payload.similar_to = similarTo;
+      }
 
       const response = await withTimeout(
         fetch(`${this.baseUrl}/api/v1/converter/auto-configure?include_details=true`, {
@@ -1075,19 +1074,26 @@ ${formData.beneficiary_institution || 'BENEFICIARY INSTITUTION'}
     }
   }
 
-  // Save validated configuration to production
-  async saveValidatedConfig(configuration, force = false) {
+  // Save validated configuration to production (or pending in demo mode)
+  async saveValidatedConfig(configuration, force = false, sessionId = null) {
     try {
+      const requestBody = {
+        configuration: configuration,
+        force: force
+      };
+
+      // Add session_id if provided (for demo mode isolation)
+      if (sessionId) {
+        requestBody.session_id = sessionId;
+      }
+
       const response = await withTimeout(
         fetch(`${this.baseUrl}/api/v1/converter/save-validated-config`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            configuration: configuration,
-            force: force
-          }),
+          body: JSON.stringify(requestBody),
         }),
         15000
       );

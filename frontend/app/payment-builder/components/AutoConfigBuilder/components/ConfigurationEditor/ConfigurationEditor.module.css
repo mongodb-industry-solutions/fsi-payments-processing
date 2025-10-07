@@ -46,6 +46,31 @@
   color: #c92a2a;
 }
 
+.validateButton {
+  padding: 8px 16px;
+  background: #ffffff;
+  color: #00684a;
+  border: 1px solid #00684a;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.validateButton:hover:not(:disabled) {
+  background: #f0f9f6;
+  border-color: #00593f;
+  color: #00593f;
+}
+
+.validateButton:disabled {
+  background: #f5f5f5;
+  color: #999;
+  border-color: #ccc;
+  cursor: not-allowed;
+}
+
 .saveButton {
   padding: 8px 16px;
   background: #00684a;
