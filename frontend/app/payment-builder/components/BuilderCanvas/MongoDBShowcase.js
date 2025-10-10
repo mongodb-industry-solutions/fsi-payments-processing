@@ -1,6 +1,10 @@
 'use client';
 
 import { useState } from 'react';
+import { H2, H3, Subtitle, Body } from '@leafygreen-ui/typography';
+import Button from '@leafygreen-ui/button';
+import Icon from '@leafygreen-ui/icon';
+import Badge from '@leafygreen-ui/badge';
 import styles from './MongoDBShowcase.module.css';
 
 export default function MongoDBShowcase() {
@@ -14,28 +18,27 @@ export default function MongoDBShowcase() {
     <div className={styles.showcase}>
       {/* Header */}
       <div className={styles.header}>
-        <h2>MongoDB in Action: Adaptive Payment Converter</h2>
-        <p className={styles.subtitle}>
-          Explore how MongoDB's flexible document model enables zero-code payment format conversion
-        </p>
+        <h1 className={styles.title}>MongoDB in Action: Self-Improving Payment Converter</h1>
+        <Subtitle className={styles.subtitle}>
+          Explore how MongoDB's flexible document model enables document-driven, low-code payment format conversion
+        </Subtitle>
       </div>
 
       {/* Intro Section */}
       <div className={styles.introCard}>
-        <h3>The Challenge</h3>
-        <p>
+        <H2>The Challenge</H2>
+        <Body>
           Payment format conversion typically requires hardcoded logic for each format pair.
           Adding MT192 → pacs.008? Write code. Adding ISO8583 → cain.001? Write more code.
-        </p>
+        </Body>
         <div className={styles.highlight}>
-          <strong>This demo achieves 100% genericity:</strong> new formats require zero code changes.
-          Only MongoDB configuration.
+          <Body><strong>Our approach:</strong> All conversion logic lives in MongoDB as configuration documents. New formats require minimal integration code—just data definition.</Body>
         </div>
       </div>
 
       {/* Feature Comparison Sections */}
       <div className={styles.featuresSection}>
-        <h3>MongoDB Features in Action</h3>
+        <H2>MongoDB Features in Action</H2>
 
         {/* Feature 1: Flexible Schema */}
         <div className={styles.featureCard}>

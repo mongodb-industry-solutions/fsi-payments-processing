@@ -11,10 +11,18 @@ import Banner from '@leafygreen-ui/banner';
 
 export default function Documentation() {
   const [mounted, setMounted] = useState(false);
+  const [expandedFormats, setExpandedFormats] = useState({});
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  const toggleFormat = (index) => {
+    setExpandedFormats(prev => ({
+      ...prev,
+      [index]: !prev[index]
+    }));
+  };
 
   const paymentFormats = [
     {
@@ -23,7 +31,23 @@ export default function Documentation() {
       detail: 'Text-based format with fixed field tags (e.g., :20:, :50K:) containing structured data like sender, receiver, amount, and payment details.',
       whereUsed: 'Global correspondent banking.',
       badge: 'Legacy',
-      badgeVariant: 'yellow'
+      badgeVariant: 'yellow',
+      example: `{1:F01UBSWCHZH80A0000000000}
+{2:I103ABSAZAJJXXXXN}
+{4:
+:20:REF123456789
+:23B:CRED
+:32A:241215CHF180000,00
+:50K:/CH9300762011623852957
+SWISS PHARMA AG
+ZURICH
+:59:/ZA123456789012345678901
+SOUTH AFRICAN HEALTH SUPPLIES
+JOHANNESBURG
+:70:INVOICE INV-2024-001
+:71A:SHA
+-}`,
+      explanation: 'MT103 is the most common SWIFT message for customer credit transfers. Field :20: is transaction reference, :32A: contains value date/currency/amount, :50K: is ordering customer, :59: is beneficiary, :70: is remittance info.'
     },
     {
       name: 'ISO 20022 (MX)',
@@ -31,7 +55,31 @@ export default function Documentation() {
       detail: 'Uses hierarchical XML structure with human-readable tags, supporting extensive remittance info, structured addresses, and regulatory data.',
       whereUsed: 'Core of SEPA, CHAPS, RTP, FedNow, CHIPS, T2.',
       badge: 'Standard',
-      badgeVariant: 'green'
+      badgeVariant: 'green',
+      example: `<CdtTrfTxInf>
+  <PmtId>
+    <EndToEndId>REF123456789</EndToEndId>
+  </PmtId>
+  <Amt>
+    <InstdAmt Ccy="CHF">180000.00</InstdAmt>
+  </Amt>
+  <Dbtr>
+    <Nm>SWISS PHARMA AG</Nm>
+  </Dbtr>
+  <DbtrAcct>
+    <Id><IBAN>CH9300762011623852957</IBAN></Id>
+  </DbtrAcct>
+  <Cdtr>
+    <Nm>SOUTH AFRICAN HEALTH SUPPLIES</Nm>
+  </Cdtr>
+  <CdtrAcct>
+    <Id><Othr><Id>ZA123456789012345678901</Id></Othr></Id>
+  </CdtrAcct>
+  <RmtInf>
+    <Ustrd>INVOICE INV-2024-001</Ustrd>
+  </RmtInf>
+</CdtTrfTxInf>`,
+      explanation: 'pacs.008 is a bank-to-bank credit transfer message. It uses self-describing XML tags: PmtId for identifiers, InstdAmt for amount, Dbtr/Cdtr for parties, RmtInf for remittance data. Much richer data model than MT messages.'
     },
     {
       name: 'ACH / NACHA file',
@@ -39,7 +87,13 @@ export default function Documentation() {
       detail: 'Each line represents a specific record type (file header, batch header, entry detail, addenda) with position-based data fields.',
       whereUsed: 'US ACH batch payments (payroll/AP).',
       badge: 'Batch',
-      badgeVariant: 'blue'
+      badgeVariant: 'blue',
+      example: `1011234567890000000001230424A094101BANK NAME             COMPANY NAME
+5220PAYROLL       1234567890PPDPAYROLL   230424230424   1012345670000001
+62212345678901234567890000050000       JOHN DOE              0012345670000001
+82200000010012345678000000500000000000000001234567890
+9000001000001000000010012345678000000500000000000000000`,
+      explanation: 'ACH files are fixed-width with 94 characters per line. Record types: 1=File Header, 5=Batch Header, 6=Entry Detail (payment), 8=Batch Control, 9=File Control. Position-based fields mean character 1-2 is record type, 3-12 is routing number, etc.'
     },
     {
       name: 'ISO 8583',
@@ -47,7 +101,17 @@ export default function Documentation() {
       detail: 'Binary format using bitmaps to indicate which data elements are present, optimized for low-latency transaction processing.',
       whereUsed: 'POS, ATM, card networks.',
       badge: 'Card',
-      badgeVariant: 'purple'
+      badgeVariant: 'purple',
+      example: `MTI: 0200 (Authorization Request)
+Field 2: 5123456789012345 (PAN)
+Field 3: 000000 (Processing Code - Purchase)
+Field 4: 000000050000 (Transaction Amount - $500.00)
+Field 7: 0424103000 (Transmission Date/Time)
+Field 11: 123456 (System Trace Audit Number)
+Field 42: MERCHANT_ID_001 (Card Acceptor ID)
+Field 43: Coffee Shop NYC    New York    US
+Field 49: 840 (Currency Code - USD)`,
+      explanation: 'ISO 8583 uses a Message Type Indicator (MTI) and bitmaps to show which fields are present. Field 2 is the card number, Field 4 is amount, Field 42/43 identify the merchant. Binary format makes it very compact and fast for real-time card auth.'
     },
     {
       name: 'RTP (US)',
@@ -55,7 +119,9 @@ export default function Documentation() {
       detail: 'Supports immediate payment confirmation, request-for-payment flows, and rich remittance data with 24/7/365 availability.',
       whereUsed: 'US instant payments.',
       badge: 'Real-time',
-      badgeVariant: 'green'
+      badgeVariant: 'green',
+      example: `Uses ISO 20022 pacs.008 format with RTP-specific enhancements for immediate settlement and payment confirmation.`,
+      explanation: 'RTP uses ISO 20022 pacs.008 messages with real-time settlement. Supports Request for Payment (RfP) flows, remittance data up to 280 characters, and immediate payment confirmation via pacs.002 response messages.'
     },
     {
       name: 'FedNow (US)',
@@ -63,7 +129,9 @@ export default function Documentation() {
       detail: 'Interoperable with RTP, providing immediate funds availability and supporting payment requests with detailed remittance information.',
       whereUsed: 'US banks & credit unions.',
       badge: 'Real-time',
-      badgeVariant: 'green'
+      badgeVariant: 'green',
+      example: `Uses ISO 20022 pacs.008 format, similar to RTP, with Federal Reserve-specific network addressing and settlement.`,
+      explanation: 'FedNow uses standard ISO 20022 messages (pacs.008 for credit transfers, pacs.028 for payment requests) processed through the Federal Reserve network. Designed for interoperability with RTP and future instant payment systems.'
     },
     {
       name: 'CHAPS (UK RTGS)',
@@ -71,7 +139,9 @@ export default function Documentation() {
       detail: 'High-value same-day sterling payments with irrevocable settlement, supporting Legal Entity Identifiers and extended payment purpose codes.',
       whereUsed: 'UK high-value RTGS.',
       badge: 'RTGS',
-      badgeVariant: 'blue'
+      badgeVariant: 'blue',
+      example: `Uses ISO 20022 pacs.008 with mandatory LEI (Legal Entity Identifier) and enhanced payment purpose codes for regulatory compliance.`,
+      explanation: 'CHAPS migrated to ISO 20022 in June 2023. Supports LEI identifiers for corporates, extended remittance data (140 chars), and detailed payment purpose codes for transparency and regulatory reporting.'
     },
     {
       name: 'Faster Payments (UK)',
@@ -79,7 +149,9 @@ export default function Documentation() {
       detail: 'Near-instant GBP transfers (typically within seconds) with message validation and enhanced fraud detection capabilities.',
       whereUsed: 'UK instant retail payments.',
       badge: 'Real-time',
-      badgeVariant: 'green'
+      badgeVariant: 'green',
+      example: `Currently uses ISO 8583 bitmap messages. Migrating to ISO 20022 as part of UK New Payments Architecture (NPA) program.`,
+      explanation: 'Faster Payments currently uses ISO 8583 but Pay.UK provides translation libraries. Migration to ISO 20022 planned under New Payments Architecture, enabling richer remittance data and better fraud detection.'
     },
     {
       name: 'SEPA (EU)',
@@ -87,7 +159,12 @@ export default function Documentation() {
       detail: 'Unified EUR payment scheme across 36 countries with standardized credit transfers, direct debits, and instant payments (SCT Inst).',
       whereUsed: 'EU cross-border EUR payments.',
       badge: 'Standard',
-      badgeVariant: 'green'
+      badgeVariant: 'green',
+      example: `pain.001 (customer payment initiation)
+pacs.008 (bank-to-bank transfer)
+pacs.002 (payment status)
+camt.053 (bank statement)`,
+      explanation: 'SEPA uses complete ISO 20022 message chain: pain.001 from customer to bank, pacs.008 between banks, pacs.002 for status, and camt.053 for account statements. Supports SEPA Credit Transfer (SCT) and SEPA Instant (SCT Inst) with 10-second settlement.'
     },
     {
       name: 'T2 (Eurosystem)',
@@ -95,7 +172,9 @@ export default function Documentation() {
       detail: 'Real-time gross settlement system consolidating TARGET2 and T2S, processing high-value euro payments with central bank liquidity.',
       whereUsed: 'Euro RTGS settlement.',
       badge: 'RTGS',
-      badgeVariant: 'blue'
+      badgeVariant: 'blue',
+      example: `Uses ISO 20022 pacs.008 for payment instructions and pacs.002 for settlement confirmations in the Eurosystem RTGS.`,
+      explanation: 'TARGET2 consolidated platform (T2) processes all euro RTGS payments using ISO 20022. Supports central bank liquidity management, real-time gross settlement, and integrated securities settlement (T2S).'
     },
     {
       name: 'CHIPS (US)',
@@ -103,7 +182,9 @@ export default function Documentation() {
       detail: 'Clearing House Interbank Payments System processing over $1.5 trillion daily in high-value USD payments with multilateral netting.',
       whereUsed: 'US high-value interbank.',
       badge: 'RTGS',
-      badgeVariant: 'blue'
+      badgeVariant: 'blue',
+      example: `Migrated to ISO 20022 pacs.008 in April 2024, replacing legacy proprietary format for all high-value USD transfers.`,
+      explanation: 'CHIPS completed ISO 20022 migration in April 2024. Uses pacs.008 for payment instructions with multilateral netting, supporting over $1.5 trillion daily volume in high-value USD payments between financial institutions.'
     },
     {
       name: 'UPI (India)',
@@ -111,7 +192,16 @@ export default function Documentation() {
       detail: 'Mobile-first payment interface enabling instant inter-bank transfers using virtual payment addresses, supporting P2P and merchant payments.',
       whereUsed: 'Indian instant payments.',
       badge: 'Real-time',
-      badgeVariant: 'green'
+      badgeVariant: 'green',
+      example: `{
+  "payerVPA": "user@bankname",
+  "payeeVPA": "merchant@payment",
+  "amount": "500.00",
+  "currency": "INR",
+  "txnId": "UPI123456789",
+  "refId": "ORDER001"
+}`,
+      explanation: 'UPI uses JSON-based API messages with Virtual Payment Addresses (VPA) like user@bankname. Supports instant P2P and merchant payments, QR code scanning, and payment requests. Processes over 10 billion transactions monthly.'
     }
   ];
 
@@ -207,6 +297,34 @@ export default function Documentation() {
                       <Icon glyph="Building" size="small" className={styles.footerIcon} />
                       <Body className={styles.whereUsed}>{format.whereUsed}</Body>
                     </div>
+
+                    {format.example && (
+                      <>
+                        <button
+                          className={styles.expandButton}
+                          onClick={() => toggleFormat(index)}
+                        >
+                          <Icon glyph={expandedFormats[index] ? "ChevronUp" : "ChevronDown"} size="small" />
+                          <Body>{expandedFormats[index] ? "Hide Example" : "View Example Message"}</Body>
+                        </button>
+
+                        {expandedFormats[index] && (
+                          <div className={styles.exampleSection}>
+                            <div className={styles.exampleHeader}>
+                              <Icon glyph="Code" size="small" />
+                              <Body><strong>Example Message:</strong></Body>
+                            </div>
+                            <pre className={styles.exampleCode}>
+                              {format.example}
+                            </pre>
+                            <div className={styles.explanationSection}>
+                              <Icon glyph="InfoWithCircle" size="small" />
+                              <Body className={styles.explanationText}>{format.explanation}</Body>
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    )}
                   </Card>
                 ))}
               </div>

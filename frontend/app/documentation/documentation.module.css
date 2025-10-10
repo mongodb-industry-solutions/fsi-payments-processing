@@ -147,6 +147,86 @@
   font-style: italic;
 }
 
+/* Expand Button */
+.expandButton {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-3);
+  background: var(--gray-light3);
+  border: 1px solid var(--gray-light2);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: var(--transition-fast);
+  width: 100%;
+  margin-top: var(--spacing-2);
+}
+
+.expandButton:hover {
+  background: var(--mongodb-green-light3);
+  border-color: var(--mongodb-green-base);
+}
+
+.expandButton svg {
+  color: var(--mongodb-green-dark2);
+}
+
+/* Example Section */
+.exampleSection {
+  margin-top: var(--spacing-3);
+  padding: var(--spacing-4);
+  background: var(--gray-light3);
+  border-radius: 6px;
+  border: 1px solid var(--gray-light2);
+}
+
+.exampleHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  margin-bottom: var(--spacing-3);
+}
+
+.exampleHeader svg {
+  color: var(--mongodb-green-base);
+}
+
+.exampleCode {
+  font-family: 'Monaco', 'Courier New', monospace;
+  font-size: 0.85rem;
+  background: var(--white);
+  padding: var(--spacing-3);
+  border-radius: 6px;
+  border: 1px solid var(--gray-light2);
+  overflow-x: auto;
+  margin: 0 0 var(--spacing-3);
+  line-height: 1.6;
+  color: var(--gray-dark2);
+  white-space: pre;
+}
+
+.explanationSection {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-2);
+  padding: var(--spacing-3);
+  background: var(--mongodb-green-light3);
+  border-left: 3px solid var(--mongodb-green-base);
+  border-radius: 4px;
+}
+
+.explanationSection svg {
+  color: var(--mongodb-green-dark2);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.explanationText {
+  color: var(--gray-dark2) !important;
+  line-height: 1.6;
+  margin: 0;
+}
+
 /* Flow Steps */
 .sectionTitle {
   color: var(--green-dark2) !important;

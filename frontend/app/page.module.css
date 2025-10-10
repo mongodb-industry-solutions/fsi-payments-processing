@@ -51,6 +51,11 @@
   transition: var(--transition-standard);
   cursor: default;
   border: 1px solid #e0e0e0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  height: 100%;
 }
 
 .featureCard:hover {
@@ -62,16 +67,32 @@
 .featureCard h2 {
   color: var(--mongodb-green-dark2);
   margin-bottom: 1rem;
+  margin-top: 0;
+}
+
+.featureCard > div:last-child {
+  margin-top: auto;
+}
+
+.iconWrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  color: var(--mongodb-green-base);
+  width: 100%;
 }
 
 .metric {
   margin-top: 1.5rem;
+  margin-bottom: 1rem;
   padding-top: 1rem;
   border-top: 1px solid #e0e0e0;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0.5rem;
+  width: 100%;
 }
 
 .metricValue {
@@ -87,53 +108,121 @@
   letter-spacing: 0.5px;
 }
 
-.mongoSection {
+.badgeWrapper {
+  margin-top: auto;
+  padding-top: 1rem;
+}
+
+.howItWorks {
   text-align: center;
-  padding: 3rem;
+  padding: 3rem 2rem;
+  background: linear-gradient(135deg, rgba(19, 170, 82, 0.03), rgba(19, 170, 82, 0.08));
+  border-radius: 12px;
+  margin-bottom: 3rem;
+}
+
+.sectionTitle {
+  color: var(--mongodb-green-dark2);
+  margin-bottom: 1rem;
+}
+
+.sectionSubtitle {
+  color: var(--mongodb-gray-dark);
+  margin-bottom: 2.5rem;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.flowSteps {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 2rem;
+}
+
+.flowStep {
+  padding: 1.5rem;
+  text-align: center;
+  min-width: 150px;
+  flex: 0 1 auto;
+  border: 1px solid #e0e0e0;
+  transition: var(--transition-standard);
+}
+
+.flowStep:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-color: var(--mongodb-green-base);
+}
+
+.flowStep svg {
+  margin-bottom: 0.75rem;
+  color: var(--mongodb-green-base);
+}
+
+.flowArrow {
+  font-size: 1.5rem;
+  color: var(--mongodb-green-base);
+  font-weight: bold;
+}
+
+.valueProps {
+  text-align: center;
+  padding: 3rem 2rem;
   background: #f9f9f9;
   border-radius: 12px;
   border: 2px solid var(--mongodb-green-light2);
 }
 
-.mongoSection h2 {
-  color: var(--mongodb-green-dark2);
-  margin-bottom: 1rem;
+.valueGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2.5rem;
+  margin-top: 2.5rem;
 }
 
-.mongoFeatures {
-  display: flex;
-  gap: 2rem;
-  justify-content: center;
-  margin-top: 2rem;
-  flex-wrap: wrap;
-}
-
-.mongoFeature {
+.valueProp {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
+  text-align: center;
+  gap: 1rem;
 }
 
-.mongoFeature span {
-  color: var(--mongodb-gray-dark);
-  font-size: 0.875rem;
+.valueProp svg {
+  color: var(--mongodb-green-base);
+  margin-bottom: 0.5rem;
 }
 
 @media (max-width: 768px) {
   .title {
     font-size: 2rem;
   }
-  
+
   .subtitle {
     font-size: 1rem;
   }
-  
+
   .features {
     grid-template-columns: 1fr;
   }
-  
+
   .badges {
     flex-wrap: wrap;
+  }
+
+  .flowSteps {
+    flex-direction: column;
+  }
+
+  .flowArrow {
+    transform: rotate(90deg);
+  }
+
+  .valueGrid {
+    grid-template-columns: 1fr;
   }
 }

@@ -13,10 +13,10 @@
   border-bottom: 2px solid var(--gray-light2);
 }
 
-.header h2 {
+.title {
   font-size: 1.75rem;
   font-weight: 600;
-  color: var(--black);
+  color: var(--mongodb-green-dark2);
   margin-bottom: var(--spacing-2);
   letter-spacing: -0.02em;
 }
