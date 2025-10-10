@@ -578,6 +578,9 @@ async def save_validated_config(
         force = request.get("force", False)
         session_id = request.get("session_id")  # Accept session_id from request
 
+        logger.info(f"Save request received - session_id from request: {session_id}")
+        logger.info(f"Save request - config_id: {configuration.get('_id') if configuration else 'None'}")
+
         if not configuration:
             raise HTTPException(
                 status_code=400,
@@ -602,6 +605,15 @@ async def save_validated_config(
 
         if "metadata" not in configuration:
             configuration["metadata"] = {}
+
+        # Extract source_format and target_format from _id if not present at root
+        if "source_format" not in configuration or "target_format" not in configuration:
+            # _id format is typically "SOURCE_to_TARGET"
+            if "_to_" in config_id:
+                parts = config_id.split("_to_")
+                if len(parts) == 2:
+                    configuration["source_format"] = parts[0]
+                    configuration["target_format"] = parts[1]
 
         now = datetime.utcnow()
         configuration["metadata"]["validated_at"] = now

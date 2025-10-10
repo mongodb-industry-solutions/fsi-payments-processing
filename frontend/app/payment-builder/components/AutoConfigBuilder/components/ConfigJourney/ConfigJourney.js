@@ -8,6 +8,7 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import ConfigurationEditor from '../ConfigurationEditor/ConfigurationEditor';
 import RegistryConsole from '../RegistryConsole/RegistryConsole';
+import ConfigInput from '../ConfigInput/ConfigInput';
 import styles from './ConfigJourney.module.css';
 
 // Custom LeafyGreen-inspired syntax highlighting theme
@@ -212,7 +213,11 @@ export default function ConfigJourney({
   onMappingUpdate,
   onValidate,
   onSave,
-  onFixError
+  onFixError,
+  inputConfig,
+  inputStatus,
+  onInputChange,
+  onGenerate
 }) {
   const [expandedSteps, setExpandedSteps] = useState({});
   const [expandAll, setExpandAll] = useState(false);
@@ -2397,9 +2402,12 @@ export default function ConfigJourney({
 
   const renderConfigurationTab = () => {
     // Wrap onSave to track the saved config ID and pass session_id
-    const handleSaveWithTracking = async (force) => {
-      // Pass session_id to onSave if available
-      const result = await onSave(force, sessionId);
+    const handleSaveWithTracking = async (force, passedSessionId) => {
+      console.log('ConfigJourney.handleSaveWithTracking called with:', { force, passedSessionId });
+      // Use passed sessionId parameter, fallback to closure sessionId
+      const sessionIdToUse = passedSessionId || sessionId;
+      console.log('ConfigJourney forwarding to onSave with sessionId:', sessionIdToUse);
+      const result = await onSave(force, sessionIdToUse);
       if (result && output?._id) {
         setLastSavedConfigId(output._id);
       }
@@ -2421,23 +2429,238 @@ export default function ConfigJourney({
             isSaving={validation?.saving || false}
           />
         )}
-        <RegistryConsole
-          lastSavedConfig={lastSavedConfigId}
-          onRefresh={() => {
-            console.log('Registry refreshed');
-          }}
-          onSessionIdGenerated={(id) => setSessionId(id)}
-        />
       </>
     );
   };
 
+  const renderInputTab = () => {
+    // Build highlight metadata for the output panel
+    const buildHighlightMetadata = () => {
+      if (!generation?.result?.generation_details) {
+        return { patternMatched: [], aiSuggested: [] };
+      }
+
+      const mappingDetails = generation.result.generation_details.mapping_generation?.details || [];
+      const patternMatched = mappingDetails.filter(d => d.mapping_method === 'pattern_match').map(d => d.source || d.field_id);
+      const aiSuggested = mappingDetails.filter(d => d.mapping_method === 'llm_suggestion').map(d => d.source || d.field_id);
+
+      console.log('=== INPUT TAB HIGHLIGHT DEBUG ===');
+      console.log('mappingDetails:', mappingDetails);
+      console.log('patternMatched sources:', patternMatched);
+      console.log('aiSuggested sources:', aiSuggested);
+
+      return { patternMatched, aiSuggested };
+    };
+
+    const buildLineHighlights = () => {
+      if (!output) return {};
+
+      const jsonString = JSON.stringify(output, null, 2);
+      const lines = jsonString.split('\n');
+      const lineHighlights = {};
+
+      const highlightMetadata = buildHighlightMetadata();
+      const fieldExtraction = generation?.result?.generation_details?.field_extraction;
+
+      // Build list of auto-detected fields
+      const autoDetectedFields = new Set();
+      if (fieldExtraction?.fields) {
+        fieldExtraction.fields.forEach(field => {
+          if (field.extraction_method === 'fallback') {
+            autoDetectedFields.add(field.field_id);
+          }
+        });
+      }
+
+      let inParserFields = false;
+      let inMappingsArray = false;
+      let currentFieldStart = null;
+      let currentFieldId = null;
+      let currentMappingStart = null;
+      let currentMappingType = null;
+
+      lines.forEach((line, idx) => {
+        // Detect parser.fields section
+        if (line.includes('"fields":') && !inMappingsArray) {
+          inParserFields = true;
+        }
+        if (inParserFields && line.includes('"mappings":')) {
+          inParserFields = false;
+        }
+
+        // Track parser field blocks
+        if (inParserFields) {
+          const fieldMatch = line.match(/"([^"]+)":\s*\{/);
+          if (fieldMatch && !line.includes('"fields"')) {
+            currentFieldId = fieldMatch[1];
+            currentFieldStart = idx;
+            if (autoDetectedFields.has(currentFieldId)) {
+              lineHighlights[idx] = 'newField';
+            }
+          }
+
+          if (currentFieldStart !== null && autoDetectedFields.has(currentFieldId)) {
+            lineHighlights[idx] = 'newField';
+          }
+
+          if (currentFieldStart !== null && line.trim().match(/^}\s*,?\s*$/)) {
+            if (autoDetectedFields.has(currentFieldId)) {
+              lineHighlights[idx] = 'newField';
+            }
+            currentFieldStart = null;
+            currentFieldId = null;
+          }
+        }
+
+        // Detect mappings array
+        if (line.includes('"mappings":')) {
+          inMappingsArray = true;
+        }
+
+        // Track mapping blocks
+        if (inMappingsArray) {
+          if (line.trim() === '{') {
+            currentMappingStart = idx;
+            currentMappingType = null;
+          }
+
+          const sourceMatch = line.match(/"source":\s*"([^"]+)"/);
+          if (sourceMatch && currentMappingStart !== null) {
+            const sourceField = sourceMatch[1];
+            if (highlightMetadata.patternMatched.includes(sourceField)) {
+              currentMappingType = 'pattern';
+            } else if (highlightMetadata.aiSuggested.includes(sourceField)) {
+              currentMappingType = 'ai';
+            }
+          }
+
+          if (currentMappingStart !== null && currentMappingType) {
+            for (let i = currentMappingStart; i <= idx; i++) {
+              lineHighlights[i] = currentMappingType;
+            }
+          }
+
+          if (inMappingsArray && line.trim().match(/^}\s*,?\s*$/)) {
+            if (currentMappingType) {
+              lineHighlights[idx] = currentMappingType;
+            }
+            currentMappingStart = null;
+            currentMappingType = null;
+          }
+        }
+      });
+
+      return lineHighlights;
+    };
+
+    const lineHighlights = buildLineHighlights();
+
+    return (
+      <div className={styles.inputTabSplit}>
+        <div className={styles.inputTabLeft}>
+          <ConfigInput
+            config={inputConfig}
+            status={inputStatus}
+            onChange={onInputChange}
+            onGenerate={onGenerate}
+          />
+        </div>
+        <div className={styles.inputTabRight}>
+          {output ? (
+            <div className={styles.outputPanel}>
+              <div className={styles.outputHeader}>
+                <h4>Generated Configuration</h4>
+                <Badge variant="lightgray">JSON</Badge>
+              </div>
+
+              {/* Legend */}
+              <div className={styles.legend}>
+                <span className={styles.legendTitle}>Legend:</span>
+                <span className={styles.legendItem}>
+                  <span className={styles.legendDot} style={{backgroundColor: 'var(--green-dark1)'}}></span>
+                  <span>Pattern Matched Mappings</span>
+                </span>
+                <span className={styles.legendItem}>
+                  <span className={styles.legendDot} style={{backgroundColor: 'var(--purple-dark1)'}}></span>
+                  <span>AI Suggested Mappings</span>
+                </span>
+                <span className={styles.legendItem}>
+                  <span className={styles.legendDot} style={{backgroundColor: 'var(--blue-dark1)'}}></span>
+                  <span>Auto-Detected Parser Fields</span>
+                </span>
+              </div>
+
+              <div className={styles.outputContent}>
+                <SyntaxHighlighter
+                  language="json"
+                  style={leafyGreenTheme}
+                  showLineNumbers={true}
+                  wrapLines={true}
+                  lineProps={(lineNumber) => {
+                    const highlightType = lineHighlights[lineNumber - 1];
+
+                    if (highlightType === 'pattern') {
+                      return {
+                        style: {
+                          backgroundColor: 'rgba(0, 163, 92, 0.15)',
+                          borderLeft: '3px solid #00A35C',
+                          display: 'block',
+                          paddingLeft: '8px'
+                        }
+                      };
+                    } else if (highlightType === 'ai') {
+                      return {
+                        style: {
+                          backgroundColor: 'rgba(92, 60, 146, 0.15)',
+                          borderLeft: '3px solid #5C3C92',
+                          display: 'block',
+                          paddingLeft: '8px'
+                        }
+                      };
+                    } else if (highlightType === 'newField') {
+                      return {
+                        style: {
+                          backgroundColor: 'rgba(18, 84, 183, 0.15)',
+                          borderLeft: '3px solid #1254B7',
+                          display: 'block',
+                          paddingLeft: '8px'
+                        }
+                      };
+                    }
+
+                    return { style: { display: 'block' } };
+                  }}
+                  customStyle={{
+                    margin: 0,
+                    borderRadius: '8px',
+                    fontSize: '13px',
+                    lineHeight: '1.5',
+                    height: '100%'
+                  }}
+                >
+                  {JSON.stringify(output, null, 2)}
+                </SyntaxHighlighter>
+              </div>
+            </div>
+          ) : (
+            <div className={styles.outputEmpty}>
+              <Icon glyph="Code" size="large" />
+              <p>Configuration will appear here after generation</p>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   const renderTabContent = () => {
-    if (generation?.status === 'generating') {
+    if (generation?.status === 'generating' && activeTab !== 'input') {
       return renderLoadingState();
     }
 
     switch (activeTab) {
+      case 'input':
+        return renderInputTab();
       case 'flow':
         return renderFlowTab();
       case 'configuration':
@@ -2451,6 +2674,12 @@ export default function ConfigJourney({
     <div className={styles.container}>
       {/* Tabs using LeafyGreen-styled buttons */}
       <div className={styles.tabsWrapper}>
+        <button
+          className={`${styles.leafyTab} ${activeTab === 'input' ? styles.leafyTabActive : ''}`}
+          onClick={() => onTabChange('input')}
+        >
+          Generate Configuration
+        </button>
         <button
           className={`${styles.leafyTab} ${activeTab === 'flow' ? styles.leafyTabActive : ''}`}
           onClick={() => onTabChange('flow')}

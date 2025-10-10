@@ -1077,6 +1077,13 @@ ${formData.beneficiary_institution || 'BENEFICIARY INSTITUTION'}
   // Save validated configuration to production (or pending in demo mode)
   async saveValidatedConfig(configuration, force = false, sessionId = null) {
     try {
+      console.log('paymentBuilderService.saveValidatedConfig called with:', {
+        configId: configuration?._id,
+        force,
+        sessionId,
+        sessionIdType: typeof sessionId
+      });
+
       const requestBody = {
         configuration: configuration,
         force: force
@@ -1085,6 +1092,9 @@ ${formData.beneficiary_institution || 'BENEFICIARY INSTITUTION'}
       // Add session_id if provided (for demo mode isolation)
       if (sessionId) {
         requestBody.session_id = sessionId;
+        console.log('Added session_id to request body:', sessionId);
+      } else {
+        console.warn('No sessionId provided to saveValidatedConfig');
       }
 
       const response = await withTimeout(

@@ -3,7 +3,10 @@
   display: flex;
   flex-direction: column;
   height: 100%;
+  width: 100%;
   background: var(--white);
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 /* Header */
@@ -28,8 +31,9 @@
 /* Content */
 .content {
   flex: 1;
-  padding: var(--spacing-4);
+  padding: var(--spacing-5);
   overflow-y: auto;
+  max-width: 100%;
 }
 
 /* Mode Toggle */
@@ -390,6 +394,21 @@
   color: var(--gray-base);
   margin-top: var(--spacing-1);
   text-align: center;
+}
+
+/* Browse Messages Button */
+.browseButton {
+  width: 100%;
+  justify-content: center;
+  margin-bottom: var(--spacing-2);
+}
+
+.browseHint {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--gray-base);
+  text-align: center;
+  line-height: 1.4;
 }
 
 /* Validation Messages */

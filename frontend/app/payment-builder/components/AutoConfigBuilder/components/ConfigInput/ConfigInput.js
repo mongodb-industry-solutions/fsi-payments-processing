@@ -8,6 +8,8 @@ import { Select, Option } from '@leafygreen-ui/select';
 import Banner from '@leafygreen-ui/banner';
 import Icon from '@leafygreen-ui/icon';
 import { Body, Label } from '@leafygreen-ui/typography';
+import MessageBrowser from '../MessageBrowser/MessageBrowser';
+import { detectFormatFromMessage } from '../../data/messageLibrary';
 import styles from './ConfigInput.module.css';
 
 // Predefined scenarios for quick configuration
@@ -115,10 +117,23 @@ export default function ConfigInput({
 }) {
   const [selectedScenario, setSelectedScenario] = useState('mt205_pacs009');
   const [isCustomMode, setIsCustomMode] = useState(false);
+  const [showMessageBrowser, setShowMessageBrowser] = useState(false);
   const [validation, setValidation] = useState({
     isValid: false,
     messages: []
   });
+
+  // Load initial scenario on mount
+  useEffect(() => {
+    if (!isCustomMode && !config.sourceFormat) {
+      const scenario = PRESET_SCENARIOS.find(s => s.id === selectedScenario);
+      if (scenario) {
+        onChange('sourceFormat', scenario.sourceFormat);
+        onChange('targetFormat', scenario.targetFormat);
+        onChange('sampleMessage', scenario.sampleMessage);
+      }
+    }
+  }, []);
 
   // Validate input on change
   useEffect(() => {
@@ -211,6 +226,17 @@ export default function ConfigInput({
     }
   };
 
+  const handleSelectMessage = (message) => {
+    // Auto-fill fields from selected message
+    onChange('sourceFormat', message.sourceFormat);
+    onChange('sampleMessage', message.sampleMessage);
+    // Use first suggested target format if available
+    if (message.targetFormats && message.targetFormats.length > 0) {
+      onChange('targetFormat', message.targetFormats[0]);
+    }
+    setShowMessageBrowser(false);
+  };
+
   const statusInfo = getStatusIndicator();
 
   return (
@@ -263,6 +289,25 @@ export default function ConfigInput({
             <span className={styles.buttonText}>Custom Format</span>
           </Button>
         </div>
+
+        {/* Browse Messages - Only show in custom mode */}
+        {isCustomMode && (
+          <div className={styles.formGroup}>
+            <Button
+              variant="default"
+              size="default"
+              onClick={() => setShowMessageBrowser(true)}
+              disabled={status === 'generating'}
+              leftGlyph={<Icon glyph="MagnifyingGlass" />}
+              className={styles.browseButton}
+            >
+              Browse Sample Messages
+            </Button>
+            <p className={styles.browseHint}>
+              Browse our collection of sample payment messages to get started quickly
+            </p>
+          </div>
+        )}
 
         {/* Scenario Selector - Only show in preset mode */}
         {!isCustomMode && (
@@ -404,6 +449,13 @@ export default function ConfigInput({
           </div>
         )}
       </div>
+
+      {/* Message Browser Modal */}
+      <MessageBrowser
+        isOpen={showMessageBrowser}
+        onClose={() => setShowMessageBrowser(false)}
+        onSelectMessage={handleSelectMessage}
+      />
     </div>
   );
 }

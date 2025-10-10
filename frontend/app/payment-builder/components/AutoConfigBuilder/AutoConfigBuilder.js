@@ -3,9 +3,7 @@
 import { useState, useEffect } from 'react';
 import Icon from '@leafygreen-ui/icon';
 import styles from './AutoConfigBuilder.module.css';
-import ConfigInput from './components/ConfigInput/ConfigInput';
 import ConfigJourney from './components/ConfigJourney/ConfigJourney';
-import FocusControl from './components/FocusControl/FocusControl';
 import { useAutoConfigBuilder } from './hooks/useAutoConfigBuilder';
 
 export default function AutoConfigBuilder({
@@ -20,8 +18,7 @@ export default function AutoConfigBuilder({
     runValidation,
     saveValidatedConfig,
     fixValidationError,
-    setActiveTab,
-    setFocusMode
+    setActiveTab
   } = useAutoConfigBuilder();
 
   const handleGenerate = async () => {
@@ -32,12 +29,8 @@ export default function AutoConfigBuilder({
     updateInput(field, value);
   };
 
-  const handleFocusModeChange = (mode) => {
-    setFocusMode(mode);
-  };
-
   return (
-    <div className={`${styles.container} ${styles[state.focusMode]} ${embedded ? styles.embedded : ''}`}>
+    <div className={`${styles.container} ${embedded ? styles.embedded : ''}`}>
       {/* Header */}
       <div className={styles.header}>
         <div className={styles.headerContent}>
@@ -51,39 +44,25 @@ export default function AutoConfigBuilder({
         )}
       </div>
 
-      {/* Focus Control Bar */}
-      <FocusControl
-        currentMode={state.focusMode}
-        onModeChange={handleFocusModeChange}
-      />
-
       {/* Main Content Area */}
       <div className={styles.mainContent}>
-        {/* Configuration Input Panel */}
-        <div className={styles.inputPanel}>
-          <ConfigInput
-            config={state.input}
-            status={state.generation.status}
-            onChange={handleInputChange}
-            onGenerate={handleGenerate}
-          />
-        </div>
-
         {/* Configuration Journey Panel */}
-        <div className={styles.journeyPanel}>
-          <ConfigJourney
-            activeTab={state.journey.activeTab}
-            generation={state.generation}
-            mappings={state.journey.mappings}
-            validation={state.journey.validation}
-            output={state.journey.output}
-            onTabChange={setActiveTab}
-            onMappingUpdate={updateMapping}
-            onValidate={runValidation}
-            onSave={saveValidatedConfig}
-            onFixError={fixValidationError}
-          />
-        </div>
+        <ConfigJourney
+          activeTab={state.journey.activeTab}
+          generation={state.generation}
+          mappings={state.journey.mappings}
+          validation={state.journey.validation}
+          output={state.journey.output}
+          onTabChange={setActiveTab}
+          onMappingUpdate={updateMapping}
+          onValidate={runValidation}
+          onSave={saveValidatedConfig}
+          onFixError={fixValidationError}
+          inputConfig={state.input}
+          inputStatus={state.generation.status}
+          onInputChange={handleInputChange}
+          onGenerate={handleGenerate}
+        />
       </div>
     </div>
   );

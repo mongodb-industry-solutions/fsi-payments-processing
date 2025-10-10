@@ -25,14 +25,11 @@ export function useAutoConfigBuilder() {
 
     // Journey state
     journey: {
-      activeTab: 'flow',
+      activeTab: 'input',
       mappings: [],
       validation: null,
       output: null
-    },
-
-    // UI state
-    focusMode: 'full'
+    }
   });
 
   // Update input fields
@@ -57,7 +54,10 @@ export function useAutoConfigBuilder() {
         currentStep: 'Initializing...',
         error: null
       },
-      focusMode: 'journeyFocus' // Auto-collapse input panel
+      journey: {
+        ...prev.journey,
+        activeTab: 'flow' // Auto-switch to flow tab
+      }
     }));
 
     try {
@@ -411,6 +411,12 @@ export function useAutoConfigBuilder() {
 
   // Save validated configuration
   const saveValidatedConfig = useCallback(async (force = false, sessionId = null) => {
+    console.log('useAutoConfigBuilder.saveValidatedConfig called with:', {
+      force,
+      sessionId,
+      sessionIdType: typeof sessionId
+    });
+
     setState(prev => ({
       ...prev,
       journey: {
@@ -500,14 +506,6 @@ export function useAutoConfigBuilder() {
     }));
   }, []);
 
-  // Set focus mode
-  const setFocusMode = useCallback((mode) => {
-    setState(prev => ({
-      ...prev,
-      focusMode: mode
-    }));
-  }, []);
-
   return {
     state,
     updateInput,
@@ -516,7 +514,6 @@ export function useAutoConfigBuilder() {
     runValidation,
     saveValidatedConfig,
     fixValidationError,
-    setActiveTab,
-    setFocusMode
+    setActiveTab
   };
 }

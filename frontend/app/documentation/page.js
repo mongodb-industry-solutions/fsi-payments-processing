@@ -188,12 +188,17 @@ camt.053 (bank statement)`,
     },
     {
       name: 'UPI (India)',
-      description: 'API-driven real-time scheme (JSON/XML payloads).',
-      detail: 'Mobile-first payment interface enabling instant inter-bank transfers using virtual payment addresses, supporting P2P and merchant payments.',
+      description: 'Real-time payments using XML + ISO 8583 per NPCI standards. Third-party integrations often wrap in JSON.',
+      detail: 'Core protocol uses XML for UPI APIs and ISO 8583 when routing through IMPS. Mobile-first interface enabling instant inter-bank transfers using virtual payment addresses.',
       whereUsed: 'Indian instant payments.',
       badge: 'Real-time',
       badgeVariant: 'green',
-      example: `{
+      example: `Core Format: XML + ISO 8583
+NPCI UPI APIs use stateless HTTPS with XML input/output.
+When routing UPI→IMPS, messages convert from XML to ISO 8583.
+
+Third-party Gateway (JSON wrapper):
+{
   "payerVPA": "user@bankname",
   "payeeVPA": "merchant@payment",
   "amount": "500.00",
@@ -201,7 +206,7 @@ camt.053 (bank statement)`,
   "txnId": "UPI123456789",
   "refId": "ORDER001"
 }`,
-      explanation: 'UPI uses JSON-based API messages with Virtual Payment Addresses (VPA) like user@bankname. Supports instant P2P and merchant payments, QR code scanning, and payment requests. Processes over 10 billion transactions monthly.'
+      explanation: 'UPI core protocol: XML-based APIs (per NPCI guidelines) with ISO 8583 for inter-system routing (e.g., UPI→IMPS conversion). Payment Service Providers must adopt data message standards per XML and ISO 8583. Third-party gateways often expose JSON APIs as abstraction layer for easier developer integration. Virtual Payment Addresses (VPA) like user@bankname enable instant P2P and merchant payments. Processes over 10 billion transactions monthly.'
     }
   ];
 

@@ -3,7 +3,7 @@ import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import Icon from '@leafygreen-ui/icon';
 import TreeNavigator from './components/TreeNavigator/TreeNavigator';
 import JsonEditorPanel from './components/JsonEditorPanel/JsonEditorPanel';
-import PropertyInspector from './components/PropertyInspector/PropertyInspector';
+import RegistryConsole from '../RegistryConsole/RegistryConsole';
 import ProblemsPanel from './components/ProblemsPanel/ProblemsPanel';
 import styles from './ConfigurationEditor.module.css';
 
@@ -22,6 +22,7 @@ const ConfigurationEditor = ({
   const [showProblems, setShowProblems] = useState(true);
   const [localValidationResult, setLocalValidationResult] = useState(null);
   const [validationSource, setValidationSource] = useState('none'); // 'client', 'server', or 'none'
+  const sessionIdRef = useRef(null); // Use ref instead of state to avoid closure issues
   const editorRef = useRef(null);
   const monacoRef = useRef(null);
   const validationTriggeredRef = useRef(false);
@@ -52,10 +53,15 @@ const ConfigurationEditor = ({
     // Backend format: {valid, score, checks: [{name, status, errors}]}
     // Frontend format: {details: [{is_valid, check, errors}]}
 
-    // If already in frontend format, return as is
+    // If already has details array, ensure is_valid property exists at root
     if (backendResult.details) {
-      console.log('Already in frontend format');
-      return backendResult;
+      console.log('Already has details array, normalizing format');
+      return {
+        ...backendResult,
+        is_valid: backendResult.is_valid !== undefined ? backendResult.is_valid : backendResult.valid,
+        error_count: backendResult.error_count || backendResult.summary?.failed || 0,
+        warning_count: backendResult.warning_count || backendResult.summary?.warnings || 0
+      };
     }
 
     // Transform backend format to frontend format
@@ -242,12 +248,39 @@ const ConfigurationEditor = ({
           </span>
           <button
             className={styles.validateButton}
-            onClick={() => {
-              console.log('Validate button clicked', { onValidate, isValidating });
-              if (onValidate) {
-                onValidate();
-              } else {
-                console.error('onValidate is not defined!');
+            onClick={async () => {
+              console.log('Validate button clicked');
+              try {
+                // Parse the edited JSON
+                const parsed = JSON.parse(editorValue);
+                console.log('Validating edited configuration against schema');
+
+                // Call validation API directly with the edited configuration
+                const { default: paymentBuilderService } = await import('../../../../services/paymentBuilderService');
+                const validationResult = await paymentBuilderService.validateConfigSchema(parsed);
+
+                console.log('Validation result:', validationResult);
+
+                // Update local validation state
+                setLocalValidationResult(validationResult);
+                setValidationSource('server');
+
+                // If valid, update the configuration in parent state
+                if (validationResult.valid && onFieldUpdate) {
+                  console.log('Configuration is valid, updating parent state');
+                  Object.keys(parsed).forEach(key => {
+                    if (JSON.stringify(configuration[key]) !== JSON.stringify(parsed[key])) {
+                      onFieldUpdate(key, parsed[key]);
+                    }
+                  });
+                }
+              } catch (e) {
+                console.error('Validation failed:', e);
+                if (e.message.includes('JSON')) {
+                  alert('Invalid JSON: ' + e.message);
+                } else {
+                  alert('Validation failed: ' + e.message);
+                }
               }
             }}
             disabled={isValidating}
@@ -256,7 +289,10 @@ const ConfigurationEditor = ({
           </button>
           <button
             className={styles.saveButton}
-            onClick={() => onSave(false)}
+            onClick={() => {
+              console.log('Save button clicked, sessionId:', sessionIdRef.current);
+              onSave(false, sessionIdRef.current);
+            }}
             disabled={!transformedValidationResult?.is_valid || isSaving}
           >
             <Icon glyph="Save" size="small" /> {isSaving ? 'Saving...' : 'Save to Production'}
@@ -295,22 +331,11 @@ const ConfigurationEditor = ({
 
             <Panel defaultSize={30} minSize={20} maxSize={40}>
               <PanelGroup direction="vertical">
-                <Panel defaultSize={75} minSize={50}>
-                  <PropertyInspector
-                    path={selectedPath}
-                    configuration={configuration}
-                    validationResult={transformedValidationResult}
-                    onFieldUpdate={onFieldUpdate}
-                  />
-                </Panel>
-
-                <PanelResizeHandle className={styles.resizeHandleHorizontal} />
-
                 <Panel
                   ref={problemsPanelRef}
-                  defaultSize={25}
+                  defaultSize={40}
                   minSize={5}
-                  maxSize={50}
+                  maxSize={60}
                   collapsible={true}
                   collapsedSize={5}
                 >
@@ -335,6 +360,23 @@ const ConfigurationEditor = ({
                           problemsPanelRef.current.expand();
                         }
                       }
+                    }}
+                  />
+                </Panel>
+
+                <PanelResizeHandle className={styles.resizeHandleHorizontal} />
+
+                <Panel defaultSize={60} minSize={40}>
+                  <RegistryConsole
+                    lastSavedConfig={configuration?._id}
+                    onRefresh={() => {
+                      console.log('Registry refreshed');
+                    }}
+                    onSessionIdGenerated={(id) => {
+                      console.log('Session ID generated callback called with:', id);
+                      console.log('Setting sessionIdRef.current to:', id);
+                      sessionIdRef.current = id;
+                      console.log('sessionIdRef.current is now:', sessionIdRef.current);
                     }}
                   />
                 </Panel>
