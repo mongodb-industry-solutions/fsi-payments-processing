@@ -134,21 +134,23 @@
   min-height: 450px; /* Increased minimum height */
 }
 
-/* Empty State Panel - Consistent with other panels */
+/* Empty State Panel - Matches payment-builder gap/padding */
 .emptyState {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  top: var(--spacing-5);
+  left: var(--spacing-5);
+  right: var(--spacing-5);
+  bottom: var(--spacing-5);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  background: var(--gray-light3); /* Consistent with sidebar background */
+  background: var(--white); /* White background */
   z-index: 10;
   overflow-y: auto;
-  padding: var(--spacing-6);
+  padding: 0; /* Remove inner padding, gap is created by top/left/right/bottom */
+  border-radius: 8px; /* Add rounded corners like payment-builder canvas */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04); /* Add subtle shadow */
 }
 
 /* Scrollbar styling - consistent with other panels */

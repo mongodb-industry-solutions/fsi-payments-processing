@@ -9,6 +9,7 @@ import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import ConfigurationEditor from '../ConfigurationEditor/ConfigurationEditor';
 import RegistryConsole from '../RegistryConsole/RegistryConsole';
 import ConfigInput from '../ConfigInput/ConfigInput';
+import GenerationProgress from '../GenerationProgress/GenerationProgress';
 import styles from './ConfigJourney.module.css';
 
 // Custom LeafyGreen-inspired syntax highlighting theme
@@ -2642,6 +2643,12 @@ export default function ConfigJourney({
                 </SyntaxHighlighter>
               </div>
             </div>
+          ) : generation?.status === 'generating' ? (
+            <GenerationProgress
+              progress={generation.progress}
+              currentStep={generation.currentStep}
+              startTime={generation.startTime}
+            />
           ) : (
             <div className={styles.outputEmpty}>
               <Icon glyph="Code" size="large" />
@@ -2654,7 +2661,8 @@ export default function ConfigJourney({
   };
 
   const renderTabContent = () => {
-    if (generation?.status === 'generating' && activeTab !== 'input') {
+    // Show simple loading state in Flow tab while generating
+    if (generation?.status === 'generating' && activeTab === 'flow') {
       return renderLoadingState();
     }
 
@@ -2664,7 +2672,7 @@ export default function ConfigJourney({
       case 'flow':
         return renderFlowTab();
       case 'configuration':
-        return renderConfigurationTab();
+        return renderConfigurationTab();  // Handles its own loading state
       default:
         return renderEmptyState();
     }

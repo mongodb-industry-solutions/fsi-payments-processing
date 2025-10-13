@@ -1,411 +1,452 @@
-/* MongoDB Showcase Container */
-.showcase {
-  max-width: 1000px;
+/* Container - Consistent with CanonicalJsonExplainer */
+.container {
+  width: 100%;
+  max-width: 1400px;
   margin: 0 auto;
   padding: var(--spacing-6);
+  background: var(--white);
+  overflow-y: auto;
+
+  /* Hide scrollbar */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
 }
 
-/* Header */
+/* Hide scrollbar for Chrome, Safari and Opera */
+.container::-webkit-scrollbar {
+  display: none;
+}
+
+/* Global Body Text Styling */
+.container :global(.leafygreen-ui-body) {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--gray-dark2);
+}
+
+/* Header Section */
 .header {
   text-align: center;
   margin-bottom: var(--spacing-6);
-  padding-bottom: var(--spacing-4);
-  border-bottom: 2px solid var(--gray-light2);
+  padding: var(--spacing-5) var(--spacing-3);
 }
 
-.title {
-  font-size: 1.75rem;
-  font-weight: 600;
+.mainTitle {
+  font-size: 2.5rem;
+  font-weight: 700;
   color: var(--mongodb-green-dark2);
-  margin-bottom: var(--spacing-2);
+  margin-bottom: var(--spacing-3);
   letter-spacing: -0.02em;
 }
 
-.subtitle {
-  font-size: 1rem;
+.mainSubtitle {
+  font-size: 1.25rem;
   color: var(--gray-dark1);
-  line-height: 1.6;
-  max-width: 700px;
-  margin: 0 auto;
-}
-
-/* Intro Card */
-.introCard {
-  background: var(--white);
-  border: 1px solid var(--gray-light2);
-  border-left: 3px solid #d32f2f;
-  border-radius: 8px;
-  padding: var(--spacing-4);
-  margin-bottom: var(--spacing-5);
-}
-
-.introCard h3 {
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: var(--black);
-  margin-bottom: var(--spacing-2);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  font-size: 0.875rem;
-  color: var(--gray-dark1);
-}
-
-.introCard p {
-  font-size: 0.9375rem;
-  color: var(--gray-dark2);
-  line-height: 1.6;
-  margin-bottom: var(--spacing-3);
-}
-
-.highlight {
-  background: var(--green-light3);
-  border-left: 3px solid var(--green-dark1);
-  padding: var(--spacing-3);
-  border-radius: 4px;
-  font-size: 0.9375rem;
-  color: var(--black);
-  line-height: 1.5;
-}
-
-.highlight strong {
-  color: var(--green-dark2);
-}
-
-/* Features Section */
-.featuresSection {
-  margin-bottom: var(--spacing-5);
-}
-
-.featuresSection > h3 {
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: var(--black);
   margin-bottom: var(--spacing-4);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  font-size: 0.875rem;
-  color: var(--gray-dark1);
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
-/* Feature Card */
-.featureCard {
-  background: var(--white);
-  border: 1px solid var(--gray-light2);
-  border-radius: 8px;
-  margin-bottom: var(--spacing-3);
-  overflow: hidden;
-  transition: all 200ms ease;
-}
-
-.featureCard:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-}
-
-/* Feature Header */
-.featureHeader {
-  padding: var(--spacing-4);
-  cursor: pointer;
+.badges {
   display: flex;
-  align-items: flex-start;
   gap: var(--spacing-3);
-  transition: background 150ms ease;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: var(--spacing-4);
 }
 
-.featureHeader:hover {
-  background: var(--gray-light3);
+/* Section Titles */
+.sectionTitle {
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: var(--mongodb-green-dark2);
+  margin-bottom: var(--spacing-3);
+  text-align: center;
 }
 
-.featureTitle {
+.sectionSubtitle {
+  font-size: 1.125rem;
+  color: var(--gray-dark1);
+  text-align: center;
+  margin-bottom: var(--spacing-5);
+  max-width: 700px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Core Concept Section */
+.conceptSection {
+  margin-bottom: var(--spacing-6);
+}
+
+.explanationCard {
+  padding: var(--spacing-5);
+  border: 2px solid var(--mongodb-green-light2);
+  background: linear-gradient(135deg, var(--mongodb-green-light3) 0%, var(--white) 100%);
+}
+
+.explanationCard :global(.leafygreen-ui-body) {
+  font-size: 1.0625rem;
+  line-height: 1.7;
+  margin-bottom: var(--spacing-3);
+  color: var(--gray-dark2);
+}
+
+.explanationCard :global(.leafygreen-ui-subtitle) {
+  font-size: 1.125rem;
+  line-height: 1.8;
+  margin-bottom: var(--spacing-4);
+  color: var(--gray-dark2);
+}
+
+.divider {
+  height: 1px;
+  background: var(--mongodb-green-light2);
+  margin: var(--spacing-4) 0;
+}
+
+/* Document Structure Section */
+.structureSection {
+  margin-bottom: var(--spacing-6);
+}
+
+.documentGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--spacing-4);
+  margin-top: var(--spacing-4);
+}
+
+.docCard {
+  padding: var(--spacing-4);
+  border: 2px solid var(--gray-light2);
+  transition: var(--transition-fast);
+}
+
+.docCard:hover {
+  border-color: var(--mongodb-green-base);
+  box-shadow: 0 4px 12px rgba(0, 163, 92, 0.1);
+}
+
+.docHeader {
   display: flex;
   align-items: center;
   gap: var(--spacing-2);
-  flex: 1;
-  min-width: 0;
+  margin-bottom: var(--spacing-3);
+  color: var(--mongodb-green-dark2);
 }
 
-.featureNumber {
-  width: 32px;
-  height: 32px;
-  background: var(--green-light2);
-  color: var(--green-dark2);
+.docHeaderClickable {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-3);
+  color: var(--mongodb-green-dark2);
+  cursor: pointer;
+  padding: var(--spacing-2);
+  margin: calc(-1 * var(--spacing-2));
+  margin-bottom: var(--spacing-3);
+  border-radius: 6px;
+  transition: var(--transition-fast);
+}
+
+.docHeaderClickable:hover {
+  background: var(--gray-light3);
+}
+
+.docHeaderLeft {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.miniCode {
+  background: var(--gray-light3);
+  padding: var(--spacing-3);
+  border-radius: 4px;
+  font-size: 0.875rem;
+  margin-top: var(--spacing-3);
+  overflow-x: auto;
+  font-family: 'Source Code Pro', monospace;
+  color: var(--gray-dark2);
+}
+
+/* Learning Flow Section */
+.learningSection {
+  margin-bottom: var(--spacing-6);
+  background: var(--gray-light3);
+  padding: var(--spacing-6);
+  border-radius: 8px;
+}
+
+.flowContainer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-3);
+  flex-wrap: wrap;
+  margin-top: var(--spacing-5);
+}
+
+.flowStep {
+  flex: 1;
+  min-width: 200px;
+  background: var(--white);
+  border: 2px solid var(--mongodb-green-light2);
+  border-radius: 8px;
+  padding: var(--spacing-4);
+  text-align: center;
+  transition: var(--transition-fast);
+}
+
+.flowStep:hover {
+  border-color: var(--mongodb-green-base);
+  box-shadow: 0 6px 16px rgba(0, 163, 92, 0.15);
+  transform: translateY(-2px);
+}
+
+.stepNumber {
+  width: 40px;
+  height: 40px;
+  background: var(--mongodb-green-dark2);
+  color: var(--white);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  font-size: 0.875rem;
-  flex-shrink: 0;
+  font-size: 1.25rem;
+  margin: 0 auto var(--spacing-3) auto;
 }
 
-.featureTitle h4 {
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--black);
-  margin: 0;
-}
-
-.featureDescription {
-  font-size: 0.875rem;
-  color: var(--gray-base);
-  line-height: 1.5;
-  flex: 1;
-  min-width: 0;
-}
-
-.expandButton {
-  padding: var(--spacing-2) var(--spacing-3);
-  background: var(--white);
-  border: 1px solid var(--gray-light2);
-  border-radius: 6px;
-  font-size: 0.8125rem;
-  font-weight: 500;
-  color: var(--gray-dark1);
-  cursor: pointer;
-  transition: all 150ms ease;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.expandButton:hover {
-  background: var(--green-light3);
-  border-color: var(--green-base);
-  color: var(--green-dark2);
-}
-
-/* Feature Content */
-.featureContent {
-  border-top: 1px solid var(--gray-light2);
-  padding: var(--spacing-4);
-  background: var(--gray-light3);
-  animation: slideDown 300ms ease;
-}
-
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Explanation Box */
-.explanation {
-  background: var(--blue-light3);
-  border-left: 3px solid var(--blue-base);
-  padding: var(--spacing-3);
-  border-radius: 4px;
-  margin-bottom: var(--spacing-3);
-}
-
-.explanation p {
-  font-size: 0.875rem;
-  color: var(--blue-dark2);
-  line-height: 1.6;
+.stepContent h3 {
+  color: var(--mongodb-green-dark2);
   margin-bottom: var(--spacing-2);
 }
 
-.explanation p:last-child {
-  margin-bottom: 0;
+.flowArrow {
+  color: var(--mongodb-green-base);
+  flex-shrink: 0;
 }
 
-.explanation strong {
-  color: var(--blue-dark3);
-  font-weight: 600;
+@media (max-width: 768px) {
+  .flowArrow {
+    display: none;
+  }
 }
 
-/* Comparison */
-.comparison {
+/* Collections Section */
+.collectionsSection {
+  margin-bottom: var(--spacing-6);
+}
+
+.collectionGrid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: var(--spacing-4);
+  margin-top: var(--spacing-4);
+}
+
+.collectionCard {
+  padding: var(--spacing-4);
+  text-align: center;
+  border: 2px solid var(--gray-light2);
+  transition: var(--transition-fast);
+}
+
+.collectionCard:hover {
+  border-color: var(--mongodb-green-base);
+  box-shadow: 0 4px 12px rgba(0, 163, 92, 0.1);
+}
+
+.collectionCard svg {
+  color: var(--mongodb-green-dark2);
+  margin-bottom: var(--spacing-3);
+}
+
+.collectionCard h3 {
+  color: var(--mongodb-green-dark2);
+  margin: var(--spacing-3) 0;
+}
+
+.meta {
+  margin-top: var(--spacing-3);
+  display: flex;
+  justify-content: center;
+  gap: var(--spacing-2);
+}
+
+/* Benefits Section */
+.benefitsSection {
+  margin-bottom: var(--spacing-6);
+}
+
+.benefitsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--spacing-4);
+  margin-top: var(--spacing-4);
+}
+
+.benefitCard {
+  padding: var(--spacing-5);
+  border: 2px solid var(--gray-light2);
+  text-align: center;
+  transition: var(--transition-fast);
+}
+
+.benefitCard:hover {
+  border-color: var(--mongodb-green-base);
+  box-shadow: 0 6px 16px rgba(0, 163, 92, 0.15);
+  transform: translateY(-4px);
+}
+
+.benefitIcon {
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(135deg, var(--mongodb-green-light3) 0%, var(--mongodb-green-light2) 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto var(--spacing-4) auto;
+  color: var(--mongodb-green-dark2);
+}
+
+.benefitCard h3 {
+  color: var(--mongodb-green-dark2);
+  margin-bottom: var(--spacing-3);
+}
+
+/* Comparison Section */
+.comparisonSection {
+  margin-bottom: var(--spacing-6);
+  background: var(--gray-light3);
+  padding: var(--spacing-6);
+  border-radius: 8px;
+}
+
+.comparisonGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--spacing-4);
+  margin-top: var(--spacing-4);
+}
+
+.comparisonCard {
+  padding: var(--spacing-4);
+  background: var(--white);
+  border: 2px solid var(--gray-light2);
+  transition: var(--transition-fast);
+}
+
+.comparisonCard:hover {
+  border-color: var(--mongodb-green-base);
+  box-shadow: 0 4px 12px rgba(0, 163, 92, 0.1);
+}
+
+.comparisonHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  margin-bottom: var(--spacing-4);
+  color: var(--mongodb-green-dark2);
+  padding-bottom: var(--spacing-3);
+  border-bottom: 2px solid var(--gray-light2);
+}
+
+.comparisonHeader h3 {
+  color: var(--mongodb-green-dark2);
+}
+
+.comparisonRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: var(--spacing-3);
 }
 
-@media (max-width: 900px) {
-  .comparison {
-    grid-template-columns: 1fr;
-  }
-}
-
-.comparisonColumn {
-  background: var(--white);
-  border: 1px solid var(--gray-light2);
+.traditional,
+.mongodb {
+  flex: 1;
+  text-align: center;
+  padding: var(--spacing-3);
   border-radius: 6px;
-  padding: var(--spacing-3);
 }
 
-.comparisonColumn:first-child {
-  border-left: 3px solid var(--green-base);
+.traditional {
+  background: var(--gray-light3);
 }
 
-.comparisonColumn:last-child {
-  border-left: 3px solid #d32f2f;
+.mongodb {
+  background: linear-gradient(135deg, var(--mongodb-green-light3) 0%, var(--white) 100%);
+  border: 1px solid var(--mongodb-green-light2);
 }
 
-.comparisonColumn h5 {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--black);
-  margin-bottom: var(--spacing-2);
+.label {
+  font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-}
-
-/* Code Block */
-.codeBlock {
-  background: #1e1e1e;
-  color: #d4d4d4;
-  padding: var(--spacing-3);
-  border-radius: 4px;
-  font-family: 'Monaco', 'Courier New', monospace;
-  font-size: 0.8125rem;
-  line-height: 1.6;
-  overflow-x: auto;
-  margin-bottom: var(--spacing-2);
-  white-space: pre;
-}
-
-.codeBlock::-webkit-scrollbar {
-  height: 6px;
-}
-
-.codeBlock::-webkit-scrollbar-track {
-  background: #2d2d2d;
-}
-
-.codeBlock::-webkit-scrollbar-thumb {
-  background: #555;
-  border-radius: 3px;
-}
-
-/* Advantage/Disadvantage */
-.advantage,
-.disadvantage {
-  font-size: 0.8125rem;
-  padding: var(--spacing-2);
-  border-radius: 4px;
-  font-weight: 500;
-  line-height: 1.4;
-}
-
-.advantage {
-  background: var(--green-light3);
-  color: var(--green-dark2);
-  border: 1px solid var(--green-light2);
-}
-
-.disadvantage {
-  background: #fee9e9;
-  color: #d32f2f;
-  border: 1px solid #fdd;
-}
-
-/* Result Card */
-.resultCard {
-  background: linear-gradient(135deg, var(--green-light3) 0%, var(--white) 100%);
-  border: 1px solid var(--green-light2);
-  border-left: 3px solid var(--green-dark1);
-  border-radius: 8px;
-  padding: var(--spacing-4);
-  margin-bottom: var(--spacing-4);
-}
-
-.resultCard h3 {
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: var(--black);
-  margin-bottom: var(--spacing-2);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  font-size: 0.875rem;
   color: var(--gray-dark1);
-}
-
-.resultCard p {
-  font-size: 0.9375rem;
-  color: var(--gray-dark2);
-  line-height: 1.6;
-  margin-bottom: var(--spacing-3);
-}
-
-.tryItSection {
-  background: var(--white);
-  border: 1px solid var(--green-light2);
-  border-radius: 6px;
-  padding: var(--spacing-3);
-  margin-top: var(--spacing-3);
-}
-
-.tryItSection h4 {
-  font-size: 0.9375rem;
   font-weight: 600;
-  color: var(--green-dark2);
-  margin-bottom: var(--spacing-2);
+  margin-bottom: var(--spacing-1);
 }
 
-.tryItSection ul {
-  margin: 0;
-  padding-left: var(--spacing-4);
-  list-style-type: disc;
+.value {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--mongodb-green-dark2);
 }
 
-.tryItSection li {
-  font-size: 0.875rem;
-  color: var(--gray-dark2);
-  line-height: 1.6;
-  margin-bottom: var(--spacing-2);
+.vsIcon {
+  color: var(--mongodb-green-base);
+  flex-shrink: 0;
 }
 
-.tryItSection li:last-child {
-  margin-bottom: 0;
-}
-
-/* CTA */
-.cta {
+/* Call to Action */
+.callToAction {
   text-align: center;
   padding: var(--spacing-5);
-  background: var(--green-light3);
-  border: 2px solid var(--green-base);
+  background: linear-gradient(135deg, var(--mongodb-green-light3) 0%, var(--white) 100%);
+  border: 2px solid var(--mongodb-green-light2);
   border-radius: 8px;
-  margin-bottom: var(--spacing-4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-3);
 }
 
-.cta p {
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--green-dark2);
-  margin: 0;
-  letter-spacing: -0.01em;
+.callToAction svg {
+  color: var(--mongodb-green-dark2);
 }
 
-
-/* Responsive adjustments */
+/* Responsive Adjustments */
 @media (max-width: 768px) {
-  .showcase {
-    padding: var(--spacing-4);
+  .mainTitle {
+    font-size: 2rem;
   }
 
-  .header h2 {
+  .mainSubtitle {
+    font-size: 1rem;
+  }
+
+  .sectionTitle {
     font-size: 1.5rem;
   }
 
-  .subtitle {
-    font-size: 0.9375rem;
+  .documentGrid,
+  .collectionGrid,
+  .benefitsGrid,
+  .comparisonGrid {
+    grid-template-columns: 1fr;
   }
 
-  .featureHeader {
+  .comparisonRow {
     flex-direction: column;
-    align-items: flex-start;
   }
 
-  .expandButton {
-    align-self: flex-start;
-    margin-top: var(--spacing-2);
-  }
-
-  .codeBlock {
-    font-size: 0.75rem;
+  .vsIcon {
+    transform: rotate(90deg);
   }
 }

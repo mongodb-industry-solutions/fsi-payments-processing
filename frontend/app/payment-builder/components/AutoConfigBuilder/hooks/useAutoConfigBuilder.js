@@ -45,23 +45,23 @@ export function useAutoConfigBuilder() {
 
   // Start configuration generation
   const startGeneration = useCallback(async () => {
+    const startTime = Date.now();
+
     setState(prev => ({
       ...prev,
       generation: {
         ...prev.generation,
         status: 'generating',
         progress: 0,
-        currentStep: 'Initializing...',
-        error: null
-      },
-      journey: {
-        ...prev.journey,
-        activeTab: 'flow' // Auto-switch to flow tab
+        currentStep: 'Initializing generation engine...',
+        error: null,
+        startTime
       }
+      // Keep user on current tab - loading shows in right panel
     }));
 
     try {
-      // Simulate progress updates
+      // Simulate progress updates with more detailed steps
       const updateProgress = (progress, step) => {
         setState(prev => ({
           ...prev,
@@ -73,9 +73,16 @@ export function useAutoConfigBuilder() {
         }));
       };
 
-      updateProgress(10, 'Parsing sample message...');
+      updateProgress(5, 'Initializing generation engine...');
+      await new Promise(resolve => setTimeout(resolve, 300));
 
-      updateProgress(30, 'Detecting fields in source format...');
+      updateProgress(15, 'Parsing sample message structure...');
+      await new Promise(resolve => setTimeout(resolve, 400));
+
+      updateProgress(25, 'Extracting field definitions...');
+      await new Promise(resolve => setTimeout(resolve, 300));
+
+      updateProgress(35, 'Loading semantic pattern database...');
 
       // Call the actual auto-configure API (similarTo will be auto-detected by backend)
       const result = await paymentBuilderService.autoConfigureFormat(
@@ -84,9 +91,24 @@ export function useAutoConfigBuilder() {
         state.input.sampleMessage
       );
 
-      updateProgress(50, 'Applying semantic patterns...');
+      // Extract pattern and LLM counts from result
+      const patternCount = result.generation_metadata?.semantic_patterns_used?.length || 0;
+      const llmCount = result.generation_details?.statistics?.llm_calls || 0;
 
-      updateProgress(70, 'Generating field mappings...');
+      updateProgress(45, `Matching known patterns (${patternCount} patterns found)...`);
+      await new Promise(resolve => setTimeout(resolve, 400));
+
+      updateProgress(60, `Analyzing unknown fields with AI (${llmCount} LLM calls)...`);
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      updateProgress(75, 'Building field-to-field mappings...');
+      await new Promise(resolve => setTimeout(resolve, 300));
+
+      updateProgress(85, 'Calculating confidence scores...');
+      await new Promise(resolve => setTimeout(resolve, 300));
+
+      updateProgress(95, 'Validating configuration schema...');
+      await new Promise(resolve => setTimeout(resolve, 200));
 
       // Process the result into journey data using REAL generation_metadata
       const metadata = result.generation_metadata || {};

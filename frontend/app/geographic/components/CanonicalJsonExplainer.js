@@ -10,16 +10,20 @@ import styles from './CanonicalJsonExplainer.module.css';
 const CanonicalJsonExplainer = () => {
   const [activeExample, setActiveExample] = useState('mt103');
 
-  // Schema structure with all major sections
+  // Schema structure with all major sections (matching CANONICAL_JSON_FORMAT_SPECIFICATION.md)
   const schemaStructure = [
-    { section: 'header', description: 'Message metadata and control', icon: 'InfoWithCircle' },
+    { section: 'header', description: 'Message metadata and control information', icon: 'InfoWithCircle' },
     { section: 'transaction', description: 'Transaction identifiers and references', icon: 'Unlock' },
-    { section: 'parties', description: 'Debtor, creditor, and agent information', icon: 'Person' },
-    { section: 'amounts', description: 'All monetary values and currencies', icon: 'Charts' },
-    { section: 'dates', description: 'Value dates and timestamps', icon: 'Calendar' },
-    { section: 'remittance', description: 'Payment details and invoices', icon: 'Edit' },
-    { section: 'instructions', description: 'Processing and settlement instructions', icon: 'Megaphone' },
-    { section: 'charges', description: 'Fee and charge information', icon: 'CreditCard' },
+    { section: 'parties', description: 'Debtor, creditor, agents, and intermediaries', icon: 'Person' },
+    { section: 'amounts', description: 'Instructed, settlement, and equivalent amounts', icon: 'Charts' },
+    { section: 'dates', description: 'Value dates, execution dates, and timestamps', icon: 'Calendar' },
+    { section: 'remittance', description: 'Payment details, invoices, and references', icon: 'Edit' },
+    { section: 'instructions', description: 'Settlement and processing instructions', icon: 'Megaphone' },
+    { section: 'references', description: 'All reference numbers and identifiers', icon: 'Code' },
+    { section: 'charges', description: 'Charge details and bearer information', icon: 'CreditCard' },
+    { section: 'regulatory', description: 'Regulatory reporting and compliance', icon: 'University' },
+    { section: 'processing_metadata', description: 'Conversion process information', icon: 'Sparkle' },
+    { section: 'original_fields', description: 'Preserved source format fields', icon: 'ImportantWithCircle' },
   ];
 
   // Concrete examples showing the transformation
@@ -42,13 +46,25 @@ PHARMACEUTICAL SUPPLIES`,
       json: {
         parties: {
           debtor: {
-            account: "CH9300762011623852957",
             name: "SWISS PHARMA INTERNATIONAL AG",
-            address: "BAHNHOFSTRASSE 45, 8001 ZURICH"
+            account: {
+              identification: "CH9300762011623852957",
+              type: "IBAN",
+              currency: "CHF"
+            },
+            address: {
+              lines: [
+                "BAHNHOFSTRASSE 45",
+                "8001 ZURICH"
+              ]
+            }
           },
           creditor: {
-            account: "ZA123456789012345678901",
-            name: "SOUTH AFRICAN HEALTH SUPPLIES"
+            name: "SOUTH AFRICAN HEALTH SUPPLIES",
+            account: {
+              identification: "ZA123456789012345678901",
+              type: "IBAN"
+            }
           }
         },
         amounts: {
@@ -93,8 +109,15 @@ PHARMACEUTICAL SUPPLIES`,
         parties: {
           debtor: {
             name: "SWISS PHARMA AG",
-            account: "CH9300762011623852957",
-            organization_id: "CHE123456789"
+            account: {
+              identification: "CH9300762011623852957",
+              type: "IBAN",
+              currency: "CHF"
+            },
+            identification: {
+              type: "lei",
+              number: "CHE123456789"
+            }
           }
         },
         amounts: {
@@ -160,11 +183,6 @@ Field 43: Coffee Shop Downtown
       <div className={styles.whatIsSection}>
         <H2 className={styles.sectionTitle}>What is Canonical JSON?</H2>
         <Card className={styles.explanationCard}>
-          <Body>
-            Canonical JSON is a <strong>standardized JSON schema</strong> that serves as the universal intermediary
-            format in our payment conversion system. Instead of building direct conversions between every format pair
-            (MT103 → pacs.008, MT103 → ISO8583, etc.), we convert:
-          </Body>
           <div className={styles.conversionFlow}>
             <div className={styles.flowBox}>
               <Body><strong>Any Format</strong></Body>
@@ -181,10 +199,6 @@ Field 43: Coffee Shop Downtown
               <Body className={styles.flowLabel}>pacs.009, TARGET2, CHAPS...</Body>
             </div>
           </div>
-          <Body className={styles.benefitText}>
-            This approach reduces complexity from <strong>O(n²)</strong> direct mappings to <strong>O(2n)</strong> hub mappings,
-            while ensuring consistent data representation across all formats.
-          </Body>
         </Card>
       </div>
 
@@ -192,7 +206,7 @@ Field 43: Coffee Shop Downtown
       <div className={styles.schemaSection}>
         <H2 className={styles.sectionTitle}>Schema Structure</H2>
         <Subtitle className={styles.sectionSubtitle}>
-          The Canonical JSON schema organizes payment data into 8 core sections
+          The Canonical JSON schema organizes payment data into 12 core sections
         </Subtitle>
         <div className={styles.schemaGrid}>
           {schemaStructure.map((item) => (
@@ -318,53 +332,67 @@ Field 43: Coffee Shop Downtown
           <pre className={styles.fullSchemaCode}>
 {`{
   "header": {
-    "message_type": "...",
-    "message_id": "...",
-    "created_datetime": "..."
+    "message_type": "customer_transfer|fi_transfer|card_payment",
+    "message_id": "unique_message_identifier",
+    "creation_datetime": "2025-01-11T12:00:00Z",
+    "source_format": "MT103|pacs.008|ISO8583",
+    "priority": "normal|urgent|high"
   },
   "transaction": {
-    "end_to_end_id": "...",
-    "transaction_id": "...",
-    "instruction_id": "..."
+    "transaction_id": "unique_transaction_identifier",
+    "end_to_end_id": "end_to_end_reference",
+    "instruction_id": "instruction_reference",
+    "transaction_type": { "code": "CRED|DEBT|CHQB" }
   },
   "parties": {
     "debtor": {
-      "name": "...",
-      "account": "...",
-      "address": "...",
-      "organization_id": "..."
+      "name": "COMPANY NAME",
+      "account": {
+        "identification": "CH9300762011623852957",
+        "type": "IBAN",
+        "currency": "CHF"
+      },
+      "address": { "lines": [...] }
     },
-    "creditor": {
-      "name": "...",
-      "account": "...",
-      "address": "..."
-    },
-    "debtor_agent": { ... },
-    "creditor_agent": { ... }
+    "debtor_agent": { "bic": "...", "name": "..." },
+    "creditor": { "name": "...", "account": {...} },
+    "creditor_agent": { "bic": "...", "name": "..." }
   },
   "amounts": {
-    "instructed": {
-      "value": "...",
-      "currency": "..."
-    },
-    "interbank_settled": { ... }
+    "instructed": { "value": "125750.50", "currency": "USD" },
+    "settlement": { "value": "125750.50", "currency": "USD" },
+    "equivalent": { "value": "...", "currency": "..." }
   },
   "dates": {
-    "value_date": "...",
-    "acceptance_datetime": "..."
+    "value_date": "2024-12-15",
+    "execution_date": "2024-12-15"
   },
   "remittance": {
-    "unstructured": [...],
-    "structured": { ... }
+    "unstructured": ["Payment details..."],
+    "structured": { "invoice_number": "...", ... }
   },
   "instructions": {
-    "settlement_method": "...",
-    "clearing_channel": "...",
-    "priority": "..."
+    "settlement_method": "INDA|INGA|COVE",
+    "clearing_channel": "RTGS|BOOK"
+  },
+  "references": {
+    "message_reference": "...",
+    "payment_reference": "..."
   },
   "charges": {
-    "charge_bearer": "...",
-    "charges": [...]
+    "bearer": "SHAR|DEBT|CRED",
+    "details": [...]
+  },
+  "regulatory": {
+    "purpose_code": "...",
+    "reporting": {...}
+  },
+  "processing_metadata": {
+    "conversion_id": "...",
+    "lanes_used": {...}
+  },
+  "original_fields": {
+    "preserved_source_fields": {...}
   }
 }`}
           </pre>

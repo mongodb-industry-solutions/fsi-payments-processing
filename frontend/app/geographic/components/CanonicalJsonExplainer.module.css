@@ -6,6 +6,15 @@
   padding: var(--spacing-6);
   background: var(--white);
   overflow-y: auto;
+
+  /* Hide scrollbar */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.container::-webkit-scrollbar {
+  display: none;
 }
 
 /* Header Section - Similar to homepage hero */
