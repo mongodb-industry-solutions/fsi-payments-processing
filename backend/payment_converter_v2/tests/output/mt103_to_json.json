@@ -1,0 +1,20 @@
+{
+  "transaction_ref": "MED-CH-ZA-2024-001",
+  "bank_operation_code": "CRED",
+  "value_date": "241215",
+  "currency": "CHF",
+  "amount": "180000,00",
+  "debtor_account": "CH9300762011623852957",
+  "debtor_name": "",
+  "debtor_address": "",
+  "creditor_account": "ZA123456789012345678901",
+  "creditor_name": "",
+  "creditor_address": "",
+  "debtor_bank": "UBSWCHZH80A",
+  "charge_bearer": "SHA",
+  "payment_purpose": "INVOICE",
+  "invoice_number": "MED-ZA-2024-5678",
+  "details": [
+    "DATED 10.12.2024"
+  ]
+}

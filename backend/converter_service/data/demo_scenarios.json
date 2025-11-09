@@ -429,6 +429,254 @@
       ]
     },
     {
+      "id": "open_banking_uk",
+      "display_name": "🇬🇧 UK Open Banking Payment",
+      "description": "Transform legacy SWIFT to modern Open Banking API",
+      "icon": "🇬🇧",
+      "source_format": "MT103",
+      "target_format": "OpenBankingUK",
+      "message_template": "{1:F01${sender_bic}0000000000}{2:I103${receiver_bic}N}{4:\n:20:${reference}\n:23B:CRED\n:32A:${value_date}${currency}${amount},00\n:50K:/${sender_account}\n${sender_name}\n${sender_address}\n:52A:${sender_bank_bic}\n:53A:${receiver_bic}\n:59:/${beneficiary_account}\n${beneficiary_name}\n${beneficiary_address}\n:70:${remittance_info}\n:71A:SHA\n:72:${sender_to_receiver_info}\n-}",
+      "form_schema": {
+        "sections": [
+          {
+            "title": "UK Sender Details",
+            "fields": [
+              {
+                "id": "sender_name",
+                "label": "Your Name/Company",
+                "type": "text",
+                "placeholder": "Tech Solutions Ltd",
+                "required": true
+              },
+              {
+                "id": "sender_account",
+                "label": "Your Account (Sort Code + Account)",
+                "type": "text",
+                "placeholder": "11223344/12345678",
+                "required": true,
+                "helper_text": "Format: Sort Code/Account Number"
+              },
+              {
+                "id": "sender_address",
+                "label": "Your Address",
+                "type": "textarea",
+                "placeholder": "123 Oxford Street\nLondon W1D 2HX\nUNITED KINGDOM",
+                "required": true
+              },
+              {
+                "id": "sender_bic",
+                "label": "Your Bank BIC",
+                "type": "text",
+                "placeholder": "HSBCGB2LXXX",
+                "required": true,
+                "pattern": "[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?"
+              }
+            ]
+          },
+          {
+            "title": "UK Recipient Details",
+            "fields": [
+              {
+                "id": "beneficiary_name",
+                "label": "Recipient Name/Company",
+                "type": "text",
+                "placeholder": "ACME Retail Limited",
+                "required": true
+              },
+              {
+                "id": "beneficiary_account",
+                "label": "Recipient Account (UK Format)",
+                "type": "text",
+                "placeholder": "87654321/98765432",
+                "required": true,
+                "helper_text": "Format: Sort Code/Account or GB IBAN"
+              },
+              {
+                "id": "beneficiary_address",
+                "label": "Recipient Address",
+                "type": "textarea",
+                "placeholder": "456 Regent Street\nLondon W1B 5TF\nUNITED KINGDOM",
+                "required": true
+              },
+              {
+                "id": "receiver_bic",
+                "label": "Recipient Bank BIC",
+                "type": "text",
+                "placeholder": "BARCGB22XXX",
+                "required": true
+              }
+            ]
+          },
+          {
+            "title": "Payment Information",
+            "fields": [
+              {
+                "id": "amount",
+                "label": "Amount",
+                "type": "number",
+                "placeholder": "1500.00",
+                "required": true,
+                "min": 0,
+                "step": 0.01
+              },
+              {
+                "id": "currency",
+                "label": "Currency",
+                "type": "select",
+                "options": ["GBP", "EUR", "USD"],
+                "required": true,
+                "default": "GBP"
+              },
+              {
+                "id": "reference",
+                "label": "Payment Reference",
+                "type": "text",
+                "placeholder": "UK-PAY-2025-001",
+                "required": true
+              },
+              {
+                "id": "remittance_info",
+                "label": "Payment Purpose",
+                "type": "textarea",
+                "placeholder": "Invoice INV-2025-5678\nWebsite development services",
+                "required": true,
+                "helper_text": "Will be AI-processed for Open Banking format"
+              },
+              {
+                "id": "sender_to_receiver_info",
+                "label": "Additional Instructions",
+                "type": "textarea",
+                "placeholder": "/ACC/URGENT PROCESSING\n/REC/NOTIFY ACCOUNTS@COMPANY.CO.UK",
+                "required": false,
+                "helper_text": "Will be AI-processed for risk assessment"
+              }
+            ]
+          }
+        ]
+      },
+      "demo_values": {
+        "sender_name": "TECH SOLUTIONS LTD",
+        "sender_account": "11223344/12345678",
+        "sender_address": "123 OXFORD STREET\nLONDON W1D 2HX\nUNITED KINGDOM",
+        "sender_bic": "HSBCGB2LXXX",
+        "sender_bank_bic": "HSBCGB2LXXX",
+        "beneficiary_name": "ACME RETAIL LIMITED",
+        "beneficiary_account": "87654321/98765432",
+        "beneficiary_address": "456 REGENT STREET\nLONDON W1B 5TF\nUNITED KINGDOM",
+        "receiver_bic": "BARCGB22XXX",
+        "amount": "1500.00",
+        "currency": "GBP",
+        "reference": "UK-PAY-2025-001",
+        "value_date": "250116",
+        "remittance_info": "INVOICE INV-2025-5678 DATED 10.01.2025\nPAYMENT FOR WEBSITE DEVELOPMENT\nPROJECT CODE WEB-2025-001",
+        "sender_to_receiver_info": "/ACC/URGENT PROCESSING\n/REC/NOTIFY ACCOUNTS@ACMERETAIL.CO.UK\n/MCC/5967"
+      },
+      "demo_values_sets": [
+        {
+          "scenario_name": "E-commerce Payment - UK Domestic",
+          "values": {
+            "sender_name": "TECH SOLUTIONS LTD",
+            "sender_account": "11223344/12345678",
+            "sender_address": "123 OXFORD STREET\nLONDON W1D 2HX",
+            "sender_bic": "HSBCGB2LXXX",
+            "sender_bank_bic": "HSBCGB2LXXX",
+            "beneficiary_name": "ACME RETAIL LIMITED",
+            "beneficiary_account": "87654321/98765432",
+            "beneficiary_address": "456 REGENT STREET\nLONDON W1B 5TF",
+            "receiver_bic": "BARCGB22XXX",
+            "amount": "1500.00",
+            "currency": "GBP",
+            "reference": "UK-ECOM-2025-001",
+            "value_date": "250116",
+            "remittance_info": "INVOICE INV-2025-5678\nWEBSITE DEVELOPMENT SERVICES",
+            "sender_to_receiver_info": "/ACC/PRIORITY\n/MCC/5967"
+          }
+        },
+        {
+          "scenario_name": "Property Purchase - High Value",
+          "values": {
+            "sender_name": "PROPERTY INVESTMENTS PLC",
+            "sender_account": "GB29NWBK60161331926819",
+            "sender_address": "CANARY WHARF\nLONDON E14 5AB",
+            "sender_bic": "BARCGB22XXX",
+            "sender_bank_bic": "BARCGB22XXX",
+            "beneficiary_name": "ESTATE HOLDINGS LIMITED",
+            "beneficiary_account": "GB82WEST12345698765432",
+            "beneficiary_address": "KNIGHTSBRIDGE\nLONDON SW1X 7XL",
+            "receiver_bic": "HSBCGB2LXXX",
+            "amount": "350000.00",
+            "currency": "GBP",
+            "reference": "UK-CHAPS-2025-042",
+            "value_date": "250116",
+            "remittance_info": "PROPERTY PURCHASE\nREF: PROP-2025-KNIGHTSBRIDGE-001\nCOMPLETION PAYMENT",
+            "sender_to_receiver_info": "/CHAPS/HIGH VALUE PAYMENT"
+          }
+        },
+        {
+          "scenario_name": "Utility Bill Payment",
+          "values": {
+            "sender_name": "JOHN SMITH",
+            "sender_account": "12345678/87654321",
+            "sender_address": "45 RESIDENTIAL AVENUE\nMANCHESTER M1 1AA",
+            "sender_bic": "HSBCGB2LXXX",
+            "sender_bank_bic": "HSBCGB2LXXX",
+            "beneficiary_name": "BRITISH GAS UTILITY COMPANY",
+            "beneficiary_account": "09876543/21098765",
+            "beneficiary_address": "ENERGY BILLING DEPT\nLEICESTER LE1 1AA",
+            "receiver_bic": "LLOYGB2LXXX",
+            "amount": "245.50",
+            "currency": "GBP",
+            "reference": "UTIL-PAY-202501-789",
+            "value_date": "250116",
+            "remittance_info": "ACCOUNT NUMBER: 1234567890\nBILLING PERIOD: DEC 2024\nGAS AND ELECTRICITY CHARGES",
+            "sender_to_receiver_info": "/MCC/4900\n/CUST/ACCOUNT-1234567890"
+          }
+        }
+      ],
+      "possible_journeys": [
+        {
+          "id": "direct_open_banking",
+          "name": "Direct Open Banking Conversion",
+          "condition": "Standard UK domestic payment",
+          "description": "MT103 to Open Banking UK with AI extraction",
+          "route": ["MT103", "OpenBankingUK"],
+          "hops": [
+            {
+              "step": 1,
+              "from_format": "MT103",
+              "to_format": "OpenBankingUK",
+              "description": "Legacy SWIFT to modern Open Banking API",
+              "processing_time_ms": 2000,
+              "confidence": 0.88,
+              "lane_distribution": {
+                "rules": 60,
+                "ai": 35,
+                "human": 5
+              },
+              "fields_processed": 25,
+              "ai_fields": ["field_59", "field_70", "field_72"],
+              "ai_reasoning": "Extracting UK account format, remittance info, and risk assessment fields",
+              "mongodb_operations": [
+                {"type": "QUERY", "collection": "conversion_registry", "time_ms": 3},
+                {"type": "INSERT", "collection": "ai_processing_log", "time_ms": 5},
+                {"type": "UPDATE", "collection": "confidence_scores", "time_ms": 4}
+              ]
+            }
+          ],
+          "total_time_ms": 2000,
+          "total_fields": 25,
+          "success_rate": 97.5,
+          "human_review_probability": 0.10,
+          "showcase_features": [
+            "Legacy to modern transformation",
+            "AI-powered UK account extraction",
+            "Open Banking v4.0 compliance",
+            "3-lane processing architecture"
+          ]
+        }
+      ]
+    },
+    {
       "id": "bank_transfer",
       "display_name": "🏦 Bank-to-Bank Transfer",
       "description": "Transfer funds between financial institutions",

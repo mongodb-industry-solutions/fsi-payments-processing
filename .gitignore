@@ -11,10 +11,10 @@ by_claude/
 backend/converter_service/schemas/
 backend/converter_service/scripts
 backend/converter_service/tests
+backend/plans
 
 # Environments
 backend/converter_service_copy
-backend/payment_converter_v2
 .env
 .env*
 .venv
