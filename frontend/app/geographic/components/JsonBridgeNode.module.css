@@ -175,13 +175,13 @@
 
 .modalContent {
   background: white;
-  border-radius: 16px;
+  border-radius: 12px;
   width: 90%;
   max-width: 1200px;
   max-height: 85vh;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
   animation: slideUp 0.3s ease;
 }
 
@@ -200,80 +200,82 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 20px 24px;
-  border-bottom: 1px solid #e5e7eb;
+  padding: 16px 20px;
+  border-bottom: none;
   background: #00684A; /* palette.green.dark2 - header background */
-  border-radius: 16px 16px 0 0;
+  border-radius: 12px 12px 0 0;
   color: white;
 }
 
 .modalHeader h2 {
   margin: 0;
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 600;
   display: flex;
   align-items: center;
   gap: 10px;
+  color: white;
 }
 
 .closeButton {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
   background: rgba(255, 255, 255, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: none;
   color: white;
-  font-size: 18px;
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
+  font-size: 16px;
   cursor: pointer;
+  transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
+  flex-shrink: 0;
 }
 
 .closeButton:hover {
   background: rgba(255, 255, 255, 0.3);
-  transform: scale(1.1);
 }
 
 /* Tab Styles */
 .tabContainer {
   display: flex;
   gap: 0;
-  padding: 0 24px;
-  background: white;
+  background: #f9fafb;
   border-bottom: 1px solid #e5e7eb;
 }
 
 .tab {
-  padding: 12px 24px;
+  flex: 1;
+  padding: 12px 16px;
   background: transparent;
   border: none;
   border-bottom: 2px solid transparent;
   color: #5C6C75; /* palette.gray.dark1 - secondary text */
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
   position: relative;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
 }
 
 .tab:hover {
   color: #00684A; /* palette.green.dark2 */
-  background: #F9FBFA; /* palette.gray.light3 */
+  background: rgba(255, 255, 255, 0.5);
 }
 
 .activeTab {
   color: #00684A; /* palette.green.dark2 */
   border-bottom-color: #00684A;
-  background: transparent;
+  background: white;
 }
 
 .activeTab:hover {
-  background: transparent;
+  background: white;
 }
 
 .tabIcon {
@@ -282,11 +284,13 @@
 
 .modalBody {
   flex: 1;
-  padding: 24px;
+  padding: 20px;
   overflow-y: auto;
   display: flex;
   gap: 24px;
-  background: #f9fafb;
+  background: white;
+  max-height: calc(85vh - 120px);
+  min-height: 0;
 }
 
 .jsonSection {
@@ -352,10 +356,10 @@
 }
 
 .modalFooter {
-  padding: 16px 24px;
+  padding: 16px 20px;
   border-top: 1px solid #e5e7eb;
   background: white;
-  border-radius: 0 0 16px 16px;
+  border-radius: 0 0 12px 12px;
 }
 
 .info {
@@ -378,11 +382,11 @@
 }
 
 .configSection {
-  background: white;
+  background: #f9fafb;
   border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  padding: 20px;
-  margin-bottom: 20px;
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin-bottom: 16px;
 }
 
 /* Canonical JSON Explanation Styles */
@@ -749,10 +753,11 @@
 }
 
 .configSection h3 {
-  margin: 0 0 16px 0;
-  font-size: 16px;
+  margin: 0 0 12px 0;
+  font-size: 14px;
   font-weight: 600;
-  color: #1f2937;
+  color: #374151;
+  letter-spacing: 0.01em;
 }
 
 .bridgeFlow {
@@ -760,45 +765,48 @@
   align-items: center;
   justify-content: center;
   gap: 16px;
-  padding: 20px;
-  background: #f9fafb;
+  padding: 16px;
+  background: white;
   border-radius: 8px;
   margin-bottom: 12px;
+  border: 1px solid #e5e7eb;
 }
 
 .bridgeItem {
-  padding: 12px 20px;
-  background: white;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  font-size: 14px;
-  color: #374151;
+  padding: 10px 16px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #4b5563;
+  font-weight: 500;
 }
 
 .arrow {
-  font-size: 20px;
-  color: #10b981;
+  font-size: 18px;
+  color: #059669;
   font-weight: bold;
 }
 
 .bridgeDesc {
-  font-size: 14px;
+  font-size: 13px;
   color: #6b7280;
-  line-height: 1.5;
+  line-height: 1.6;
   margin: 0;
 }
 
 .mappingStats {
   display: flex;
   gap: 20px;
-  padding: 12px;
-  background: #f9fafb;
-  border-radius: 8px;
-  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: white;
+  border-radius: 6px;
+  margin-bottom: 12px;
+  border: 1px solid #e5e7eb;
 }
 
 .mappingStats span {
-  font-size: 13px;
+  font-size: 12px;
   color: #6b7280;
   font-weight: 500;
 }
@@ -806,108 +814,114 @@
 .mappingExamples {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
 }
 
 .mappingRow {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px;
-  background: #f9fafb;
+  gap: 10px;
+  padding: 10px 12px;
+  background: white;
   border-radius: 6px;
+  border: 1px solid #e5e7eb;
 }
 
 .mappingRow code {
-  font-family: 'Courier New', monospace;
+  font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
   font-size: 12px;
-  background: white;
+  background: #f9fafb;
   padding: 4px 8px;
   border-radius: 4px;
   border: 1px solid #e5e7eb;
-  color: #1f2937;
+  color: #374151;
+  font-weight: 500;
 }
 
 .aiLabel, .rulesLabel {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   border-radius: 6px;
-  font-size: 14px;
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .aiLabel {
-  background: #dbeafe;
-  color: #1e40af;
+  background: #EBF4FF;
+  color: #1D4ED8;
 }
 
 .rulesLabel {
-  background: #f3e8ff;
-  color: #6b21a8;
+  background: #F3E8FF;
+  color: #7C3AED;
 }
 
 .mappingArrow {
-  color: #10b981;
+  color: #059669;
   font-weight: bold;
+  font-size: 14px;
 }
 
 .metricsGrid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
+  gap: 12px;
 }
 
 .metric {
   text-align: center;
-  padding: 16px;
-  background: #f9fafb;
+  padding: 14px 12px;
+  background: white;
   border-radius: 8px;
+  border: 1px solid #e5e7eb;
 }
 
 .metricValue {
   display: block;
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 700;
-  color: #10b981;
+  color: #059669;
   margin-bottom: 4px;
 }
 
 .metricLabel {
   display: block;
-  font-size: 11px;
+  font-size: 10px;
   color: #6b7280;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  font-weight: 600;
 }
 
 .insightBox {
-  background: linear-gradient(135deg, #d4f4e7 0%, #e0f2e9 100%);
-  border: 1px solid #10b981;
-  border-radius: 12px;
-  padding: 20px;
+  background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%);
+  border: 1px solid #a7f3d0;
+  border-radius: 8px;
+  padding: 16px;
 }
 
 .insightBox h4 {
-  margin: 0 0 12px 0;
-  font-size: 16px;
+  margin: 0 0 10px 0;
+  font-size: 14px;
   font-weight: 600;
   color: #047857;
 }
 
 .insightBox p {
-  margin: 0 0 12px 0;
-  font-size: 14px;
-  color: #374151;
-  line-height: 1.5;
+  margin: 0 0 10px 0;
+  font-size: 13px;
+  color: #4b5563;
+  line-height: 1.6;
 }
 
 .impact {
-  font-size: 13px;
+  font-size: 12px;
   color: #6b7280;
-  padding-top: 12px;
-  border-top: 1px solid rgba(16, 185, 129, 0.2);
+  padding-top: 10px;
+  border-top: 1px solid #d1fae5;
 }
 
 /* Responsive adjustments */

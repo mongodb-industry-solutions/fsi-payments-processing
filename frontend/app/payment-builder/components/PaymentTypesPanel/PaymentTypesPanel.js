@@ -26,6 +26,19 @@ const PAYMENT_TYPES = [
     color: 'green'
   },
   {
+    id: 'open_banking_uk',
+    name: 'UK Open Banking Payment',
+    icon: <BankIcon />,
+    description: 'Legacy SWIFT to Open Banking API',
+    sourceFormat: 'MT103',
+    targetFormat: 'OpenBankingUK',
+    complexity: 'complex',
+    estimatedTime: '2-4s',
+    fields: 25,
+    mongoFeatures: ['AI Extraction', 'UK Account Format', '3-lane Processing'],
+    color: 'indigo'
+  },
+  {
     id: 'card_payment',
     name: 'Card Authorization',
     icon: <CardIcon />,
@@ -275,7 +288,7 @@ export default function PaymentTypesPanel({ selectedType, onSelectType, isCollap
       {!isCollapsed && (
         <div className={styles.footer}>
           <div className={styles.footerInfo}>
-            <strong>5</strong> payment scenarios
+            <strong>6</strong> payment scenarios
             <span className={styles.separator}>•</span>
             <strong>100%</strong> generic converter
           </div>

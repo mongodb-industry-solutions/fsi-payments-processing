@@ -14,26 +14,14 @@ export default function FocusControl({
     <div className={styles.controlBar}>
       <div className={styles.segmentedControl}>
         <button
-          className={`${styles.segment} ${focusedPanel === 'payment-details' ? styles.active : ''}`}
+          className={`${styles.segment} ${focusedPanel === 'payment-details' || focusedPanel === 'none' ? styles.active : ''}`}
           onClick={() => onFocusChange('payment-details')}
           title="Focus on Payment Details"
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
             <path d="M6 3L2 7L6 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
-          <span>{hasExecutionResult ? 'Preview' : 'Payment Details'}</span>
-        </button>
-
-        <button
-          className={`${styles.segment} ${styles.centerSegment} ${focusedPanel === 'none' ? styles.active : ''}`}
-          onClick={() => onFocusChange('none')}
-          title="Normal View"
-        >
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <rect x="2" y="3" width="5" height="10" rx="1" stroke="currentColor" strokeWidth="1.5"/>
-            <rect x="9" y="3" width="5" height="10" rx="1" stroke="currentColor" strokeWidth="1.5"/>
-          </svg>
-          <span>Normal View</span>
+          <span>{hasExecutionResult ? 'Preview' : 'Convert'}</span>
         </button>
 
         <button
@@ -41,7 +29,7 @@ export default function FocusControl({
           onClick={() => onFocusChange('journey')}
           title="Focus on Conversion Journey"
         >
-          <span>Conversion Journey</span>
+          <span>Details</span>
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
             <path d="M10 3L14 7L10 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>

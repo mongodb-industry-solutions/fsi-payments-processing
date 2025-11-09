@@ -1,0 +1,418 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 24px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.header {
+  text-align: center;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.header h3 {
+  margin: 0 0 8px 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.subtitle {
+  margin: 0;
+  font-size: 14px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.flowDiagram {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.stepContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.step {
+  width: 100%;
+  background: #f9fafb;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px;
+  transition: all 0.3s ease;
+}
+
+.step.active {
+  background: #ffffff;
+  border-color: #10b981;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+  transform: scale(1.02);
+}
+
+.step.completed {
+  background: #f0fdf4;
+  border-color: #10b981;
+  opacity: 0.9;
+}
+
+.stepHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.stepIcon {
+  font-size: 24px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  border-radius: 8px;
+  border: 2px solid #e5e7eb;
+  flex-shrink: 0;
+}
+
+.step.active .stepIcon {
+  border-color: #10b981;
+  animation: iconPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes iconPulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+.stepInfo {
+  flex: 1;
+}
+
+.stepInfo h4 {
+  margin: 0 0 4px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.stepInfo p {
+  margin: 0;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.stepStatus {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.checkmark {
+  font-size: 20px;
+  color: #10b981;
+  font-weight: bold;
+}
+
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #e5e7eb;
+  border-top-color: #10b981;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.arrow {
+  width: 24px;
+  height: 24px;
+  margin: 8px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Lane Content Styles */
+.laneContent {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #e5e7eb;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fieldsList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fieldItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+  transition: all 0.2s ease;
+}
+
+.fieldItem.fieldCompleted {
+  background: #f0fdf4;
+  border-color: #10b981;
+}
+
+.fieldDot {
+  color: #7C3AED;
+  font-weight: bold;
+  font-size: 16px;
+}
+
+.fieldName {
+  flex: 1;
+  font-size: 13px;
+  color: #374151;
+  font-weight: 500;
+}
+
+.fieldCheck {
+  color: #10b981;
+  font-weight: bold;
+  font-size: 16px;
+}
+
+.fieldSpinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid #e5e7eb;
+  border-top-color: #10b981;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+/* AI Field Styles */
+.aiFieldItem {
+  padding: 12px;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  transition: all 0.2s ease;
+}
+
+.aiFieldItem.fieldCompleted {
+  background: #eff6ff;
+  border-color: #1D4ED8;
+}
+
+.aiFieldHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.aiFieldName {
+  font-size: 14px;
+  color: #1f2937;
+  font-weight: 600;
+}
+
+.aiFieldDetails {
+  margin: 0;
+  font-size: 12px;
+  color: #6b7280;
+  font-style: italic;
+}
+
+.aiThinking {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 8px;
+  background: #f0f9ff;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #1D4ED8;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* Human Lane Styles */
+.humanApproved {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: #ecfdf5;
+  border-radius: 8px;
+  border: 1px solid #10b981;
+}
+
+.approvedIcon {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #10b981;
+  color: white;
+  border-radius: 50%;
+  font-weight: bold;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.humanApproved p {
+  margin: 0;
+  font-size: 13px;
+  color: #047857;
+  font-weight: 500;
+}
+
+/* Build Progress Styles */
+.buildProgress {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.buildSteps {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.buildStep {
+  font-size: 12px;
+  color: #6b7280;
+  padding: 6px 12px;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+}
+
+/* Progress Bar */
+.progressBar {
+  width: 100%;
+  height: 6px;
+  background: #e5e7eb;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: 8px;
+}
+
+.progressFill {
+  height: 100%;
+  background: #10b981;
+  transition: width 0.3s ease;
+  border-radius: 3px;
+}
+
+/* Summary Stats */
+.summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  padding-top: 24px;
+  border-top: 2px solid #e5e7eb;
+}
+
+.stat {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.statIcon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.statInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.statValue {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.statLabel {
+  font-size: 11px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .container {
+    padding: 16px;
+    gap: 16px;
+  }
+
+  .summary {
+    grid-template-columns: 1fr;
+  }
+
+  .stepInfo h4 {
+    font-size: 14px;
+  }
+
+  .stepInfo p {
+    font-size: 12px;
+  }
+}

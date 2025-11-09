@@ -53,6 +53,37 @@
   color: var(--gray-base);
 }
 
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.registryButton {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-3);
+  background: var(--green-dark1);
+  color: var(--white);
+  border: none;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 200ms ease;
+}
+
+.registryButton:hover {
+  background: var(--green-dark2);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 104, 74, 0.2);
+}
+
+.registryButton span {
+  font-size: 0.875rem;
+}
+
 .closeButton {
   width: 32px;
   height: 32px;

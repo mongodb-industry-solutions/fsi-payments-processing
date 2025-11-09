@@ -86,7 +86,7 @@ const EnhancedCountryNode = ({ data, selected }) => {
           <div className={styles.bridgeInfo}>
             <p className={styles.bridgeText}>Universal Bridge</p>
             <div className={styles.bridgeStats}>
-              <span>100% Generic</span>
+              <span>Generic</span>
               <span>Zero Code</span>
             </div>
           </div>

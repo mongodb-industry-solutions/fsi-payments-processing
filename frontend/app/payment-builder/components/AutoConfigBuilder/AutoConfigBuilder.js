@@ -4,12 +4,15 @@ import { useState, useEffect } from 'react';
 import Icon from '@leafygreen-ui/icon';
 import styles from './AutoConfigBuilder.module.css';
 import ConfigJourney from './components/ConfigJourney/ConfigJourney';
+import RegistryViewer from './components/RegistryViewer/RegistryViewer';
 import { useAutoConfigBuilder } from './hooks/useAutoConfigBuilder';
 
 export default function AutoConfigBuilder({
   onClose,
   embedded = false
 }) {
+  const [showRegistry, setShowRegistry] = useState(false);
+
   const {
     state,
     updateInput,
@@ -37,12 +40,28 @@ export default function AutoConfigBuilder({
           <h2>Auto-Configuration Builder</h2>
           <p>Generate intelligent payment format configurations</p>
         </div>
-        {!embedded && (
-          <button className={styles.closeButton} onClick={onClose} aria-label="Close">
-            <Icon glyph="X" size="small" />
+        <div className={styles.headerActions}>
+          <button
+            className={styles.registryButton}
+            onClick={() => setShowRegistry(true)}
+            aria-label="View Registry"
+          >
+            <Icon glyph="Database" />
+            <span>View Registry</span>
           </button>
-        )}
+          {!embedded && (
+            <button className={styles.closeButton} onClick={onClose} aria-label="Close">
+              <Icon glyph="X" size="small" />
+            </button>
+          )}
+        </div>
       </div>
+
+      {/* Registry Viewer Modal */}
+      <RegistryViewer
+        isOpen={showRegistry}
+        onClose={() => setShowRegistry(false)}
+      />
 
       {/* Main Content Area */}
       <div className={styles.mainContent}>

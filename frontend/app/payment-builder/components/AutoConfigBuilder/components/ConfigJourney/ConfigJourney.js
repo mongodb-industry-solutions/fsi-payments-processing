@@ -10,6 +10,7 @@ import ConfigurationEditor from '../ConfigurationEditor/ConfigurationEditor';
 import RegistryConsole from '../RegistryConsole/RegistryConsole';
 import ConfigInput from '../ConfigInput/ConfigInput';
 import GenerationProgress from '../GenerationProgress/GenerationProgress';
+import { getTargetFormatExample, hasTargetFormatExample } from '../../data/targetFormatExamples';
 import styles from './ConfigJourney.module.css';
 
 // Custom LeafyGreen-inspired syntax highlighting theme
@@ -277,6 +278,7 @@ export default function ConfigJourney({
 
   // State for Output tab field breakdown visibility
   const [showBreakdown, setShowBreakdown] = useState(false);
+  const [showConfigExplainer, setShowConfigExplainer] = useState(false);
   const tabs = [
     { id: 'flow', label: 'Flow', icon: '', count: generation?.steps?.length || 0 },
     { id: 'configuration', label: 'Configuration', icon: '', count: null }
@@ -1678,13 +1680,43 @@ export default function ConfigJourney({
   };
 
   const renderValidationTab = () => {
-    // Show loading state
+    // Show loading state with enhanced animation
     if (validation?.loading) {
       return (
         <div className={styles.validationContainer}>
-          <div className={styles.loadingState}>
-            <div className={styles.spinner} />
-            <div className={styles.loadingText}>Validating Configuration...</div>
+          <div className={styles.validationLoadingState}>
+            <div className={styles.validationLoadingAnimation}>
+              <div className={styles.validationCheckIcon}>
+                <Icon glyph="Checkmark" size="xlarge" />
+              </div>
+              <div className={styles.validationLoadingRings}>
+                <div className={styles.validationRing}></div>
+                <div className={styles.validationRing}></div>
+                <div className={styles.validationRing}></div>
+              </div>
+            </div>
+            <div className={styles.validationLoadingTitle}>Validating Configuration</div>
+            <div className={styles.validationLoadingDescription}>
+              Checking schema compliance, required fields, and data types...
+            </div>
+            <div className={styles.validationLoadingSteps}>
+              <div className={styles.validationStep}>
+                <div className={styles.stepDot}></div>
+                <span>Verifying document structure</span>
+              </div>
+              <div className={styles.validationStep}>
+                <div className={styles.stepDot}></div>
+                <span>Validating parser configuration</span>
+              </div>
+              <div className={styles.validationStep}>
+                <div className={styles.stepDot}></div>
+                <span>Checking field mappings</span>
+              </div>
+              <div className={styles.validationStep}>
+                <div className={styles.stepDot}></div>
+                <span>Validating builder template</span>
+              </div>
+            </div>
           </div>
         </div>
       );
@@ -1695,12 +1727,12 @@ export default function ConfigJourney({
       return (
         <div className={styles.validationContainer}>
           <div className={styles.validationEmptyState}>
-            <div className={styles.emptyStateIcon}>
-              <Icon glyph="Checkmark" size="xlarge" />
+            <div className={styles.emptyStateIconPending}>
+              <Icon glyph="ImportantWithCircle" size="xlarge" />
             </div>
-            <div className={styles.emptyStateTitle}>Ready for Validation</div>
+            <div className={styles.emptyStateTitle}>Validation Not Run</div>
             <div className={styles.emptyStateDescription}>
-              Click "Run Validation" to check this configuration against the MongoDB schema
+              This configuration has not been validated yet. Click "Run Validation" to check it against the MongoDB schema and ensure all required fields are present.
             </div>
             <button className={styles.validateButton} onClick={onValidate}>
               <Icon glyph="Play" size="small" />
@@ -1837,6 +1869,19 @@ export default function ConfigJourney({
             </div>
           </div>
         </div>
+
+        {/* Success State - No Problems */}
+        {validation.valid && validation.errors?.length === 0 && validation.warnings?.length === 0 && (
+          <div className={styles.successState}>
+            <div className={styles.successIcon}>
+              <Icon glyph="Checkmark" size="xlarge" />
+            </div>
+            <div className={styles.successTitle}>Configuration Validated Successfully!</div>
+            <div className={styles.successDescription}>
+              All validation checks passed. This configuration is ready to be saved to production.
+            </div>
+          </div>
+        )}
 
         {/* Validation Checks */}
         <div className={styles.validationResults}>
@@ -2340,6 +2385,13 @@ export default function ConfigJourney({
           <div className={styles.outputActions}>
             <button
               className={styles.outputButton}
+              onClick={() => setShowConfigExplainer(!showConfigExplainer)}
+            >
+              <Icon glyph="InfoWithCircle" size="small" />
+              Explain Config
+            </button>
+            <button
+              className={styles.outputButton}
               onClick={() => navigator.clipboard.writeText(JSON.stringify(output, null, 2))}
             >
               Copy
@@ -2347,6 +2399,162 @@ export default function ConfigJourney({
             <button className={styles.outputButton}>Download</button>
           </div>
         </div>
+
+        {/* Configuration Explainer Section */}
+        {showConfigExplainer && (
+          <div className={styles.configExplainer}>
+            <div className={styles.explainerHeader}>
+              <Icon glyph="University" size="large" />
+              <h3>Understanding the MongoDB Configuration Document</h3>
+            </div>
+
+            <div className={styles.explainerContent}>
+              <p className={styles.explainerIntro}>
+                This configuration document is stored in MongoDB's <code>conversion_registry</code> collection
+                and contains all the information needed to convert from <strong>{state.input.source_format}</strong> to <strong>{state.input.target_format}</strong>.
+              </p>
+
+              <div className={styles.explainerSection}>
+                <div className={styles.explainerSectionHeader}>
+                  <Icon glyph="Megaphone" size="small" />
+                  <h4>Document Structure Overview</h4>
+                </div>
+                <div className={styles.explainerBlocks}>
+                  <div className={styles.explainerBlock}>
+                    <div className={styles.blockHeader}>
+                      <code>_id</code>
+                      <Badge variant="lightgray">string</Badge>
+                    </div>
+                    <p>Unique identifier for this conversion (format: SOURCE_to_TARGET)</p>
+                  </div>
+
+                  <div className={styles.explainerBlock}>
+                    <div className={styles.blockHeader}>
+                      <code>source_format</code> & <code>target_format</code>
+                      <Badge variant="lightgray">string</Badge>
+                    </div>
+                    <p>Defines the conversion direction (e.g., MT103 → pacs.008)</p>
+                  </div>
+
+                  <div className={styles.explainerBlock}>
+                    <div className={styles.blockHeader}>
+                      <code>parser</code>
+                      <Badge variant="blue">critical</Badge>
+                    </div>
+                    <p><strong>Extracts fields from source format</strong></p>
+                    <ul>
+                      <li><code>parser.fields</code> – Regex patterns to extract each field (e.g., field 20, 32A, 50K)</li>
+                      <li><code>parser.metadata</code> – Header extraction rules (block 1, block 2)</li>
+                    </ul>
+                  </div>
+
+                  <div className={styles.explainerBlock}>
+                    <div className={styles.blockHeader}>
+                      <code>mappings</code>
+                      <Badge variant="green">critical</Badge>
+                    </div>
+                    <p><strong>Transforms extracted fields to target format</strong></p>
+                    <ul>
+                      <li><code>source</code> – Field ID from parser (e.g., "20", "32A.amount")</li>
+                      <li><code>targets</code> – Destination path(s) in target format</li>
+                      <li><code>transform</code> – Optional transformation (e.g., date_format, currency_code)</li>
+                      <li><code>processing_lane</code> – RULES (deterministic) or AI (LLM-based)</li>
+                    </ul>
+                    <div className={styles.laneExplainer}>
+                      <div><span className={styles.laneDot} style={{backgroundColor: 'var(--green-dark1)'}}></span><strong>RULES Lane:</strong> Direct field mappings (80-85% of fields)</div>
+                      <div><span className={styles.laneDot} style={{backgroundColor: 'var(--purple-dark1)'}}></span><strong>AI Lane:</strong> Complex extraction using LLMs (10-15% of fields)</div>
+                      <div><span className={styles.laneDot} style={{backgroundColor: 'var(--yellow-dark1)'}}></span><strong>HUMAN Lane:</strong> Low-confidence review (&lt;5% of fields)</div>
+                    </div>
+                  </div>
+
+                  <div className={styles.explainerBlock}>
+                    <div className={styles.blockHeader}>
+                      <code>builder</code>
+                      <Badge variant="blue">critical</Badge>
+                    </div>
+                    <p><strong>Constructs the target format output</strong></p>
+                    <ul>
+                      <li><code>template</code> – Target format structure (XML/JSON)</li>
+                      <li><code>output_format</code> – "xml" or "json"</li>
+                      <li><code>namespaces</code> – XML namespace definitions (if applicable)</li>
+                    </ul>
+                  </div>
+
+                  <div className={styles.explainerBlock}>
+                    <div className={styles.blockHeader}>
+                      <code>ai_config</code>
+                      <Badge variant="purple">optional</Badge>
+                    </div>
+                    <p><strong>AI processing instructions</strong></p>
+                    <ul>
+                      <li><code>field_types</code> – Prompt templates for AI extraction</li>
+                      <li><code>model</code> – AWS Bedrock model ID (e.g., claude-3-haiku)</li>
+                      <li><code>confidence_threshold</code> – Minimum confidence for auto-approval</li>
+                    </ul>
+                  </div>
+
+                  <div className={styles.explainerBlock}>
+                    <div className={styles.blockHeader}>
+                      <code>metadata</code>
+                      <Badge variant="lightgray">info</Badge>
+                    </div>
+                    <p>Creation timestamp, version, confidence scores, and generation method</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className={styles.explainerSection}>
+                <div className={styles.explainerSectionHeader}>
+                  <Icon glyph="Refresh" size="small" />
+                  <h4>How Conversion Works (3-Lane Processing)</h4>
+                </div>
+                <ol className={styles.conversionSteps}>
+                  <li>
+                    <strong>Parse:</strong> Extract fields from source message using <code>parser.fields</code> regex patterns
+                  </li>
+                  <li>
+                    <strong>Transform:</strong> Apply <code>mappings</code> through 3 lanes:
+                    <ul>
+                      <li><strong>RULES Lane:</strong> Deterministic field mappings (fast, 80-85%)</li>
+                      <li><strong>AI Lane:</strong> LLM extraction for complex fields (1-3s, 10-15%)</li>
+                      <li><strong>HUMAN Lane:</strong> Manual review for low-confidence (&lt;5%)</li>
+                    </ul>
+                  </li>
+                  <li>
+                    <strong>Build:</strong> Construct target format output using <code>builder.template</code>
+                  </li>
+                </ol>
+              </div>
+
+              <div className={styles.explainerSection}>
+                <div className={styles.explainerSectionHeader}>
+                  <Icon glyph="Key" size="small" />
+                  <h4>Key Principles</h4>
+                </div>
+                <div className={styles.principlesList}>
+                  <div className={styles.principleItem}>
+                    <Icon glyph="Checkmark" size="small" />
+                    <div>
+                      <strong>Generic:</strong> New formats require NO code changes – only MongoDB configuration
+                    </div>
+                  </div>
+                  <div className={styles.principleItem}>
+                    <Icon glyph="Checkmark" size="small" />
+                    <div>
+                      <strong>Self-Learning:</strong> System learns patterns from existing configs to auto-generate new ones
+                    </div>
+                  </div>
+                  <div className={styles.principleItem}>
+                    <Icon glyph="Checkmark" size="small" />
+                    <div>
+                      <strong>Production-Ready:</strong> Includes confidence scoring, human review workflow, and processing statistics
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
         <div className={styles.outputContent}>
           <SyntaxHighlighter
             language="json"
@@ -2431,6 +2639,130 @@ export default function ConfigJourney({
           />
         )}
       </>
+    );
+  };
+
+  const renderTargetFormatTab = () => {
+    // Check if we have configuration generated
+    if (!output || generation?.status !== 'complete') {
+      return (
+        <div className={styles.emptyStateContainer}>
+          <div className={styles.emptyStateIcon}>
+            <Icon glyph="InfoWithCircle" size="xlarge" />
+          </div>
+          <div className={styles.emptyStateTitle}>Target Format Preview Not Available</div>
+          <div className={styles.emptyStateDescription}>
+            Generate a configuration first to see the expected target format output
+          </div>
+        </div>
+      );
+    }
+
+    // Get source and target formats from input or output
+    const sourceFormat = inputConfig?.sourceFormat || output?.source_format;
+    const targetFormat = inputConfig?.targetFormat || output?.target_format;
+
+    // Check if we have a hardcoded example for this conversion
+    const targetExample = getTargetFormatExample(sourceFormat, targetFormat);
+
+    if (!targetExample) {
+      return (
+        <div className={styles.emptyStateContainer}>
+          <div className={styles.emptyStateIcon}>
+            <Icon glyph="InfoWithCircle" size="xlarge" />
+          </div>
+          <div className={styles.emptyStateTitle}>Target Format Example Not Available</div>
+          <div className={styles.emptyStateDescription}>
+            Target format preview is available for: MT103→pacs.008, MT202→pacs.009, MT205→pacs.009, ISO8583_0200→cain.001, pacs.008→TARGET2, MT103→JSON, MT202→JSON
+          </div>
+        </div>
+      );
+    }
+
+    // Determine language for syntax highlighting
+    const getLanguage = (format) => {
+      if (format.includes('pacs') || format.includes('pain') || format.includes('cain') || format.includes('camt')) {
+        return 'xml';
+      }
+      if (format === 'JSON') {
+        return 'json';
+      }
+      return 'text';
+    };
+
+    const language = getLanguage(targetFormat);
+
+    return (
+      <div className={styles.targetFormatContainer}>
+        {/* Header */}
+        <div className={styles.targetFormatHeader}>
+          <div className={styles.headerLeft}>
+            <Icon glyph="Code" size="large" />
+            <div>
+              <h3 className={styles.targetFormatTitle}>Expected Target Format Output</h3>
+              <p className={styles.targetFormatSubtitle}>{targetExample.description}</p>
+            </div>
+          </div>
+          <div className={styles.conversionBadges}>
+            <Badge variant="blue">{sourceFormat}</Badge>
+            <Icon glyph="ArrowRight" />
+            <Badge variant="green">{targetFormat}</Badge>
+          </div>
+        </div>
+
+        {/* Info Banner */}
+        <div className={styles.targetFormatInfo}>
+          <Icon glyph="InfoWithCircle" size="small" />
+          <span>
+            This is the expected output when converting the source message using the generated configuration.
+            {targetFormat === 'JSON' && ' This canonical JSON format can be used for multi-hop conversions.'}
+          </span>
+        </div>
+
+        {/* Target Format Output */}
+        <div className={styles.targetFormatOutput}>
+          <div className={styles.outputHeader}>
+            <span className={styles.outputLabel}>Target Format: {targetFormat}</span>
+            <button
+              className={styles.copyButton}
+              onClick={() => {
+                navigator.clipboard.writeText(targetExample.expectedOutput);
+              }}
+              title="Copy to clipboard"
+            >
+              <Icon glyph="Copy" size="small" />
+              Copy
+            </button>
+          </div>
+          <div className={styles.codeBlock}>
+            <SyntaxHighlighter
+              language={language}
+              style={leafyGreenTheme}
+              customStyle={{
+                margin: 0,
+                padding: '16px',
+                fontSize: '13px',
+                lineHeight: '1.6',
+                background: '#F9FBFA',
+                borderRadius: '0 0 6px 6px'
+              }}
+              showLineNumbers={true}
+            >
+              {targetExample.expectedOutput}
+            </SyntaxHighlighter>
+          </div>
+        </div>
+
+        {/* Conversion Notes */}
+        {targetFormat === 'JSON' && (
+          <div className={styles.conversionNotes}>
+            <Icon glyph="ImportantWithCircle" size="small" />
+            <div>
+              <strong>Multi-Hop Routing:</strong> This canonical JSON format enables conversions between any payment formats through an intermediate step. For example: MT103 → JSON → TARGET2
+            </div>
+          </div>
+        )}
+      </div>
     );
   };
 
@@ -2673,6 +3005,8 @@ export default function ConfigJourney({
         return renderFlowTab();
       case 'configuration':
         return renderConfigurationTab();  // Handles its own loading state
+      case 'target':
+        return renderTargetFormatTab();
       default:
         return renderEmptyState();
     }
@@ -2703,7 +3037,13 @@ export default function ConfigJourney({
           className={`${styles.leafyTab} ${activeTab === 'configuration' ? styles.leafyTabActive : ''}`}
           onClick={() => onTabChange('configuration')}
         >
-          Configuration
+          Validate and Save
+        </button>
+        <button
+          className={`${styles.leafyTab} ${activeTab === 'target' ? styles.leafyTabActive : ''}`}
+          onClick={() => onTabChange('target')}
+        >
+          Target Format
         </button>
       </div>
 

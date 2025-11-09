@@ -185,7 +185,30 @@ export default function UnifiedFlowView({
                           <div className={styles.jsonLine}>
                             <span className={styles.jsonKey}>"{childKey}"</span>
                             <span className={styles.jsonColon}>: </span>
-                            {renderJsonValue(childValue)}
+                            {Array.isArray(childValue) ? (
+                              childValue.length === 0 ? (
+                                <span className={styles.jsonBracket}>[]</span>
+                              ) : (
+                                <>
+                                  <span className={styles.jsonBracket}>[</span>
+                                  <div className={styles.jsonChildren}>
+                                    {childValue.map((arrItem, arrIdx) => (
+                                      <div key={arrIdx} style={{ marginLeft: `${(level + 3) * 20}px` }}>
+                                        {typeof arrItem === 'string' ? (
+                                          <span className={styles.jsonString}>"{arrItem}"</span>
+                                        ) : (
+                                          renderJsonValue(arrItem)
+                                        )}
+                                        {arrIdx < childValue.length - 1 && <span className={styles.jsonComma}>,</span>}
+                                      </div>
+                                    ))}
+                                  </div>
+                                  <span className={styles.jsonBracket} style={{ marginLeft: `${(level + 2) * 20}px` }}>]</span>
+                                </>
+                              )
+                            ) : (
+                              renderJsonValue(childValue)
+                            )}
                           </div>
                         </div>
                       ))}

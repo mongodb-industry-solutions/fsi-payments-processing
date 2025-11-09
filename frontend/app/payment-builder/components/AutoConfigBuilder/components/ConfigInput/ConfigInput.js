@@ -116,7 +116,7 @@ export default function ConfigInput({
   onGenerate
 }) {
   const [selectedScenario, setSelectedScenario] = useState('mt205_pacs009');
-  const [isCustomMode, setIsCustomMode] = useState(false);
+  const [isCustomMode, setIsCustomMode] = useState(true); // Default to Custom Format mode
   const [showMessageBrowser, setShowMessageBrowser] = useState(false);
   const [validation, setValidation] = useState({
     isValid: false,

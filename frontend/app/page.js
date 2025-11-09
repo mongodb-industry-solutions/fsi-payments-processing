@@ -23,7 +23,7 @@ export default function Home() {
           Self-Improving Payment Format Converter
         </H1>
         <Subtitle className={styles.subtitle}>
-          Document-driven, low-code integration. Intelligent learning. Universal compatibility.
+          Document-driven. Intelligent learning. Universal compatibility.
         </Subtitle>
 
         <div className={styles.badges}>
@@ -53,10 +53,10 @@ export default function Home() {
           </Body>
           <div className={styles.metric}>
             <span className={styles.metricValue}>Document Driven</span>
-            <span className={styles.metricLabel}>Low Code Integration</span>
+            <span className={styles.metricLabel}>Less Code Integration</span>
           </div>
           <div className={styles.badgeWrapper}>
-            <Badge variant="green">100% Generic</Badge>
+            <Badge variant="green">Generic</Badge>
           </div>
         </Card>
 

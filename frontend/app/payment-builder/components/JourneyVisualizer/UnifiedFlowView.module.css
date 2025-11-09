@@ -94,21 +94,23 @@
 .jsonDocument {
   background: var(--white);
   padding: 20px;
-  font-family: 'Courier New', monospace;
-  font-size: 13px;
-  line-height: 1.6;
+  font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+  font-size: 14px;
+  line-height: 1.8;
   overflow-x: auto;
   border: 1px solid var(--gray-light2);
   border-top: none;
+  color: var(--gray-dark3);
 }
 
 .jsonNode {
-  margin: 2px 0;
+  margin: 4px 0;
 }
 
 .jsonLine {
   display: inline-flex;
   align-items: center;
+  min-height: 24px;
 }
 
 .jsonToggle {
@@ -126,41 +128,57 @@
 
 .jsonKey {
   color: var(--blue-dark1); /* Blue for keys - palette.blue.dark1 */
+  font-weight: 600;
+  font-size: 14px;
 }
 
 .mongoSystemField {
   color: var(--yellow-dark2); /* Yellow for system fields - palette.yellow.dark2 */
-  font-weight: 600;
+  font-weight: 700;
+  font-size: 14px;
 }
 
 .jsonColon {
-  color: var(--black); /* Default text color */
-  margin: 0 4px;
+  color: var(--gray-dark1); /* Default text color */
+  margin: 0 6px;
+  font-weight: 500;
 }
 
 .jsonString {
   color: var(--green-dark2); /* Green for strings - palette.green.dark2 */
+  font-size: 14px;
+  word-break: break-word;
+  max-width: 600px;
+  display: inline-block;
 }
 
 .jsonNumber {
   color: var(--blue-base); /* Blue for numbers - palette.blue.base */
+  font-weight: 600;
+  font-size: 14px;
 }
 
 .jsonBoolean {
   color: var(--green-dark2); /* Green for booleans - palette.green.dark2 */
+  font-weight: 600;
+  font-size: 14px;
 }
 
 .jsonNull {
   color: var(--gray-dark1); /* Gray for null - palette.gray.dark1 */
+  font-style: italic;
+  font-size: 14px;
 }
 
 .jsonBracket {
-  color: var(--black); /* Default text color */
-  font-weight: 600;
+  color: var(--gray-dark2); /* Default text color */
+  font-weight: 700;
+  font-size: 14px;
 }
 
 .jsonComma {
-  color: var(--black); /* Default text color */
+  color: var(--gray-dark1); /* Default text color */
+  margin-left: 2px;
 }
 
 .jsonChildren {

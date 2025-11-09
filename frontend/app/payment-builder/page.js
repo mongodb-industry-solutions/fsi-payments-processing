@@ -159,7 +159,7 @@ export default function PaymentBuilder() {
             />
           )}
 
-          {/* Conditionally show AutoConfigBuilder or BuilderCanvas */}
+          {/* Conditionally show AutoConfigBuilder or BuilderCanvas or JourneyVisualizer */}
           {selectedPaymentType?.isAutoConfig ? (
             <AutoConfigBuilder
               embedded={true}
@@ -168,27 +168,8 @@ export default function PaymentBuilder() {
                 setAutoConfigScenario(null);
               }}
             />
-          ) : (
-            /* Only show BuilderCanvas when not focusing on journey */
-            focusedPanel !== 'journey' && (
-              <BuilderCanvas
-                selectedPaymentType={selectedPaymentType}
-                isProcessing={isProcessing}
-                onExecute={handleExecute}
-                onExecutionComplete={handleExecutionComplete}
-                formData={formData}
-                setFormData={setFormData}
-                isFormCollapsed={isFormCollapsed}
-                onToggleFormCollapse={toggleFormCollapse}
-                focusedPanel={focusedPanel}
-                convertedMessage={convertedMessage}
-                setConvertedMessage={setConvertedMessage}
-              />
-            )
-          )}
-
-          {/* Journey Visualizer - or Config Progress for auto-config */}
-          {selectedPaymentType && !selectedPaymentType.isAutoConfig && (
+          ) : focusedPanel === 'journey' ? (
+            /* Only show Journey Visualizer when focused on journey */
             <JourneyVisualizer
               paymentType={selectedPaymentType}
               isProcessing={isProcessing}
@@ -199,6 +180,36 @@ export default function PaymentBuilder() {
               formData={formData}
               convertedMessage={convertedMessage}
               focusedPanel={focusedPanel}
+            />
+          ) : focusedPanel === 'payment-details' ? (
+            /* Only show BuilderCanvas when focused on payment details */
+            <BuilderCanvas
+              selectedPaymentType={selectedPaymentType}
+              isProcessing={isProcessing}
+              onExecute={handleExecute}
+              onExecutionComplete={handleExecutionComplete}
+              formData={formData}
+              setFormData={setFormData}
+              isFormCollapsed={isFormCollapsed}
+              onToggleFormCollapse={toggleFormCollapse}
+              focusedPanel={focusedPanel}
+              convertedMessage={convertedMessage}
+              setConvertedMessage={setConvertedMessage}
+            />
+          ) : (
+            /* Default: Show BuilderCanvas (displays MongoDBShowcase when no payment type selected) */
+            <BuilderCanvas
+              selectedPaymentType={selectedPaymentType}
+              isProcessing={isProcessing}
+              onExecute={handleExecute}
+              onExecutionComplete={handleExecutionComplete}
+              formData={formData}
+              setFormData={setFormData}
+              isFormCollapsed={isFormCollapsed}
+              onToggleFormCollapse={toggleFormCollapse}
+              focusedPanel={focusedPanel}
+              convertedMessage={convertedMessage}
+              setConvertedMessage={setConvertedMessage}
             />
           )}
         </ErrorBoundary>

@@ -107,6 +107,18 @@
   color: var(--gray-dark2);
   white-space: pre-wrap;
   word-break: break-all;
+  animation: fadeInContent 0.4s ease-in;
+}
+
+@keyframes fadeInContent {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .messageLine {
