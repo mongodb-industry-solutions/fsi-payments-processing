@@ -186,9 +186,11 @@ class Transformer:
             
         Example:
             Input: "/CH93007620...\nSWISS PHARMA AG\nZURICH"
-            Returns: ["CH93007620...", "SWISS PHARMA AG"]
+            Returns: ["CH93007620...", "SWISS PHARMA AG", "ZURICH"]
         """
         lines = value.split('\n') if value else []
+        
+        logger.debug(f"Multiline extraction - Input lines: {len(lines)}, Targets: {mapping.get('to')}")
         
         if not lines:
             return ['', ''] if isinstance(mapping['to'], list) else ''
@@ -209,13 +211,19 @@ class Transformer:
         if len(lines) > 2:
             address = ' '.join(lines[2:])
         
+        logger.debug(f"Extracted - account: '{account}', name: '{name}', address: '{address}'")
+        
         # Return based on target structure
         if isinstance(mapping['to'], list):
             targets = mapping['to']
             if len(targets) == 2:
-                return [account, name]
+                result = [account, name]
+                logger.debug(f"Returning 2 targets: {result}")
+                return result
             elif len(targets) == 3:
-                return [account, name, address]
+                result = [account, name, address]
+                logger.debug(f"Returning 3 targets: {result}")
+                return result
         
         return name or account
     

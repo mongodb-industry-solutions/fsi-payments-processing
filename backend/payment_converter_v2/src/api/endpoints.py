@@ -54,6 +54,30 @@ class ConversionRequest(BaseModel):
     }
 
 
+class MultiHopConversionRequest(BaseModel):
+    """Request model for multi-hop conversion endpoint"""
+    source_format: str = Field(..., description="Source format (e.g., MT103)")
+    target_format: str = Field(..., description="Target format (e.g., pacs.008)")
+    message: str = Field(..., description="Source message to convert")
+    use_json_bridge: bool = Field(
+        default=True, 
+        description="Use canonical JSON as intermediate format"
+    )
+    
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "source_format": "MT103",
+                    "target_format": "pacs.008",
+                    "message": "{1:F01BANK...}{4:\n:20:REF123\n:23B:CRED\n...}",
+                    "use_json_bridge": True
+                }
+            ]
+        }
+    }
+
+
 class ProcessingStats(BaseModel):
     """Processing statistics"""
     rules_lane: int = Field(..., description="Number of fields processed via RULES lane")
@@ -165,6 +189,78 @@ async def convert_message(request: ConversionRequest) -> ConversionResponse:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Conversion failed: {str(e)}"
+        )
+
+
+@router.post("/convert/multi-hop", response_model=ConversionResponse, status_code=status.HTTP_200_OK)
+async def convert_multi_hop(request: MultiHopConversionRequest) -> ConversionResponse:
+    """
+    Multi-hop conversion using canonical JSON as bridge.
+    
+    Example: MT103 → JSON → pacs.008
+    
+    Flow:
+    1. Convert source to JSON (save to MongoDB)
+    2. Convert JSON to target (read from MongoDB)
+    
+    This endpoint automatically performs two-hop conversion through
+    canonical JSON format, caching the intermediate JSON in MongoDB
+    for efficient reuse.
+    """
+    try:
+        logger.info(f"Multi-hop: {request.source_format} → JSON → {request.target_format}")
+        
+        # Hop 1: Source → JSON
+        hop1_result = await converter.convert(
+            source_format=request.source_format,
+            target_format="JSON",
+            message=request.message
+        )
+        
+        logger.info("Hop 1 complete, JSON saved to MongoDB")
+        
+        # Hop 2: JSON → Target (will use cached JSON)
+        hop2_result = await converter.convert(
+            source_format="JSON",
+            target_format=request.target_format,
+            message=hop1_result['converted_message'],
+            original_source_message=request.message  # For cache lookup
+        )
+        
+        logger.info("Hop 2 complete using cached JSON")
+        
+        # Combine metadata from both hops
+        combined_metadata = hop2_result['metadata'].copy()
+        combined_metadata['multi_hop'] = True
+        combined_metadata['hop1_time'] = hop1_result['metadata']['processing_time_seconds']
+        combined_metadata['hop2_time'] = hop2_result['metadata']['processing_time_seconds']
+        combined_metadata['total_time'] = (
+            hop1_result['metadata']['processing_time_seconds'] + 
+            hop2_result['metadata']['processing_time_seconds']
+        )
+        combined_metadata['conversion_path'] = f"{request.source_format} → JSON → {request.target_format}"
+        
+        # Use hop2 processing stats (final conversion)
+        stats = hop2_result["processing_stats"]
+        lane_dist = stats.get("lane_distribution", {})
+        
+        return ConversionResponse(
+            output=hop2_result["converted_message"],
+            processing_stats=ProcessingStats(
+                rules_lane=lane_dist.get("RULES", 0),
+                ai_lane=lane_dist.get("AI", 0),
+                human_lane=lane_dist.get("HUMAN", 0)
+            ),
+            confidence_scores=hop2_result["confidence_scores"],
+            human_review_required=hop2_result["human_review_required"],
+            metadata=combined_metadata
+        )
+        
+    except Exception as e:
+        logger.error(f"Multi-hop conversion failed: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Multi-hop conversion failed: {str(e)}"
         )
 
 

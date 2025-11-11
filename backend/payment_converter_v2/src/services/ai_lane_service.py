@@ -147,7 +147,7 @@ class AILaneService:
                 "Return a JSON object with these fields:\n"
                 "- payment_purpose: Brief description of payment purpose\n"
                 "- invoice_number: Invoice or reference number if present\n"
-                "- details: Array of text lines with payment details\n\n"
+                "- details: Additional details or context (single string, not array)\n\n"
                 "Input text:\n{input}\n\n"
                 "Return only valid JSON, no explanations."
             ),

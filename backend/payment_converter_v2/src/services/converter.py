@@ -54,16 +54,22 @@ class Converter:
         source_format: str,
         target_format: str,
         message: str,
-        request_id: Optional[str] = None
+        request_id: Optional[str] = None,
+        original_source_message: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Convert a payment message from source to target format.
+        
+        NEW: Supports multi-hop JSON caching:
+        - If target_format == "JSON": Save result to MongoDB
+        - If source_format == "JSON": Check MongoDB for cached JSON first
         
         Args:
             source_format: Source format (e.g., "MT103")
             target_format: Target format (e.g., "pacs.008")
             message: Source message content
             request_id: Optional request ID for tracking
+            original_source_message: Original source message for cache lookup (multi-hop)
             
         Returns:
             Dictionary containing:
@@ -87,6 +93,13 @@ class Converter:
         conversion_id = f"{source_format}_to_{target_format}"
         
         logger.info(f"Starting conversion: {conversion_id} (request_id: {request_id})")
+        
+        # NEW: Check if we're converting FROM JSON and have cached data
+        if source_format == "JSON" and original_source_message:
+            cached = await self._get_cached_json(original_source_message)
+            if cached:
+                logger.info("✅ Using cached canonical JSON from previous hop")
+                message = cached['json_data']
         
         try:
             # Step 1: Load configuration from MongoDB
@@ -139,7 +152,8 @@ class Converter:
                 f"(RULES: {len(internal_fields)}, AI: {len(ai_fields)})"
             )
             
-            return {
+            # Build result
+            result = {
                 'conversion_id': conversion_id,
                 'request_id': request_id,
                 'converted_message': converted_message,
@@ -154,6 +168,17 @@ class Converter:
                     'processing_time_seconds': processing_time
                 }
             }
+            
+            # NEW: Save JSON if target is JSON (for multi-hop reuse)
+            if target_format == "JSON":
+                await self._save_canonical_json(
+                    conversion_id=conversion_id,
+                    source_message=message,
+                    json_data=converted_message,
+                    metadata=result['metadata']
+                )
+            
+            return result
             
         except Exception as e:
             logger.error(f"Conversion failed for {conversion_id}: {e}", exc_info=True)
@@ -382,6 +407,50 @@ class Converter:
                 'AI': round((ai_fields / total_fields * 100) if total_fields > 0 else 0, 1)
             }
         }
+    
+    async def _save_canonical_json(
+        self, 
+        conversion_id: str,
+        source_message: str,
+        json_data: str,
+        metadata: Dict[str, Any]
+    ) -> None:
+        """
+        Save canonical JSON to MongoDB for multi-hop reuse.
+        
+        Args:
+            conversion_id: Conversion ID (e.g., "MT103_to_JSON")
+            source_message: Original source message
+            json_data: Canonical JSON string
+            metadata: Conversion metadata
+        """
+        try:
+            doc_id = await self.mongodb_service.save_canonical_json(
+                conversion_id=conversion_id,
+                source_message=source_message,
+                json_data=json_data,
+                metadata=metadata
+            )
+            logger.info(f"💾 Saved canonical JSON to MongoDB: {doc_id[:8]}...")
+        except Exception as e:
+            logger.error(f"Failed to save canonical JSON: {e}")
+            # Don't fail conversion if caching fails
+    
+    async def _get_cached_json(self, source_message: str) -> Optional[Dict[str, Any]]:
+        """
+        Retrieve cached canonical JSON from MongoDB.
+        
+        Args:
+            source_message: Original source message
+        
+        Returns:
+            Cached document or None if not found
+        """
+        try:
+            return await self.mongodb_service.get_canonical_json(source_message)
+        except Exception as e:
+            logger.error(f"Failed to retrieve cached JSON: {e}")
+            return None
 
 
 # Singleton pattern
