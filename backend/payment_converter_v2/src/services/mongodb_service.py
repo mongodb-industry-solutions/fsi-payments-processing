@@ -244,28 +244,34 @@ class MongoDBService:
             raise
     
     async def save_canonical_json(
-        self, 
+        self,
         conversion_id: str,
-        source_message: str, 
+        source_message: str,
         json_data: str,
-        metadata: Dict[str, Any]
+        metadata: Dict[str, Any],
+        conversion_run_id: Optional[str] = None
     ) -> str:
         """
         Save canonical JSON to MongoDB for multi-hop reuse.
-        
+
         Args:
             conversion_id: Source conversion ID (e.g., "MT103_to_JSON")
             source_message: Original source message
             json_data: Canonical JSON string
             metadata: Conversion metadata (timestamp, processing time, etc.)
-        
+            conversion_run_id: Optional unique ID for this conversion run (makes each run independent)
+
         Returns:
-            Document ID (message hash)
+            Document ID (conversion_run_id if provided, otherwise message hash)
         """
         try:
-            # Create hash of source message for lookup
+            # Create hash of source message
             message_hash = hashlib.sha256(source_message.encode()).hexdigest()
-            
+
+            # Use conversion_run_id as doc ID if provided (for independence)
+            # Otherwise use message_hash (for backward compatibility/caching)
+            doc_id = conversion_run_id if conversion_run_id else message_hash
+
             # Parse JSON string to dict for proper MongoDB storage
             try:
                 json_dict = json.loads(json_data)
@@ -273,58 +279,69 @@ class MongoDBService:
                 logger.error(f"Invalid JSON data: {e}")
                 # Fallback: store as string if parsing fails
                 json_dict = {"_raw": json_data, "_parse_error": str(e)}
-            
+
             doc = {
-                "_id": message_hash,
+                "_id": doc_id,
                 "conversion_id": conversion_id,
                 "json_data": json_dict,  # Store as dict/object, not string
                 "metadata": metadata,
                 "created_at": datetime.utcnow()
             }
-            
+
             # Upsert to handle duplicate conversions
             await self.json_storage_collection.replace_one(
-                {"_id": message_hash},
+                {"_id": doc_id},
                 doc,
                 upsert=True
             )
-            
-            logger.info(f"Saved canonical JSON to MongoDB: {message_hash[:8]}...")
-            return message_hash
-            
+
+            logger.info(f"Saved canonical JSON to MongoDB: {doc_id[:16]}...")
+            return doc_id
+
         except Exception as e:
             logger.error(f"Error saving canonical JSON: {e}")
             raise
     
     async def get_canonical_json(
-        self, 
-        source_message: str
+        self,
+        source_message: str,
+        conversion_run_id: Optional[str] = None
     ) -> Optional[Dict[str, Any]]:
         """
-        Retrieve cached canonical JSON by source message hash.
-        
+        Retrieve cached canonical JSON by conversion_run_id or source message hash.
+
         Args:
-            source_message: Original source message
-        
+            source_message: Original source message (used if conversion_run_id not provided)
+            conversion_run_id: Optional unique ID for this conversion run
+
         Returns:
             Document with json_data (as JSON string for compatibility) or None if not found
         """
         try:
-            message_hash = hashlib.sha256(source_message.encode()).hexdigest()
-            cached = await self.json_storage_collection.find_one({"_id": message_hash})
-            
-            if cached:
-                logger.debug(f"Cache HIT for message hash: {message_hash[:8]}...")
-                
-                # Convert json_data dict back to string for converter compatibility
-                if isinstance(cached.get('json_data'), dict):
-                    cached['json_data'] = json.dumps(cached['json_data'])
-                
+            # Use conversion_run_id if provided, otherwise fall back to message hash
+            if conversion_run_id:
+                doc_id = conversion_run_id
+                logger.debug(f"Looking up by conversion_run_id: {doc_id[:16]}...")
             else:
-                logger.debug(f"Cache MISS for message hash: {message_hash[:8]}...")
-            
+                message_hash = hashlib.sha256(source_message.encode()).hexdigest()
+                doc_id = message_hash
+                logger.debug(f"Looking up by message hash: {doc_id[:16]}...")
+
+            cached = await self.json_storage_collection.find_one({"_id": doc_id})
+
+            if cached:
+                logger.debug(f"Cache HIT for ID: {doc_id[:16]}...")
+
+                # Convert json_data dict back to string for converter compatibility
+                # Use ensure_ascii=False to preserve Unicode characters (Japanese, etc.)
+                if isinstance(cached.get('json_data'), dict):
+                    cached['json_data'] = json.dumps(cached['json_data'], ensure_ascii=False)
+
+            else:
+                logger.debug(f"Cache MISS for ID: {doc_id[:16]}...")
+
             return cached
-            
+
         except Exception as e:
             logger.error(f"Error retrieving canonical JSON: {e}")
             return None

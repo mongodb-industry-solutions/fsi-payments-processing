@@ -33,6 +33,16 @@ class Settings(BaseSettings):
         default="http://localhost:3000,http://localhost:3001",
         description="Comma-separated CORS origins"
     )
+
+    # Payment Agent Integration
+    payment_agent_url: str = Field(
+        default="http://localhost:8002",
+        description="Payment agent service URL"
+    )
+    payment_agent_timeout: int = Field(
+        default=30,
+        description="Payment agent request timeout in seconds"
+    )
     
     model_config = SettingsConfigDict(
         env_file=".env",
