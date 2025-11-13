@@ -13,7 +13,7 @@ export default function Home() {
   const router = useRouter();
 
   const handleGetStarted = () => {
-    router.push("/payment-builder");
+    router.push("/agentic-ai");
   };
 
   return (

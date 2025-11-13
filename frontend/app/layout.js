@@ -25,25 +25,14 @@ function Navigation() {
 
         <div className="nav-links">
           <Link
-            href="/payment-builder"
-            className={`nav-link ${pathname === '/payment-builder' ? 'active' : ''}`}
+            href="/agentic-ai"
+            className={`nav-link ${pathname === '/agentic-ai' ? 'active' : ''}`}
           >
             <svg className="nav-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <rect x="2" y="4" width="12" height="10" rx="1" stroke="currentColor" strokeWidth="1.5"/>
-              <path d="M2 8h12" stroke="currentColor" strokeWidth="1.5"/>
-              <path d="M5 11h3M10 11h2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+              <path d="M8 2L10 6L14 6.5L11 9.5L12 14L8 11.5L4 14L5 9.5L2 6.5L6 6L8 2Z" stroke="currentColor" strokeWidth="1.5" fill="none"/>
+              <circle cx="8" cy="8" r="1.5" fill="currentColor"/>
             </svg>
-            <span>Payment Builder</span>
-          </Link>
-          <Link
-            href="/geographic"
-            className={`nav-link ${pathname === '/geographic' ? 'active' : ''}`}
-          >
-            <svg className="nav-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.5"/>
-              <path d="M2 8H14M8 2C8 2 5 5 5 8C5 11 8 14 8 14M8 2C8 2 11 5 11 8C11 11 8 14 8 14" stroke="currentColor" strokeWidth="1.5"/>
-            </svg>
-            <span>Network Visualizer</span>
+            <span>Agentic AI Converter</span>
           </Link>
         </div>
 

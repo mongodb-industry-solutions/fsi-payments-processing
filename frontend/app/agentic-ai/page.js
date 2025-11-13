@@ -47,7 +47,7 @@ Tokyo Japan
 :50K:/CH9300762011623852957
 Swiss Pharma International AG
 Zurich Switzerland
-:57A:HDFCINBB
+:57D:HDFC Bank, Fort Branch, Mumbai
 :59:/IN1234567890
 Tata Consultancy Services
 Mumbai India
