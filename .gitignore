@@ -408,3 +408,15 @@ backend/converter_service/scripts/extract_sample_configs.py
 .gitignore
 backend/converter_service/scripts/analyze_conversion_registry_schema.py
 backend/converter_service/conversion_registry_analysis_20251002_175651.json
+backend/payment_converter_v2/test_india_invalid_ifsc.json
+backend/payment_converter_v2/test_india_streaming.json
+backend/payment_converter_v2/test_india.json
+backend/payment_converter_v2/test_japan_streaming.json
+backend/payment_converter_v2/test_japan.json
+backend/payment_converter_v2/test_normal.json
+backend/payment_converter_v2/test_run1.json
+backend/payment_converter_v2/docs/HARDCODING_ISSUES_ANALYSIS.md
+backend/payment_converter_v2/docs/ISSUE_MT103_FIELD_57D_MISSING.md
+ISSUE_SUMMARY_INDIA_IFSC_VALIDATION.md
+backend/payment_agent/temp_india_payload.json
+backend/payment_agent/temp_japan_payload.json

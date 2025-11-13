@@ -296,7 +296,7 @@ def update_payment_field(payment_id: str, field_name: str, new_value: str) -> Di
         "debtor_name", "debtor_account", "debtor_address", "debtor_country",
         "debtor_agent", "debtor_agent_bic",
         "creditor_name", "creditor_account", "creditor_address", "creditor_country",
-        "creditor_agent", "creditor_agent_bic", "creditor_bank",
+        "creditor_agent", "creditor_bic", "creditor_bank",
         "intermediary_agent", "intermediary_agent_bic",
         # Payment details
         "remittance_info", "payment_purpose", "instruction_code",
