@@ -27,6 +27,7 @@ export default function AgenticAIPage() {
   const addEvent = (eventData) => {
     const timestamp = new Date().toISOString();
     const id = `event-${Date.now()}-${Math.random()}`;
+    console.log('✅ Event Added:', eventData.type, eventData);
     setEvents(prev => [...prev, { ...eventData, timestamp, id }]);
   };
 
@@ -160,33 +161,31 @@ export default function AgenticAIPage() {
       />
 
       {/* Two-Column Layout: Map + Agent Panel */}
-      {selectedScenario && (
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: '3fr 2fr',
-          gap: '24px'
-        }}>
-          {/* Left: Geographic Map Visualization */}
-          <GeographicMapPanel
-            isActive={selectedScenario !== null}
-            scenario={getScenario(selectedScenario)}
-            isStreaming={isStreaming}
-            events={events}
-          />
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: '3fr 2fr',
+        gap: '24px'
+      }}>
+        {/* Left: Geographic Map Visualization */}
+        <GeographicMapPanel
+          isActive={selectedScenario !== null}
+          scenario={getScenario(selectedScenario)}
+          isStreaming={isStreaming}
+          events={events}
+        />
 
-          {/* Right: Transaction Agent Panel */}
-          <TransactionAgentPanel
-            events={events}
-            output={output}
-            stats={stats}
-            totalTime={totalTime}
-            targetFormat={getScenario(selectedScenario)?.targetFormat || 'pacs.008'}
-            isStreaming={isStreaming}
-            expandedEvents={expandedEvents}
-            onToggleEvent={toggleEventExpansion}
-          />
-        </div>
-      )}
+        {/* Right: Transaction Agent Panel */}
+        <TransactionAgentPanel
+          events={events}
+          output={output}
+          stats={stats}
+          totalTime={totalTime}
+          targetFormat={getScenario(selectedScenario)?.targetFormat || 'pacs.008'}
+          isStreaming={isStreaming}
+          expandedEvents={expandedEvents}
+          onToggleEvent={toggleEventExpansion}
+        />
+      </div>
     </div>
   );
 }
