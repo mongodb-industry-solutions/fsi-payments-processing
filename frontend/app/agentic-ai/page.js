@@ -164,7 +164,7 @@ export default function AgenticAIPage() {
   };
 
   return (
-    <div style={{ padding: '32px', maxWidth: '1600px', margin: '0 auto' }}>
+    <div style={{ padding: '32px', maxWidth: '2000px', margin: '0 auto' }}>
       {/* Error Banner */}
       {error && (
         <Banner variant="danger" style={{ marginBottom: '24px' }}>

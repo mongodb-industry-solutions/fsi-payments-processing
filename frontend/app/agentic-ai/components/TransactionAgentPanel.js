@@ -47,7 +47,7 @@ export default function TransactionAgentPanel({
     <Card
       style={{
         padding: '0',
-        height: '700px',
+        height: '900px',
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden'

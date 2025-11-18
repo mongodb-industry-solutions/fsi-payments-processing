@@ -85,7 +85,7 @@ function CustomArcPath({ from, to, stroke, strokeWidth, isStreaming }) {
  * EventBadge Component
  * Displays event details on the map with smart positioning
  */
-function EventBadge({ event, x, y, isActive, showHealingButton, onHealingStart, mapWidth = 800, mapHeight = 700, forceBelow = false, disableSmartPosition = false, markerX = null, markerY = null }) {
+function EventBadge({ event, x, y, isActive, showHealingButton, onHealingStart, mapWidth = 800, mapHeight = 900, forceBelow = false, disableSmartPosition = false, markerX = null, markerY = null }) {
   if (!event) return null;
 
   // Get badge configuration based on event type
@@ -692,7 +692,7 @@ function AnimatedPaymentJourney({ from, to, events, isStreaming }) {
               isActive={true}
               showHealingButton={false}
               mapWidth={800}
-              mapHeight={700}
+              mapHeight={900}
             />
           ) : (
             // Error badge - shows validation error (stable)
@@ -705,7 +705,7 @@ function AnimatedPaymentJourney({ from, to, events, isStreaming }) {
                 showHealingButton={journeyState.status === 'error_awaiting_healing'}
                 onHealingStart={handleStartHealing}
                 mapWidth={800}
-                mapHeight={700}
+                mapHeight={900}
               />
             )
           )}
@@ -726,7 +726,7 @@ function AnimatedPaymentJourney({ from, to, events, isStreaming }) {
                 isActive={true}
                 showHealingButton={false}
                 mapWidth={800}
-                mapHeight={700}
+                mapHeight={900}
                 disableSmartPosition={true}
                 markerX={errorX}
                 markerY={errorY}
@@ -777,7 +777,7 @@ function AnimatedPaymentJourney({ from, to, events, isStreaming }) {
               y={markerY}
               isActive={true}
               mapWidth={800}
-              mapHeight={700}
+              mapHeight={900}
             />
           )}
         </g>
@@ -817,7 +817,7 @@ export default function GeographicMapPanel({ isActive, scenario, isStreaming, ev
     <Card
       style={{
         padding: '0',
-        height: '700px',
+        height: '900px',
         display: 'flex',
         flexDirection: 'column',
         background: '#F9FBFA',

@@ -277,28 +277,107 @@ function renderEventDetails(event) {
           borderRadius: '6px',
           fontSize: '12px'
         }}>
-          {event.proposed_value && (
-            <div style={{ marginBottom: '12px' }}>
-              <Body weight="medium" style={{ fontSize: '12px', marginBottom: '4px' }}>Proposed Value:</Body>
-              <Body style={{ fontSize: '12px', color: '#00A35C', fontWeight: '600' }}>{event.proposed_value}</Body>
-            </div>
-          )}
-          {event.confidence && (
-            <div style={{ marginBottom: '12px' }}>
-              <Body weight="medium" style={{ fontSize: '12px', marginBottom: '4px' }}>Confidence:</Body>
-              <Body style={{ fontSize: '12px', color: '#5C6C75', fontWeight: '600' }}>{(event.confidence * 100).toFixed(0)}%</Body>
-            </div>
-          )}
-          {event.reasoning && (
-            <div>
-              <Body weight="medium" style={{ fontSize: '12px', marginBottom: '8px' }}>Reasoning:</Body>
-              <div style={{ paddingLeft: '8px' }}>
-                <Body style={{ fontSize: '12px', color: '#5C6C75', lineHeight: '1.5' }}>
-                  {event.reasoning}
-                </Body>
-              </div>
-            </div>
-          )}
+          {/* Parse structured sections from reasoning */}
+          {event.reasoning && (() => {
+            const sections = [];
+            const lines = event.reasoning.split('\n').filter(line => line.trim());
+            
+            let currentSection = null;
+            let currentContent = [];
+            
+            lines.forEach((line) => {
+              const trimmed = line.trim();
+              
+              // Check for field/value pairs
+              if (trimmed.startsWith('FIELD TO UPDATE:')) {
+                if (currentSection) {
+                  sections.push({ type: currentSection, content: currentContent.join('\n') });
+                }
+                const field = trimmed.replace('FIELD TO UPDATE:', '').trim();
+                sections.push({ type: 'FIELD', content: field });
+                currentSection = null;
+                currentContent = [];
+              } else if (trimmed.startsWith('NEW VALUE:')) {
+                const value = trimmed.replace('NEW VALUE:', '').trim();
+                sections.push({ type: 'VALUE', content: value });
+              } else if (trimmed.startsWith('REASON:')) {
+                currentSection = 'REASON';
+                const reasonText = trimmed.replace('REASON:', '').trim();
+                if (reasonText) currentContent.push(reasonText);
+              } else if (currentSection) {
+                currentContent.push(trimmed);
+              }
+            });
+            
+            if (currentSection && currentContent.length) {
+              sections.push({ type: currentSection, content: currentContent.join('\n') });
+            }
+            
+            return sections.map((section, idx) => {
+              if (section.type === 'FIELD') {
+                return (
+                  <div key={idx} style={{ marginBottom: '12px' }}>
+                    <Body weight="bold" style={{ fontSize: '12px', color: '#0B61A4', marginBottom: '4px' }}>
+                      FIELD TO UPDATE
+                    </Body>
+                    <Body style={{ fontSize: '12px', color: '#5C6C75', fontWeight: '600' }}>
+                      {section.content}
+                    </Body>
+                  </div>
+                );
+              } else if (section.type === 'VALUE') {
+                return (
+                  <div key={idx} style={{ marginBottom: '12px' }}>
+                    <Body weight="bold" style={{ fontSize: '12px', color: '#0B61A4', marginBottom: '4px' }}>
+                      NEW VALUE
+                    </Body>
+                    <Body style={{ fontSize: '12px', color: '#00A35C', fontWeight: '600' }}>
+                      {section.content}
+                    </Body>
+                  </div>
+                );
+              } else if (section.type === 'REASON') {
+                // Split bullet points
+                const bullets = section.content.split(/(?=[-•])/);
+                return (
+                  <div key={idx}>
+                    <Body weight="bold" style={{ fontSize: '12px', color: '#0B61A4', marginBottom: '8px' }}>
+                      REASON
+                    </Body>
+                    <div style={{ paddingLeft: '8px' }}>
+                      {bullets.map((bullet, bidx) => {
+                        const cleaned = bullet.replace(/^[-•]\s*/, '').trim();
+                        if (!cleaned) return null;
+                        return (
+                          <div key={bidx} style={{ 
+                            marginBottom: '8px',
+                            display: 'flex',
+                            gap: '8px'
+                          }}>
+                            <Body style={{ 
+                              fontSize: '12px', 
+                              color: '#00A35C',
+                              minWidth: '8px'
+                            }}>
+                              •
+                            </Body>
+                            <Body style={{ 
+                              fontSize: '12px', 
+                              color: '#5C6C75',
+                              lineHeight: '1.5'
+                            }}>
+                              {cleaned}
+                            </Body>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              }
+              return null;
+            });
+          })()}
         </div>
       );
 
