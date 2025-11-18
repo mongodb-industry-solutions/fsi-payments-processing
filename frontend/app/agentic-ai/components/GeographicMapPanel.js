@@ -229,39 +229,80 @@ function EventBadge({ event, x, y, isActive, showHealingButton, onHealingStart }
           style={{ cursor: 'pointer' }}
         >
           {console.log('🎨 RENDERING BUTTON at:', x, y, 'showHealingButton:', showHealingButton)}
-          {/* Button background */}
+          {/* Button background with subtle gradient */}
+          <defs>
+            <linearGradient id="button-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" style={{ stopColor: '#00A35C', stopOpacity: 1 }} />
+              <stop offset="100%" style={{ stopColor: '#008F4D', stopOpacity: 1 }} />
+            </linearGradient>
+          </defs>
           <rect
             x={x - 120}  // 240px wide button centered
             y={y - totalHeight - 50 + padding + titleHeight + detailsHeight + 16}
             width={240}
-            height={40}
-            rx={6}
-            fill="#00A35C"
+            height={42}
+            rx={8}
+            fill="url(#button-gradient)"
+            stroke="#00854A"
+            strokeWidth={1}
             style={{ cursor: 'pointer', pointerEvents: 'auto' }}
-            onMouseEnter={(e) => e.currentTarget.setAttribute('fill', '#008F4D')}
-            onMouseLeave={(e) => e.currentTarget.setAttribute('fill', '#00A35C')}
+            filter="url(#button-shadow)"
+            onMouseEnter={(e) => {
+              e.currentTarget.setAttribute('fill', '#008F4D');
+              e.currentTarget.setAttribute('stroke', '#00703D');
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.setAttribute('fill', 'url(#button-gradient)');
+              e.currentTarget.setAttribute('stroke', '#00854A');
+            }}
           />
-          {/* Button text */}
+          {/* Icon - Gear/Settings symbol */}
+          <circle
+            cx={x - 90}
+            cy={y - totalHeight - 50 + padding + titleHeight + detailsHeight + 37}
+            r={10}
+            fill="white"
+            fillOpacity={0.2}
+            style={{ pointerEvents: 'none' }}
+          />
           <text
-            x={x}
-            y={y - totalHeight - 50 + padding + titleHeight + detailsHeight + 36}
+            x={x - 90}
+            y={y - totalHeight - 50 + padding + titleHeight + detailsHeight + 37}
             fontSize={14}
-            fontWeight="700"
             fill="white"
             textAnchor="middle"
+            dominantBaseline="central"
             fontFamily="system-ui, -apple-system, sans-serif"
             style={{ pointerEvents: 'none' }}
           >
-            🤖 Self-Healing Agent
+            ⚙
+          </text>
+          {/* Button text */}
+          <text
+            x={x + 20}
+            y={y - totalHeight - 50 + padding + titleHeight + detailsHeight + 37}
+            fontSize={13}
+            fontWeight="600"
+            fill="white"
+            textAnchor="middle"
+            dominantBaseline="central"
+            fontFamily="system-ui, -apple-system, sans-serif"
+            letterSpacing="0.3"
+            style={{ pointerEvents: 'none' }}
+          >
+            Activate Auto-Resolution
           </text>
         </g>
       )}
       {showHealingButton && !onHealingStart && console.log('⚠️ Button requested but no handler provided')}
 
-      {/* Drop shadow filter definition */}
+      {/* Drop shadow filter definitions */}
       <defs>
         <filter id="badge-shadow" x="-50%" y="-50%" width="200%" height="200%">
           <feDropShadow dx="0" dy="2" stdDeviation="3" floodOpacity="0.15"/>
+        </filter>
+        <filter id="button-shadow" x="-50%" y="-50%" width="200%" height="200%">
+          <feDropShadow dx="0" dy="2" stdDeviation="4" floodOpacity="0.2"/>
         </filter>
       </defs>
     </g>

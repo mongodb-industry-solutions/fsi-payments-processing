@@ -450,6 +450,9 @@ async def convert_multi_hop_stream(request: MultiHopConversionRequest):
                 # Stream agent events
                 yield f"data: {json.dumps({'type': 'agent_start', 'task_type': e.task_type, 'field': e.field_name})}\n\n"
 
+                # Capture task_type for use in nested events
+                current_task_type = e.task_type
+                
                 final_state = {}
                 async for event in agent_client.process_payment_stream(
                     task_type=e.task_type,
@@ -472,7 +475,7 @@ async def convert_multi_hop_stream(request: MultiHopConversionRequest):
                             last_message = messages[-1]
                             reasoning = last_message.get("content", "")
 
-                        yield f"data: {json.dumps({'type': 'agent_supervisor', 'status': 'routing', 'reasoning': reasoning, 'next_agent': next_agent, 'details': {'messages_count': len(messages)}})}\n\n"
+                        yield f"data: {json.dumps({'type': 'agent_supervisor', 'status': 'routing', 'reasoning': reasoning, 'next_agent': next_agent, 'task_type': current_task_type, 'details': {'messages_count': len(messages)}})}\n\n"
 
                     elif "resolution" in event:
                         resolution_state = event["resolution"]
@@ -517,7 +520,7 @@ async def convert_multi_hop_stream(request: MultiHopConversionRequest):
 
                     elif event.get("type") == "complete":
                         agent_result = final_state.get("result", {})
-                        yield f"data: {json.dumps({'type': 'agent_complete', 'new_value': agent_result.get('new_value'), 'field': e.field_name, 'success': agent_result.get('success', True)})}\n\n"
+                        yield f"data: {json.dumps({'type': 'agent_complete', 'new_value': agent_result.get('new_value'), 'field': e.field_name, 'task_type': current_task_type, 'success': agent_result.get('success', True)})}\n\n"
 
                     elif event.get("type") == "error":
                         yield f"data: {json.dumps({'type': 'error', 'message': event.get('message')})}\n\n"

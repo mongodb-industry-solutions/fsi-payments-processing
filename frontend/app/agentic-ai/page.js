@@ -9,6 +9,27 @@ import { getAllScenarios, getScenario } from './scenarios';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8001';
 
+/**
+ * Filter events to show only agent-related activities
+ * Conversion hop events (MT103→JSON, JSON→pacs.008) are handled by the converter service,
+ * not by the Transaction Agent, so we exclude them from the agent panel.
+ */
+function isAgentRelatedEvent(event) {
+  const agentEventTypes = [
+    'validation_failed',  // Triggers agent intervention
+    'agent_start',        // Agent begins processing
+    'agent_supervisor',   // Supervisor routing decision
+    'tool_call',          // Tool invocation (IFSC lookup, transliteration)
+    'tool_result',        // Tool results
+    'agent_resolution',   // Proposed solution
+    'agent_execution',    // Field update
+    'agent_complete',     // Agent finished
+    'error'               // Errors
+  ];
+  
+  return agentEventTypes.includes(event.type);
+}
+
 export default function AgenticAIPage() {
   // State Management
   const [isPanelExpanded, setIsPanelExpanded] = useState(true);
@@ -22,6 +43,9 @@ export default function AgenticAIPage() {
   const [expandedEvents, setExpandedEvents] = useState(new Set());
 
   const scenarios = getAllScenarios();
+  
+  // Filter events for Transaction Agent panel (exclude conversion hops)
+  const agentEvents = events.filter(isAgentRelatedEvent);
 
   // Helper Functions
   const addEvent = (eventData) => {
@@ -176,7 +200,7 @@ export default function AgenticAIPage() {
 
         {/* Right: Transaction Agent Panel */}
         <TransactionAgentPanel
-          events={events}
+          events={agentEvents}
           output={output}
           stats={stats}
           totalTime={totalTime}

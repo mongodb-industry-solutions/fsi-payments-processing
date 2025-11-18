@@ -61,6 +61,14 @@ function formatEventMessage(event) {
     case 'agent_start':
       return `Agent started: ${event.task_type || 'task'}`;
     case 'agent_supervisor':
+      // Extract just the decision part for the summary
+      if (event.reasoning) {
+        const decisionMatch = event.reasoning.match(/DECISION:\s*(\S+)/i);
+        if (decisionMatch) {
+          const decision = decisionMatch[1].replace('ROUTE_TO_', '').toLowerCase();
+          return `Supervisor routed task '${event.task_type || 'unknown'}' to ${decision} agent`;
+        }
+      }
       return `Supervisor routing: ${event.next_agent || 'evaluating'}`;
     case 'tool_call':
       return `Calling tool: ${event.tool || 'unknown'}`;
@@ -82,6 +90,107 @@ function formatEventMessage(event) {
 }
 
 /**
+ * Format supervisor reasoning text with proper structure
+ */
+function formatReasoning(reasoning) {
+  if (!reasoning) return null;
+
+  // Split into sections (DECISION, REASONING)
+  const sections = reasoning.split(/(?=DECISION:|REASONING:)/i);
+  
+  return sections.map((section, idx) => {
+    const trimmed = section.trim();
+    if (!trimmed) return null;
+
+    // Check if it's a DECISION section
+    if (trimmed.startsWith('DECISION:')) {
+      const decision = trimmed.replace(/^DECISION:\s*/i, '').trim();
+      return (
+        <div key={idx} style={{ marginBottom: '12px' }}>
+          <Body weight="bold" style={{ fontSize: '12px', color: '#0B61A4', marginBottom: '4px' }}>
+            DECISION
+          </Body>
+          <Body style={{ fontSize: '12px', color: '#5C6C75', fontWeight: '600' }}>
+            {decision}
+          </Body>
+        </div>
+      );
+    }
+    
+    // Check if it's a REASONING section
+    if (trimmed.startsWith('REASONING:')) {
+      const content = trimmed.replace(/^REASONING:\s*/i, '').trim();
+      // Split by numbered points (1., 2., etc.)
+      const points = content.split(/(?=\d+\.\s)/).filter(p => p.trim());
+      
+      return (
+        <div key={idx}>
+          <Body weight="bold" style={{ fontSize: '12px', color: '#0B61A4', marginBottom: '8px' }}>
+            REASONING
+          </Body>
+          <div style={{ paddingLeft: '8px' }}>
+            {points.map((point, pidx) => {
+              const trimmedPoint = point.trim();
+              if (!trimmedPoint) return null;
+              
+              // Extract number and text
+              const match = trimmedPoint.match(/^(\d+)\.\s*(.*)/s);
+              if (match) {
+                const [, num, text] = match;
+                return (
+                  <div key={pidx} style={{ 
+                    marginBottom: '10px',
+                    display: 'flex',
+                    gap: '8px'
+                  }}>
+                    <Body weight="bold" style={{ 
+                      fontSize: '12px', 
+                      color: '#00A35C',
+                      minWidth: '16px'
+                    }}>
+                      {num}.
+                    </Body>
+                    <Body style={{ 
+                      fontSize: '12px', 
+                      color: '#5C6C75',
+                      lineHeight: '1.5'
+                    }}>
+                      {text.trim()}
+                    </Body>
+                  </div>
+                );
+              }
+              return (
+                <Body key={pidx} style={{ 
+                  fontSize: '12px', 
+                  color: '#5C6C75', 
+                  marginBottom: '8px',
+                  lineHeight: '1.5'
+                }}>
+                  {trimmedPoint}
+                </Body>
+              );
+            })}
+          </div>
+        </div>
+      );
+    }
+    
+    // Default: just display the text
+    return (
+      <Body key={idx} style={{ 
+        fontSize: '12px', 
+        color: '#5C6C75',
+        marginBottom: '8px',
+        lineHeight: '1.5'
+      }}>
+        {trimmed}
+      </Body>
+    );
+  });
+}
+
+/**
  * Render event details (expanded view)
  */
 function renderEventDetails(event) {
@@ -98,14 +207,13 @@ function renderEventDetails(event) {
           fontSize: '12px'
         }}>
           {event.reasoning && (
-            <div style={{ marginBottom: '8px' }}>
-              <Body weight="medium" style={{ fontSize: '12px' }}>Reasoning:</Body>
-              <Body style={{ fontSize: '12px', color: '#5C6C75' }}>{event.reasoning}</Body>
+            <div style={{ marginBottom: event.next_agent ? '12px' : '0' }}>
+              {formatReasoning(event.reasoning)}
             </div>
           )}
           {event.next_agent && (
             <div>
-              <Body weight="medium" style={{ fontSize: '12px' }}>Next Agent:</Body>
+              <Body weight="medium" style={{ fontSize: '12px', marginBottom: '4px' }}>Next Agent:</Body>
               <Badge variant="blue">{event.next_agent}</Badge>
             </div>
           )}
@@ -170,21 +278,25 @@ function renderEventDetails(event) {
           fontSize: '12px'
         }}>
           {event.proposed_value && (
-            <div style={{ marginBottom: '8px' }}>
-              <Body weight="medium" style={{ fontSize: '12px' }}>Proposed Value:</Body>
-              <Body style={{ fontSize: '12px', color: '#5C6C75' }}>{event.proposed_value}</Body>
+            <div style={{ marginBottom: '12px' }}>
+              <Body weight="medium" style={{ fontSize: '12px', marginBottom: '4px' }}>Proposed Value:</Body>
+              <Body style={{ fontSize: '12px', color: '#00A35C', fontWeight: '600' }}>{event.proposed_value}</Body>
             </div>
           )}
           {event.confidence && (
-            <div style={{ marginBottom: '8px' }}>
-              <Body weight="medium" style={{ fontSize: '12px' }}>Confidence:</Body>
-              <Body style={{ fontSize: '12px', color: '#5C6C75' }}>{(event.confidence * 100).toFixed(0)}%</Body>
+            <div style={{ marginBottom: '12px' }}>
+              <Body weight="medium" style={{ fontSize: '12px', marginBottom: '4px' }}>Confidence:</Body>
+              <Body style={{ fontSize: '12px', color: '#5C6C75', fontWeight: '600' }}>{(event.confidence * 100).toFixed(0)}%</Body>
             </div>
           )}
           {event.reasoning && (
             <div>
-              <Body weight="medium" style={{ fontSize: '12px' }}>Reasoning:</Body>
-              <Body style={{ fontSize: '12px', color: '#5C6C75' }}>{event.reasoning}</Body>
+              <Body weight="medium" style={{ fontSize: '12px', marginBottom: '8px' }}>Reasoning:</Body>
+              <div style={{ paddingLeft: '8px' }}>
+                <Body style={{ fontSize: '12px', color: '#5C6C75', lineHeight: '1.5' }}>
+                  {event.reasoning}
+                </Body>
+              </div>
             </div>
           )}
         </div>

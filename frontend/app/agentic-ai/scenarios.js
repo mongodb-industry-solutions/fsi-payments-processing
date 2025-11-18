@@ -10,8 +10,14 @@ export const SCENARIOS = {
     description: 'Volkswagen AG pays Denso Corporation - ¥45M JPY (~€280K)',
     badge: 'TRANSLITERATION',
     badgeVariant: 'green',
+    info: {
+      problem: 'Japanese banks require creditor names in Katakana script, but the source MT103 contains "DENSO CORPORATION" in Latin characters.',
+      solution: 'Transaction Agent detects this requirement and automatically transliterates the name to Katakana using Japan\'s official transliteration rules.',
+      whyAgent: 'Rule-based conversion can\'t handle name transliteration - requires country-specific knowledge.'
+    },
     sourceCountry: {
       name: 'Germany',
+      code: 'DE',
       flag: '🇩🇪',
       bank: 'Deutsche Bank',
       city: 'Berlin',
@@ -19,6 +25,7 @@ export const SCENARIOS = {
     },
     targetCountry: {
       name: 'Japan',
+      code: 'JP',
       flag: '🇯🇵',
       bank: 'Bank of Tokyo',
       city: 'Tokyo',
@@ -58,8 +65,14 @@ PRECISION SENSORS AND ECU MODULES
     description: 'Google LLC pays Infosys Limited - ₹15M INR (~$180K)',
     badge: 'IFSC LOOKUP',
     badgeVariant: 'blue',
+    info: {
+      problem: 'Indian banking requires specific IFSC codes for bank identification, but the source MT103 only has descriptive details: "HDFC Bank, Fort Branch, Mumbai".',
+      solution: 'Transaction Agent looks up the correct IFSC code from India\'s official database using bank name, branch, and location, then validates and inserts it.',
+      whyAgent: 'IFSC lookup requires external database access and validation - beyond simple field mapping.'
+    },
     sourceCountry: {
       name: 'United States',
+      code: 'US',
       flag: '🇺🇸',
       bank: 'JPMorgan Chase',
       city: 'Mountain View',
@@ -67,6 +80,7 @@ PRECISION SENSORS AND ECU MODULES
     },
     targetCountry: {
       name: 'India',
+      code: 'IN',
       flag: '🇮🇳',
       bank: 'HDFC Bank',
       city: 'Mumbai',
