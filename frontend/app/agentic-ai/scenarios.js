@@ -35,7 +35,7 @@ export const SCENARIOS = {
     targetFormat: 'pacs.008',
     nodes: 3,
     steps: 2,
-    formats: 'MT103+JSON',
+    formats: 'MT103, ISO20022',
     message: `{1:F01DEUTDEFFAXXX0000000000}{2:I103BOTKJPJTXXXXN}{4:
 :20:VW-DENSO-2025-Q1-001
 :23B:CRED
@@ -90,7 +90,7 @@ PRECISION SENSORS AND ECU MODULES
     targetFormat: 'pacs.008',
     nodes: 4,
     steps: 3,
-    formats: 'MT103+JSON+Agent',
+    formats: 'MT103, ISO20022',
     message: `{1:F01CHASUS33AXXX0000000000}{2:I103HDFCINBBXXXXN}{4:
 :20:GOOG-INFY-2024-Q4-567
 :23B:CRED

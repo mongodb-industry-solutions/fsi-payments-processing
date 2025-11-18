@@ -83,9 +83,9 @@ function CustomArcPath({ from, to, stroke, strokeWidth, isStreaming }) {
 
 /**
  * EventBadge Component
- * Displays event details on the map
+ * Displays event details on the map with smart positioning
  */
-function EventBadge({ event, x, y, isActive, showHealingButton, onHealingStart }) {
+function EventBadge({ event, x, y, isActive, showHealingButton, onHealingStart, mapWidth = 800, mapHeight = 700, forceBelow = false, disableSmartPosition = false, markerX = null, markerY = null }) {
   if (!event) return null;
 
   // Get badge configuration based on event type
@@ -106,28 +106,30 @@ function EventBadge({ event, x, y, isActive, showHealingButton, onHealingStart }
             event.field ? `Field: ${event.field}` : null,
             event.country ? `Country: ${event.country}` : null,
             event.message || event.error || 'Validation failed'
-          ].filter(Boolean)
+          ].filter(Boolean),
+          isError: true
         };
       case 'agent_start':
         return {
           title: 'AGENT RESOLVING',
           color: '#FFC010',
-          details: [event.task_type || 'Processing issue']
+          details: ['Analyzing validation error']
         };
       case 'agent_supervisor':
         return {
           title: 'AGENT ROUTING',
           color: '#FFC010',
-          details: [
-            event.next_agent ? `Next: ${event.next_agent}` : null,
-            event.reasoning || null
-          ].filter(Boolean)
+          details: ['Routing to resolution agent']
         };
       case 'tool_call':
         return {
           title: 'TOOL EXECUTING',
           color: '#7C4DFF',
-          details: [event.tool || 'Tool call']
+          details: [
+            event.tool === 'ifsc_lookup' ? 'Looking up IFSC code' :
+            event.tool === 'transliterate_name' ? 'Transliterating name' :
+            event.tool || 'Processing'
+          ]
         };
       case 'agent_complete':
         return {
@@ -154,13 +156,44 @@ function EventBadge({ event, x, y, isActive, showHealingButton, onHealingStart }
   };
 
   const config = getBadgeConfig();
-  const maxWidth = 280;  // Increased from 180 for better readability
-  const lineHeight = 16;  // Increased from 14 for larger text
-  const padding = 10;  // Increased from 8 for more breathing room
-  const titleHeight = 18;  // Increased from 16 for larger title
+  const maxWidth = config.isError ? 320 : 280;  // Wider for error messages
+  const lineHeight = config.isError ? 20 : 16;  // More spacing for errors
+  const padding = config.isError ? 16 : 10;  // More padding for errors
+  const titleHeight = config.isError ? 22 : 18;  // Larger title for errors
   const detailsHeight = config.details.length * lineHeight;
-  const buttonHeight = showHealingButton ? 50 : 0;  // Add space for button if needed
-  const totalHeight = titleHeight + detailsHeight + buttonHeight + (padding * 2);
+  const buttonHeight = showHealingButton ? 54 : 0;  // Add space for button if needed
+  const totalHeight = titleHeight + detailsHeight + buttonHeight + (padding * 3);
+
+  let badgeX, badgeY, lineStartY;
+  
+  if (disableSmartPosition) {
+    // Use coordinates directly without offset - for agent progress badge
+    badgeX = x;
+    badgeY = y;
+    lineStartY = y + totalHeight; // Line goes from bottom of badge down to marker
+  } else {
+    // Smart positioning: Determine which quadrant the marker is in
+    const centerX = mapWidth / 2;
+    const centerY = mapHeight / 2;
+    const isTopHalf = y < centerY;
+    
+    // Calculate badge offset from marker
+    const horizontalOffset = 0;
+    let verticalOffset;
+    
+    if (forceBelow) {
+      verticalOffset = 60; // Below marker
+    } else {
+      verticalOffset = isTopHalf ? 60 : -totalHeight - 60;
+    }
+    
+    // Badge position
+    badgeX = x + horizontalOffset;
+    badgeY = y + verticalOffset;
+    
+    // Leader line connection point
+    lineStartY = verticalOffset < 0 ? badgeY + totalHeight : badgeY;
+  }
 
   return (
     <g style={{
@@ -168,56 +201,97 @@ function EventBadge({ event, x, y, isActive, showHealingButton, onHealingStart }
       transition: 'opacity 0.5s ease-in-out',
       pointerEvents: isActive ? 'auto' : 'none'
     }}>
+      {/* Leader line connecting badge to marker */}
+      <line
+        x1={markerX !== null ? markerX : x}
+        y1={markerY !== null ? markerY : y}
+        x2={badgeX}
+        y2={lineStartY}
+        stroke={config.color}
+        strokeWidth={2}
+        strokeOpacity={0.4}
+        strokeDasharray="4 3"
+      />
+      
       {/* Badge background */}
       <rect
-        x={x - maxWidth / 2}
-        y={y - totalHeight - 50}
+        x={badgeX - maxWidth / 2}
+        y={badgeY}
         width={maxWidth}
         height={totalHeight}
-        rx={4}
+        rx={6}
         fill="white"
         fillOpacity={0.98}
-        stroke="#E7EAEE"
-        strokeWidth={1}
+        stroke={config.isError ? config.color : "#E7EAEE"}
+        strokeWidth={config.isError ? 2 : 1}
         filter="url(#badge-shadow)"
         style={{ transition: 'all 0.3s ease' }}
       />
 
+      {/* Error background tint */}
+      {config.isError && (
+        <rect
+          x={badgeX - maxWidth / 2}
+          y={badgeY}
+          width={maxWidth}
+          height={totalHeight}
+          rx={6}
+          fill={config.color}
+          fillOpacity={0.04}
+        />
+      )}
+
       {/* Color indicator bar */}
       <rect
-        x={x - maxWidth / 2}
-        y={y - totalHeight - 50}
-        width={4}
+        x={badgeX - maxWidth / 2}
+        y={badgeY}
+        width={config.isError ? 5 : 4}
         height={totalHeight}
-        rx={4}
+        rx={config.isError ? 6 : 4}
         fill={config.color}
       />
 
       {/* Title */}
       <text
-        x={x - maxWidth / 2 + padding + 4}
-        y={y - totalHeight - 50 + padding + 13}
-        fontSize={13}
+        x={badgeX - maxWidth / 2 + padding + 6}
+        y={badgeY + padding + 14}
+        fontSize={config.isError ? 14 : 13}
         fontWeight="700"
         fill={config.color}
         fontFamily="system-ui, -apple-system, sans-serif"
+        letterSpacing="0.3"
       >
         {config.title}
       </text>
 
-      {/* Details */}
-      {config.details.map((detail, i) => (
-        <text
-          key={i}
-          x={x - maxWidth / 2 + padding + 4}
-          y={y - totalHeight - 50 + padding + titleHeight + 6 + (i * lineHeight) + 11}
-          fontSize={11}
-          fill="#5C6C75"
-          fontFamily="system-ui, -apple-system, sans-serif"
-        >
-          {detail.length > 50 ? detail.substring(0, 47) + '...' : detail}
-        </text>
-      ))}
+      {/* Details with proper text wrapping */}
+      <foreignObject
+        x={badgeX - maxWidth / 2 + padding + 6}
+        y={badgeY + padding + titleHeight + 10}
+        width={maxWidth - (padding * 2) - 12}
+        height={detailsHeight + 20}
+      >
+        <div xmlns="http://www.w3.org/1999/xhtml" style={{
+          fontSize: config.isError ? '12px' : '11px',
+          color: config.isError ? "#1C2D38" : "#5C6C75",
+          fontFamily: "system-ui, -apple-system, sans-serif",
+          lineHeight: '1.5',
+          wordWrap: 'break-word',
+          overflowWrap: 'break-word'
+        }}>
+          {config.details.map((detail, i) => (
+            <div 
+              key={i}
+              style={{
+                marginBottom: i < config.details.length - 1 ? '4px' : '0',
+                fontWeight: config.isError && i < config.details.length - 1 ? "500" : "400"
+              }}
+            >
+              {detail}
+            </div>
+          ))}
+        </div>
+      </foreignObject>
 
       {/* Self-Healing Agent Button */}
       {showHealingButton && onHealingStart && (
@@ -237,14 +311,14 @@ function EventBadge({ event, x, y, isActive, showHealingButton, onHealingStart }
             </linearGradient>
           </defs>
           <rect
-            x={x - 120}  // 240px wide button centered
-            y={y - totalHeight - 50 + padding + titleHeight + detailsHeight + 16}
-            width={240}
-            height={42}
+            x={badgeX - 130}  // 260px wide button centered
+            y={badgeY + padding + titleHeight + detailsHeight + 20}
+            width={260}
+            height={44}
             rx={8}
             fill="url(#button-gradient)"
             stroke="#00854A"
-            strokeWidth={1}
+            strokeWidth={1.5}
             style={{ cursor: 'pointer', pointerEvents: 'auto' }}
             filter="url(#button-shadow)"
             onMouseEnter={(e) => {
@@ -258,17 +332,17 @@ function EventBadge({ event, x, y, isActive, showHealingButton, onHealingStart }
           />
           {/* Icon - Gear/Settings symbol */}
           <circle
-            cx={x - 90}
-            cy={y - totalHeight - 50 + padding + titleHeight + detailsHeight + 37}
-            r={10}
+            cx={badgeX - 95}
+            cy={badgeY + padding + titleHeight + detailsHeight + 42}
+            r={11}
             fill="white"
-            fillOpacity={0.2}
+            fillOpacity={0.25}
             style={{ pointerEvents: 'none' }}
           />
           <text
-            x={x - 90}
-            y={y - totalHeight - 50 + padding + titleHeight + detailsHeight + 37}
-            fontSize={14}
+            x={badgeX - 95}
+            y={badgeY + padding + titleHeight + detailsHeight + 42}
+            fontSize={15}
             fill="white"
             textAnchor="middle"
             dominantBaseline="central"
@@ -279,15 +353,15 @@ function EventBadge({ event, x, y, isActive, showHealingButton, onHealingStart }
           </text>
           {/* Button text */}
           <text
-            x={x + 20}
-            y={y - totalHeight - 50 + padding + titleHeight + detailsHeight + 37}
+            x={badgeX + 25}
+            y={badgeY + padding + titleHeight + detailsHeight + 42}
             fontSize={13}
             fontWeight="600"
             fill="white"
             textAnchor="middle"
             dominantBaseline="central"
             fontFamily="system-ui, -apple-system, sans-serif"
-            letterSpacing="0.3"
+            letterSpacing="0.5"
             style={{ pointerEvents: 'none' }}
           >
             Activate Auto-Resolution
@@ -299,10 +373,10 @@ function EventBadge({ event, x, y, isActive, showHealingButton, onHealingStart }
       {/* Drop shadow filter definitions */}
       <defs>
         <filter id="badge-shadow" x="-50%" y="-50%" width="200%" height="200%">
-          <feDropShadow dx="0" dy="2" stdDeviation="3" floodOpacity="0.15"/>
+          <feDropShadow dx="0" dy="3" stdDeviation="6" floodOpacity={config.isError ? "0.20" : "0.15"}/>
         </filter>
         <filter id="button-shadow" x="-50%" y="-50%" width="200%" height="200%">
-          <feDropShadow dx="0" dy="2" stdDeviation="4" floodOpacity="0.2"/>
+          <feDropShadow dx="0" dy="2" stdDeviation="5" floodOpacity="0.25"/>
         </filter>
       </defs>
     </g>
@@ -617,6 +691,8 @@ function AnimatedPaymentJourney({ from, to, events, isStreaming }) {
               y={errorY}
               isActive={true}
               showHealingButton={false}
+              mapWidth={800}
+              mapHeight={700}
             />
           ) : (
             // Error badge - shows validation error (stable)
@@ -628,6 +704,8 @@ function AnimatedPaymentJourney({ from, to, events, isStreaming }) {
                 isActive={true}
                 showHealingButton={journeyState.status === 'error_awaiting_healing'}
                 onHealingStart={handleStartHealing}
+                mapWidth={800}
+                mapHeight={700}
               />
             )
           )}
@@ -644,9 +722,14 @@ function AnimatedPaymentJourney({ from, to, events, isStreaming }) {
               <EventBadge
                 event={currentAgentEvent}
                 x={errorX}
-                y={errorY - 120}
+                y={errorY - 180}
                 isActive={true}
                 showHealingButton={false}
+                mapWidth={800}
+                mapHeight={700}
+                disableSmartPosition={true}
+                markerX={errorX}
+                markerY={errorY}
               />
             </g>
           )}
@@ -693,6 +776,8 @@ function AnimatedPaymentJourney({ from, to, events, isStreaming }) {
               x={markerX}
               y={markerY}
               isActive={true}
+              mapWidth={800}
+              mapHeight={700}
             />
           )}
         </g>
@@ -732,7 +817,7 @@ export default function GeographicMapPanel({ isActive, scenario, isStreaming, ev
     <Card
       style={{
         padding: '0',
-        height: '600px',
+        height: '700px',
         display: 'flex',
         flexDirection: 'column',
         background: '#F9FBFA',

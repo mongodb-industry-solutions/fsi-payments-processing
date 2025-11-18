@@ -20,7 +20,7 @@ class AILaneService:
     def __init__(
         self,
         bedrock_service: BedrockService = None,
-        model_haiku: str = "anthropic.claude-3-haiku-20240307-v1:0",
+        model_haiku: str = "anthropic.claude-haiku-4-5-20251001-v1:0",
         model_sonnet: str = "anthropic.claude-3-5-sonnet-20240620-v1:0"
     ):
         """
@@ -97,19 +97,19 @@ class AILaneService:
                     cleaned_response = json_match.group(0)
                 else:
                     cleaned_response = extracted_text
-                
+
                 extracted_data = json.loads(cleaned_response)
             except json.JSONDecodeError:
                 # If not JSON, treat as plain text
                 extracted_data = {"text": extracted_text}
-            
+
             # Calculate confidence based on extraction quality
             confidence = self._calculate_confidence(
                 extracted_data,
                 input_text,
                 response_body
             )
-            
+
             logger.info(f"AI extraction complete: {field_type}, confidence: {confidence:.2f}")
             
             return {
@@ -143,13 +143,28 @@ class AILaneService:
         # Default prompts by field type
         default_prompts = {
             "remittance": (
-                "Extract payment remittance information from the following text. "
-                "Return a JSON object with these fields:\n"
-                "- payment_purpose: Brief description of payment purpose\n"
-                "- invoice_number: Invoice or reference number if present\n"
-                "- details: Additional details or context (single string, not array)\n\n"
-                "Input text:\n{input}\n\n"
-                "Return only valid JSON, no explanations."
+                "Extract structured payment information from multi-line remittance text.\n\n"
+                "<example>\n"
+                "Input text:\n"
+                "```\n"
+                "INVOICE INV-2024-001 DATED 05.12.2024\n"
+                "MEDICAL EQUIPMENT AND SUPPLIES\n"
+                "URGENT DELIVERY REQUIRED\n"
+                "```\n\n"
+                "Expected JSON:\n"
+                "{{\n"
+                '  "payment_purpose": "INVOICE",\n'
+                '  "invoice_number": "INV-2024-001",\n'
+                '  "details": "MEDICAL EQUIPMENT AND SUPPLIES. URGENT DELIVERY REQUIRED"\n'
+                "}}\n"
+                "</example>\n\n"
+                "Now extract from this input:\n"
+                "```\n{input}\n```\n\n"
+                "Rules:\n"
+                "1. payment_purpose = first keyword from line 1\n"
+                "2. invoice_number = reference number from line 1\n"
+                "3. details = join ALL text from lines after line 1 with periods\n\n"
+                "Output JSON only:"
             ),
             "instructions": (
                 "Extract bank-to-bank instructions from the following text. "
