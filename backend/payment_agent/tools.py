@@ -12,7 +12,8 @@ Key Points:
 - Return structured data (dicts) for easy processing
 
 Resolution Agent Tools:
-- transliterate_text: Convert text to Japanese script
+- transliterate_text: Convert text to Japanese script (AI fallback)
+- lookup_company_katakana: Look up pre-translated Katakana names (fast DB lookup)
 - lookup_ifsc: Look up IFSC code for Indian banks
 
 Execution Agent Tools:
@@ -119,6 +120,102 @@ Respond with ONLY the transliterated text in {target_script}, nothing else."""
             "original": text,
             "transliterated": "",
             "script": target_script,
+            "confidence": 0.0,
+            "error": str(e)
+        }
+
+
+@tool
+def lookup_company_katakana(company_name: str) -> Dict[str, Any]:
+    """
+    Look up pre-translated Katakana name for a company from database.
+
+    Use this tool when processing payments to Japan that require company names
+    in Katakana script. This tool searches a database of known companies with
+    their official Katakana translations.
+
+    This is FASTER and MORE ACCURATE than AI transliteration for known companies
+    because it uses official registered names from the database. Always try this
+    tool FIRST before using transliterate_text as a fallback.
+
+    The database contains major Japanese companies and common international companies
+    that frequently do business with Japan.
+
+    Args:
+        company_name: English company name (e.g., "DENSO CORPORATION", "SONY CORPORATION")
+
+    Returns:
+        dict: {
+            "found": bool,              # True if company found in database
+            "name_english": str,        # Original English name
+            "name_katakana": str,       # Official Katakana translation
+            "name_hiragana": str,       # Optional Hiragana version
+            "bank_name": str,           # Associated bank (if known)
+            "swift_code": str,          # Bank SWIFT code (if known)
+            "city": str,                # City location
+            "country": str,             # ISO 2-letter country code
+            "confidence": float         # 1.0 if found, 0.0 if not found
+        }
+
+    Example:
+        >>> lookup_company_katakana("DENSO CORPORATION")
+        {
+            "found": True,
+            "name_english": "DENSO CORPORATION",
+            "name_katakana": "デンソー",
+            "bank_name": "Bank of Tokyo-Mitsubishi UFJ",
+            "confidence": 1.0
+        }
+
+    Important: If this tool returns found=False, you should fallback to using
+    the transliterate_text tool to generate the Katakana name using AI.
+    """
+    from services.mongodb_service import get_mongodb_service
+
+    logger.info(f"Looking up Katakana name for company: {company_name}")
+
+    try:
+        mongo = get_mongodb_service()
+        collection = mongo.get_collection("bank_details")
+
+        # Case-insensitive exact match on company name
+        result = collection.find_one({
+            "name_english": {"$regex": f"^{company_name}$", "$options": "i"}
+        })
+
+        if result:
+            logger.info(f"Found company in database: {result.get('name_katakana')}")
+            return {
+                "found": True,
+                "name_english": result.get("name_english"),
+                "name_katakana": result.get("name_katakana"),
+                "name_hiragana": result.get("name_hiragana"),
+                "bank_name": result.get("bank_name"),
+                "swift_code": result.get("swift_code"),
+                "city": result.get("city"),
+                "country": result.get("country"),
+                "confidence": 1.0
+            }
+        else:
+            logger.warning(f"Company not found in database: {company_name}")
+            return {
+                "found": False,
+                "name_english": company_name,
+                "name_katakana": None,
+                "name_hiragana": None,
+                "bank_name": None,
+                "swift_code": None,
+                "city": None,
+                "country": None,
+                "confidence": 0.0,
+                "error": "Company not found in database - use transliterate_text as fallback"
+            }
+
+    except Exception as e:
+        logger.error(f"Error looking up company Katakana name: {e}")
+        return {
+            "found": False,
+            "name_english": company_name,
             "confidence": 0.0,
             "error": str(e)
         }

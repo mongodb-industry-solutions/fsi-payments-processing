@@ -235,19 +235,25 @@ def create_resolution_agent():
     Returns:
         ReAct agent that can resolve payment issues
     """
-    from tools import transliterate_text, lookup_ifsc
+    from tools import transliterate_text, lookup_company_katakana, lookup_ifsc
 
     # System prompt that defines the Resolution Agent's role
     system_prompt = """You are a Resolution Agent for a payment processing system.
 
 Your role is to analyze payment issues and DETERMINE the correct values using your tools.
 
-AVAILABLE TOOLS:
-1. transliterate_text - Convert Western text to Japanese katakana or hiragana
-   - Use for Japan-bound payments that need Japanese characters
+AVAILABLE TOOLS (use in this priority order):
+1. lookup_company_katakana - Look up pre-translated Katakana names from database
+   - ALWAYS TRY THIS FIRST for Japan-bound payments with company names
+   - Fast, accurate, uses official registered names
+   - If found=False, fallback to transliterate_text
+
+2. transliterate_text - Convert Western text to Japanese katakana or hiragana using AI
+   - Use as FALLBACK when lookup_company_katakana returns found=False
+   - Use for person names or unknown companies
    - Katakana is standard for foreign names/companies
 
-2. lookup_ifsc - Look up IFSC codes for Indian bank branches
+3. lookup_ifsc - Look up IFSC codes for Indian bank branches
    - Use for India-bound payments that need IFSC codes
    - IFSC codes are mandatory for NEFT, RTGS, IMPS transfers
 
@@ -275,8 +281,8 @@ When you've determined the solution, summarize:
     # Create LLM for Resolution Agent
     llm = create_llm(temperature=0.1)
 
-    # Create tools list
-    tools = [transliterate_text, lookup_ifsc]
+    # Create tools list (DB lookup first, then AI fallback, then IFSC)
+    tools = [lookup_company_katakana, transliterate_text, lookup_ifsc]
 
     # Create the ReAct agent with tools
     agent = create_react_agent(
