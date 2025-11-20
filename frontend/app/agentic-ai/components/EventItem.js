@@ -1,9 +1,12 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Body } from '@leafygreen-ui/typography';
 import Icon from '@leafygreen-ui/icon';
 import Badge from '@leafygreen-ui/badge';
+import JSONDiffModal from './JSONDiffModal';
+
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8001';
 
 /**
  * Get icon for event type
@@ -75,7 +78,15 @@ function formatEventMessage(event) {
     case 'tool_result':
       return `Tool completed: ${event.tool || 'unknown'}`;
     case 'agent_resolution':
-      return `Solution proposed for ${event.field || 'field'}`;
+      // Try to extract field name from reasoning
+      let fieldName = 'field';
+      if (event.reasoning) {
+        const fieldMatch = event.reasoning.match(/FIELD TO UPDATE:\s*(\w+)/);
+        if (fieldMatch) {
+          fieldName = fieldMatch[1];
+        }
+      }
+      return `Solution proposed for ${fieldName}`;
     case 'agent_execution':
       return `Updated field: ${event.field || 'field'}`;
     case 'agent_complete':
@@ -277,107 +288,57 @@ function renderEventDetails(event) {
           borderRadius: '6px',
           fontSize: '12px'
         }}>
-          {/* Parse structured sections from reasoning */}
-          {event.reasoning && (() => {
-            const sections = [];
-            const lines = event.reasoning.split('\n').filter(line => line.trim());
-            
-            let currentSection = null;
-            let currentContent = [];
-            
-            lines.forEach((line) => {
-              const trimmed = line.trim();
-              
-              // Check for field/value pairs
-              if (trimmed.startsWith('FIELD TO UPDATE:')) {
-                if (currentSection) {
-                  sections.push({ type: currentSection, content: currentContent.join('\n') });
-                }
-                const field = trimmed.replace('FIELD TO UPDATE:', '').trim();
-                sections.push({ type: 'FIELD', content: field });
-                currentSection = null;
-                currentContent = [];
-              } else if (trimmed.startsWith('NEW VALUE:')) {
-                const value = trimmed.replace('NEW VALUE:', '').trim();
-                sections.push({ type: 'VALUE', content: value });
-              } else if (trimmed.startsWith('REASON:')) {
-                currentSection = 'REASON';
-                const reasonText = trimmed.replace('REASON:', '').trim();
-                if (reasonText) currentContent.push(reasonText);
-              } else if (currentSection) {
-                currentContent.push(trimmed);
-              }
-            });
-            
-            if (currentSection && currentContent.length) {
-              sections.push({ type: currentSection, content: currentContent.join('\n') });
-            }
-            
-            return sections.map((section, idx) => {
-              if (section.type === 'FIELD') {
-                return (
-                  <div key={idx} style={{ marginBottom: '12px' }}>
-                    <Body weight="bold" style={{ fontSize: '12px', color: '#0B61A4', marginBottom: '4px' }}>
-                      FIELD TO UPDATE
-                    </Body>
-                    <Body style={{ fontSize: '12px', color: '#5C6C75', fontWeight: '600' }}>
-                      {section.content}
-                    </Body>
-                  </div>
-                );
-              } else if (section.type === 'VALUE') {
-                return (
-                  <div key={idx} style={{ marginBottom: '12px' }}>
-                    <Body weight="bold" style={{ fontSize: '12px', color: '#0B61A4', marginBottom: '4px' }}>
-                      NEW VALUE
-                    </Body>
-                    <Body style={{ fontSize: '12px', color: '#00A35C', fontWeight: '600' }}>
-                      {section.content}
-                    </Body>
-                  </div>
-                );
-              } else if (section.type === 'REASON') {
-                // Split bullet points
-                const bullets = section.content.split(/(?=[-•])/);
-                return (
-                  <div key={idx}>
-                    <Body weight="bold" style={{ fontSize: '12px', color: '#0B61A4', marginBottom: '8px' }}>
-                      REASON
-                    </Body>
-                    <div style={{ paddingLeft: '8px' }}>
-                      {bullets.map((bullet, bidx) => {
-                        const cleaned = bullet.replace(/^[-•]\s*/, '').trim();
-                        if (!cleaned) return null;
-                        return (
-                          <div key={bidx} style={{ 
-                            marginBottom: '8px',
-                            display: 'flex',
-                            gap: '8px'
-                          }}>
-                            <Body style={{ 
-                              fontSize: '12px', 
-                              color: '#00A35C',
-                              minWidth: '8px'
-                            }}>
-                              •
-                            </Body>
-                            <Body style={{ 
-                              fontSize: '12px', 
-                              color: '#5C6C75',
-                              lineHeight: '1.5'
-                            }}>
-                              {cleaned}
-                            </Body>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              }
-              return null;
-            });
-          })()}
+          {event.proposed_value && (
+            <div style={{ marginBottom: '12px' }}>
+              <Body weight="bold" style={{ fontSize: '12px', color: '#0B61A4', marginBottom: '4px' }}>
+                PROPOSED VALUE
+              </Body>
+              <Body style={{ fontSize: '12px', color: '#00A35C', fontWeight: '600' }}>{event.proposed_value}</Body>
+            </div>
+          )}
+          {event.confidence && (
+            <div style={{ marginBottom: '12px' }}>
+              <Body weight="bold" style={{ fontSize: '12px', color: '#0B61A4', marginBottom: '4px' }}>
+                CONFIDENCE
+              </Body>
+              <Body style={{ fontSize: '12px', color: '#5C6C75', fontWeight: '600' }}>{(event.confidence * 100).toFixed(0)}%</Body>
+            </div>
+          )}
+          {event.reasoning && (
+            <div>
+              <Body weight="bold" style={{ fontSize: '12px', color: '#0B61A4', marginBottom: '8px' }}>
+                REASONING
+              </Body>
+              <div style={{ paddingLeft: '8px' }}>
+                {/* Parse and format reasoning text */}
+                {(() => {
+                  const lines = event.reasoning.split('\n');
+                  return lines.map((line, idx) => {
+                    const trimmed = line.trim();
+                    if (!trimmed) return null;
+                    
+                    // Handle bullet points
+                    if (trimmed.startsWith('-') || trimmed.startsWith('•')) {
+                      const text = trimmed.replace(/^[-•]\s*/, '');
+                      return (
+                        <div key={idx} style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                          <Body style={{ fontSize: '12px', color: '#00A35C', minWidth: '8px' }}>•</Body>
+                          <Body style={{ fontSize: '12px', color: '#5C6C75', lineHeight: '1.5' }}>{text}</Body>
+                        </div>
+                      );
+                    }
+                    
+                    // Regular text
+                    return (
+                      <Body key={idx} style={{ fontSize: '12px', color: '#5C6C75', marginBottom: '8px', lineHeight: '1.5' }}>
+                        {trimmed}
+                      </Body>
+                    );
+                  });
+                })()}
+              </div>
+            </div>
+          )}
         </div>
       );
 
@@ -438,11 +399,55 @@ function isExpandable(event) {
  * @param {Function} props.onToggleExpand - Callback to toggle expansion
  */
 export default function EventItem({ event, isExpanded, onToggleExpand }) {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [jsonDiffData, setJsonDiffData] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+  
   const icon = getEventIcon(event.type);
   const color = getEventColor(event.type);
   const message = formatEventMessage(event);
   const details = renderEventDetails(event);
   const canExpand = isExpandable(event);
+  
+  // Show code button only for agent_execution events with conversion_run_id
+  const showCodeButton = event.type === 'agent_execution' && event.conversion_run_id;
+  
+  // Fetch JSON diff from API
+  const handleFetchJSONDiff = async (e) => {
+    e.stopPropagation();
+    
+    if (!event.conversion_run_id) {
+      setError('No conversion run ID available');
+      return;
+    }
+    
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const response = await fetch(
+        `${BACKEND_URL}/api/v1/canonical-json/${event.conversion_run_id}/diff`
+      );
+      
+      if (!response.ok) {
+        if (response.status === 404) {
+          throw new Error('Canonical JSON document not found or no changes recorded');
+        }
+        throw new Error(`Failed to fetch JSON diff: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      setJsonDiffData(data);
+      setIsModalOpen(true);
+      
+    } catch (err) {
+      console.error('Error fetching JSON diff:', err);
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div
@@ -477,18 +482,53 @@ export default function EventItem({ event, isExpanded, onToggleExpand }) {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            marginBottom: '4px'
+            marginBottom: '4px',
+            gap: '8px'
           }}>
-            <Body weight="medium" style={{ fontSize: '13px' }}>
+            <Body weight="medium" style={{ fontSize: '13px', flex: 1 }}>
               {message}
             </Body>
-            {canExpand && (
-              <Icon
-                glyph={isExpanded ? 'ChevronUp' : 'ChevronDown'}
-                size="small"
-                fill="#889397"
-              />
-            )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              {showCodeButton && (
+                <button
+                  onClick={handleFetchJSONDiff}
+                  disabled={isLoading}
+                  style={{
+                    border: '1px solid #E7EAEE',
+                    background: 'white',
+                    borderRadius: '4px',
+                    padding: '4px 6px',
+                    cursor: isLoading ? 'wait' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    transition: 'all 0.15s ease',
+                    opacity: isLoading ? 0.6 : 1
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isLoading) {
+                      e.currentTarget.style.background = '#F9FBFA';
+                      e.currentTarget.style.borderColor = '#0B61A4';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isLoading) {
+                      e.currentTarget.style.background = 'white';
+                      e.currentTarget.style.borderColor = '#E7EAEE';
+                    }
+                  }}
+                  title="View canonical JSON changes"
+                >
+                  <Icon glyph="Code" fill={isLoading ? "#889397" : "#0B61A4"} size="small" />
+                </button>
+              )}
+              {canExpand && (
+                <Icon
+                  glyph={isExpanded ? 'ChevronUp' : 'ChevronDown'}
+                  size="small"
+                  fill="#889397"
+                />
+              )}
+            </div>
           </div>
 
           {/* Timestamp */}
@@ -498,8 +538,34 @@ export default function EventItem({ event, isExpanded, onToggleExpand }) {
 
           {/* Expanded Details */}
           {isExpanded && details}
+          
+          {/* Error Message */}
+          {error && (
+            <div style={{
+              marginTop: '8px',
+              padding: '8px 12px',
+              background: '#FFEBEE',
+              border: '1px solid #EF5350',
+              borderRadius: '4px'
+            }}>
+              <Body style={{ fontSize: '11px', color: '#C62828' }}>
+                {error}
+              </Body>
+            </div>
+          )}
         </div>
       </div>
+      
+      {/* JSON Diff Modal */}
+      {jsonDiffData && (
+        <JSONDiffModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          beforeJSON={jsonDiffData.before_json}
+          afterJSON={jsonDiffData.after_json}
+          changedFields={jsonDiffData.changed_fields}
+        />
+      )}
     </div>
   );
 }

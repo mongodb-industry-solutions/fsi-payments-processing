@@ -420,3 +420,4 @@ backend/payment_converter_v2/docs/ISSUE_MT103_FIELD_57D_MISSING.md
 ISSUE_SUMMARY_INDIA_IFSC_VALIDATION.md
 backend/payment_agent/temp_india_payload.json
 backend/payment_agent/temp_japan_payload.json
+logs/

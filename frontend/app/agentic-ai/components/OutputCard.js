@@ -132,7 +132,7 @@ export default function OutputCard({ output, stats, totalTime, targetFormat }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <Icon glyph="CheckmarkWithCircle" fill="#00A35C" size="large" />
           <div>
-            <H3>Conversion Complete</H3>
+            <H3>Payment Complete</H3>
             <Body style={{ fontSize: '12px', color: '#5C6C75', marginTop: '2px' }}>
               Processed in {totalTime?.toFixed(2)}s
             </Body>

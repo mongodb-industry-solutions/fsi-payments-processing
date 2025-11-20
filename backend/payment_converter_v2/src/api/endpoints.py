@@ -516,7 +516,7 @@ async def convert_multi_hop_stream(request: MultiHopConversionRequest):
                         final_state.update(execution_state)
 
                         result = execution_state.get("result", {})
-                        yield f"data: {json.dumps({'type': 'agent_execution', 'status': 'complete', 'field': result.get('field_name', ''), 'old_value': result.get('old_value', ''), 'new_value': result.get('new_value', ''), 'reasoning': result.get('reasoning', ''), 'details': {'field_name': result.get('field_name'), 'old_value': result.get('old_value'), 'new_value': result.get('new_value'), 'reasoning': result.get('reasoning'), 'success': result.get('success')}})}\n\n"
+                        yield f"data: {json.dumps({'type': 'agent_execution', 'conversion_run_id': conversion_run_id, 'status': 'complete', 'field': result.get('field_name', ''), 'old_value': result.get('old_value', ''), 'new_value': result.get('new_value', ''), 'reasoning': result.get('reasoning', ''), 'details': {'field_name': result.get('field_name'), 'old_value': result.get('old_value'), 'new_value': result.get('new_value'), 'reasoning': result.get('reasoning'), 'success': result.get('success')}})}\n\n"
 
                     elif event.get("type") == "complete":
                         agent_result = final_state.get("result", {})
@@ -596,6 +596,73 @@ async def convert_multi_hop_stream(request: MultiHopConversionRequest):
             "X-Accel-Buffering": "no"
         }
     )
+
+
+@router.get("/canonical-json/{conversion_run_id}/diff", status_code=status.HTTP_200_OK)
+async def get_canonical_json_diff(conversion_run_id: str):
+    """
+    Fetch before/after canonical JSON with changes from audit trail.
+    
+    This endpoint retrieves the canonical JSON document and reconstructs the
+    before state from the audit trail, allowing visualization of changes made
+    by the payment agent.
+    
+    Args:
+        conversion_run_id: UUID of the conversion run
+        
+    Returns:
+        Dictionary with before_json, after_json, and changed_fields
+        
+    Raises:
+        HTTPException 404: If document not found or no audit trail exists
+    """
+    try:
+        # Query canonical_json_storage by _id
+        doc = await mongodb_service.json_storage_collection.find_one({"_id": conversion_run_id})
+        
+        if not doc:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Canonical JSON document not found for conversion_run_id: {conversion_run_id}"
+            )
+        
+        # Get current state (after changes)
+        after_json = doc.get("json_data", {})
+        
+        # Get audit trail
+        audit_trail = doc.get("metadata", {}).get("audit_trail", {})
+        
+        if not audit_trail:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"No audit trail found for conversion_run_id: {conversion_run_id}"
+            )
+        
+        # Reconstruct before state by applying old values from audit trail
+        before_json = after_json.copy()
+        for field_name, changes in audit_trail.items():
+            before_json[field_name] = changes.get("old_value", "")
+        
+        # List of changed fields
+        changed_fields = list(audit_trail.keys())
+        
+        logger.info(f"Retrieved canonical JSON diff for {conversion_run_id}: {len(changed_fields)} fields changed")
+        
+        return {
+            "conversion_run_id": conversion_run_id,
+            "before_json": before_json,
+            "after_json": after_json,
+            "changed_fields": changed_fields
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching canonical JSON diff: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch canonical JSON diff: {str(e)}"
+        )
 
 
 @router.get("/health", response_model=HealthResponse, status_code=status.HTTP_200_OK)
