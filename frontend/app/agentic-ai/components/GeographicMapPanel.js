@@ -11,6 +11,7 @@ import {
   Marker,
   useMapContext
 } from 'react-simple-maps';
+import ConversionFlowPipeline from './ConversionFlowPipeline';
 
 // World map topology URL (low resolution for performance)
 const geoUrl = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
@@ -795,9 +796,21 @@ function AnimatedPaymentJourney({ from, to, events, isStreaming }) {
  * @param {Object} props.scenario - Current scenario with source/target countries
  * @param {boolean} props.isStreaming - Whether conversion is in progress
  * @param {Array} props.events - Stream events for journey animation
+ * @param {string} props.output - Final conversion output
+ * @param {Object} props.stats - Processing statistics
+ * @param {number} props.totalTime - Total processing time
  */
-export default function GeographicMapPanel({ isActive, scenario, isStreaming, events = [] }) {
+export default function GeographicMapPanel({
+  isActive,
+  scenario,
+  isStreaming,
+  events = [],
+  output = '',
+  stats = null,
+  totalTime = 0
+}) {
   const [hoveredCountry, setHoveredCountry] = useState(null);
+  const [activeTab, setActiveTab] = useState('map');
 
   // Get country ISO codes for highlighting (simplified mapping)
   const getCountryISO = (countryName) => {
@@ -828,9 +841,68 @@ export default function GeographicMapPanel({ isActive, scenario, isStreaming, ev
       <div style={{
         padding: '20px 24px',
         borderBottom: '1px solid #E7EAEE',
-        background: 'white'
+        background: 'white',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between'
       }}>
         <H2>Payment Journey Visualization</H2>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button
+            onClick={() => setActiveTab('map')}
+            style={{
+              padding: '8px 16px',
+              background: activeTab === 'map' ? '#00A35C' : 'transparent',
+              color: activeTab === 'map' ? 'white' : '#5C6C75',
+              border: activeTab === 'map' ? 'none' : '1px solid #E7EAEE',
+              borderRadius: '6px',
+              fontSize: '14px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              fontFamily: 'system-ui, -apple-system, sans-serif'
+            }}
+            onMouseEnter={(e) => {
+              if (activeTab !== 'map') {
+                e.currentTarget.style.background = '#F9FBFA';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (activeTab !== 'map') {
+                e.currentTarget.style.background = 'transparent';
+              }
+            }}
+          >
+            Map
+          </button>
+          <button
+            onClick={() => setActiveTab('backend')}
+            style={{
+              padding: '8px 16px',
+              background: activeTab === 'backend' ? '#00A35C' : 'transparent',
+              color: activeTab === 'backend' ? 'white' : '#5C6C75',
+              border: activeTab === 'backend' ? 'none' : '1px solid #E7EAEE',
+              borderRadius: '6px',
+              fontSize: '14px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              fontFamily: 'system-ui, -apple-system, sans-serif'
+            }}
+            onMouseEnter={(e) => {
+              if (activeTab !== 'backend') {
+                e.currentTarget.style.background = '#F9FBFA';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (activeTab !== 'backend') {
+                e.currentTarget.style.background = 'transparent';
+              }
+            }}
+          >
+            Backend
+          </button>
+        </div>
       </div>
 
       {/* Map Content */}
@@ -842,29 +914,31 @@ export default function GeographicMapPanel({ isActive, scenario, isStreaming, ev
         position: 'relative',
         overflow: 'hidden'
       }}>
-        {!isActive ? (
-          /* Empty State */
-          <div style={{
-            textAlign: 'center',
-            zIndex: 1
-          }}>
-            <Icon glyph="Charts" size="xlarge" fill="#C1C7CD" />
-            <Body weight="medium" style={{
-              fontSize: '16px',
-              color: '#5C6C75',
-              marginTop: '16px',
-              marginBottom: '8px'
-            }}>
-              Select a scenario to begin
-            </Body>
-            <Body style={{
-              fontSize: '14px',
-              color: '#889397'
-            }}>
-              Geographic visualization will show payment routing
-            </Body>
-          </div>
-        ) : (
+        {activeTab === 'map' ? (
+          <>
+            {!isActive ? (
+              /* Empty State */
+              <div style={{
+                textAlign: 'center',
+                zIndex: 1
+              }}>
+                <Icon glyph="Charts" size="xlarge" fill="#C1C7CD" />
+                <Body weight="medium" style={{
+                  fontSize: '16px',
+                  color: '#5C6C75',
+                  marginTop: '16px',
+                  marginBottom: '8px'
+                }}>
+                  Select a scenario to begin
+                </Body>
+                <Body style={{
+                  fontSize: '14px',
+                  color: '#889397'
+                }}>
+                  Geographic visualization will show payment routing
+                </Body>
+              </div>
+            ) : (
           /* Interactive World Map */
           <ComposableMap
             projection="geoMercator"
@@ -1024,6 +1098,47 @@ export default function GeographicMapPanel({ isActive, scenario, isStreaming, ev
               </Marker>
             )}
           </ComposableMap>
+            )}
+          </>
+        ) : (
+          /* Backend Tab - Conversion Flow Pipeline */
+          !isActive ? (
+            <div style={{
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <div style={{ textAlign: 'center' }}>
+                <Icon glyph="Code" size="xlarge" fill="#C1C7CD" />
+                <Body weight="medium" style={{
+                  fontSize: '16px',
+                  color: '#5C6C75',
+                  marginTop: '16px',
+                  marginBottom: '8px'
+                }}>
+                  Select a scenario to begin
+                </Body>
+                <Body style={{
+                  fontSize: '14px',
+                  color: '#889397'
+                }}>
+                  Backend processing details will appear here
+                </Body>
+              </div>
+            </div>
+          ) : (
+            <ConversionFlowPipeline
+              sourceFormat={scenario?.sourceFormat || 'MT103'}
+              targetFormat={scenario?.targetFormat || 'pacs.008'}
+              sourceMessage={scenario?.message || ''}
+              targetMessage={output}
+              events={events}
+              stats={stats}
+              totalTime={totalTime}
+            />
+          )
         )}
       </div>
 

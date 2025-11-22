@@ -59,8 +59,7 @@ class Converter:
         message: str,
         request_id: Optional[str] = None,
         original_source_message: Optional[str] = None,
-        conversion_run_id: Optional[str] = None,
-        include_details: bool = False
+        conversion_run_id: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Convert a payment message from source to target format.
@@ -76,7 +75,6 @@ class Converter:
             request_id: Optional request ID for tracking
             original_source_message: Original source message for cache lookup (multi-hop)
             conversion_run_id: Optional unique ID for this conversion run (enables independence)
-            include_details: Include detailed processing information (extraction patterns, AI prompts, etc.)
 
         Returns:
             Dictionary containing:
@@ -86,7 +84,6 @@ class Converter:
             - human_review_required: Boolean flag
             - fields_for_review: List of low-confidence fields
             - metadata: Additional processing information
-            - detailed_processing: (optional) Detailed lane-by-lane processing info
 
         Raises:
             ValueError: If config not found or validation fails
@@ -176,17 +173,6 @@ class Converter:
                     'processing_time_seconds': processing_time
                 }
             }
-
-            # Add detailed processing information if requested
-            if include_details:
-                result['detailed_processing'] = self._compile_detailed_processing(
-                    config=config,
-                    extracted_fields=extracted_fields,
-                    internal_fields=internal_fields,
-                    ai_fields=ai_fields,
-                    ai_results=ai_results,
-                    confidence_scores=confidence_scores
-                )
             
             # NEW: Save JSON if target is JSON (for multi-hop reuse)
             if target_format == "JSON":
@@ -437,146 +423,6 @@ class Converter:
             'lane_percentages': {
                 'RULES': round((rules_fields / total_fields * 100) if total_fields > 0 else 0, 1),
                 'AI': round((ai_fields / total_fields * 100) if total_fields > 0 else 0, 1)
-            }
-        }
-
-    def _compile_detailed_processing(
-        self,
-        config: Dict[str, Any],
-        extracted_fields: Dict[str, Any],
-        internal_fields: Dict[str, Any],
-        ai_fields: List[Dict],
-        ai_results: Dict[str, Dict[str, Any]],
-        confidence_scores: Dict[str, float]
-    ) -> Dict[str, Any]:
-        """
-        Compile detailed processing information for frontend visualization.
-
-        Args:
-            config: Conversion configuration
-            extracted_fields: Fields extracted from source
-            internal_fields: RULES lane results
-            ai_fields: Fields queued for AI processing
-            ai_results: AI lane processing results
-            confidence_scores: Per-field confidence scores
-
-        Returns:
-            Detailed processing information dictionary
-        """
-        # 1. Extraction details
-        extraction_details = []
-        for field_id, value in extracted_fields.items():
-            pattern = config['extract'].get(field_id, '')
-            extraction_details.append({
-                'field_id': field_id,
-                'value': value[:100] + '...' if len(str(value)) > 100 else value,  # Truncate long values
-                'pattern': pattern,
-                'extracted': True
-            })
-
-        # 2. RULES lane details
-        rules_lane_details = []
-        for mapping in config['map']:
-            source_field = mapping.get('from')
-            target_field = mapping.get('to')
-
-            # Skip AI fields
-            if 'ai' in mapping:
-                continue
-
-            # Check if this field was in extracted fields
-            if source_field in extracted_fields:
-                transform_type = 'direct_copy'
-                transform_config = {}
-
-                if 'split' in mapping:
-                    transform_type = 'composite_split'
-                    transform_config = {'split_indices': mapping['split']}
-                elif 'multiline' in mapping:
-                    transform_type = 'multiline_extraction'
-                    transform_config = {'multiline': True}
-                elif 'dateFormat' in mapping:
-                    transform_type = 'date_format'
-                    transform_config = {'format': mapping['dateFormat']}
-                elif 'valueMap' in mapping:
-                    transform_type = 'value_mapping'
-                    transform_config = {'map': mapping['valueMap']}
-                elif mapping.get('decimal'):
-                    transform_type = 'decimal_format'
-                    transform_config = {'decimal': True}
-
-                # Get the actual result value(s)
-                if isinstance(target_field, list):
-                    result_values = {t: internal_fields.get(t, '') for t in target_field}
-                else:
-                    result_values = internal_fields.get(target_field, '')
-
-                rules_lane_details.append({
-                    'source_field': source_field,
-                    'target_field': target_field,
-                    'transform_type': transform_type,
-                    'transform_config': transform_config,
-                    'input_value': extracted_fields[source_field],
-                    'output_value': result_values,
-                    'confidence': 1.0
-                })
-
-        # 3. AI lane details
-        ai_lane_details = []
-        for ai_field in ai_fields:
-            source_field = ai_field['source']
-            target_field = ai_field['target']
-            field_type = ai_field['field_type']
-            input_text = ai_field['value']
-
-            # Get AI result
-            ai_result = ai_results.get(target_field, {})
-
-            # Get the prompt used (from ai_lane_service default prompts)
-            prompt_preview = f"Extract structured {field_type} information from the input text."
-
-            ai_lane_details.append({
-                'source_field': source_field,
-                'target_field': target_field,
-                'field_type': field_type,
-                'input_text': input_text[:200] + '...' if len(input_text) > 200 else input_text,
-                'prompt': ai_field.get('prompt', prompt_preview),
-                'ai_response': ai_result.get('data', {}),
-                'raw_response': ai_result.get('raw_response', '')[:300] + '...' if len(ai_result.get('raw_response', '')) > 300 else ai_result.get('raw_response', ''),
-                'confidence': ai_result.get('confidence', 0.0),
-                'confidence_reason': self._get_confidence_reason(ai_result.get('confidence', 0.0), ai_result.get('data', {})),
-                'model_used': ai_result.get('model_used', 'unknown'),
-                'processing_lane': 'AI'
-            })
-
-        # 4. Configuration structure
-        rules_mappings_count = len([m for m in config['map'] if 'ai' not in m])
-        ai_mappings_count = len([m for m in config['map'] if 'ai' in m])
-
-        return {
-            'extraction': {
-                'total_fields': len(extracted_fields),
-                'fields': extraction_details
-            },
-            'rules_lane': {
-                'total_fields': len(rules_lane_details),
-                'fields': rules_lane_details
-            },
-            'ai_lane': {
-                'total_fields': len(ai_lane_details),
-                'fields': ai_lane_details
-            },
-            'configuration': {
-                'extract_patterns': config.get('extract', {}),
-                'mappings': config.get('map', []),
-                'output_template': config.get('output', {}),
-                'stats': {
-                    'total_patterns': len(config.get('extract', {})),
-                    'total_mappings': len(config.get('map', [])),
-                    'rules_mappings': rules_mappings_count,
-                    'ai_mappings': ai_mappings_count,
-                    'output_fields': len(config.get('output', {}))
-                }
             }
         }
 

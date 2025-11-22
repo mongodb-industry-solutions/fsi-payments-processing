@@ -196,6 +196,9 @@ export default function AgenticAIPage() {
           scenario={getScenario(selectedScenario)}
           isStreaming={isStreaming}
           events={events}
+          output={output}
+          stats={stats}
+          totalTime={totalTime}
         />
 
         {/* Right: Transaction Agent Panel */}
