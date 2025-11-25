@@ -799,6 +799,8 @@ function AnimatedPaymentJourney({ from, to, events, isStreaming }) {
  * @param {string} props.output - Final conversion output
  * @param {Object} props.stats - Processing statistics
  * @param {number} props.totalTime - Total processing time
+ * @param {Object} props.hop1Details - Detailed processing for Hop 1
+ * @param {Object} props.hop2Details - Detailed processing for Hop 2
  */
 export default function GeographicMapPanel({
   isActive,
@@ -807,7 +809,10 @@ export default function GeographicMapPanel({
   events = [],
   output = '',
   stats = null,
-  totalTime = 0
+  totalTime = 0,
+  hop1Details = null,
+  hop2Details = null,
+  conversionRunId = null
 }) {
   const [hoveredCountry, setHoveredCountry] = useState(null);
   const [activeTab, setActiveTab] = useState('map');
@@ -1137,6 +1142,9 @@ export default function GeographicMapPanel({
               events={events}
               stats={stats}
               totalTime={totalTime}
+              hop1Details={hop1Details}
+              hop2Details={hop2Details}
+              conversionRunId={conversionRunId}
             />
           )
         )}

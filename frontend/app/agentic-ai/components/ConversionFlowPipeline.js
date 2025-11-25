@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Body, Label } from '@leafygreen-ui/typography';
 import BubbleDetailPanel from './BubbleDetailPanel';
 
@@ -16,6 +16,8 @@ import BubbleDetailPanel from './BubbleDetailPanel';
  * @param {Array} props.events - All SSE events from conversion
  * @param {Object} props.stats - Processing statistics
  * @param {number} props.totalTime - Total processing time
+ * @param {Object} props.hop1Details - Detailed processing for Hop 1
+ * @param {Object} props.hop2Details - Detailed processing for Hop 2
  */
 export default function ConversionFlowPipeline({
   sourceFormat,
@@ -24,7 +26,10 @@ export default function ConversionFlowPipeline({
   targetMessage,
   events = [],
   stats = null,
-  totalTime = 0
+  totalTime = 0,
+  hop1Details = null,
+  hop2Details = null,
+  conversionRunId = null
 }) {
   const [selectedBubble, setSelectedBubble] = useState(null);
 
@@ -34,6 +39,10 @@ export default function ConversionFlowPipeline({
 
   const hop1Time = hop1CompleteEvent?.time || 0;
   const hop2Time = hop2CompleteEvent?.time || 0;
+
+  // Debug logging
+  console.log('🔍 ConversionFlowPipeline - hop1Details:', hop1Details);
+  console.log('🔍 ConversionFlowPipeline - hop2Details:', hop2Details);
 
   // Define bubble configurations
   const bubbles = [
@@ -51,7 +60,12 @@ export default function ConversionFlowPipeline({
       label: 'Hop 1',
       sublabel: `${sourceFormat} → JSON`,
       color: '#0B61A4',
-      data: { conversionId: `${sourceFormat}_to_JSON`, time: hop1Time, hop: 1 }
+      data: {
+        conversionId: `${sourceFormat}_to_JSON`,
+        time: hop1Time,
+        hop: 1,
+        detailed: hop1Details
+      }
     },
     {
       id: '2',
@@ -59,7 +73,10 @@ export default function ConversionFlowPipeline({
       label: 'JSON',
       sublabel: 'Canonical',
       color: '#FFC010',
-      data: { format: 'JSON' }
+      data: {
+        format: 'JSON',
+        conversionRunId: conversionRunId
+      }
     },
     {
       id: 'B',
@@ -67,7 +84,12 @@ export default function ConversionFlowPipeline({
       label: 'Hop 2',
       sublabel: `JSON → ${targetFormat}`,
       color: '#0B61A4',
-      data: { conversionId: `JSON_to_${targetFormat}`, time: hop2Time, hop: 2 }
+      data: {
+        conversionId: `JSON_to_${targetFormat}`,
+        time: hop2Time,
+        hop: 2,
+        detailed: hop2Details
+      }
     },
     {
       id: '3',
@@ -84,7 +106,29 @@ export default function ConversionFlowPipeline({
   };
 
   return (
-    <div style={{
+    <>
+      <style jsx global>{`
+        .pipeline-scrollable::-webkit-scrollbar {
+          width: 8px;
+          height: 8px;
+        }
+        .pipeline-scrollable::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .pipeline-scrollable::-webkit-scrollbar-thumb {
+          background: rgba(136, 147, 151, 0.2);
+          border-radius: 4px;
+        }
+        .pipeline-scrollable::-webkit-scrollbar-thumb:hover {
+          background: rgba(136, 147, 151, 0.4);
+        }
+        /* Firefox */
+        .pipeline-scrollable {
+          scrollbar-width: thin;
+          scrollbar-color: rgba(136, 147, 151, 0.2) transparent;
+        }
+      `}</style>
+    <div className="pipeline-scrollable" style={{
       width: '100%',
       height: '100%',
       display: 'flex',
@@ -194,7 +238,7 @@ export default function ConversionFlowPipeline({
       </div>
 
       {/* Detail Panel */}
-      <div style={{
+      <div className="pipeline-scrollable" style={{
         flex: 1,
         padding: '24px',
         overflow: 'auto',
@@ -217,5 +261,6 @@ export default function ConversionFlowPipeline({
         )}
       </div>
     </div>
+    </>
   );
 }

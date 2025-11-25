@@ -440,7 +440,7 @@ async def convert_multi_hop_stream(request: MultiHopConversionRequest):
                 )
 
                 hop1_time = time.time() - hop1_start
-                yield f"data: {json.dumps({'type': 'hop1_complete', 'time': round(hop1_time, 2)})}\n\n"
+                yield f"data: {json.dumps({'type': 'hop1_complete', 'time': round(hop1_time, 2), 'detailed_processing': hop1_result.get('detailed_processing', {})})}\n\n"
 
             except CountryValidationException as e:
                 # Country validation failed - emit event and call agent
@@ -542,8 +542,13 @@ async def convert_multi_hop_stream(request: MultiHopConversionRequest):
                     'processing_stats': {'lane_distribution': {'RULES': 0, 'AI': 0, 'HUMAN': 0}},
                     'confidence_scores': {},
                     'human_review_required': False,
-                    'metadata': {'source_format': request.source_format, 'target_format': "JSON"}
+                    'metadata': {'source_format': request.source_format, 'target_format': "JSON"},
+                    'detailed_processing': e.conversion_context.get('detailed_processing', {})
                 }
+
+                # Emit hop1_complete now that agent has finished and we have the result
+                hop1_time = time.time() - hop1_start
+                yield f"data: {json.dumps({'type': 'hop1_complete', 'time': round(hop1_time, 2), 'detailed_processing': hop1_result.get('detailed_processing', {})})}\n\n"
 
             # Hop 2: JSON → Target
             yield f"data: {json.dumps({'type': 'hop2_start', 'source': 'JSON', 'target': request.target_format})}\n\n"
@@ -558,7 +563,7 @@ async def convert_multi_hop_stream(request: MultiHopConversionRequest):
             )
 
             hop2_time = time.time() - hop2_start
-            yield f"data: {json.dumps({'type': 'hop2_complete', 'time': round(hop2_time, 2)})}\n\n"
+            yield f"data: {json.dumps({'type': 'hop2_complete', 'time': round(hop2_time, 2), 'detailed_processing': hop2_result.get('detailed_processing', {})})}\n\n"
 
             # Calculate total time
             total_time = time.time() - start_time
@@ -627,21 +632,16 @@ async def get_canonical_json_diff(conversion_run_id: str):
         
         # Get current state (after changes)
         after_json = doc.get("json_data", {})
-        
-        # Get audit trail
+
+        # Get audit trail (may be empty if no agent intervention)
         audit_trail = doc.get("metadata", {}).get("audit_trail", {})
-        
-        if not audit_trail:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"No audit trail found for conversion_run_id: {conversion_run_id}"
-            )
-        
+
         # Reconstruct before state by applying old values from audit trail
+        # If no audit trail, before and after are the same
         before_json = after_json.copy()
         for field_name, changes in audit_trail.items():
             before_json[field_name] = changes.get("old_value", "")
-        
+
         # List of changed fields
         changed_fields = list(audit_trail.keys())
         

@@ -19,7 +19,8 @@ def validate_country_rules(
     conversion_id: str,
     source_format: str,
     target_format: str,
-    conversion_run_id: str = None
+    conversion_run_id: str = None,
+    detailed_processing: Dict[str, Any] = None
 ) -> None:
     """
     Validate country-specific business rules.
@@ -33,6 +34,7 @@ def validate_country_rules(
         source_format: Source format (e.g., "MT103")
         target_format: Target format (e.g., "pacs.008")
         conversion_run_id: Optional unique ID for this conversion run
+        detailed_processing: Detailed processing data from hop1 (for frontend display)
 
     Raises:
         CountryValidationException: If country rules violated
@@ -48,10 +50,10 @@ def validate_country_rules(
 
     # Apply country-specific validations
     if target_country == "JP" or currency == "JPY":
-        validate_japan_rules(canonical_json, conversion_id, source_format, target_format, conversion_run_id)
+        validate_japan_rules(canonical_json, conversion_id, source_format, target_format, conversion_run_id, detailed_processing)
 
     if target_country == "IN" or currency == "INR":
-        validate_india_rules(canonical_json, conversion_id, source_format, target_format, conversion_run_id)
+        validate_india_rules(canonical_json, conversion_id, source_format, target_format, conversion_run_id, detailed_processing)
 
     # Add more countries here:
     # if target_country == "CH" or currency == "CHF":
@@ -63,7 +65,8 @@ def validate_japan_rules(
     conversion_id: str,
     source_format: str,
     target_format: str,
-    conversion_run_id: str = None
+    conversion_run_id: str = None,
+    detailed_processing: Dict[str, Any] = None
 ) -> None:
     """
     Validate Japan-specific payment rules.
@@ -78,6 +81,7 @@ def validate_japan_rules(
         source_format: Source format
         target_format: Target format
         conversion_run_id: Optional unique ID for this conversion run
+        detailed_processing: Detailed processing data from hop1 (for frontend display)
 
     Raises:
         CountryValidationException: If Japanese name requirements not met
@@ -102,6 +106,7 @@ def validate_japan_rules(
                 "target_format": target_format,
                 "conversion_id": conversion_id,
                 "conversion_run_id": conversion_run_id,  # Include for MongoDB lookup
+                "detailed_processing": detailed_processing or {},  # Include for frontend display
                 "additional_context": {
                     "country": "JP",
                     "currency": canonical_json.get("currency", "JPY"),
@@ -121,7 +126,8 @@ def validate_japan_rules(
             conversion_context={
                 "source_format": source_format,
                 "target_format": target_format,
-                "conversion_id": conversion_id
+                "conversion_id": conversion_id,
+                "detailed_processing": detailed_processing or {}
             }
         )
 
@@ -131,7 +137,8 @@ def validate_india_rules(
     conversion_id: str,
     source_format: str,
     target_format: str,
-    conversion_run_id: str = None
+    conversion_run_id: str = None,
+    detailed_processing: Dict[str, Any] = None
 ) -> None:
     """
     Validate India-specific payment rules.
@@ -145,6 +152,8 @@ def validate_india_rules(
         conversion_id: Conversion ID
         source_format: Source format
         target_format: Target format
+        conversion_run_id: Optional unique ID for this conversion run
+        detailed_processing: Detailed processing data from hop1 (for frontend display)
 
     Raises:
         CountryValidationException: If IFSC code missing or invalid
@@ -166,6 +175,7 @@ def validate_india_rules(
                 "target_format": target_format,
                 "conversion_id": conversion_id,
                 "conversion_run_id": conversion_run_id,
+                "detailed_processing": detailed_processing or {},  # Include for frontend display
                 "additional_context": {
                     "country": "IN",
                     "currency": canonical_json.get("currency", "INR"),
@@ -191,6 +201,7 @@ def validate_india_rules(
                 "target_format": target_format,
                 "conversion_id": conversion_id,
                 "conversion_run_id": conversion_run_id,
+                "detailed_processing": detailed_processing or {},  # Include for frontend display
                 "additional_context": {
                     "country": "IN",
                     "creditor_bank": creditor_bank,

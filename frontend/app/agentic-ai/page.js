@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Banner from '@leafygreen-ui/banner';
 import CollapsibleScenariosPanel from './components/CollapsibleScenariosPanel';
 import GeographicMapPanel from './components/GeographicMapPanel';
@@ -41,11 +41,23 @@ export default function AgenticAIPage() {
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState(null);
   const [expandedEvents, setExpandedEvents] = useState(new Set());
+  const [hop1Details, setHop1Details] = useState(null);
+  const [hop2Details, setHop2Details] = useState(null);
+  const [conversionRunId, setConversionRunId] = useState(null);
 
   const scenarios = getAllScenarios();
-  
+
   // Filter events for Transaction Agent panel (exclude conversion hops)
   const agentEvents = events.filter(isAgentRelatedEvent);
+
+  // Debug: Track hop details state changes
+  useEffect(() => {
+    console.log('🔄 hop1Details state changed:', hop1Details);
+  }, [hop1Details]);
+
+  useEffect(() => {
+    console.log('🔄 hop2Details state changed:', hop2Details);
+  }, [hop2Details]);
 
   // Helper Functions
   const addEvent = (eventData) => {
@@ -75,6 +87,9 @@ export default function AgenticAIPage() {
     setTotalTime(0);
     setError(null);
     setExpandedEvents(new Set());
+    setHop1Details(null);
+    setHop2Details(null);
+    setConversionRunId(null);
     setIsPanelExpanded(true); // Re-expand panel on reset
   };
 
@@ -85,6 +100,9 @@ export default function AgenticAIPage() {
     setStats(null);
     setTotalTime(0);
     setError(null);
+    setHop1Details(null);
+    setHop2Details(null);
+    setConversionRunId(null);
   };
 
   const handleTogglePanel = () => {
@@ -102,6 +120,9 @@ export default function AgenticAIPage() {
     setStats(null);
     setTotalTime(0);
     setError(null);
+    setHop1Details(null);
+    setHop2Details(null);
+    setConversionRunId(null);
 
     try {
       const response = await fetch(`${BACKEND_URL}/api/v1/convert/multi-hop/stream`, {
@@ -137,6 +158,40 @@ export default function AgenticAIPage() {
             try {
               const eventData = JSON.parse(line.substring(6));
               addEvent(eventData);
+
+              // Handle start event - capture conversion_run_id
+              if (eventData.type === 'start') {
+                console.log('🚀 Received start event:', eventData);
+                if (eventData.conversion_run_id) {
+                  console.log('📦 Captured conversion_run_id:', eventData.conversion_run_id);
+                  setConversionRunId(eventData.conversion_run_id);
+                  console.log('✅ conversionRunId state updated');
+                }
+              }
+
+              // Handle hop1_complete event - capture detailed processing
+              if (eventData.type === 'hop1_complete') {
+                console.log('📨 Received hop1_complete event:', eventData);
+                if (eventData.detailed_processing) {
+                  console.log('📦 Captured hop1 detailed processing:', eventData.detailed_processing);
+                  setHop1Details(eventData.detailed_processing);
+                  console.log('✅ hop1Details state updated');
+                } else {
+                  console.warn('⚠️ hop1_complete event missing detailed_processing field');
+                }
+              }
+
+              // Handle hop2_complete event - capture detailed processing
+              if (eventData.type === 'hop2_complete') {
+                console.log('📨 Received hop2_complete event:', eventData);
+                if (eventData.detailed_processing) {
+                  console.log('📦 Captured hop2 detailed processing:', eventData.detailed_processing);
+                  setHop2Details(eventData.detailed_processing);
+                  console.log('✅ hop2Details state updated');
+                } else {
+                  console.warn('⚠️ hop2_complete event missing detailed_processing field');
+                }
+              }
 
               // Handle complete event
               if (eventData.type === 'complete') {
@@ -199,6 +254,9 @@ export default function AgenticAIPage() {
           output={output}
           stats={stats}
           totalTime={totalTime}
+          hop1Details={hop1Details}
+          hop2Details={hop2Details}
+          conversionRunId={conversionRunId}
         />
 
         {/* Right: Transaction Agent Panel */}

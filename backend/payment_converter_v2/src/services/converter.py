@@ -157,6 +157,16 @@ class Converter:
                 f"(RULES: {len(internal_fields)}, AI: {len(ai_fields)})"
             )
             
+            # Build detailed processing data
+            detailed_processing = self._build_detailed_processing(
+                config=config,
+                extracted_fields=extracted_fields,
+                internal_fields=internal_fields,
+                ai_fields=ai_fields,
+                ai_results=ai_results,
+                confidence_scores=confidence_scores
+            )
+
             # Build result
             result = {
                 'conversion_id': conversion_id,
@@ -171,7 +181,8 @@ class Converter:
                     'target_format': target_format,
                     'timestamp': end_time.isoformat(),
                     'processing_time_seconds': processing_time
-                }
+                },
+                'detailed_processing': detailed_processing
             }
             
             # NEW: Save JSON if target is JSON (for multi-hop reuse)
@@ -193,7 +204,8 @@ class Converter:
                     conversion_id=conversion_id,
                     source_format=source_format,
                     target_format=target_format,
-                    conversion_run_id=conversion_run_id
+                    conversion_run_id=conversion_run_id,
+                    detailed_processing=detailed_processing
                 )
             
             return result
@@ -424,6 +436,119 @@ class Converter:
                 'RULES': round((rules_fields / total_fields * 100) if total_fields > 0 else 0, 1),
                 'AI': round((ai_fields / total_fields * 100) if total_fields > 0 else 0, 1)
             }
+        }
+
+    def _build_detailed_processing(
+        self,
+        config: Dict[str, Any],
+        extracted_fields: Dict[str, Any],
+        internal_fields: Dict[str, Any],
+        ai_fields: List[Dict],
+        ai_results: Dict[str, Dict[str, Any]],
+        confidence_scores: Dict[str, float]
+    ) -> Dict[str, Any]:
+        """
+        Build detailed processing data for frontend visualization.
+
+        Args:
+            config: Conversion configuration
+            extracted_fields: Extracted source fields
+            internal_fields: RULES lane transformed fields
+            ai_fields: AI lane field definitions
+            ai_results: AI lane processing results
+            confidence_scores: Field confidence scores
+
+        Returns:
+            Detailed processing dict with extraction, rules_lane, ai_lane, and configuration
+        """
+        # Build extraction details
+        extraction_patterns = config.get('extract', {})
+        extraction_details = {
+            'total_fields': len(extracted_fields),
+            'fields': [
+                {
+                    'field_id': field_id,
+                    'value': str(value)[:200] if value else '',  # Limit for frontend display
+                    'pattern': extraction_patterns.get(field_id, ''),
+                    'extracted': True
+                }
+                for field_id, value in extracted_fields.items()
+            ]
+        }
+
+        # Build rules lane details
+        mappings = config.get('map', [])
+        rules_lane_details = {
+            'total_fields': len(internal_fields),
+            'fields': []
+        }
+
+        # Match internal fields to their source mappings
+        for mapping in mappings:
+            # Skip AI lane mappings
+            if mapping.get('processing_lane') == 'AI':
+                continue
+
+            # Handle different schema field names (from/to vs source/targets)
+            source_field = mapping.get('from', mapping.get('source', mapping.get('source_field', '')))
+            targets = mapping.get('to', mapping.get('targets', [mapping.get('target_field', '')]))
+            if isinstance(targets, str):
+                targets = [targets]
+            elif not isinstance(targets, list):
+                targets = [targets] if targets else []
+
+            transform_type = mapping.get('transform', 'direct_copy')
+            input_value = extracted_fields.get(source_field, '')
+
+            # Find output values in internal_fields
+            output_value = {}
+            for target in targets:
+                if target in internal_fields:
+                    output_value[target] = internal_fields[target]
+
+            rules_lane_details['fields'].append({
+                'source_field': source_field,
+                'target_field': targets,
+                'transform_type': transform_type,
+                'transform_config': mapping.get('transform_config', {}),
+                'input_value': str(input_value)[:100] if input_value else '',
+                'output_value': output_value,
+                'confidence': 1.0
+            })
+
+        # Build AI lane details
+        ai_lane_details = {
+            'total_fields': len(ai_fields),
+            'fields': []
+        }
+
+        for ai_field in ai_fields:
+            target = ai_field['target']
+            source_field = ai_field.get('source', '')
+            input_text = ai_field['value']
+            field_type = ai_field['field_type']
+
+            # Get AI result
+            ai_result = ai_results.get(target, {})
+            confidence = ai_result.get('confidence', 0.0)
+            ai_response = ai_result.get('data', {})
+
+            ai_lane_details['fields'].append({
+                'source_field': source_field,
+                'target_field': target,
+                'field_type': field_type,
+                'input_text': str(input_text)[:200] if input_text else '',
+                'ai_response': ai_response,
+                'confidence': confidence,
+                'confidence_reason': self._get_confidence_reason(confidence, ai_response if isinstance(ai_response, dict) else {})
+            })
+
+        # Return detailed processing structure
+        return {
+            'extraction': extraction_details,
+            'rules_lane': rules_lane_details,
+            'ai_lane': ai_lane_details,
+            'configuration': config  # Include full MongoDB config for "View Config" button
         }
 
     def _get_confidence_reason(self, confidence: float, data: Dict) -> str:
