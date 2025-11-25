@@ -119,7 +119,6 @@ export default function BubbleDetailPanel({ bubbleType, data, stats }) {
         }}>
           <Code
             language={data.format?.startsWith('MT') ? 'swift' : 'xml'}
-            copyable
           >
             {data.message || 'No message data available'}
           </Code>
@@ -489,7 +488,7 @@ export default function BubbleDetailPanel({ bubbleType, data, stats }) {
                 maxHeight: '400px',
                 overflow: 'auto'
               }}>
-                <Code language="json" copyable>
+                <Code language="json">
                   {JSON.stringify(configuration, null, 2)}
                 </Code>
               </div>
@@ -627,7 +626,7 @@ export default function BubbleDetailPanel({ bubbleType, data, stats }) {
               Stored Canonical JSON (after Agent corrections)
             </Label>
             <div className="bubble-detail-scrollable" style={{ maxHeight: '500px', overflow: 'auto' }}>
-              <Code language="json" copyable>
+              <Code language="json">
                 {JSON.stringify(canonicalJson, null, 2)}
               </Code>
             </div>
