@@ -90,8 +90,11 @@ Your role is to analyze payment issues and route them to the appropriate special
 
 AVAILABLE AGENTS:
 1. Resolution Agent - Use when you need to DETERMINE the correct value for a field
-   - Tasks: transliteration, IFSC code lookup, data enrichment, research
-   - Has tools: transliterate_text, lookup_ifsc
+   - Tasks: company name lookup, transliteration, IFSC code lookup, data enrichment
+   - Has tools (in priority order):
+     * lookup_company_katakana: Fast DB lookup for known company Katakana names
+     * transliterate_text: AI-based transliteration (fallback if DB lookup fails)
+     * lookup_ifsc: Look up IFSC codes for Indian banks
    - Use for: "japan_transliteration", "india_ifsc", similar research tasks
 
 2. Execution Agent - Use when you need to APPLY a known value to the database
@@ -100,7 +103,8 @@ AVAILABLE AGENTS:
    - Use for: direct updates after Resolution Agent has determined the value
 
 TASK TYPES YOU'LL SEE:
-- "japan_transliteration": Need to convert names to Japanese katakana → Route to RESOLUTION
+- "japan_transliteration": Need Japanese katakana for company/person names → Route to RESOLUTION
+  (Resolution Agent will first try lookup_company_katakana, then fallback to transliterate_text)
 - "india_ifsc": Need to look up IFSC code for Indian bank → Route to RESOLUTION
 - "direct_update": Need to apply a known value → Route to EXECUTION
 
