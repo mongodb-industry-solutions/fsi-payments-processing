@@ -1,5 +1,6 @@
 """Configuration settings for Payment Agent System"""
 
+from typing import Optional
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from functools import lru_cache
@@ -14,7 +15,7 @@ class Settings(BaseSettings):
 
     # AWS Bedrock Configuration (for Claude via Bedrock)
     aws_region: str = Field(default="us-east-1", description="AWS Region for Bedrock")
-    aws_profile: str = Field(default=None, description="AWS Profile (optional)")
+    aws_profile: Optional[str] = Field(default=None, description="AWS Profile (optional)")
 
     # Service Configuration
     service_port: int = Field(default=8003, description="Service port")
