@@ -4,8 +4,26 @@ import React, { useState, useEffect } from 'react';
 import { H3, Body, Label } from '@leafygreen-ui/typography';
 import Code from '@leafygreen-ui/code';
 import Badge from '@leafygreen-ui/badge';
+import Icon from '@leafygreen-ui/icon';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8001';
+
+/**
+ * Get the best example field for the rules column display
+ * Priority: 32A (composite), 50K (debtor), 59 (creditor), 20 (reference)
+ */
+function getFeaturedExample(rulesFields) {
+  if (!rulesFields || rulesFields.length === 0) return null;
+
+  const priority = ['32A', '50K', '59', '20'];
+  for (const fieldId of priority) {
+    const field = rulesFields.find(f => f.source_field === fieldId);
+    if (field?.output_value && Object.keys(field.output_value).length > 0) {
+      return field;
+    }
+  }
+  return rulesFields.find(f => f.output_value && Object.keys(f.output_value).length > 0);
+}
 
 /**
  * BubbleDetailPanel Component
@@ -21,6 +39,10 @@ export default function BubbleDetailPanel({ bubbleType, data, stats }) {
   const [canonicalJson, setCanonicalJson] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  // State for conversion bubble expandable sections
+  const [rulesExpanded, setRulesExpanded] = useState(false);
+  const [configExpanded, setConfigExpanded] = useState(false);
 
   // Fetch canonical JSON when bubble type is '2' and conversionRunId is available
   useEffect(() => {
@@ -128,31 +150,21 @@ export default function BubbleDetailPanel({ bubbleType, data, stats }) {
     );
   }
 
-  // Conversion bubbles (A, B)
+  // Conversion bubbles (A, B) - Two-Column Layout
   if (bubbleType === 'A' || bubbleType === 'B') {
     const hopNumber = data.hop || (bubbleType === 'A' ? 1 : 2);
     const detailed = data.detailed || {};
 
-    // Debug logging
-    console.log('🔍 BubbleDetailPanel - Bubble Type:', bubbleType);
-    console.log('🔍 BubbleDetailPanel - Data:', data);
-    console.log('🔍 BubbleDetailPanel - Detailed:', detailed);
-
     // Get detailed processing data from backend
-    const extraction = detailed.extraction || {};
     const rulesLane = detailed.rules_lane || {};
     const aiLane = detailed.ai_lane || {};
     const configuration = detailed.configuration || {};
 
-    // Calculate lane distribution from detailed data
     const rulesCount = rulesLane.total_fields || 0;
     const aiCount = aiLane.total_fields || 0;
-    const humanCount = 0; // Not yet implemented
-    const totalFields = rulesCount + aiCount + humanCount;
 
-    const rulesPercent = totalFields > 0 ? ((rulesCount / totalFields) * 100).toFixed(1) : 0;
-    const aiPercent = totalFields > 0 ? ((aiCount / totalFields) * 100).toFixed(1) : 0;
-    const humanPercent = totalFields > 0 ? ((humanCount / totalFields) * 100).toFixed(1) : 0;
+    // Get featured example for rules column
+    const featuredExample = getFeaturedExample(rulesLane.fields || []);
 
     return (
       <>
@@ -171,331 +183,427 @@ export default function BubbleDetailPanel({ bubbleType, data, stats }) {
           .bubble-detail-scrollable::-webkit-scrollbar-thumb:hover {
             background: rgba(136, 147, 151, 0.4);
           }
-          /* Firefox */
           .bubble-detail-scrollable {
             scrollbar-width: thin;
             scrollbar-color: rgba(136, 147, 151, 0.2) transparent;
           }
         `}</style>
-      <div style={{
-        background: 'white',
-        border: '1px solid #E7EAEE',
-        borderRadius: '8px',
-        padding: '24px'
-      }}>
-        <H3 style={{ marginBottom: '16px' }}>
-          Hop {hopNumber} Conversion Details
-        </H3>
 
         <div style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
-          gap: '24px',
-          marginBottom: '24px'
+          background: 'white',
+          border: '1px solid #E7EAEE',
+          borderRadius: '8px',
+          padding: '24px'
         }}>
-          {/* Conversion ID */}
-          <div>
-            <Label style={{
-              fontSize: '12px',
-              color: '#889397',
-              display: 'block',
-              marginBottom: '8px'
-            }}>
-              Conversion ID
-            </Label>
-            <Body weight="medium" style={{ fontSize: '14px' }}>
+          {/* Header */}
+          <div style={{
+            marginBottom: '24px',
+            paddingBottom: '16px',
+            borderBottom: '1px solid #E7EAEE'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <H3>Hop {hopNumber} Conversion</H3>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Icon glyph="Clock" size="small" fill="#889397" />
+                <Badge variant="gray">{data.time ? `${data.time.toFixed(2)}s` : 'N/A'}</Badge>
+              </div>
+            </div>
+            <Label style={{ fontSize: '12px', color: '#889397', marginTop: '8px', display: 'block' }}>
               {data.conversionId}
-            </Body>
+            </Label>
           </div>
 
-          {/* Processing Time */}
-          <div>
-            <Label style={{
-              fontSize: '12px',
-              color: '#889397',
-              display: 'block',
-              marginBottom: '8px'
-            }}>
-              Processing Time
-            </Label>
-            <Body weight="medium" style={{ fontSize: '14px' }}>
-              {data.time ? `${data.time.toFixed(2)}s` : 'N/A'}
-            </Body>
-          </div>
-        </div>
+          {/* MongoDB Configuration Panel */}
+          {configuration && Object.keys(configuration).length > 0 && (
+            <div style={{ marginBottom: '24px' }}>
+              <button
+                onClick={() => setConfigExpanded(!configExpanded)}
+                style={{
+                  width: '100%',
+                  padding: '12px 16px',
+                  background: '#F9FBFA',
+                  border: '1px solid #E7EAEE',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Icon glyph="Database" size="small" fill="#0B61A4" />
+                  <Body weight="medium" style={{ fontSize: '13px', color: '#1C2D38' }}>
+                    View MongoDB Configuration
+                  </Body>
+                </div>
+                <Icon glyph={configExpanded ? 'ChevronUp' : 'ChevronDown'} size="small" fill="#889397" />
+              </button>
 
-        {/* Lane Distribution */}
-        {totalFields > 0 && (
-          <div style={{ marginBottom: '24px' }}>
-            <Label style={{
-              fontSize: '12px',
-              color: '#889397',
-              display: 'block',
-              marginBottom: '12px'
-            }}>
-              Processing Lane Distribution
-            </Label>
-
-            <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
-              <Badge variant="blue">
-                RULES: {rulesPercent}%
-              </Badge>
-              <Badge variant="yellow">
-                AI: {aiPercent}%
-              </Badge>
-              {humanCount > 0 && (
-                <Badge variant="red">
-                  HUMAN: {humanPercent}%
-                </Badge>
+              {configExpanded && (
+                <div className="bubble-detail-scrollable" style={{
+                  marginTop: '12px',
+                  maxHeight: '300px',
+                  overflow: 'auto'
+                }}>
+                  <Code language="json">
+                    {JSON.stringify(configuration, null, 2)}
+                  </Code>
+                </div>
               )}
             </div>
+          )}
 
-            {/* Visual Bar */}
+          {/* Two Column Layout */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+            gap: '24px',
+            marginBottom: '24px'
+          }}>
+            {/* Left Column: Rules Engine */}
             <div style={{
-              width: '100%',
-              height: '24px',
+              padding: '20px',
               background: '#F9FBFA',
-              borderRadius: '4px',
-              overflow: 'hidden',
-              display: 'flex',
+              borderRadius: '8px',
               border: '1px solid #E7EAEE'
             }}>
-              {rulesCount > 0 && (
-                <div style={{
-                  width: `${rulesPercent}%`,
-                  background: '#0B61A4',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '11px',
-                  color: 'white',
-                  fontWeight: '600'
-                }}>
-                  {rulesCount}
+              {/* Column Header */}
+              <div style={{ marginBottom: '16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                  <Icon glyph="Database" size="small" fill="#0B61A4" />
+                  <Body weight="medium" style={{ fontSize: '14px', color: '#1C2D38' }}>
+                    Rules Engine
+                  </Body>
                 </div>
-              )}
-              {aiCount > 0 && (
-                <div style={{
-                  width: `${aiPercent}%`,
-                  background: '#FFC010',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '11px',
-                  color: '#1C2D38',
-                  fontWeight: '600'
-                }}>
-                  {aiCount}
-                </div>
-              )}
-              {humanCount > 0 && (
-                <div style={{
-                  width: `${humanPercent}%`,
-                  background: '#CD4246',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '11px',
-                  color: 'white',
-                  fontWeight: '600'
-                }}>
-                  {humanCount}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Extraction Details */}
-        {extraction.fields && extraction.fields.length > 0 && (
-          <div style={{ marginBottom: '24px' }}>
-            <H3 style={{ fontSize: '16px', marginBottom: '12px' }}>
-              📥 Field Extraction ({extraction.total_fields} fields)
-            </H3>
-            <div
-              className="bubble-detail-scrollable"
-              style={{
-              background: '#F9FBFA',
-              borderRadius: '6px',
-              padding: '16px',
-              border: '1px solid #E7EAEE',
-              maxHeight: '300px',
-              overflow: 'auto'
-            }}>
-              <table style={{ width: '100%', fontSize: '13px', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr style={{ borderBottom: '2px solid #E7EAEE' }}>
-                    <th style={{ textAlign: 'left', padding: '8px', fontWeight: '600' }}>Field ID</th>
-                    <th style={{ textAlign: 'left', padding: '8px', fontWeight: '600' }}>Value</th>
-                    <th style={{ textAlign: 'left', padding: '8px', fontWeight: '600' }}>Pattern</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {extraction.fields.map((field, idx) => (
-                    <tr key={idx} style={{ borderBottom: '1px solid #E7EAEE' }}>
-                      <td style={{ padding: '8px', fontWeight: '600', color: '#0B61A4' }}>
-                        {field.field_id}
-                      </td>
-                      <td style={{ padding: '8px', fontFamily: 'monospace', fontSize: '12px' }}>
-                        {field.value || <span style={{ color: '#889397' }}>(empty)</span>}
-                      </td>
-                      <td style={{ padding: '8px', fontFamily: 'monospace', fontSize: '11px', color: '#5C6C75' }}>
-                        {field.pattern}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* Rules Lane Details */}
-        {rulesLane.fields && rulesLane.fields.length > 0 && (
-          <div style={{ marginBottom: '24px' }}>
-            <H3 style={{ fontSize: '16px', marginBottom: '12px' }}>
-              ⚙️ Rules Lane Processing ({rulesLane.total_fields} fields)
-            </H3>
-            <div
-              className="bubble-detail-scrollable"
-              style={{
-              background: '#F9FBFA',
-              borderRadius: '6px',
-              padding: '16px',
-              border: '1px solid #E7EAEE',
-              maxHeight: '300px',
-              overflow: 'auto'
-            }}>
-              <table style={{ width: '100%', fontSize: '13px', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr style={{ borderBottom: '2px solid #E7EAEE' }}>
-                    <th style={{ textAlign: 'left', padding: '8px', fontWeight: '600' }}>Source</th>
-                    <th style={{ textAlign: 'left', padding: '8px', fontWeight: '600' }}>Target</th>
-                    <th style={{ textAlign: 'left', padding: '8px', fontWeight: '600' }}>Input</th>
-                    <th style={{ textAlign: 'left', padding: '8px', fontWeight: '600' }}>Output</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rulesLane.fields.map((field, idx) => (
-                    <tr key={idx} style={{ borderBottom: '1px solid #E7EAEE' }}>
-                      <td style={{ padding: '8px', fontWeight: '600', color: '#0B61A4' }}>
-                        {field.source_field || <span style={{ color: '#889397' }}>-</span>}
-                      </td>
-                      <td style={{ padding: '8px', fontFamily: 'monospace', fontSize: '11px' }}>
-                        {Array.isArray(field.target_field) ? field.target_field.join(', ') : field.target_field}
-                      </td>
-                      <td style={{ padding: '8px', fontFamily: 'monospace', fontSize: '11px', maxWidth: '150px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {field.input_value || <span style={{ color: '#889397' }}>-</span>}
-                      </td>
-                      <td style={{ padding: '8px', fontFamily: 'monospace', fontSize: '11px' }}>
-                        {field.output_value && Object.keys(field.output_value).length > 0
-                          ? Object.entries(field.output_value).map(([k, v]) => `${k}: ${v}`).join(', ')
-                          : <span style={{ color: '#889397' }}>-</span>
-                        }
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* AI Lane Details */}
-        {aiLane.fields && aiLane.fields.length > 0 && (
-          <div style={{ marginBottom: '24px' }}>
-            <H3 style={{ fontSize: '16px', marginBottom: '12px' }}>
-              🤖 AI Lane Processing ({aiLane.total_fields} fields)
-            </H3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {aiLane.fields.map((field, idx) => (
-                <div key={idx} style={{
-                  background: '#FFF9E6',
-                  borderRadius: '6px',
-                  padding: '16px',
-                  border: '1px solid #FFC010'
-                }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                    <Label style={{ fontSize: '13px', fontWeight: '600', color: '#1C2D38' }}>
-                      Field {field.source_field} → {field.target_field}
-                    </Label>
-                    <Badge variant={field.confidence >= 0.8 ? 'green' : field.confidence >= 0.6 ? 'yellow' : 'red'}>
-                      {(field.confidence * 100).toFixed(0)}% confidence
-                    </Badge>
-                  </div>
-
-                  <div style={{ marginBottom: '8px' }}>
-                    <Label style={{ fontSize: '11px', color: '#5C6C75', display: 'block', marginBottom: '4px' }}>
-                      Input Text:
-                    </Label>
-                    <Body style={{ fontSize: '12px', fontFamily: 'monospace', background: 'white', padding: '8px', borderRadius: '4px' }}>
-                      {field.input_text}
-                    </Body>
-                  </div>
-
-                  <div style={{ marginBottom: '8px' }}>
-                    <Label style={{ fontSize: '11px', color: '#5C6C75', display: 'block', marginBottom: '4px' }}>
-                      AI Response:
-                    </Label>
-                    <Body style={{ fontSize: '12px', fontFamily: 'monospace', background: 'white', padding: '8px', borderRadius: '4px' }}>
-                      {JSON.stringify(field.ai_response, null, 2)}
-                    </Body>
-                  </div>
-
-                  {field.confidence_reason && (
-                    <Label style={{ fontSize: '11px', color: '#895D1A', fontStyle: 'italic' }}>
-                      {field.confidence_reason}
-                    </Label>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* View Configuration Button */}
-        {configuration && Object.keys(configuration).length > 0 && (
-          <div style={{
-            background: '#F9FBFA',
-            borderRadius: '6px',
-            padding: '16px',
-            border: '1px solid #E7EAEE'
-          }}>
-            <Label style={{
-              fontSize: '12px',
-              color: '#889397',
-              display: 'block',
-              marginBottom: '8px'
-            }}>
-              MongoDB Configuration
-            </Label>
-            <details>
-              <summary style={{
-                cursor: 'pointer',
-                fontWeight: '600',
-                fontSize: '13px',
-                padding: '8px',
-                background: 'white',
-                borderRadius: '4px',
-                border: '1px solid #E7EAEE'
-              }}>
-                View Full Configuration (ID: {configuration._id})
-              </summary>
-              <div
-                className="bubble-detail-scrollable"
-                style={{
-                marginTop: '12px',
-                maxHeight: '400px',
-                overflow: 'auto'
-              }}>
-                <Code language="json">
-                  {JSON.stringify(configuration, null, 2)}
-                </Code>
+                <Label style={{ fontSize: '11px', color: '#889397' }}>
+                  Powered by MongoDB
+                </Label>
               </div>
-            </details>
+
+              {/* Stat Card */}
+              <div style={{
+                padding: '16px',
+                background: 'rgba(11, 97, 164, 0.1)',
+                borderRadius: '8px',
+                border: '1px solid rgba(11, 97, 164, 0.3)',
+                marginBottom: '16px',
+                textAlign: 'center'
+              }}>
+                <Body weight="medium" style={{ fontSize: '28px', color: '#0B61A4' }}>
+                  {rulesCount}
+                </Body>
+                <Label style={{ fontSize: '12px', color: '#5C6C75' }}>
+                  fields processed
+                </Label>
+              </div>
+
+              {/* Featured Example */}
+              {featuredExample && (() => {
+                // Find the mapping rule for this field from configuration
+                // Handle different schema field names (from/to vs source/targets)
+                const mappings = configuration?.map || configuration?.mappings || [];
+                const fieldMapping = mappings.find(m => {
+                  const sourceField = m.from || m.source || m.source_field || '';
+                  return sourceField === featuredExample.source_field;
+                });
+
+                // Get extraction pattern for this field
+                const extractPatterns = configuration?.extract || {};
+                const extractPattern = extractPatterns[featuredExample.source_field];
+
+                // Build a clean MongoDB document representation
+                const ruleDoc = fieldMapping ? {
+                  // Extraction pattern (how to parse from source)
+                  ...(extractPattern && { pattern: extractPattern }),
+                  // Mapping configuration
+                  source: fieldMapping.from || fieldMapping.source || fieldMapping.source_field,
+                  targets: fieldMapping.to || fieldMapping.targets || fieldMapping.target_field,
+                  ...(fieldMapping.transform && { transform: fieldMapping.transform }),
+                  ...(fieldMapping.transform_config && { transform_config: fieldMapping.transform_config }),
+                  processing_lane: fieldMapping.processing_lane || 'RULES'
+                } : null;
+
+                return (
+                  <div style={{
+                    background: 'white',
+                    borderRadius: '8px',
+                    border: '1px solid #E7EAEE',
+                    padding: '16px',
+                    marginBottom: '16px'
+                  }}>
+                    <Label style={{ fontSize: '11px', color: '#889397', marginBottom: '8px', display: 'block' }}>
+                      Example: Field {featuredExample.source_field}
+                    </Label>
+
+                    {/* Input Value */}
+                    <Label style={{ fontSize: '10px', color: '#889397', marginBottom: '4px', display: 'block' }}>
+                      INPUT
+                    </Label>
+                    <div style={{
+                      background: '#F9FBFA',
+                      padding: '8px 12px',
+                      borderRadius: '4px',
+                      fontFamily: 'monospace',
+                      fontSize: '12px',
+                      marginBottom: '12px',
+                      wordBreak: 'break-all'
+                    }}>
+                      {featuredExample.input_value || '(no input)'}
+                    </div>
+
+                    {/* MongoDB Rule Document */}
+                    {ruleDoc && (
+                      <>
+                        <Label style={{ fontSize: '10px', color: '#0B61A4', marginBottom: '4px', display: 'block' }}>
+                          MONGODB RULE
+                        </Label>
+                        <div style={{
+                          background: 'rgba(11, 97, 164, 0.08)',
+                          border: '1px solid rgba(11, 97, 164, 0.2)',
+                          borderRadius: '4px',
+                          padding: '10px',
+                          marginBottom: '12px',
+                          fontFamily: 'monospace',
+                          fontSize: '11px',
+                          lineHeight: '1.5',
+                          whiteSpace: 'pre-wrap',
+                          color: '#1C2D38'
+                        }}>
+                          {JSON.stringify(ruleDoc, null, 2)}
+                        </div>
+                      </>
+                    )}
+
+                    {/* Output Value */}
+                    <Label style={{ fontSize: '10px', color: '#00A35C', marginBottom: '4px', display: 'block' }}>
+                      OUTPUT
+                    </Label>
+                    <div style={{
+                      background: '#E3FCF7',
+                      padding: '12px',
+                      borderRadius: '4px',
+                      border: '1px solid rgba(0, 163, 92, 0.3)'
+                    }}>
+                      {Object.entries(featuredExample.output_value || {}).map(([key, value]) => (
+                        <div key={key} style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          marginBottom: '4px',
+                          fontSize: '12px'
+                        }}>
+                          <Body style={{ color: '#5C6C75' }}>{key}:</Body>
+                          <Body weight="medium" style={{ color: '#00A35C' }}>{String(value)}</Body>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Expandable Full Table */}
+              <button
+                onClick={() => setRulesExpanded(!rulesExpanded)}
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  background: 'white',
+                  border: '1px solid #E7EAEE',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  fontSize: '13px',
+                  fontWeight: '600',
+                  color: '#0B61A4'
+                }}
+              >
+                <span>View all {rulesCount} field mappings</span>
+                <Icon glyph={rulesExpanded ? 'ChevronUp' : 'ChevronDown'} size="small" fill="#0B61A4" />
+              </button>
+
+              {rulesExpanded && rulesLane.fields && (
+                <div className="bubble-detail-scrollable" style={{
+                  marginTop: '12px',
+                  maxHeight: '250px',
+                  overflow: 'auto',
+                  background: 'white',
+                  borderRadius: '6px',
+                  border: '1px solid #E7EAEE'
+                }}>
+                  <table style={{ width: '100%', fontSize: '12px', borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '2px solid #E7EAEE', background: '#F9FBFA' }}>
+                        <th style={{ textAlign: 'left', padding: '8px', fontWeight: '600' }}>Source</th>
+                        <th style={{ textAlign: 'left', padding: '8px', fontWeight: '600' }}>Target</th>
+                        <th style={{ textAlign: 'left', padding: '8px', fontWeight: '600' }}>Output</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rulesLane.fields.map((field, idx) => (
+                        <tr key={idx} style={{ borderBottom: '1px solid #E7EAEE' }}>
+                          <td style={{ padding: '8px', fontWeight: '600', color: '#0B61A4' }}>
+                            {field.source_field || '-'}
+                          </td>
+                          <td style={{ padding: '8px', fontFamily: 'monospace', fontSize: '11px' }}>
+                            {Array.isArray(field.target_field) ? field.target_field.join(', ') : field.target_field}
+                          </td>
+                          <td style={{ padding: '8px', fontFamily: 'monospace', fontSize: '11px' }}>
+                            {field.output_value && Object.keys(field.output_value).length > 0
+                              ? Object.entries(field.output_value).map(([k, v]) => `${k}: ${v}`).join(', ')
+                              : '-'
+                            }
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* Right Column: AI Extraction or Placeholder */}
+            {aiCount > 0 ? (
+              <div style={{
+                padding: '20px',
+                background: '#FFF9E6',
+                borderRadius: '8px',
+                border: '1px solid rgba(255, 192, 16, 0.5)'
+              }}>
+                {/* Column Header */}
+                <div style={{ marginBottom: '16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                    <Icon glyph="Sparkle" size="small" fill="#895D1A" />
+                    <Body weight="medium" style={{ fontSize: '14px', color: '#1C2D38' }}>
+                      AI Extraction
+                    </Body>
+                  </div>
+                  <Label style={{ fontSize: '11px', color: '#889397' }}>
+                    Powered by GenAI
+                  </Label>
+                </div>
+
+                {/* Stat Card */}
+                <div style={{
+                  padding: '16px',
+                  background: 'rgba(255, 192, 16, 0.15)',
+                  borderRadius: '8px',
+                  border: '1px solid rgba(255, 192, 16, 0.5)',
+                  marginBottom: '16px',
+                  textAlign: 'center'
+                }}>
+                  <Body weight="medium" style={{ fontSize: '28px', color: '#895D1A' }}>
+                    {aiCount}
+                  </Body>
+                  <Label style={{ fontSize: '12px', color: '#5C6C75' }}>
+                    {aiCount === 1 ? 'field extracted' : 'fields extracted'}
+                  </Label>
+                </div>
+
+                {/* Before/After for first AI field */}
+                {aiLane.fields && aiLane.fields[0] && (
+                  <>
+                    <div style={{ marginBottom: '12px' }}>
+                      <Label style={{ fontSize: '11px', color: '#889397', marginBottom: '6px', display: 'block' }}>
+                        RAW INPUT (Field {aiLane.fields[0].source_field})
+                      </Label>
+                      <div className="bubble-detail-scrollable" style={{
+                        background: 'white',
+                        border: '1px solid rgba(255, 192, 16, 0.5)',
+                        borderRadius: '6px',
+                        padding: '12px',
+                        fontFamily: 'monospace',
+                        fontSize: '12px',
+                        lineHeight: '1.6',
+                        whiteSpace: 'pre-wrap',
+                        wordBreak: 'break-word',
+                        maxHeight: '100px',
+                        overflow: 'auto'
+                      }}>
+                        {aiLane.fields[0].input_text}
+                      </div>
+                    </div>
+
+                    <div style={{
+                      textAlign: 'center',
+                      margin: '12px 0',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px'
+                    }}>
+                      <div style={{ flex: 1, height: '1px', background: '#FFC010' }} />
+                      <Body weight="medium" style={{ color: '#895D1A', fontSize: '11px' }}>
+                        GenAI Processing
+                      </Body>
+                      <div style={{ flex: 1, height: '1px', background: '#FFC010' }} />
+                    </div>
+
+                    <div style={{ marginBottom: '16px' }}>
+                      <Label style={{ fontSize: '11px', color: '#889397', marginBottom: '6px', display: 'block' }}>
+                        STRUCTURED OUTPUT
+                      </Label>
+                      <div className="bubble-detail-scrollable" style={{
+                        background: '#E3FCF7',
+                        border: '1px solid rgba(0, 163, 92, 0.3)',
+                        borderRadius: '6px',
+                        padding: '12px',
+                        maxHeight: '120px',
+                        overflow: 'auto'
+                      }}>
+                        <Code language="json">
+                          {JSON.stringify(aiLane.fields[0].ai_response, null, 2)}
+                        </Code>
+                      </div>
+                    </div>
+
+                    {/* Confidence Badge */}
+                    <div style={{
+                      padding: '12px',
+                      background: 'white',
+                      borderRadius: '6px',
+                      border: '1px solid #E7EAEE'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                        <Label style={{ fontSize: '12px', color: '#5C6C75' }}>Extraction Confidence</Label>
+                        <Badge variant={aiLane.fields[0].confidence >= 0.8 ? 'green' : aiLane.fields[0].confidence >= 0.6 ? 'yellow' : 'red'}>
+                          {(aiLane.fields[0].confidence * 100).toFixed(0)}%
+                        </Badge>
+                      </div>
+                      {aiLane.fields[0].confidence_reason && (
+                        <Body style={{ fontSize: '11px', color: '#889397', fontStyle: 'italic' }}>
+                          {aiLane.fields[0].confidence_reason}
+                        </Body>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+            ) : (
+              /* Rules Only Placeholder */
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '24px',
+                background: '#F9FBFA',
+                borderRadius: '8px',
+                border: '1px dashed #E7EAEE',
+                minHeight: '200px'
+              }}>
+                <Icon glyph="Checkmark" size="xlarge" fill="#00A35C" />
+                <Body weight="medium" style={{ color: '#5C6C75', marginTop: '12px' }}>
+                  Rules Only
+                </Body>
+                <Body style={{ fontSize: '12px', color: '#889397', textAlign: 'center', marginTop: '8px' }}>
+                  All fields processed deterministically.
+                  No AI extraction required.
+                </Body>
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </div>
       </>
     );
   }
