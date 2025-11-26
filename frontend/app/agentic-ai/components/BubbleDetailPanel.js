@@ -6,8 +6,7 @@ import Code from '@leafygreen-ui/code';
 import Badge from '@leafygreen-ui/badge';
 import Icon from '@leafygreen-ui/icon';
 
-// Sidecar deployment: converter runs in same pod at localhost
-const PAYMENT_CONVERTER_URL = 'http://127.0.0.1:8001';
+// Use Next.js API routes to proxy to converter sidecar
 
 /**
  * Get the best example field for the rules column display
@@ -62,7 +61,7 @@ export default function BubbleDetailPanel({ bubbleType, data, stats }) {
       try {
         console.log('🔍 Fetching canonical JSON for conversion_run_id:', conversionRunId);
         const response = await fetch(
-          `${PAYMENT_CONVERTER_URL}/api/v1/canonical-json/${conversionRunId}/diff`
+          `/api/canonical-json/${conversionRunId}/diff`
         );
         if (!response.ok) {
           throw new Error(`Failed to fetch canonical JSON: ${response.status}`);

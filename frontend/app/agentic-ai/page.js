@@ -7,8 +7,8 @@ import GeographicMapPanel from './components/GeographicMapPanel';
 import TransactionAgentPanel from './components/TransactionAgentPanel';
 import { getAllScenarios, getScenario } from './scenarios';
 
-// Sidecar deployment: converter runs in same pod at localhost
-const PAYMENT_CONVERTER_URL = 'http://127.0.0.1:8001';
+// Use Next.js API routes to proxy to converter sidecar
+// Browser → /api/... → Next.js server → 127.0.0.1:8001 (converter)
 
 /**
  * Filter events to show only agent-related activities
@@ -126,7 +126,7 @@ export default function AgenticAIPage() {
     setConversionRunId(null);
 
     try {
-      const response = await fetch(`${PAYMENT_CONVERTER_URL}/api/v1/convert/multi-hop/stream`, {
+      const response = await fetch('/api/convert/multi-hop/stream', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

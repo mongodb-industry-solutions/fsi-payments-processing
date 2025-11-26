@@ -6,8 +6,7 @@ import Icon from '@leafygreen-ui/icon';
 import Badge from '@leafygreen-ui/badge';
 import JSONDiffModal from './JSONDiffModal';
 
-// Sidecar deployment: converter runs in same pod at localhost
-const PAYMENT_CONVERTER_URL = 'http://127.0.0.1:8001';
+// Use Next.js API routes to proxy to converter sidecar
 
 /**
  * Get icon for event type
@@ -428,7 +427,7 @@ export default function EventItem({ event, isExpanded, onToggleExpand }) {
     
     try {
       const response = await fetch(
-        `${PAYMENT_CONVERTER_URL}/api/v1/canonical-json/${event.conversion_run_id}/diff`
+        `/api/canonical-json/${event.conversion_run_id}/diff`
       );
       
       if (!response.ok) {
