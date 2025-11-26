@@ -6,7 +6,8 @@ import Icon from '@leafygreen-ui/icon';
 import Badge from '@leafygreen-ui/badge';
 import JSONDiffModal from './JSONDiffModal';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8001';
+// Sidecar deployment: converter runs in same pod at localhost
+const PAYMENT_CONVERTER_URL = 'http://127.0.0.1:8001';
 
 /**
  * Get icon for event type
@@ -427,7 +428,7 @@ export default function EventItem({ event, isExpanded, onToggleExpand }) {
     
     try {
       const response = await fetch(
-        `${BACKEND_URL}/api/v1/canonical-json/${event.conversion_run_id}/diff`
+        `${PAYMENT_CONVERTER_URL}/api/v1/canonical-json/${event.conversion_run_id}/diff`
       );
       
       if (!response.ok) {

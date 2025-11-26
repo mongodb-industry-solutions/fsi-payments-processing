@@ -15,8 +15,7 @@ RUN npm run build
 
 # Kanopy requires port 8080
 ENV PORT=8080
-ENV HOSTNAME=0.0.0.0
 EXPOSE 8080
 
 # Start Next.js on port 8080
-CMD ["npm", "start"]
+CMD ["npm", "start", "--", "-p", "8080"]

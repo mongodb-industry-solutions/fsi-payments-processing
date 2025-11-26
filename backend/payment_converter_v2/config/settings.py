@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     
     # Service Configuration
     log_level: str = Field(default="INFO", description="Logging level")
-    api_port: int = Field(default=8002, description="API port")
+    api_port: int = Field(default=8001, description="API port")
     cors_origins: str = Field(
         default="http://localhost:3000,http://localhost:3001",
         description="Comma-separated CORS origins"

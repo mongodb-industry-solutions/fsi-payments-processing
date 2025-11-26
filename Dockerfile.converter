@@ -1,0 +1,23 @@
+FROM python:3.13-slim
+
+WORKDIR /app
+
+# Install uv for fast dependency management
+RUN pip install uv
+
+# Copy dependency files first for better caching
+COPY backend/payment_converter_v2/pyproject.toml ./
+COPY backend/payment_converter_v2/uv.lock ./
+
+# Install dependencies
+RUN uv sync --no-dev
+
+# Copy application code
+COPY backend/payment_converter_v2/ ./
+
+# Port 8001 for converter service (sidecar)
+ENV API_PORT=8001
+EXPOSE 8001
+
+# CRITICAL: Must bind to 0.0.0.0 for sidecar communication
+CMD ["uv", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8001"]

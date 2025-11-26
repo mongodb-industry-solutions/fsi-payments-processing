@@ -1,0 +1,235 @@
+---
+kind: pipeline
+type: kubernetes
+name: staging-combined
+
+trigger:
+  branch:
+    - staging
+
+steps:
+  # Step 1: Build and publish Frontend Docker image
+  - name: publish-frontend
+    image: plugins/kaniko-ecr
+    settings:
+      create_repository: true
+      registry: 795250896452.dkr.ecr.us-east-1.amazonaws.com
+      repo: industrysolutions/fsi-payments-frontend
+      dockerfile: Dockerfile.frontend
+      context: .
+      tags:
+        - git-${DRONE_COMMIT_SHA:0:7}
+        - latest
+      access_key:
+        from_secret: ecr_access_key
+      secret_key:
+        from_secret: ecr_secret_key
+    when:
+      event:
+        - push
+
+  # Step 2: Build and publish Converter Docker image
+  - name: publish-converter
+    image: plugins/kaniko-ecr
+    settings:
+      create_repository: true
+      registry: 795250896452.dkr.ecr.us-east-1.amazonaws.com
+      repo: industrysolutions/fsi-payments-converter
+      dockerfile: Dockerfile.converter
+      context: .
+      tags:
+        - git-${DRONE_COMMIT_SHA:0:7}
+        - latest
+      access_key:
+        from_secret: ecr_access_key
+      secret_key:
+        from_secret: ecr_secret_key
+    when:
+      event:
+        - push
+
+  # Step 3: Build and publish Agent Docker image
+  - name: publish-agent
+    image: plugins/kaniko-ecr
+    settings:
+      create_repository: true
+      registry: 795250896452.dkr.ecr.us-east-1.amazonaws.com
+      repo: industrysolutions/fsi-payments-agent
+      dockerfile: Dockerfile.agent
+      context: .
+      tags:
+        - git-${DRONE_COMMIT_SHA:0:7}
+        - latest
+      access_key:
+        from_secret: ecr_access_key
+      secret_key:
+        from_secret: ecr_secret_key
+    when:
+      event:
+        - push
+
+  # Step 4: Deploy combined pod (frontend + converter sidecar + agent sidecar)
+  - name: deploy-combined-staging
+    image: public.ecr.aws/kanopy/drone-helm:v3
+    settings:
+      chart: mongodb/web-app
+      chart_version: 4.25.0
+      add_repos: [mongodb=https://10gen.github.io/helm-charts]
+      namespace: industrysolutions
+      release: fsi-payments-processing
+      values_files: ["environment/staging.yaml"]
+      values:
+        # Frontend (main container) image
+        - "image.tag=git-${DRONE_COMMIT_SHA:0:7}"
+        - "image.repository=795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-frontend"
+        # Converter sidecar image
+        - "sidecarContainers[0].image=795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-converter:git-${DRONE_COMMIT_SHA:0:7}"
+        # Agent sidecar image
+        - "sidecarContainers[1].image=795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-agent:git-${DRONE_COMMIT_SHA:0:7}"
+        # Ingress
+        - "ingress.enabled=true"
+        - "ingress.hosts[0]=fsi-payments-processing.industrysolutions.staging.corp.mongodb.com"
+        # Service mesh
+        - "mesh.enabled=true"
+        # Frontend resources
+        - "resources.limits.cpu=1000m"
+        - "resources.limits.memory=1024Mi"
+        - "resources.requests.cpu=250m"
+        - "resources.requests.memory=512Mi"
+        # Converter sidecar resources
+        - "sidecarContainers[0].resources.limits.cpu=500m"
+        - "sidecarContainers[0].resources.limits.memory=512Mi"
+        - "sidecarContainers[0].resources.requests.cpu=100m"
+        - "sidecarContainers[0].resources.requests.memory=256m"
+        # Agent sidecar resources
+        - "sidecarContainers[1].resources.limits.cpu=500m"
+        - "sidecarContainers[1].resources.limits.memory=512Mi"
+        - "sidecarContainers[1].resources.requests.cpu=100m"
+        - "sidecarContainers[1].resources.requests.memory=256Mi"
+      api_server: https://api.staging.corp.mongodb.com
+      kubernetes_token:
+        from_secret: staging_kubernetes_token
+    when:
+      branch:
+        - staging
+      event:
+        - push
+
+---
+kind: pipeline
+type: kubernetes
+name: production-combined
+
+trigger:
+  branch:
+    - main
+  event:
+    - push
+
+steps:
+  # Step 1: Build and publish Frontend Docker image
+  - name: publish-frontend-prod
+    image: plugins/kaniko-ecr
+    settings:
+      create_repository: true
+      registry: 795250896452.dkr.ecr.us-east-1.amazonaws.com
+      repo: industrysolutions/fsi-payments-frontend-prod
+      dockerfile: Dockerfile.frontend
+      context: .
+      tags:
+        - git-${DRONE_COMMIT_SHA:0:7}
+        - latest
+      access_key:
+        from_secret: ecr_access_key
+      secret_key:
+        from_secret: ecr_secret_key
+    when:
+      event:
+        - push
+
+  # Step 2: Build and publish Converter Docker image
+  - name: publish-converter-prod
+    image: plugins/kaniko-ecr
+    settings:
+      create_repository: true
+      registry: 795250896452.dkr.ecr.us-east-1.amazonaws.com
+      repo: industrysolutions/fsi-payments-converter-prod
+      dockerfile: Dockerfile.converter
+      context: .
+      tags:
+        - git-${DRONE_COMMIT_SHA:0:7}
+        - latest
+      access_key:
+        from_secret: ecr_access_key
+      secret_key:
+        from_secret: ecr_secret_key
+    when:
+      event:
+        - push
+
+  # Step 3: Build and publish Agent Docker image
+  - name: publish-agent-prod
+    image: plugins/kaniko-ecr
+    settings:
+      create_repository: true
+      registry: 795250896452.dkr.ecr.us-east-1.amazonaws.com
+      repo: industrysolutions/fsi-payments-agent-prod
+      dockerfile: Dockerfile.agent
+      context: .
+      tags:
+        - git-${DRONE_COMMIT_SHA:0:7}
+        - latest
+      access_key:
+        from_secret: ecr_access_key
+      secret_key:
+        from_secret: ecr_secret_key
+    when:
+      event:
+        - push
+
+  # Step 4: Deploy combined pod to production
+  - name: deploy-combined-prod
+    image: public.ecr.aws/kanopy/drone-helm:v3
+    settings:
+      chart: mongodb/web-app
+      chart_version: 4.25.0
+      add_repos: [mongodb=https://10gen.github.io/helm-charts]
+      namespace: industrysolutions
+      release: fsi-payments-processing-prod
+      values_files: ["environment/production.yaml"]
+      values:
+        # Frontend (main container) image
+        - "image.tag=git-${DRONE_COMMIT_SHA:0:7}"
+        - "image.repository=795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-frontend-prod"
+        # Converter sidecar image
+        - "sidecarContainers[0].image=795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-converter-prod:git-${DRONE_COMMIT_SHA:0:7}"
+        # Agent sidecar image
+        - "sidecarContainers[1].image=795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-agent-prod:git-${DRONE_COMMIT_SHA:0:7}"
+        # Ingress
+        - "ingress.enabled=true"
+        - "ingress.hosts[0]=fsi-payments-processing.industrysolutions.prod.corp.mongodb.com"
+        # Service mesh
+        - "mesh.enabled=true"
+        # Frontend resources
+        - "resources.limits.cpu=1000m"
+        - "resources.limits.memory=1536Mi"
+        - "resources.requests.cpu=500m"
+        - "resources.requests.memory=768Mi"
+        # Converter sidecar resources
+        - "sidecarContainers[0].resources.limits.cpu=1000m"
+        - "sidecarContainers[0].resources.limits.memory=1536Mi"
+        - "sidecarContainers[0].resources.requests.cpu=500m"
+        - "sidecarContainers[0].resources.requests.memory=768Mi"
+        # Agent sidecar resources
+        - "sidecarContainers[1].resources.limits.cpu=500m"
+        - "sidecarContainers[1].resources.limits.memory=512Mi"
+        - "sidecarContainers[1].resources.requests.cpu=100m"
+        - "sidecarContainers[1].resources.requests.memory=256Mi"
+      api_server: https://api.prod.corp.mongodb.com
+      kubernetes_token:
+        from_secret: prod_kubernetes_token
+    when:
+      branch:
+        - main
+      event:
+        - push

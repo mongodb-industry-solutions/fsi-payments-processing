@@ -1,17 +1,50 @@
-# Frontend staging configuration for Kanopy deployment
+# FSI Payments Processing - Staging Environment
+# Single-pod sidecar deployment: Frontend (main) + Converter + Agent (sidecars)
+
 env:
   NODE_ENV: staging
-  NEXT_PUBLIC_API_URL: https://fsi-payments-backend.industrysolutions.staging.corp.mongodb.com
-  NEXT_PUBLIC_CONVERTER_API_URL: https://fsi-payments-backend.industrysolutions.staging.corp.mongodb.com/api/v1/converter
-  NEXT_PUBLIC_DEMO_API_URL: https://fsi-payments-backend.industrysolutions.staging.corp.mongodb.com/api/v1/demo
 
-# envSecrets:
-#   # MongoDB Configuration (will be set using helm ksec)
-#   MONGODB_URI: fsi-payments-secrets
-#   DATABASE_NAME: fsi-payments-secrets
-#   APP_NAME: fsi-payments-secrets
+# AWS IRSA Service Account
+serviceAccount:
+  enabled: true
+  irsa:
+    accountId: "275662791714"
+    roleName: "kanopy-staging-cicd-irsa"
 
-# Service Account for AWS IRSA (if needed for AWS services)
-# serviceAccount:
-#   enabled: false
-#   name: -irsa-staging
+# Sidecar containers configuration
+sidecarContainers:
+  # Payment Converter V2 (port 8001)
+  - name: converter
+    image: 795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-converter:latest
+    ports:
+      - containerPort: 8001
+        name: converter
+    env:
+      - name: MONGODB_URI
+        valueFrom:
+          secretKeyRef:
+            name: fsi-payments
+            key: MONGODB_URI
+      - name: DATABASE_NAME
+        valueFrom:
+          secretKeyRef:
+            name: fsi-payments
+            key: DATABASE_NAME
+
+  # Payment Agent (port 8002)
+  - name: agent
+    image: 795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-agent:latest
+    ports:
+      - containerPort: 8002
+        name: agent
+    env:
+      - name: MONGODB_URI
+        valueFrom:
+          secretKeyRef:
+            name: fsi-payments
+            key: MONGODB_URI
+      - name: DATABASE_NAME
+        valueFrom:
+          secretKeyRef:
+            name: fsi-payments
+            key: DATABASE_NAME
