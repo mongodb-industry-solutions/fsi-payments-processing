@@ -88,7 +88,11 @@ function formatEventMessage(event) {
       }
       return `Solution proposed for ${fieldName}`;
     case 'agent_execution':
-      return `Updated field: ${event.field || 'field'}`;
+      // Show "Added" for new fields, "Updated" for existing fields
+      const isNewField = !event.old_value || event.old_value === '';
+      return isNewField
+        ? `Added new field: ${event.field || 'field'}`
+        : `Updated field: ${event.field || 'field'}`;
     case 'agent_complete':
       return `Agent completed: ${event.field || 'field'}`;
     case 'complete':
