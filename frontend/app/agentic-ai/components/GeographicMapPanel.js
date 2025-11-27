@@ -95,9 +95,9 @@ function EventBadge({ event, x, y, isActive, showHealingButton, onHealingStart, 
       case 'hop1_start':
       case 'hop2_start':
         return {
-          title: 'CONVERTING',
+          title: 'PROCESSING',
           color: '#0B61A4',
-          details: [`${event.source || ''} → ${event.target || ''}`]
+          details: ['Processing payment']
         };
       case 'validation_failed':
         return {

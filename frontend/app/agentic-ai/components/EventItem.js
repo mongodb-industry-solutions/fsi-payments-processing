@@ -52,11 +52,11 @@ function formatEventMessage(event) {
     case 'start':
       return 'Conversion initiated';
     case 'hop1_start':
-      return `Converting ${event.source || 'source'} → ${event.target || 'target'}`;
+      return 'Processing payment';
     case 'hop1_complete':
       return `First conversion completed in ${event.time || '0'}s`;
     case 'hop2_start':
-      return `Converting ${event.source || 'source'} → ${event.target || 'target'}`;
+      return 'Processing payment';
     case 'hop2_complete':
       return `Second conversion completed in ${event.time || '0'}s`;
     case 'validation_failed':

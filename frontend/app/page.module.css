@@ -70,8 +70,8 @@
   margin-top: 0;
 }
 
-.featureCard > div:last-child {
-  margin-top: auto;
+.featureCard p {
+  flex-grow: 1;
 }
 
 .iconWrapper {

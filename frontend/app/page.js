@@ -1,7 +1,6 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
 import Card from "@leafygreen-ui/card";
 import Button from "@leafygreen-ui/button";
 import Icon from "@leafygreen-ui/icon";
@@ -62,18 +61,18 @@ export default function Home() {
 
         <Card className={styles.featureCard}>
           <div className={styles.iconWrapper}>
-            <Icon glyph="Bulb" size="xlarge" />
+            <Icon glyph="Wizard" size="xlarge" />
           </div>
-          <H2>Intelligent Auto-Configuration</H2>
+          <H2>Agentic Error Resolution</H2>
           <Body>
-            Pattern recognition combined with LLM generates new format configurations automatically. The system learns from every configuration and gets smarter over time.
+            When payment processing encounters validation errors or missing fields, the AI agent autonomously corrects data, adds required information, and resolves issues in real-time.
           </Body>
           <div className={styles.metric}>
-            <span className={styles.metricValue}>Automated</span>
-            <span className={styles.metricLabel}>Generation</span>
+            <span className={styles.metricValue}>Autonomous</span>
+            <span className={styles.metricLabel}>Field Correction</span>
           </div>
           <div className={styles.badgeWrapper}>
-            <Badge variant="blue">Self-Improving</Badge>
+            <Badge variant="blue">AI-Powered</Badge>
           </div>
         </Card>
 
@@ -93,73 +92,6 @@ export default function Home() {
             <Badge variant="purple">Multi-Hop Routing</Badge>
           </div>
         </Card>
-      </div>
-
-      <div className={styles.howItWorks}>
-        <H2 className={styles.sectionTitle}>How It Works Together</H2>
-        <Body className={styles.sectionSubtitle}>
-          The three core features work seamlessly to create a self-improving, infinitely extensible conversion system
-        </Body>
-        <div className={styles.flowSteps}>
-          <Card className={styles.flowStep}>
-            <Icon glyph="ImportantWithCircle" />
-            <Subtitle>New Format Needed</Subtitle>
-            <Body>MT192 conversion required</Body>
-          </Card>
-
-          <div className={styles.flowArrow}>→</div>
-
-          <Card className={styles.flowStep}>
-            <Icon glyph="Bulb" />
-            <Subtitle>Auto-Configuration</Subtitle>
-            <Body>Intelligent pattern analysis</Body>
-          </Card>
-
-          <div className={styles.flowArrow}>→</div>
-
-          <Card className={styles.flowStep}>
-            <Icon glyph="Database" />
-            <Subtitle>MongoDB Storage</Subtitle>
-            <Body>Config saved instantly</Body>
-          </Card>
-
-          <div className={styles.flowArrow}>→</div>
-
-          <Card className={styles.flowStep}>
-            <Icon glyph="Diagram3" />
-            <Subtitle>JSON Routing</Subtitle>
-            <Body>Multi-hop paths enabled</Body>
-          </Card>
-
-          <div className={styles.flowArrow}>→</div>
-
-          <Card className={styles.flowStep}>
-            <Icon glyph="CheckmarkWithCircle" />
-            <Subtitle>Active Conversion</Subtitle>
-            <Body>MT192 ↔ pacs.008 working</Body>
-          </Card>
-        </div>
-      </div>
-
-      <div className={styles.valueProps}>
-        <H2 className={styles.sectionTitle}>Why This Matters</H2>
-        <div className={styles.valueGrid}>
-          <div className={styles.valueProp}>
-            <Icon glyph="Clock" size="large" />
-            <Subtitle>Accelerate format deployment</Subtitle>
-            <Body>Eliminate lengthy development cycles and rapidly bring new payment format support to market through intelligent automation.</Body>
-          </div>
-          <div className={styles.valueProp}>
-            <Icon glyph="University" size="large" />
-            <Subtitle>System intelligence improves with every use</Subtitle>
-            <Body>Machine learning and pattern recognition continuously enhance configuration accuracy and automation capabilities.</Body>
-          </div>
-          <div className={styles.valueProp}>
-            <Icon glyph="Relationship" size="large" />
-            <Subtitle>Connect any payment format to any other format</Subtitle>
-            <Body>Universal compatibility through canonical JSON enables unlimited format conversion possibilities.</Body>
-          </div>
-        </div>
       </div>
     </div>
   );
