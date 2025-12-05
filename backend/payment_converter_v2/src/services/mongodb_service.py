@@ -15,15 +15,15 @@ logger = logging.getLogger(__name__)
 class MongoDBService:
     """
     MongoDB service for managing conversion configurations.
-    
+
     Handles all database operations with automatic validation.
     Uses async Motor driver for FastAPI compatibility.
     """
-    
+
     def __init__(self, mongodb_uri: str, database_name: str):
         """
         Initialize MongoDB service.
-        
+
         Args:
             mongodb_uri: MongoDB connection string
             database_name: Database name to use
@@ -33,7 +33,8 @@ class MongoDBService:
         self.configs_collection = self.db["conversion_configs"]
         self.prompts_collection = self.db["ai_prompts"]
         self.json_storage_collection = self.db["canonical_json_storage"]
-        
+        self.temp_configs_collection = self.db["temp_configs"]
+
         logger.info(f"MongoDB service initialized for database: {database_name}")
     
     async def get_config(self, config_id: str) -> Optional[Dict[str, Any]]:
@@ -346,10 +347,105 @@ class MongoDBService:
             logger.error(f"Error retrieving canonical JSON: {e}")
             return None
     
+    async def save_temp_config(
+        self,
+        config_id: str,
+        config: Dict[str, Any],
+        ttl_seconds: int = 300
+    ) -> bool:
+        """
+        Save a temporary config with TTL (default 5 minutes).
+
+        Used for auto-generated configs that need review before permanent storage.
+
+        Args:
+            config_id: Configuration ID
+            config: Configuration dictionary
+            ttl_seconds: Time-to-live in seconds (default: 300 = 5 min)
+
+        Returns:
+            True if successful
+        """
+        try:
+            doc = {
+                "_id": config_id,
+                "config": config,
+                "created_at": datetime.utcnow(),
+                "expires_at": datetime.utcnow()
+            }
+
+            # Upsert the temp config
+            await self.temp_configs_collection.replace_one(
+                {"_id": config_id},
+                doc,
+                upsert=True
+            )
+
+            # Ensure TTL index exists (MongoDB handles expiration automatically)
+            await self.temp_configs_collection.create_index(
+                "expires_at",
+                expireAfterSeconds=ttl_seconds
+            )
+
+            logger.info(f"Temp config saved: {config_id} (TTL: {ttl_seconds}s)")
+            return True
+
+        except Exception as e:
+            logger.error(f"Error saving temp config {config_id}: {e}")
+            raise
+
+    async def get_temp_config(self, config_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Retrieve a temporary config by ID.
+
+        Args:
+            config_id: Configuration ID
+
+        Returns:
+            Configuration dictionary or None if not found/expired
+        """
+        try:
+            doc = await self.temp_configs_collection.find_one({"_id": config_id})
+
+            if doc:
+                logger.debug(f"Retrieved temp config: {config_id}")
+                return doc.get("config")
+            else:
+                logger.debug(f"Temp config not found or expired: {config_id}")
+                return None
+
+        except Exception as e:
+            logger.error(f"Error retrieving temp config {config_id}: {e}")
+            return None
+
+    async def delete_temp_config(self, config_id: str) -> bool:
+        """
+        Delete a temporary config.
+
+        Args:
+            config_id: Configuration ID to delete
+
+        Returns:
+            True if deleted, False if not found
+        """
+        try:
+            result = await self.temp_configs_collection.delete_one({"_id": config_id})
+
+            if result.deleted_count > 0:
+                logger.info(f"Temp config deleted: {config_id}")
+                return True
+
+            logger.debug(f"Temp config not found to delete: {config_id}")
+            return False
+
+        except Exception as e:
+            logger.error(f"Error deleting temp config {config_id}: {e}")
+            raise
+
     async def health_check(self) -> bool:
         """
         Check if MongoDB connection is healthy.
-        
+
         Returns:
             True if healthy
         """

@@ -18,6 +18,7 @@ from src.services import (
 )
 from src.services.payment_agent_client import PaymentAgentClient
 from src.services.circle_service import CircleService
+from src.services.semantic_learning_service import SemanticLearningService
 from src.exceptions import CountryValidationException
 
 logger = logging.getLogger(__name__)
@@ -52,6 +53,9 @@ circle_service = CircleService(
     source_wallet_id=settings.circle_source_wallet_id,
     usdc_token_id=settings.circle_usdc_token_id
 ) if settings.circle_api_key else None
+
+# Initialize semantic learning service (for auto-config generation)
+semantic_learning_service = SemanticLearningService(mongodb_service)
 
 
 # ============================================================================
@@ -137,6 +141,42 @@ class ConfigResponse(BaseModel):
     mappings: int = Field(..., description="Number of field mappings")
     output_fields: int = Field(..., description="Number of output fields")
     has_ai_mappings: bool = Field(..., description="Whether AI mappings are present")
+
+
+class AutoConfigureRequest(BaseModel):
+    """Request model for auto-configure endpoint"""
+    source_format: str = Field(..., description="Source format (e.g., MT202)")
+    target_format: str = Field(..., description="Target format (e.g., JSON)")
+    sample_message: str = Field(..., description="Sample message to learn from")
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "source_format": "MT202",
+                    "target_format": "JSON",
+                    "sample_message": "{1:F01CHASUS33AXXX...}{4:\n:20:MT202TEST\n:21:REF2024\n:32A:241215EUR500000,00\n...}"
+                }
+            ]
+        }
+    }
+
+
+class AutoConfigureResponse(BaseModel):
+    """Response model for auto-configure endpoint"""
+    configuration_id: str = Field(..., description="Generated configuration ID")
+    config: Dict[str, Any] = Field(..., description="Generated configuration")
+    confidence: float = Field(..., description="Overall confidence score (0-1)")
+    fields_detected: int = Field(..., description="Number of fields detected in sample")
+    matched_fields: List[str] = Field(..., description="Fields matched from existing configs")
+    unknown_fields: List[str] = Field(..., description="Fields not found in any existing config")
+    learned_from: List[str] = Field(..., description="Config IDs used for learning")
+
+
+class ApproveConfigResponse(BaseModel):
+    """Response model for approve config endpoint"""
+    status: str = Field(..., description="Approval status")
+    configuration_id: str = Field(..., description="Configuration ID")
 
 
 # ============================================================================
@@ -783,7 +823,7 @@ async def get_config(conversion_id: str) -> ConfigResponse:
             output_fields=output_fields,
             has_ai_mappings=has_ai
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -791,6 +831,180 @@ async def get_config(conversion_id: str) -> ConfigResponse:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get config: {str(e)}"
+        )
+
+
+# ============================================================================
+# Auto-Configure Endpoints (Semantic Learning)
+# ============================================================================
+
+@router.post("/auto-configure", response_model=AutoConfigureResponse, status_code=status.HTTP_200_OK)
+async def auto_configure(request: AutoConfigureRequest) -> AutoConfigureResponse:
+    """
+    Auto-generate a conversion configuration by learning from existing configs.
+
+    This endpoint uses semantic learning to:
+    1. Load ALL existing configs from MongoDB
+    2. Build a combined field-to-mapping lookup
+    3. Extract fields from the sample message
+    4. Match fields against the combined lookup
+    5. Generate a new config in simplified schema
+
+    The generated config is stored temporarily (5 min TTL) for review.
+    Use /auto-configure/{config_id}/approve to save permanently.
+    """
+    try:
+        logger.info(f"Auto-configure: {request.source_format} → {request.target_format}")
+
+        # Generate config using semantic learning
+        result = await semantic_learning_service.generate_config(
+            source_format=request.source_format,
+            target_format=request.target_format,
+            sample_message=request.sample_message
+        )
+
+        # Store temporarily (5 min TTL) for review
+        config_id = result["configuration_id"]
+        await mongodb_service.save_temp_config(
+            config_id=config_id,
+            config=result["config"],
+            ttl_seconds=300
+        )
+
+        logger.info(
+            f"Generated config {config_id}: "
+            f"{result['fields_detected']} fields, "
+            f"{len(result['matched_fields'])} matched, "
+            f"confidence={result['confidence']}"
+        )
+
+        return AutoConfigureResponse(
+            configuration_id=result["configuration_id"],
+            config=result["config"],
+            confidence=result["confidence"],
+            fields_detected=result["fields_detected"],
+            matched_fields=result["matched_fields"],
+            unknown_fields=result["unknown_fields"],
+            learned_from=result["learned_from"]
+        )
+
+    except ValueError as e:
+        logger.error(f"Auto-configure validation error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except Exception as e:
+        logger.error(f"Auto-configure failed: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Auto-configure failed: {str(e)}"
+        )
+
+
+@router.post("/auto-configure/{config_id}/approve", response_model=ApproveConfigResponse, status_code=status.HTTP_200_OK)
+async def approve_config(config_id: str) -> ApproveConfigResponse:
+    """
+    Approve and save an auto-generated configuration permanently.
+
+    Moves the config from temporary storage to the permanent conversion_configs collection.
+    The temporary copy is deleted after approval.
+    """
+    try:
+        logger.info(f"Approving config: {config_id}")
+
+        # Get temp config
+        temp_config = await mongodb_service.get_temp_config(config_id)
+        if not temp_config:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Config not found or expired: {config_id}"
+            )
+
+        # Check if config already exists in permanent storage
+        existing = await mongodb_service.get_config(config_id)
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Config {config_id} already exists in permanent storage"
+            )
+
+        # Clean up temp markers before saving (e.g., _unknown)
+        if "map" in temp_config:
+            for mapping in temp_config["map"]:
+                mapping.pop("_unknown", None)
+
+        # Insert into permanent storage
+        await mongodb_service.insert_config(temp_config)
+
+        # Delete from temp storage
+        await mongodb_service.delete_temp_config(config_id)
+
+        # Invalidate learning service cache (new config available)
+        semantic_learning_service.invalidate_cache()
+
+        logger.info(f"Config {config_id} approved and saved permanently")
+
+        return ApproveConfigResponse(
+            status="approved",
+            configuration_id=config_id
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to approve config: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to approve config: {str(e)}"
+        )
+
+
+@router.get("/auto-configure/{config_id}", response_model=AutoConfigureResponse, status_code=status.HTTP_200_OK)
+async def get_temp_config(config_id: str) -> AutoConfigureResponse:
+    """
+    Get an auto-generated configuration from temporary storage.
+
+    Returns the config if it exists and hasn't expired (5 min TTL).
+    """
+    try:
+        temp_config = await mongodb_service.get_temp_config(config_id)
+        if not temp_config:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Config not found or expired: {config_id}"
+            )
+
+        # Count matched vs unknown fields
+        matched_fields = []
+        unknown_fields = []
+        for mapping in temp_config.get("map", []):
+            field_id = mapping.get("from", "")
+            if mapping.get("_unknown"):
+                unknown_fields.append(field_id)
+            else:
+                matched_fields.append(field_id)
+
+        fields_detected = len(temp_config.get("extract", {}))
+        confidence = len(matched_fields) / fields_detected if fields_detected > 0 else 0
+
+        return AutoConfigureResponse(
+            configuration_id=config_id,
+            config=temp_config,
+            confidence=round(confidence, 2),
+            fields_detected=fields_detected,
+            matched_fields=matched_fields,
+            unknown_fields=unknown_fields,
+            learned_from=[]  # Not tracked in temp storage
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get temp config: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get temp config: {str(e)}"
         )
 
 
