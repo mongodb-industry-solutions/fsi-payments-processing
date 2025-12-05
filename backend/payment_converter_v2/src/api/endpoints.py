@@ -17,6 +17,7 @@ from src.services import (
     Converter
 )
 from src.services.payment_agent_client import PaymentAgentClient
+from src.services.circle_service import CircleService
 from src.exceptions import CountryValidationException
 
 logger = logging.getLogger(__name__)
@@ -43,6 +44,14 @@ agent_client = PaymentAgentClient(
     agent_url=settings.payment_agent_url,
     timeout=settings.payment_agent_timeout
 )
+
+# Initialize Circle service (for crypto/USDC transfers)
+circle_service = CircleService(
+    api_key=settings.circle_api_key,
+    entity_secret=settings.circle_entity_secret,
+    source_wallet_id=settings.circle_source_wallet_id,
+    usdc_token_id=settings.circle_usdc_token_id
+) if settings.circle_api_key else None
 
 
 # ============================================================================
@@ -784,3 +793,419 @@ async def get_config(conversion_id: str) -> ConfigResponse:
             detail=f"Failed to get config: {str(e)}"
         )
 
+
+# ============================================================================
+# Circle API Endpoints (Crypto/USDC)
+# ============================================================================
+
+class CircleTransferRequest(BaseModel):
+    """Request model for Circle USDC transfer"""
+    source: Optional[str] = Field(None, description="Source wallet address (defaults to configured wallet)")
+    destination: str = Field(..., description="Destination wallet address")
+    amount: str = Field(default="1", description="USDC amount (default: 1)")
+    reference: Optional[str] = Field(None, description="Payment reference (max 40 chars)")
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "source": "0x73fa0f065a6a61300809fe9ff8ecdb76b25a4a1e",
+                    "destination": "0x0d3bdabc6ca8f8890e4734f9e682463bcd57a4ce",
+                    "amount": "1",
+                    "reference": "INV-2024-001"
+                }
+            ]
+        }
+    }
+
+
+class CircleTransferResponse(BaseModel):
+    """Response model for Circle USDC transfer"""
+    success: bool = Field(..., description="Transfer success status")
+    transaction_id: Optional[str] = Field(None, description="Circle transaction ID")
+    state: Optional[str] = Field(None, description="Transaction state")
+    amount: str = Field(..., description="Amount transferred")
+    destination: str = Field(..., description="Destination address")
+    error: Optional[str] = Field(None, description="Error message if failed")
+
+
+class CircleBalanceResponse(BaseModel):
+    """Response model for Circle wallet balance"""
+    wallet_id: str = Field(..., description="Wallet ID")
+    wallet_address: Optional[str] = Field(None, description="Blockchain wallet address")
+    usdc_balance: str = Field(..., description="USDC balance")
+    native_balance: str = Field(default="0", description="Native token balance (POL)")
+    blockchain: str = Field(..., description="Blockchain network")
+
+
+@router.post("/circle/transfer", response_model=CircleTransferResponse, status_code=status.HTTP_200_OK)
+async def circle_transfer(request: CircleTransferRequest) -> CircleTransferResponse:
+    """
+    Transfer USDC via Circle API.
+
+    Executes a USDC transfer on Polygon Amoy testnet.
+    Supports both source and destination wallet addresses.
+    Default amount is 1 USDC if not specified.
+    """
+    if not circle_service:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Circle service not configured. Set CIRCLE_API_KEY in environment."
+        )
+
+    try:
+        source_display = request.source[:10] + "..." if request.source else "default"
+        logger.info(f"Circle transfer: {request.amount} USDC from {source_display} to {request.destination[:10]}...")
+
+        # Use transfer_by_address if source is provided, otherwise use default
+        if request.source:
+            result = circle_service.transfer_by_address(
+                source_address=request.source,
+                destination_address=request.destination,
+                amount=request.amount,
+                reference=request.reference
+            )
+        else:
+            result = circle_service.transfer(
+                destination=request.destination,
+                amount=request.amount,
+                reference=request.reference
+            )
+
+        if result.get("success"):
+            tx_data = result.get("data", {}).get("data", {})
+            return CircleTransferResponse(
+                success=True,
+                transaction_id=tx_data.get("id"),
+                state=tx_data.get("state"),
+                amount=request.amount,
+                destination=request.destination
+            )
+        else:
+            error_msg = result.get("error") or result.get("data", {}).get("message", "Transfer failed")
+            return CircleTransferResponse(
+                success=False,
+                amount=request.amount,
+                destination=request.destination,
+                error=error_msg
+            )
+
+    except Exception as e:
+        logger.error(f"Circle transfer failed: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Circle transfer failed: {str(e)}"
+        )
+
+
+class CirclePOLTransferRequest(BaseModel):
+    """Request model for Circle native POL transfer"""
+    source: str = Field(..., description="Source wallet address")
+    destination: str = Field(..., description="Destination wallet address")
+    amount: str = Field(..., description="POL amount to transfer")
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "source": "0x73fa0f065a6a61300809fe9ff8ecdb76b25a4a1e",
+                    "destination": "0x0d3bdabc6ca8f8890e4734f9e682463bcd57a4ce",
+                    "amount": "0.1"
+                }
+            ]
+        }
+    }
+
+
+@router.post("/circle/transfer-pol", status_code=status.HTTP_200_OK)
+async def circle_transfer_pol(request: CirclePOLTransferRequest):
+    """
+    Transfer native POL tokens via Circle API.
+
+    POL is the native gas token on Polygon. Used for transaction fees.
+    Requires the source wallet to have sufficient POL balance.
+    """
+    if not circle_service:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Circle service not configured. Set CIRCLE_API_KEY in environment."
+        )
+
+    try:
+        logger.info(f"Circle POL transfer: {request.amount} POL from {request.source[:10]}... to {request.destination[:10]}...")
+
+        result = circle_service.transfer_native_by_address(
+            source_address=request.source,
+            destination_address=request.destination,
+            amount=request.amount
+        )
+
+        if result.get("success"):
+            tx_data = result.get("data", {}).get("data", {})
+            return {
+                "success": True,
+                "transaction_id": tx_data.get("id"),
+                "state": tx_data.get("state"),
+                "amount": request.amount,
+                "token": "POL",
+                "source": request.source,
+                "destination": request.destination
+            }
+        else:
+            error_msg = result.get("error") or result.get("data", {}).get("message", "Transfer failed")
+            return {
+                "success": False,
+                "amount": request.amount,
+                "token": "POL",
+                "source": request.source,
+                "destination": request.destination,
+                "error": error_msg
+            }
+
+    except Exception as e:
+        logger.error(f"Circle POL transfer failed: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Circle POL transfer failed: {str(e)}"
+        )
+
+
+@router.get("/circle/balance", response_model=CircleBalanceResponse, status_code=status.HTTP_200_OK)
+async def circle_balance() -> CircleBalanceResponse:
+    """
+    Get Circle wallet USDC balance.
+    """
+    if not circle_service:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Circle service not configured. Set CIRCLE_API_KEY in environment."
+        )
+
+    try:
+        # Get wallet address
+        wallet_address = circle_service.get_wallet_address()
+
+        # Get token balances
+        result = circle_service.get_balance()
+        token_balances = result.get("data", {}).get("tokenBalances", [])
+
+        usdc_balance = "0"
+        native_balance = "0"
+        blockchain = "MATIC-AMOY"
+
+        # Find USDC and native token balances
+        for token_entry in token_balances:
+            token_info = token_entry.get("token", {})
+            token_name = token_info.get("name", "").upper()
+            is_native = token_info.get("isNative", False)
+            amount = token_entry.get("amount", "0")
+
+            if token_name == "USDC" or "USDC" in token_name:
+                usdc_balance = amount
+                blockchain = token_info.get("blockchain", "MATIC-AMOY")
+            elif is_native:
+                native_balance = amount
+
+        return CircleBalanceResponse(
+            wallet_id=circle_service.source_wallet_id,
+            wallet_address=wallet_address,
+            usdc_balance=usdc_balance,
+            native_balance=native_balance,
+            blockchain=blockchain
+        )
+
+    except Exception as e:
+        logger.error(f"Circle balance check failed: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Circle balance check failed: {str(e)}"
+        )
+
+
+class FundRequest(BaseModel):
+    """Request model for funding endpoints"""
+    address: Optional[str] = Field(None, description="Wallet address to fund (defaults to source wallet)")
+
+
+@router.post("/circle/fund-pol", status_code=status.HTTP_200_OK)
+async def circle_fund_pol(request: Optional[FundRequest] = None):
+    """
+    Request native POL tokens for gas from Circle faucet.
+
+    POL is the native token on Polygon used for transaction fees.
+    Only works on testnet (MATIC-AMOY).
+    """
+    if not circle_service:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Circle service not configured. Set CIRCLE_API_KEY in environment."
+        )
+
+    try:
+        address = request.address if request else None
+        result = circle_service.fund_gas(address=address)
+        return result
+
+    except Exception as e:
+        logger.error(f"Circle fund POL failed: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Circle fund POL failed: {str(e)}"
+        )
+
+
+@router.post("/circle/fund-usdc", status_code=status.HTTP_200_OK)
+async def circle_fund_usdc():
+    """
+    Request testnet USDC from Circle faucet.
+
+    Rate limit: 1 USDC per hour per address.
+    Only works on testnet (MATIC-AMOY).
+    """
+    if not circle_service:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Circle service not configured. Set CIRCLE_API_KEY in environment."
+        )
+
+    try:
+        result = circle_service.fund_usdc()
+        return result
+
+    except Exception as e:
+        logger.error(f"Circle fund USDC failed: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Circle fund USDC failed: {str(e)}"
+        )
+
+
+@router.get("/circle/wallets", status_code=status.HTTP_200_OK)
+async def circle_list_wallets():
+    """
+    List all wallets in the Circle wallet set.
+    """
+    if not circle_service:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Circle service not configured."
+        )
+
+    try:
+        result = circle_service.list_wallets()
+        wallets = result.get("data", {}).get("wallets", [])
+        return {
+            "count": len(wallets),
+            "wallets": [
+                {
+                    "wallet_id": w.get("id"),
+                    "address": w.get("address"),
+                    "blockchain": w.get("blockchain"),
+                    "state": w.get("state")
+                }
+                for w in wallets
+            ]
+        }
+    except Exception as e:
+        logger.error(f"Circle list wallets failed: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Circle list wallets failed: {str(e)}"
+        )
+
+
+@router.get("/circle/balance/{address}", status_code=status.HTTP_200_OK)
+async def circle_balance_by_address(address: str):
+    """
+    Get balance for a specific wallet by blockchain address.
+    """
+    if not circle_service:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Circle service not configured."
+        )
+
+    try:
+        result = circle_service.get_balance_by_address(address)
+        if not result:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Wallet not found for address: {address}"
+            )
+
+        # Parse token balances
+        token_balances = result.get("balance_data", {}).get("data", {}).get("tokenBalances", [])
+        usdc_balance = "0"
+        native_balance = "0"
+
+        for token_entry in token_balances:
+            token_info = token_entry.get("token", {})
+            token_name = token_info.get("name", "").upper()
+            is_native = token_info.get("isNative", False)
+            amount = token_entry.get("amount", "0")
+
+            if "USDC" in token_name:
+                usdc_balance = amount
+            elif is_native:
+                native_balance = amount
+
+        return {
+            "wallet_id": result["wallet_id"],
+            "wallet_address": result["wallet_address"],
+            "usdc_balance": usdc_balance,
+            "native_balance": native_balance,
+            "blockchain": "MATIC-AMOY"
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Circle balance by address failed: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Circle balance by address failed: {str(e)}"
+        )
+
+
+# Wallet addresses for auto-transfer
+WALLET_1 = "0x0d3bdabc6ca8f8890e4734f9e682463bcd57a4ce"
+WALLET_2 = "0x73fa0f065a6a61300809fe9ff8ecdb76b25a4a1e"
+_last_source = WALLET_2  # Start with wallet 2 so first transfer is from wallet 1
+
+
+@router.post("/circle/auto-transfer", status_code=status.HTTP_200_OK)
+async def circle_auto_transfer(amount: str = "1"):
+    """
+    Auto-transfer USDC alternating between wallets.
+    Checks gas balance before transfer.
+    """
+    global _last_source
+    if not circle_service:
+        raise HTTPException(status_code=503, detail="Circle not configured")
+
+    # Alternate wallets
+    source = WALLET_1 if _last_source == WALLET_2 else WALLET_2
+    destination = WALLET_2 if source == WALLET_1 else WALLET_1
+
+    # Check source has enough POL for gas (0.01 minimum)
+    balance = circle_service.get_balance_by_address(source)
+    if balance:
+        tokens = balance.get("balance_data", {}).get("data", {}).get("tokenBalances", [])
+        pol = next((t.get("amount", "0") for t in tokens if t.get("token", {}).get("isNative")), "0")
+        if float(pol) < 0.01:
+            circle_service.fund_gas(source)
+            return {"success": False, "error": f"Low gas on {source[:10]}... Requested from faucet. Try again in 30s."}
+
+    # Do transfer
+    result = circle_service.transfer_by_address(source, destination, amount)
+    if result.get("success"):
+        _last_source = source
+        tx = result.get("data", {}).get("data", {})
+        return {
+            "success": True,
+            "transaction_id": tx.get("id"),
+            "from": source,
+            "to": destination,
+            "amount": amount
+        }
+    return {"success": False, "error": result.get("error") or "Transfer failed"}

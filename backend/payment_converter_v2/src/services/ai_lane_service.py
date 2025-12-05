@@ -179,6 +179,34 @@ class AILaneService:
                 "Return JSON with: street, city, postal_code, country\n\n"
                 "Input text:\n{input}\n\n"
                 "Return only valid JSON, no explanations."
+            ),
+            "merchant_details": (
+                "Extract merchant information from ISO 8583 Field 43 (40 characters).\n\n"
+                "<example>\n"
+                "Input: STARBUCKS STORE #123         LONDON        GBR\n"
+                "Expected JSON:\n"
+                "{{\n"
+                '  "merchant_name": "STARBUCKS STORE #123",\n'
+                '  "merchant_city": "LONDON",\n'
+                '  "merchant_country": "GBR"\n'
+                "}}\n"
+                "</example>\n\n"
+                "<example>\n"
+                "Input: SINGAPORE ELECTRONICS PTE    SINGAPORE  SG\n"
+                "Expected JSON:\n"
+                "{{\n"
+                '  "merchant_name": "SINGAPORE ELECTRONICS PTE",\n'
+                '  "merchant_city": "SINGAPORE",\n'
+                '  "merchant_country": "SG"\n'
+                "}}\n"
+                "</example>\n\n"
+                "Now extract from this input:\n"
+                "```\n{input}\n```\n\n"
+                "Rules:\n"
+                "1. merchant_name = first ~25 chars (trim trailing spaces)\n"
+                "2. merchant_city = next ~13 chars (trim spaces)\n"
+                "3. merchant_country = last 2-3 chars (country code)\n\n"
+                "Output JSON only:"
             )
         }
         

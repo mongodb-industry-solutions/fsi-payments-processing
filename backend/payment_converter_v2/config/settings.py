@@ -43,6 +43,32 @@ class Settings(BaseSettings):
         default=30,
         description="Payment agent request timeout in seconds"
     )
+
+    # Circle API Configuration (Crypto/USDC Payments)
+    circle_api_key: str = Field(
+        default="",
+        description="Circle API key for USDC transfers"
+    )
+    circle_entity_secret: str = Field(
+        default="",
+        description="Circle entity secret (32-byte hex)"
+    )
+    circle_wallet_set_id: str = Field(
+        default="",
+        description="Circle Wallet Set ID"
+    )
+    circle_source_wallet_id: str = Field(
+        default="",
+        description="Circle source wallet ID for outgoing payments"
+    )
+    circle_usdc_token_id: str = Field(
+        default="36b6931a-873a-56a8-8a27-b706b17104ee",
+        description="USDC Token ID for transfers"
+    )
+    circle_blockchain: str = Field(
+        default="MATIC-AMOY",
+        description="Circle blockchain (testnet: MATIC-AMOY)"
+    )
     
     model_config = SettingsConfigDict(
         env_file=".env",
