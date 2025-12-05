@@ -108,6 +108,41 @@ CONTRACT SVC-BLR-2024 MILESTONE 4 COMPLETION
 CLOUD INFRASTRUCTURE DEVELOPMENT
 :71A:SHA
 -}`
+  },
+
+  card_payment: {
+    id: 'card_payment',
+    title: 'UK → Singapore Card Purchase',
+    description: 'UK Visa cardholder buys electronics at Sim Lim Square - S$2,500 SGD (~£1,500)',
+    badge: 'CARD PAYMENT',
+    badgeVariant: 'yellow',
+    info: {
+      process: 'Cross-border card authorization converted from legacy ISO 8583 format to modern ISO 20022 cain.001 for interbank clearing.',
+      aiExtraction: 'AI parses unstructured merchant field "SIM LIM SQUARE ELECTRONICS    SINGAPORE     SGP" into structured name, city, and country fields.',
+      multiHop: 'Multi-hop conversion: ISO8583 → Canonical JSON → cain.001 XML, enabling format bridging through a universal intermediate.'
+    },
+    sourceCountry: {
+      name: 'United Kingdom',
+      code: 'GB',
+      flag: '🇬🇧',
+      bank: 'Barclays',
+      city: 'London',
+      coords: [-0.1276, 51.5074]
+    },
+    targetCountry: {
+      name: 'Singapore',
+      code: 'SG',
+      flag: '🇸🇬',
+      bank: 'DBS Bank',
+      city: 'Singapore',
+      coords: [103.8198, 1.3521]
+    },
+    sourceFormat: 'ISO8583_0200',
+    targetFormat: 'cain.001',
+    nodes: 3,
+    steps: 2,
+    formats: 'ISO8583, ISO20022',
+    message: '0200|F220000000000000|4659010123456789|000000|000000250000|1205143022|845623|143022|1205|UKSG20241205|TERM0042|SGPSIMLIM000001|SIM LIM SQUARE ELECTRONICS       SINGAPORE     SGP|702'
   }
 };
 
