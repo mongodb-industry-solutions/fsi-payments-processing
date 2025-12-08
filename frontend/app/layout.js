@@ -32,7 +32,16 @@ function Navigation() {
               <path d="M8 2L10 6L14 6.5L11 9.5L12 14L8 11.5L4 14L5 9.5L2 6.5L6 6L8 2Z" stroke="currentColor" strokeWidth="1.5" fill="none"/>
               <circle cx="8" cy="8" r="1.5" fill="currentColor"/>
             </svg>
-            <span>Agentic AI Converter</span>
+            <span>Smart Converter</span>
+          </Link>
+          <Link
+            href="/config-builder"
+            className={`nav-link ${pathname === '/config-builder' ? 'active' : ''}`}
+          >
+            <svg className="nav-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M3 3h4v4H3V3zm6 0h4v4H9V3zM3 9h4v4H3V9zm6 0h4v4H9V9z" stroke="currentColor" strokeWidth="1.5" fill="none"/>
+            </svg>
+            <span>Config Builder</span>
           </Link>
         </div>
 

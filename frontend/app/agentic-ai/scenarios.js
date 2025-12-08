@@ -10,6 +10,7 @@ export const SCENARIOS = {
     description: 'Volkswagen AG pays Denso Corporation - ¥45M JPY (~€280K)',
     badge: 'TRANSLITERATION',
     badgeVariant: 'green',
+    isAgentic: true,
     info: {
       problem: 'Japanese banks require creditor names in Katakana script, but the source MT103 contains "DENSO CORPORATION" in Latin characters.',
       solution: 'Transaction Agent detects this requirement and automatically transliterates the name to Katakana using Japan\'s official transliteration rules.',
@@ -65,6 +66,7 @@ PRECISION SENSORS AND ECU MODULES
     description: 'Google LLC pays Infosys Limited - ₹15M INR (~$180K)',
     badge: 'IFSC LOOKUP',
     badgeVariant: 'blue',
+    isAgentic: true,
     info: {
       problem: 'Indian banking requires specific IFSC codes for bank identification, but the source MT103 only has descriptive details: "HDFC Bank, Fort Branch, Mumbai".',
       solution: 'Transaction Agent looks up the correct IFSC code from India\'s official database using bank name, branch, and location, then validates and inserts it.',
@@ -116,6 +118,7 @@ CLOUD INFRASTRUCTURE DEVELOPMENT
     description: 'UK Visa cardholder buys electronics at Sim Lim Square - S$2,500 SGD (~£1,500)',
     badge: 'CARD PAYMENT',
     badgeVariant: 'yellow',
+    isAgentic: false,  // No country validation - shows conversion hop events instead
     info: {
       process: 'Cross-border card authorization converted from legacy ISO 8583 format to modern ISO 20022 cain.001 for interbank clearing.',
       aiExtraction: 'AI parses unstructured merchant field "SIM LIM SQUARE ELECTRONICS    SINGAPORE     SGP" into structured name, city, and country fields.',

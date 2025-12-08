@@ -492,8 +492,8 @@ async def convert_multi_hop_stream(request: MultiHopConversionRequest):
                 yield f"data: {json.dumps({'type': 'hop1_complete', 'time': round(hop1_time, 2), 'detailed_processing': hop1_result.get('detailed_processing', {})})}\n\n"
 
             except CountryValidationException as e:
-                # Country validation failed - emit event and call agent
-                yield f"data: {json.dumps({'type': 'validation_failed', 'country': e.conversion_context.get('additional_context', {}).get('country'), 'field': e.field_name, 'task_type': e.task_type})}\n\n"
+                # Country validation failed - emit event with full context for frontend
+                yield f"data: {json.dumps({'type': 'validation_failed', 'country': e.conversion_context.get('additional_context', {}).get('country'), 'field': e.field_name, 'task_type': e.task_type, 'reason': e.reason, 'original_value': e.original_value})}\n\n"
 
                 # Stream agent events
                 yield f"data: {json.dumps({'type': 'agent_start', 'task_type': e.task_type, 'field': e.field_name})}\n\n"
@@ -831,6 +831,25 @@ async def get_config(conversion_id: str) -> ConfigResponse:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get config: {str(e)}"
+        )
+
+
+@router.get("/configs", status_code=status.HTTP_200_OK)
+async def list_all_configs():
+    """
+    List all conversion configurations with full details.
+
+    Returns the complete config documents from MongoDB for display
+    in the Config Builder UI.
+    """
+    try:
+        configs = await mongodb_service.list_configs()
+        return {"configs": configs}
+    except Exception as e:
+        logger.error(f"Failed to list configs: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to list configs: {str(e)}"
         )
 
 

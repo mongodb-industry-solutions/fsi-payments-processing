@@ -27,8 +27,26 @@ function isAgentRelatedEvent(event) {
     'agent_complete',     // Agent finished
     'error'               // Errors
   ];
-  
+
   return agentEventTypes.includes(event.type);
+}
+
+/**
+ * Filter events to show only conversion hop activities
+ * For non-agentic scenarios (like card payments), show the conversion flow instead.
+ */
+function isConversionHopEvent(event) {
+  const hopEventTypes = [
+    'start',           // Conversion started
+    'hop1_start',      // First hop begins
+    'hop1_complete',   // First hop completes
+    'hop2_start',      // Second hop begins
+    'hop2_complete',   // Second hop completes
+    'complete',        // Conversion finished
+    'error'            // Errors
+  ];
+
+  return hopEventTypes.includes(event.type);
 }
 
 export default function AgenticAIPage() {
@@ -48,8 +66,14 @@ export default function AgenticAIPage() {
 
   const scenarios = getAllScenarios();
 
-  // Filter events for Transaction Agent panel (exclude conversion hops)
-  const agentEvents = events.filter(isAgentRelatedEvent);
+  // Filter events based on scenario type:
+  // - Agentic scenarios (Japan, India): Show agent events (validation, tool calls, etc.)
+  // - Non-agentic scenarios (card payment): Show conversion hop events
+  const currentScenario = getScenario(selectedScenario);
+  const isAgenticScenario = currentScenario?.isAgentic !== false;
+  const displayEvents = isAgenticScenario
+    ? events.filter(isAgentRelatedEvent)
+    : events.filter(isConversionHopEvent);
 
   // Debug: Track hop details state changes
   useEffect(() => {
@@ -262,7 +286,7 @@ export default function AgenticAIPage() {
 
         {/* Right: Transaction Agent Panel */}
         <TransactionAgentPanel
-          events={agentEvents}
+          events={displayEvents}
           output={output}
           stats={stats}
           totalTime={totalTime}

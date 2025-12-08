@@ -50,17 +50,22 @@ function formatEventMessage(event) {
 
   switch (type) {
     case 'start':
-      return 'Conversion initiated';
+      return `Conversion started (ID: ${event.conversion_run_id?.slice(0, 8) || 'N/A'})`;
     case 'hop1_start':
-      return 'Processing payment';
+      return `Hop 1: ${event.source || 'Source'} → ${event.target || 'Target'}`;
     case 'hop1_complete':
-      return `First conversion completed in ${event.time || '0'}s`;
+      return `Hop 1 complete (${event.time?.toFixed(2) || '0'}s) - ${event.detailed_processing?.extraction?.total_fields || 0} fields extracted`;
     case 'hop2_start':
-      return 'Processing payment';
+      return `Hop 2: ${event.source || 'Source'} → ${event.target || 'Target'}`;
     case 'hop2_complete':
-      return `Second conversion completed in ${event.time || '0'}s`;
+      return `Hop 2 complete (${event.time?.toFixed(2) || '0'}s) - ${event.detailed_processing?.extraction?.total_fields || 0} fields mapped`;
     case 'validation_failed':
-      return `Validation failed: ${event.country || 'unknown'} - ${event.field || 'field'}`;
+      // Show a brief but informative summary
+      const fieldLabel = event.field === 'creditor_name' ? 'beneficiary name' :
+                         event.field === 'creditor_agent_bic' ? 'bank code' : event.field || 'field';
+      const countryName = event.country === 'JP' ? 'Japan' :
+                          event.country === 'IN' ? 'India' : event.country || 'Country';
+      return `${countryName} validation failed: ${fieldLabel} requires conversion`;
     case 'agent_start':
       return `Agent started: ${event.task_type || 'task'}`;
     case 'agent_supervisor':
@@ -212,6 +217,61 @@ function renderEventDetails(event) {
   const { type } = event;
 
   switch (type) {
+    case 'validation_failed':
+      return (
+        <div style={{
+          marginTop: '8px',
+          padding: '12px',
+          background: '#FFF8E6',
+          borderRadius: '6px',
+          fontSize: '12px',
+          border: '1px solid #FFC107'
+        }}>
+          {/* Problem explanation */}
+          <div style={{ marginBottom: '12px' }}>
+            <Body weight="bold" style={{ fontSize: '12px', color: '#B7791F', marginBottom: '6px' }}>
+              PROBLEM DETECTED
+            </Body>
+            <Body style={{ fontSize: '12px', color: '#5C6C75', lineHeight: '1.5' }}>
+              {event.reason || 'Country-specific validation rule violated'}
+            </Body>
+          </div>
+
+          {/* Original value that failed */}
+          {event.original_value && (
+            <div style={{ marginBottom: '12px' }}>
+              <Body weight="bold" style={{ fontSize: '12px', color: '#B7791F', marginBottom: '6px' }}>
+                CURRENT VALUE
+              </Body>
+              <div style={{
+                padding: '8px 12px',
+                background: 'white',
+                borderRadius: '4px',
+                border: '1px solid #E7EAEE'
+              }}>
+                <Body style={{ fontSize: '12px', color: '#CD4246', fontFamily: 'monospace' }}>
+                  {event.original_value}
+                </Body>
+              </div>
+            </div>
+          )}
+
+          {/* What will happen next */}
+          <div>
+            <Body weight="bold" style={{ fontSize: '12px', color: '#B7791F', marginBottom: '6px' }}>
+              NEXT STEP
+            </Body>
+            <Body style={{ fontSize: '12px', color: '#5C6C75', lineHeight: '1.5' }}>
+              {event.task_type === 'japan_transliteration'
+                ? 'Transaction Agent will transliterate the name to Japanese Katakana script using official transliteration rules.'
+                : event.task_type === 'india_ifsc'
+                ? 'Transaction Agent will look up the correct IFSC code from India\'s banking database using the bank name and branch information.'
+                : 'Transaction Agent will resolve this validation issue automatically.'}
+            </Body>
+          </div>
+        </div>
+      );
+
     case 'agent_supervisor':
       return (
         <div style={{
@@ -374,6 +434,113 @@ function renderEventDetails(event) {
         </div>
       );
 
+    case 'hop1_complete':
+    case 'hop2_complete':
+      const dp = event.detailed_processing || {};
+      const rulesLane = dp.rules_lane || {};
+      const aiLane = dp.ai_lane || {};
+      return (
+        <div style={{
+          marginTop: '8px',
+          padding: '12px',
+          background: '#F9FBFA',
+          borderRadius: '6px',
+          fontSize: '12px'
+        }}>
+          {/* Processing Stats */}
+          <div style={{ marginBottom: '12px' }}>
+            <Body weight="bold" style={{ fontSize: '12px', color: '#0B61A4', marginBottom: '8px' }}>
+              PROCESSING LANES
+            </Body>
+            <div style={{ display: 'flex', gap: '16px' }}>
+              <div>
+                <Body style={{ fontSize: '11px', color: '#889397' }}>Rules Lane</Body>
+                <Body weight="medium" style={{ fontSize: '14px', color: '#00A35C' }}>
+                  {rulesLane.total_fields || 0} fields
+                </Body>
+              </div>
+              <div>
+                <Body style={{ fontSize: '11px', color: '#889397' }}>AI Lane</Body>
+                <Body weight="medium" style={{ fontSize: '14px', color: '#0B61A4' }}>
+                  {aiLane.total_fields || 0} fields
+                </Body>
+              </div>
+            </div>
+          </div>
+
+          {/* AI Lane Details (if any) */}
+          {aiLane.total_fields > 0 && aiLane.fields && (
+            <div style={{ marginBottom: '12px' }}>
+              <Body weight="bold" style={{ fontSize: '12px', color: '#0B61A4', marginBottom: '8px' }}>
+                AI EXTRACTION
+              </Body>
+              {aiLane.fields.map((field, idx) => (
+                <div key={idx} style={{
+                  padding: '8px',
+                  background: 'white',
+                  borderRadius: '4px',
+                  marginBottom: '8px'
+                }}>
+                  <Body weight="medium" style={{ fontSize: '11px', color: '#5C6C75' }}>
+                    {field.source_field} → {field.field_type}
+                  </Body>
+                  {field.ai_response && (
+                    <pre style={{
+                      marginTop: '4px',
+                      fontSize: '10px',
+                      color: '#00A35C',
+                      whiteSpace: 'pre-wrap'
+                    }}>
+                      {JSON.stringify(field.ai_response, null, 2)}
+                    </pre>
+                  )}
+                  <Body style={{ fontSize: '10px', color: '#889397', marginTop: '4px' }}>
+                    Confidence: {((field.confidence || 0) * 100).toFixed(0)}%
+                  </Body>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Sample Fields Extracted */}
+          {rulesLane.fields && rulesLane.fields.length > 0 && (
+            <div>
+              <Body weight="bold" style={{ fontSize: '12px', color: '#0B61A4', marginBottom: '8px' }}>
+                FIELDS MAPPED ({rulesLane.fields.length})
+              </Body>
+              <div style={{
+                maxHeight: '150px',
+                overflow: 'auto',
+                background: 'white',
+                borderRadius: '4px',
+                padding: '8px'
+              }}>
+                {rulesLane.fields.slice(0, 10).map((field, idx) => (
+                  <div key={idx} style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    padding: '4px 0',
+                    borderBottom: idx < 9 ? '1px solid #E7EAEE' : 'none'
+                  }}>
+                    <Body style={{ fontSize: '11px', color: '#5C6C75' }}>
+                      {field.source_field}
+                    </Body>
+                    <Body style={{ fontSize: '11px', color: '#00A35C' }}>
+                      {field.input_value?.toString().slice(0, 30)}{field.input_value?.toString().length > 30 ? '...' : ''}
+                    </Body>
+                  </div>
+                ))}
+                {rulesLane.fields.length > 10 && (
+                  <Body style={{ fontSize: '10px', color: '#889397', marginTop: '4px' }}>
+                    ... and {rulesLane.fields.length - 10} more fields
+                  </Body>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      );
+
     default:
       return null;
   }
@@ -384,11 +551,14 @@ function renderEventDetails(event) {
  */
 function isExpandable(event) {
   const expandableTypes = [
+    'validation_failed',
     'agent_supervisor',
     'tool_call',
     'tool_result',
     'agent_resolution',
-    'agent_execution'
+    'agent_execution',
+    'hop1_complete',
+    'hop2_complete'
   ];
   return expandableTypes.includes(event.type);
 }
