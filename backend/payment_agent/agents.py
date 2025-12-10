@@ -371,20 +371,28 @@ Use your tools to research and find the accurate information.
                     except Exception as e:
                         logger.error(f"Error extracting tool result: {e}")
 
-            # NEW: Populate proposed_value based on task_type
+            # Populate proposed_value based on task_type and tool results
             proposed_value = ""
 
-            if task_type == "japan_transliteration" and "transliterate_text" in tool_result_values:
-                proposed_value = tool_result_values["transliterate_text"].get("transliterated", "")
-                logger.info(f"Extracted Japanese transliteration: {proposed_value}")
+            if task_type == "japan_transliteration":
+                # Check lookup_company_katakana first (DB lookup is preferred)
+                if "lookup_company_katakana" in tool_result_values:
+                    lookup_result = tool_result_values["lookup_company_katakana"]
+                    if lookup_result.get("found") and lookup_result.get("name_katakana"):
+                        proposed_value = lookup_result["name_katakana"]
+                        logger.info(f"Extracted Katakana from DB lookup: {proposed_value}")
+
+                # Fallback to transliterate_text (AI-based)
+                if not proposed_value and "transliterate_text" in tool_result_values:
+                    proposed_value = tool_result_values["transliterate_text"].get("transliterated", "")
+                    logger.info(f"Extracted Katakana from AI transliteration: {proposed_value}")
 
             elif task_type == "india_ifsc" and "lookup_ifsc" in tool_result_values:
                 proposed_value = tool_result_values["lookup_ifsc"].get("ifsc", "")
                 logger.info(f"Extracted IFSC code: {proposed_value}")
 
-            else:
-                # Fallback: keep empty for backward compatibility
-                logger.warning(f"Unknown task_type '{task_type}' or no tool results, proposed_value empty")
+            if not proposed_value:
+                logger.warning(f"No proposed_value extracted for task_type '{task_type}' - tool results: {list(tool_result_values.keys())}")
 
             # Parse the agent's response to extract solution
             solution = {

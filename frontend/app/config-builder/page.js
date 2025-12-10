@@ -7,6 +7,7 @@ import Banner from '@leafygreen-ui/banner';
 import Badge from '@leafygreen-ui/badge';
 import Code from '@leafygreen-ui/code';
 import TextInput from '@leafygreen-ui/text-input';
+import { Select, Option } from '@leafygreen-ui/select';
 
 // Sample messages for demo
 const SAMPLE_MESSAGES = {
@@ -52,7 +53,7 @@ const API_BASE = process.env.NEXT_PUBLIC_CONVERTER_URL || 'http://localhost:8001
 export default function ConfigBuilderPage() {
   // State
   const [configs, setConfigs] = useState([]);
-  const [selectedConfig, setSelectedConfig] = useState(null);
+  const [selectedConfigId, setSelectedConfigId] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -65,6 +66,11 @@ export default function ConfigBuilderPage() {
   const [approving, setApproving] = useState(false);
   const [generateError, setGenerateError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
+  const [showSchemaInfo, setShowSchemaInfo] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Get selected config object
+  const selectedConfig = configs.find(c => c._id === selectedConfigId) || null;
 
   // Load existing configs on mount
   useEffect(() => {
@@ -157,7 +163,7 @@ export default function ConfigBuilderPage() {
       <style jsx>{`
         .config-builder-page {
           padding: 24px;
-          max-width: 1400px;
+          max-width: 1600px;
           margin: 0 auto;
         }
         .page-header {
@@ -173,10 +179,13 @@ export default function ConfigBuilderPage() {
           color: var(--gray-dark1);
           font-size: 14px;
         }
-        .layout-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 24px;
+        .main-layout {
+          display: flex;
+          gap: 0;
+        }
+        .main-content {
+          flex: 1;
+          min-width: 0;
         }
         .section-title {
           font-size: 16px;
@@ -185,45 +194,6 @@ export default function ConfigBuilderPage() {
           display: flex;
           align-items: center;
           gap: 8px;
-        }
-        .config-list {
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-          max-height: 300px;
-          overflow-y: auto;
-        }
-        .config-item {
-          padding: 12px;
-          border: 1px solid var(--gray-light2);
-          border-radius: 8px;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          background: white;
-        }
-        .config-item:hover {
-          border-color: var(--green-dark1);
-          background: var(--green-light3);
-        }
-        .config-item.selected {
-          border-color: var(--green-dark1);
-          background: var(--green-light3);
-        }
-        .config-item-title {
-          font-weight: 500;
-          font-size: 14px;
-        }
-        .config-item-meta {
-          font-size: 12px;
-          color: var(--gray-dark1);
-          margin-top: 4px;
-        }
-        .config-detail {
-          background: var(--gray-dark4);
-          border-radius: 8px;
-          padding: 16px;
-          max-height: 400px;
-          overflow: auto;
         }
         .form-group {
           margin-bottom: 16px;
@@ -252,16 +222,19 @@ export default function ConfigBuilderPage() {
           border: 1px solid var(--gray-light2);
           border-radius: 4px;
           background: white;
+          color: var(--gray-dark2);
           cursor: pointer;
           transition: all 0.2s ease;
         }
         .sample-btn:hover {
           border-color: var(--blue-base);
           background: var(--blue-light3);
+          color: var(--blue-dark2);
         }
         .sample-btn.active {
           border-color: var(--green-dark1);
           background: var(--green-light3);
+          color: var(--green-dark2);
         }
         .message-textarea {
           width: 100%;
@@ -310,53 +283,198 @@ export default function ConfigBuilderPage() {
           flex-wrap: wrap;
           margin-bottom: 12px;
         }
+        .config-detail {
+          background: var(--gray-dark4);
+          border-radius: 8px;
+          padding: 12px;
+          max-height: 250px;
+          overflow: auto;
+          font-size: 11px;
+        }
+        .schema-toggle {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 6px 12px;
+          font-size: 12px;
+          color: var(--blue-dark2);
+          background: var(--blue-light3);
+          border: 1px solid var(--blue-light2);
+          border-radius: 6px;
+          cursor: pointer;
+          margin-bottom: 16px;
+          transition: all 0.2s ease;
+        }
+        .schema-toggle:hover {
+          background: var(--blue-light2);
+        }
+        .schema-toggle svg {
+          transition: transform 0.2s ease;
+        }
+        .schema-toggle.open svg {
+          transform: rotate(180deg);
+        }
         .schema-info {
           background: var(--blue-light3);
           border: 1px solid var(--blue-light2);
           border-radius: 8px;
-          padding: 16px;
-          margin-bottom: 24px;
-        }
-        .schema-info h4 {
-          font-size: 14px;
-          font-weight: 600;
-          margin-bottom: 8px;
-          color: var(--blue-dark2);
+          padding: 12px 16px;
+          margin-bottom: 16px;
+          font-size: 13px;
         }
         .schema-info code {
           background: white;
           padding: 2px 6px;
           border-radius: 4px;
+          font-size: 11px;
+        }
+        .schema-fields {
+          display: flex;
+          gap: 16px;
+          flex-wrap: wrap;
+          margin-top: 8px;
+        }
+        .schema-field {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+        }
+        .schema-field code {
+          font-weight: 500;
+        }
+        .schema-field span {
+          color: var(--gray-dark1);
           font-size: 12px;
         }
-        .schema-info ul {
-          margin-left: 20px;
-          font-size: 13px;
-          color: var(--gray-dark2);
+        /* Sidebar drawer styles */
+        .sidebar-drawer {
+          position: fixed;
+          top: 64px;
+          right: 0;
+          height: calc(100vh - 64px);
+          display: flex;
+          z-index: 100;
+          pointer-events: none;
         }
-        .schema-info li {
-          margin-bottom: 4px;
+        .sidebar-tab {
+          pointer-events: auto;
+          position: absolute;
+          right: 0;
+          top: 24px;
+          writing-mode: vertical-rl;
+          text-orientation: mixed;
+          padding: 16px 8px;
+          background: var(--gray-dark3);
+          color: white;
+          border: none;
+          border-radius: 8px 0 0 8px;
+          cursor: pointer;
+          font-size: 13px;
+          font-weight: 500;
+          font-family: inherit;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          transition: background 0.2s ease;
+        }
+        .sidebar-tab:hover {
+          background: var(--gray-dark2);
+        }
+        .sidebar-tab svg {
+          transform: rotate(90deg);
+          transition: transform 0.2s ease;
+        }
+        .sidebar-drawer.open .sidebar-tab svg {
+          transform: rotate(-90deg);
+        }
+        .sidebar-panel {
+          pointer-events: auto;
+          position: absolute;
+          right: 0;
+          top: 0;
+          width: 360px;
+          height: 100%;
+          background: white;
+          border-left: 1px solid var(--gray-light2);
+          box-shadow: -4px 0 20px rgba(0,0,0,0.1);
+          transform: translateX(100%);
+          transition: transform 0.3s ease;
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+        }
+        .sidebar-drawer.open .sidebar-panel {
+          transform: translateX(0);
+        }
+        .sidebar-drawer.open .sidebar-tab {
+          right: 360px;
+        }
+        .sidebar-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 16px;
+          border-bottom: 1px solid var(--gray-light2);
+          flex-shrink: 0;
+        }
+        .sidebar-title {
+          font-size: 14px;
+          font-weight: 600;
+          color: var(--black);
+        }
+        .sidebar-body {
+          padding: 16px;
+          flex: 1;
+          overflow: hidden;
+          display: flex;
+          flex-direction: column;
+        }
+        .config-viewer {
+          background: var(--gray-dark4);
+          border-radius: 8px;
+          padding: 12px;
+          margin-top: 12px;
+          flex: 1;
+          overflow: auto;
+          font-size: 11px;
+        }
+        .config-viewer-empty {
+          background: var(--gray-light3);
+          border-radius: 8px;
+          color: var(--gray-base);
+          font-size: 13px;
+          text-align: center;
+          padding: 24px 12px;
+          margin-top: 12px;
         }
       `}</style>
 
       <div className="page-header">
         <h1>Config Builder</h1>
-        <p>View existing conversion configs and auto-generate new ones using semantic learning</p>
+        <p>Auto-generate conversion configs using semantic learning</p>
       </div>
 
-      {/* Schema Info Banner */}
-      <div className="schema-info">
-        <h4>Simplified Config Schema</h4>
-        <p style={{ marginBottom: '8px', fontSize: '13px' }}>
-          Each config has 4 fields: <code>_id</code>, <code>extract</code>, <code>map</code>, <code>output</code>
-        </p>
-        <ul>
-          <li><strong>_id</strong>: Config identifier (e.g., "MT103_to_JSON")</li>
-          <li><strong>extract</strong>: Regex patterns to extract fields from source message</li>
-          <li><strong>map</strong>: Field mappings with optional transformations (split, dateFormat, ai)</li>
-          <li><strong>output</strong>: Output field paths for the target format</li>
-        </ul>
-      </div>
+      {/* Schema Info Toggle */}
+      <button
+        className={`schema-toggle ${showSchemaInfo ? 'open' : ''}`}
+        onClick={() => setShowSchemaInfo(!showSchemaInfo)}
+      >
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
+          <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" fill="none"/>
+        </svg>
+        Config Schema Reference
+      </button>
+
+      {showSchemaInfo && (
+        <div className="schema-info">
+          <div className="schema-fields">
+            <div className="schema-field"><code>_id</code><span>identifier</span></div>
+            <div className="schema-field"><code>extract</code><span>regex patterns</span></div>
+            <div className="schema-field"><code>map</code><span>field mappings + transforms</span></div>
+            <div className="schema-field"><code>output</code><span>target paths</span></div>
+          </div>
+        </div>
+      )}
 
       {error && (
         <Banner variant="danger" style={{ marginBottom: '16px' }}>
@@ -370,50 +488,9 @@ export default function ConfigBuilderPage() {
         </Banner>
       )}
 
-      <div className="layout-grid">
-        {/* Left Panel - Existing Configs */}
-        <Card>
-          <div className="section-title">
-            <span>Existing Configs</span>
-            <Badge variant="green">{configs.length}</Badge>
-            <Button size="xsmall" onClick={loadConfigs} disabled={loading}>
-              Refresh
-            </Button>
-          </div>
-
-          {loading ? (
-            <p style={{ color: 'var(--gray-dark1)', fontSize: '14px' }}>Loading configs...</p>
-          ) : (
-            <div className="config-list">
-              {configs.map((config) => (
-                <div
-                  key={config._id}
-                  className={`config-item ${selectedConfig?._id === config._id ? 'selected' : ''}`}
-                  onClick={() => setSelectedConfig(config)}
-                >
-                  <div className="config-item-title">{config._id}</div>
-                  <div className="config-item-meta">
-                    {Object.keys(config.extract || {}).length} extract patterns, {' '}
-                    {(config.map || []).length} mappings
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {selectedConfig && (
-            <div style={{ marginTop: '16px' }}>
-              <div className="section-title">Config Detail</div>
-              <div className="config-detail">
-                <Code language="json">
-                  {JSON.stringify(selectedConfig, null, 2)}
-                </Code>
-              </div>
-            </div>
-          )}
-        </Card>
-
-        {/* Right Panel - Generate New Config */}
+      <div className="main-layout">
+        {/* Main: Generator */}
+        <div className="main-content">
         <Card>
           <div className="section-title">
             <span>Generate New Config</span>
@@ -518,14 +595,16 @@ export default function ConfigBuilderPage() {
                 </div>
               )}
 
-              <div style={{ marginBottom: '12px' }}>
-                <span style={{ fontSize: '12px', color: 'var(--gray-dark1)' }}>Learned from: </span>
-                {generatedConfig.learned_from?.map((c) => (
-                  <Badge key={c} variant="lightgray" style={{ marginRight: '4px' }}>{c}</Badge>
-                ))}
-              </div>
+              {generatedConfig.learned_from?.length > 0 && (
+                <div style={{ marginBottom: '12px' }}>
+                  <span style={{ fontSize: '12px', color: 'var(--gray-dark1)' }}>Learned from: </span>
+                  {generatedConfig.learned_from.map((c) => (
+                    <Badge key={c} variant="lightgray" style={{ marginRight: '4px' }}>{c}</Badge>
+                  ))}
+                </div>
+              )}
 
-              <div className="config-detail" style={{ maxHeight: '250px' }}>
+              <div className="config-detail">
                 <Code language="json">
                   {JSON.stringify(generatedConfig.config, null, 2)}
                 </Code>
@@ -549,6 +628,58 @@ export default function ConfigBuilderPage() {
             </div>
           )}
         </Card>
+        </div>
+      </div>
+
+      {/* Sidebar Drawer - Config Viewer */}
+      <div className={`sidebar-drawer ${sidebarOpen ? 'open' : ''}`}>
+        <button
+          className="sidebar-tab"
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+        >
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
+            <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" fill="none"/>
+          </svg>
+          Configs ({configs.length})
+        </button>
+
+        <div className="sidebar-panel">
+          <div className="sidebar-header">
+            <span className="sidebar-title">Existing Configs</span>
+            <Button size="xsmall" onClick={loadConfigs} disabled={loading}>
+              {loading ? '...' : 'Refresh'}
+            </Button>
+          </div>
+
+          <div className="sidebar-body">
+            <Select
+              label="Select Config"
+              placeholder="Choose a config"
+              value={selectedConfigId}
+              onChange={(value) => setSelectedConfigId(value)}
+              disabled={loading || configs.length === 0}
+              size="small"
+            >
+              {configs.map((config) => (
+                <Option key={config._id} value={config._id}>
+                  {config._id}
+                </Option>
+              ))}
+            </Select>
+
+            {selectedConfig ? (
+              <div className="config-viewer">
+                <Code language="json">
+                  {JSON.stringify(selectedConfig, null, 2)}
+                </Code>
+              </div>
+            ) : (
+              <div className="config-viewer-empty">
+                {loading ? 'Loading...' : 'Select a config to view'}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

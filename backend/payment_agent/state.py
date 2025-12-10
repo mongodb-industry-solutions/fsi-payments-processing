@@ -67,6 +67,10 @@ class AgentState(TypedDict):
     solution: Dict[str, Any]  # Resolution agent's proposed fix
     result: Dict[str, Any]  # Execution agent's result
 
+    # Human-in-the-loop review
+    human_review: Optional[Dict[str, Any]]  # Human's review decision: {"approved": bool, "modified_value": str}
+    review_requested: Optional[bool]  # Flag indicating review was requested
+
 
 # Type hints for clarity
 AgentStateUpdate = Dict[str, Any]  # Partial state updates returned by agents

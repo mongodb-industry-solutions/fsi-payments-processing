@@ -57,6 +57,10 @@ circle_service = CircleService(
 # Initialize semantic learning service (for auto-config generation)
 semantic_learning_service = SemanticLearningService(mongodb_service)
 
+# Pending conversions store - tracks conversion state during human-in-the-loop review
+# Key: thread_id, Value: dict with conversion_run_id, source/target formats, validation context
+pending_conversions: Dict[str, Dict[str, Any]] = {}
+
 
 # ============================================================================
 # Request/Response Models
@@ -495,14 +499,16 @@ async def convert_multi_hop_stream(request: MultiHopConversionRequest):
                 # Country validation failed - emit event with full context for frontend
                 yield f"data: {json.dumps({'type': 'validation_failed', 'country': e.conversion_context.get('additional_context', {}).get('country'), 'field': e.field_name, 'task_type': e.task_type, 'reason': e.reason, 'original_value': e.original_value})}\n\n"
 
-                # Stream agent events
+                # Stream agent events with human-in-the-loop support
                 yield f"data: {json.dumps({'type': 'agent_start', 'task_type': e.task_type, 'field': e.field_name})}\n\n"
 
                 # Capture task_type for use in nested events
                 current_task_type = e.task_type
-                
+
                 final_state = {}
-                async for event in agent_client.process_payment_stream(
+                review_required = False
+
+                async for event in agent_client.process_payment_stream_with_review(
                     task_type=e.task_type,
                     field_name=e.field_name,
                     original_value=e.original_value,
@@ -565,6 +571,37 @@ async def convert_multi_hop_stream(request: MultiHopConversionRequest):
 
                         result = execution_state.get("result", {})
                         yield f"data: {json.dumps({'type': 'agent_execution', 'conversion_run_id': conversion_run_id, 'status': 'complete', 'field': result.get('field_name', ''), 'old_value': result.get('old_value', ''), 'new_value': result.get('new_value', ''), 'reasoning': result.get('reasoning', ''), 'details': {'field_name': result.get('field_name'), 'old_value': result.get('old_value'), 'new_value': result.get('new_value'), 'reasoning': result.get('reasoning'), 'success': result.get('success')}})}\n\n"
+
+                    elif event.get("type") == "thread_started":
+                        # Capture thread_id for human review flow
+                        logger.info(f"Agent thread started: {event.get('thread_id')}")
+
+                    elif event.get("type") == "review_required":
+                        # Human-in-the-loop: forward review request to frontend
+                        logger.info(f"Human review required: {event}")
+                        review_required = True
+
+                        # Store conversion state for continuation after resume
+                        # The frontend will call /agent/resume with the thread_id
+                        pending_conversions[event.get("thread_id")] = {
+                            "conversion_run_id": conversion_run_id,
+                            "source_format": request.source_format,
+                            "target_format": request.target_format,
+                            "original_message": request.message,
+                            "validation_exception": {
+                                "task_type": e.task_type,
+                                "field_name": e.field_name,
+                                "original_value": e.original_value,
+                                "conversion_context": e.conversion_context
+                            },
+                            "hop1_start": hop1_start,
+                            "start_time": start_time
+                        }
+
+                        # Forward the review_required event to frontend
+                        yield f"data: {json.dumps(event)}\n\n"
+                        # Stream ends here - frontend will call /agent/resume
+                        return
 
                     elif event.get("type") == "complete":
                         agent_result = final_state.get("result", {})
@@ -710,6 +747,130 @@ async def get_canonical_json_diff(conversion_run_id: str):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch canonical JSON diff: {str(e)}"
+        )
+
+
+class HumanReviewDecision(BaseModel):
+    """Human reviewer's decision on proposed change."""
+    approved: bool = Field(..., description="Whether the change is approved")
+    modified_value: Optional[str] = Field(default=None, description="Optional modified value")
+
+
+class ResumeAgentRequest(BaseModel):
+    """Request to resume agent workflow after human review."""
+    thread_id: str = Field(..., description="Thread ID from the review_required event")
+    decision: HumanReviewDecision = Field(..., description="Human reviewer's decision")
+
+
+@router.post("/agent/resume", status_code=status.HTTP_200_OK)
+async def resume_agent_workflow(request: ResumeAgentRequest):
+    """
+    Resume the payment agent workflow after human review and continue hop 2.
+
+    This endpoint is called after the frontend receives a 'review_required' event
+    during streaming conversion. It:
+    1. Forwards the human's decision to the payment agent
+    2. If approved, continues with hop 2 conversion (JSON → target)
+    3. Returns the complete result with final converted output
+
+    Args:
+        request: Contains thread_id and human's approval decision
+
+    Returns:
+        Complete conversion result including hop 2 output
+    """
+    try:
+        logger.info(f"Resuming agent workflow: thread_id={request.thread_id}, approved={request.decision.approved}")
+
+        # Get stored conversion context for this thread
+        pending = pending_conversions.get(request.thread_id, {})
+        if not pending:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"No pending conversion found for thread_id: {request.thread_id}"
+            )
+
+        conversion_run_id = pending.get("conversion_run_id")
+        target_format = pending.get("target_format")
+        original_message = pending.get("original_message")
+        start_time = pending.get("start_time", time.time())
+
+        # Resume agent workflow
+        agent_result = await agent_client.resume_workflow(
+            thread_id=request.thread_id,
+            approved=request.decision.approved,
+            modified_value=request.decision.modified_value
+        )
+
+        # Add conversion_run_id to response so frontend can show JSON diff
+        agent_result["conversion_run_id"] = conversion_run_id
+
+        # If rejected, return early without hop 2
+        if agent_result.get("rejected") or not request.decision.approved:
+            logger.info("Human rejected - skipping hop 2")
+            if request.thread_id in pending_conversions:
+                del pending_conversions[request.thread_id]
+            return agent_result
+
+        # Continue with hop 2: JSON → target_format
+        logger.info(f"Continuing hop 2: JSON → {target_format}")
+
+        # Retrieve corrected JSON from MongoDB
+        cached_json = await mongodb_service.get_canonical_json(
+            original_message,
+            conversion_run_id=conversion_run_id
+        )
+
+        if not cached_json or not cached_json.get('json_data'):
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to retrieve corrected JSON from MongoDB"
+            )
+
+        # Run hop 2 conversion
+        hop2_result = await converter.convert(
+            source_format="JSON",
+            target_format=target_format,
+            message=cached_json['json_data'],
+            original_source_message=original_message,
+            conversion_run_id=conversion_run_id
+        )
+
+        # Calculate total time
+        total_time = time.time() - start_time
+
+        # Build final response with complete conversion result
+        stats = hop2_result["processing_stats"]
+        lane_dist = stats.get("lane_distribution", {})
+
+        result = {
+            "success": True,
+            "conversion_run_id": conversion_run_id,
+            "result": agent_result.get("result", {}),
+            "output": hop2_result["converted_message"],
+            "processing_stats": {
+                "rules_lane": lane_dist.get("RULES", 0),
+                "ai_lane": lane_dist.get("AI", 0),
+                "human_lane": lane_dist.get("HUMAN", 0)
+            },
+            "total_time": round(total_time, 2),
+            "hop2_details": hop2_result.get("detailed_processing", {})
+        }
+
+        # Clean up pending conversion
+        if request.thread_id in pending_conversions:
+            del pending_conversions[request.thread_id]
+
+        logger.info(f"Conversion complete after HITL: total_time={total_time:.2f}s")
+        return result
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error resuming agent workflow: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to resume agent workflow: {str(e)}"
         )
 
 

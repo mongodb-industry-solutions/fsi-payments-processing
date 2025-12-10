@@ -5,6 +5,7 @@ import Banner from '@leafygreen-ui/banner';
 import CollapsibleScenariosPanel from './components/CollapsibleScenariosPanel';
 import GeographicMapPanel from './components/GeographicMapPanel';
 import TransactionAgentPanel from './components/TransactionAgentPanel';
+import HumanReviewModal from './components/HumanReviewModal';
 import { getAllScenarios, getScenario } from './scenarios';
 
 // Use Next.js API routes to proxy to converter sidecar
@@ -64,6 +65,12 @@ export default function AgenticAIPage() {
   const [hop2Details, setHop2Details] = useState(null);
   const [conversionRunId, setConversionRunId] = useState(null);
 
+  // Human-in-the-loop review state
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [reviewData, setReviewData] = useState(null);
+  const [reviewThreadId, setReviewThreadId] = useState(null);
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+
   const scenarios = getAllScenarios();
 
   // Filter events based on scenario type:
@@ -116,6 +123,11 @@ export default function AgenticAIPage() {
     setHop2Details(null);
     setConversionRunId(null);
     setIsPanelExpanded(true); // Re-expand panel on reset
+    // Reset review state
+    setIsReviewModalOpen(false);
+    setReviewData(null);
+    setReviewThreadId(null);
+    setIsSubmittingReview(false);
   };
 
   const handleSelectScenario = (scenarioId) => {
@@ -229,6 +241,15 @@ export default function AgenticAIPage() {
               if (eventData.type === 'error') {
                 setError(eventData.data?.message || eventData.message || 'Unknown error');
               }
+
+              // Handle review_required event (human-in-the-loop)
+              if (eventData.type === 'review_required') {
+                console.log('👤 Human review required:', eventData);
+                setReviewThreadId(eventData.thread_id);
+                setReviewData(eventData);
+                setIsReviewModalOpen(true);
+                // Don't set isStreaming to false yet - we're paused, not done
+              }
             } catch (e) {
               console.warn('Failed to parse SSE event:', line, e);
             }
@@ -241,6 +262,144 @@ export default function AgenticAIPage() {
     } finally {
       setIsStreaming(false);
     }
+  };
+
+  // Human review handlers
+  const handleApproveReview = async (options = {}) => {
+    if (!reviewThreadId) return;
+
+    setIsSubmittingReview(true);
+    addEvent({
+      type: 'review_approved',
+      message: options.modified_value
+        ? `Human approved with modification: ${options.modified_value}`
+        : 'Human approved proposed change'
+    });
+
+    try {
+      const response = await fetch('/api/agent/resume', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          thread_id: reviewThreadId,
+          decision: {
+            approved: true,
+            modified_value: options.modified_value || null
+          }
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Resume failed: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('✅ Resume result:', result);
+
+      // Add execution result event with conversion_run_id for JSON diff visualization
+      if (result.success) {
+        addEvent({
+          type: 'agent_execution',
+          conversion_run_id: result.conversion_run_id,
+          field: result.result?.field_name,
+          old_value: result.result?.old_value,
+          new_value: result.result?.new_value,
+          reasoning: 'Executed after human approval'
+        });
+        addEvent({
+          type: 'agent_complete',
+          field: result.result?.field_name,
+          success: true
+        });
+
+        // Add hop 2 events if conversion continued
+        if (result.output) {
+          addEvent({
+            type: 'hop2_start',
+            message: 'JSON → Target format conversion'
+          });
+          addEvent({
+            type: 'hop2_complete',
+            message: 'Hop 2 conversion complete',
+            detailed_processing: result.hop2_details
+          });
+
+          // Update hop2 details for visualization
+          if (result.hop2_details) {
+            setHop2Details(result.hop2_details);
+          }
+
+          // Add complete event with final output
+          addEvent({
+            type: 'complete',
+            output: result.output,
+            processing_stats: result.processing_stats,
+            total_time: result.total_time
+          });
+
+          // Update state with final results
+          setOutput(result.output);
+          setStats(result.processing_stats);
+          setTotalTime(result.total_time);
+        }
+      }
+
+      setIsReviewModalOpen(false);
+    } catch (err) {
+      console.error('Error resuming workflow:', err);
+      setError(`Failed to resume: ${err.message}`);
+    } finally {
+      setIsSubmittingReview(false);
+      setIsStreaming(false);
+    }
+  };
+
+  const handleRejectReview = async () => {
+    if (!reviewThreadId) return;
+
+    setIsSubmittingReview(true);
+    addEvent({
+      type: 'review_rejected',
+      message: 'Human rejected proposed change'
+    });
+
+    try {
+      const response = await fetch('/api/agent/resume', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          thread_id: reviewThreadId,
+          decision: {
+            approved: false,
+            modified_value: null
+          }
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Resume failed: ${response.status}`);
+      }
+
+      addEvent({
+        type: 'agent_complete',
+        field: reviewData?.field,
+        success: false,
+        message: 'Skipped - rejected by human reviewer'
+      });
+
+      setIsReviewModalOpen(false);
+    } catch (err) {
+      console.error('Error rejecting workflow:', err);
+      setError(`Failed to reject: ${err.message}`);
+    } finally {
+      setIsSubmittingReview(false);
+      setIsStreaming(false);
+    }
+  };
+
+  const handleCloseReviewModal = () => {
+    // Closing without decision is treated as rejection
+    handleRejectReview();
   };
 
   return (
@@ -296,6 +455,16 @@ export default function AgenticAIPage() {
           onToggleEvent={toggleEventExpansion}
         />
       </div>
+
+      {/* Human Review Modal */}
+      <HumanReviewModal
+        isOpen={isReviewModalOpen}
+        onClose={handleCloseReviewModal}
+        onApprove={handleApproveReview}
+        onReject={handleRejectReview}
+        reviewData={reviewData}
+        isSubmitting={isSubmittingReview}
+      />
     </div>
   );
 }
