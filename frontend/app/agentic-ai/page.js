@@ -35,6 +35,7 @@ function isAgentRelatedEvent(event) {
 /**
  * Filter events to show only conversion hop activities
  * For non-agentic scenarios (like card payments), show the conversion flow instead.
+ * Also includes crypto settlement events for blockchain scenarios.
  */
 function isConversionHopEvent(event) {
   const hopEventTypes = [
@@ -44,7 +45,16 @@ function isConversionHopEvent(event) {
     'hop2_start',      // Second hop begins
     'hop2_complete',   // Second hop completes
     'complete',        // Conversion finished
-    'error'            // Errors
+    'error',           // Errors
+    // Crypto/blockchain settlement events
+    'crypto_start',           // Blockchain settlement starting
+    'crypto_wallet_extract',  // Extracting wallet addresses
+    'crypto_balance_check',   // Verifying sender balance
+    'crypto_tx_build',        // Building transaction
+    'crypto_tx_sign',         // Signing transaction
+    'crypto_tx_submit',       // Submitting to network
+    'crypto_tx_confirm',      // Transaction confirmed
+    'crypto_complete'         // Blockchain settlement complete
   ];
 
   return hopEventTypes.includes(event.type);

@@ -44,32 +44,24 @@ class Settings(BaseSettings):
         description="Payment agent request timeout in seconds"
     )
 
-    # Circle API Configuration (Crypto/USDC Payments)
-    circle_api_key: str = Field(
+    # Solana Configuration (Crypto/Blockchain Payments)
+    solana_rpc_endpoint: str = Field(
+        default="https://api.devnet.solana.com",
+        description="Solana RPC endpoint URL"
+    )
+    solana_private_key: str = Field(
         default="",
-        description="Circle API key for USDC transfers"
+        description="Base58-encoded private key for sender wallet"
     )
-    circle_entity_secret: str = Field(
+    solana_network: str = Field(
+        default="devnet",
+        description="Solana network: devnet, testnet, or mainnet-beta"
+    )
+    solana_private_key_2: str = Field(
         default="",
-        description="Circle entity secret (32-byte hex)"
+        description="Base58-encoded private key for receiver wallet (for auto-refund)"
     )
-    circle_wallet_set_id: str = Field(
-        default="",
-        description="Circle Wallet Set ID"
-    )
-    circle_source_wallet_id: str = Field(
-        default="",
-        description="Circle source wallet ID for outgoing payments"
-    )
-    circle_usdc_token_id: str = Field(
-        default="36b6931a-873a-56a8-8a27-b706b17104ee",
-        description="USDC Token ID for transfers"
-    )
-    circle_blockchain: str = Field(
-        default="MATIC-AMOY",
-        description="Circle blockchain (testnet: MATIC-AMOY)"
-    )
-    
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

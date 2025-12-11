@@ -146,6 +146,86 @@ CLOUD INFRASTRUCTURE DEVELOPMENT
     steps: 2,
     formats: 'ISO8583, ISO20022',
     message: '0200|F220000000000000|4659010123456789|000000|000000250000|1205143022|845623|143022|1205|UKSG20241205|TERM0042|SGPSIMLIM000001|SIM LIM SQUARE ELECTRONICS       SINGAPORE     SGP|702'
+  },
+
+  crypto: {
+    id: 'crypto',
+    title: 'India → USA → Mexico Crypto Settlement',
+    description: 'Mumbai fintech pays US partner, final settlement to Mexico via Solana - $50,000 USD',
+    badge: 'BLOCKCHAIN',
+    badgeVariant: 'purple',
+    isAgentic: false,
+    isCryptoSettlement: true,
+    info: {
+      process: 'ISO 20022 payment converted to canonical JSON, then settled on Solana blockchain as last-mile payment to Mexico.',
+      hop1: 'pacs.008 → JSON: Extract payment details and wallet addresses from RmtInf/Ustrd fields.',
+      hop2: 'JSON → Solana: Execute blockchain transfer with real transaction hash and explorer link.'
+    },
+    sourceCountry: {
+      name: 'India',
+      code: 'IN',
+      flag: '🇮🇳',
+      bank: 'Mumbai Fintech Ltd',
+      city: 'Mumbai',
+      coords: [72.8777, 19.0760]
+    },
+    targetCountry: {
+      name: 'United States',
+      code: 'US',
+      flag: '🇺🇸',
+      bank: 'US Payment Hub',
+      city: 'New York',
+      coords: [-74.0060, 40.7128]
+    },
+    finalCountry: {
+      name: 'Mexico',
+      code: 'MX',
+      flag: '🇲🇽',
+      bank: 'Solana Wallet',
+      city: 'Mexico City',
+      coords: [-99.1332, 19.4326]
+    },
+    sourceFormat: 'pacs.008',
+    targetFormat: 'JSON',
+    nodes: 3,
+    steps: 2,
+    formats: 'ISO20022, JSON, Solana',
+    message: `<?xml version="1.0" encoding="UTF-8"?>
+<Document xmlns="urn:iso:std:iso:20022:tech:xsd:pacs.008.001.08">
+  <FIToFICstmrCdtTrf>
+    <GrpHdr>
+      <MsgId>CRYPTO-IN-MX-2025-001</MsgId>
+      <CreDtTm>2025-01-15T10:30:00Z</CreDtTm>
+      <NbOfTxs>1</NbOfTxs>
+      <SttlmInf><SttlmMtd>INDA</SttlmMtd></SttlmInf>
+    </GrpHdr>
+    <CdtTrfTxInf>
+      <PmtId>
+        <EndToEndId>E2E-CRYPTO-IN-MX-001</EndToEndId>
+      </PmtId>
+      <Amt>
+        <InstdAmt Ccy="USD">50000.00</InstdAmt>
+      </Amt>
+      <Dbtr>
+        <Nm>MUMBAI FINTECH SOLUTIONS PVT LTD</Nm>
+        <PstlAdr><Ctry>IN</Ctry><TwnNm>Mumbai</TwnNm></PstlAdr>
+      </Dbtr>
+      <DbtrAcct><Id><IBAN>IN64HDFC0051234567890</IBAN></Id></DbtrAcct>
+      <Cdtr>
+        <Nm>US PAYMENT PARTNERS LLC</Nm>
+        <PstlAdr><Ctry>US</Ctry><TwnNm>New York</TwnNm></PstlAdr>
+      </Cdtr>
+      <CdtrAcct><Id><IBAN>US1234567890123456789012</IBAN></Id></CdtrAcct>
+      <RmtInf>
+        <Ustrd>INVOICE FINTECH-MX-2025-Q1-001 SOFTWARE SERVICES</Ustrd>
+        <Ustrd>/CRYPTO/SOL/SETTLEMENT</Ustrd>
+        <Ustrd>/SENDER/FZFmhRpaDf8WDgsvHXfyPCd9t1vR7eBAfh4gzQt9gd3b</Ustrd>
+        <Ustrd>/RECEIVER/EJ4KSoUY3fisJQE4NvJWpErTRBKLKyqbaiJDLKFEkTtK</Ustrd>
+        <Ustrd>/AMOUNT_SOL/50000</Ustrd>
+      </RmtInf>
+    </CdtTrfTxInf>
+  </FIToFICstmrCdtTrf>
+</Document>`
   }
 };
 

@@ -27,7 +27,16 @@ function getEventIcon(type) {
     'agent_execution': 'Edit',
     'agent_complete': 'CheckmarkWithCircle',
     'complete': 'CheckmarkWithCircle',
-    'error': 'X'
+    'error': 'X',
+    // Crypto/blockchain events
+    'crypto_start': 'Cloud',
+    'crypto_wallet_extract': 'Folder',
+    'crypto_balance_check': 'Charts',
+    'crypto_tx_build': 'Code',
+    'crypto_tx_sign': 'Key',
+    'crypto_tx_submit': 'Upload',
+    'crypto_tx_confirm': 'CheckmarkWithCircle',
+    'crypto_complete': 'Favorite'
   };
   return iconMap[type] || 'InfoWithCircle';
 }
@@ -39,6 +48,7 @@ function getEventColor(type) {
   if (type.includes('complete')) return '#00A35C';
   if (type.includes('error') || type.includes('failed')) return '#CD4246';
   if (type.includes('agent')) return '#0B61A4';
+  if (type.includes('crypto')) return '#7C3AED';  // Purple for blockchain events
   return '#5C6C75';
 }
 
@@ -104,6 +114,21 @@ function formatEventMessage(event) {
       return 'Conversion completed successfully';
     case 'error':
       return `Error: ${event.message || 'Unknown error'}`;
+    // Crypto/blockchain events - showing canonical JSON integration with Solana
+    case 'crypto_start':
+      return event.detail || 'Initiating Solana blockchain settlement using canonical JSON fields';
+    case 'crypto_wallet_extract':
+      return `${event.detail || 'Extracted wallet addresses from canonical JSON'} (${event.sender?.slice(0, 8)}... → ${event.receiver?.slice(0, 8)}...)`;
+    case 'crypto_tx_build':
+      return event.detail || 'Building Solana transfer instruction with sender, receiver, and amount from canonical JSON';
+    case 'crypto_tx_sign':
+      return event.detail || 'Signing transaction with sender private key via Solana SDK';
+    case 'crypto_tx_submit':
+      return event.detail || 'Broadcasting signed transaction to Solana devnet RPC endpoint';
+    case 'crypto_tx_confirm':
+      return `Transaction confirmed on Solana blockchain (${event.confirmation_time_ms || '?'}ms finality)`;
+    case 'crypto_complete':
+      return `Blockchain settlement complete: ${event.display_amount || '50000.00'} ${event.display_currency || 'USD'} settled on Solana`;
     default:
       return type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   }
@@ -439,6 +464,16 @@ function renderEventDetails(event) {
       const dp = event.detailed_processing || {};
       const rulesLane = dp.rules_lane || {};
       const aiLane = dp.ai_lane || {};
+
+      // Extract crypto fields if present
+      const allFields = rulesLane.fields || [];
+      const cryptoFields = allFields.filter(f =>
+        f.source_field?.includes('crypto') ||
+        f.target_field?.includes('crypto') ||
+        f.source_field?.includes('wallet')
+      );
+      const hasCryptoFields = cryptoFields.length > 0;
+
       return (
         <div style={{
           marginTop: '8px',
@@ -447,26 +482,40 @@ function renderEventDetails(event) {
           borderRadius: '6px',
           fontSize: '12px'
         }}>
-          {/* Processing Stats */}
-          <div style={{ marginBottom: '12px' }}>
-            <Body weight="bold" style={{ fontSize: '12px', color: '#0B61A4', marginBottom: '8px' }}>
-              PROCESSING LANES
-            </Body>
-            <div style={{ display: 'flex', gap: '16px' }}>
-              <div>
-                <Body style={{ fontSize: '11px', color: '#889397' }}>Rules Lane</Body>
-                <Body weight="medium" style={{ fontSize: '14px', color: '#00A35C' }}>
-                  {rulesLane.total_fields || 0} fields
-                </Body>
+          {/* Crypto Fields Section - Show first if present */}
+          {hasCryptoFields && (
+            <div style={{
+              marginBottom: '16px',
+              padding: '12px',
+              background: 'linear-gradient(135deg, #F5F3FF 0%, #EDE9FE 100%)',
+              borderRadius: '6px',
+              border: '1px solid #C4B5FD'
+            }}>
+              <Body weight="bold" style={{ fontSize: '12px', color: '#7C3AED', marginBottom: '10px' }}>
+                🔗 BLOCKCHAIN SETTLEMENT FIELDS EXTRACTED
+              </Body>
+              <div style={{ background: 'white', borderRadius: '4px', padding: '10px' }}>
+                {cryptoFields.map((field, idx) => (
+                  <div key={idx} style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    padding: '8px 0',
+                    borderBottom: idx < cryptoFields.length - 1 ? '1px solid #E7EAEE' : 'none'
+                  }}>
+                    <Body weight="medium" style={{ fontSize: '11px', color: '#7C3AED', marginBottom: '4px' }}>
+                      {field.source_field}
+                    </Body>
+                    <Body style={{ fontSize: '12px', color: '#1F2937', fontFamily: 'monospace', wordBreak: 'break-all' }}>
+                      {field.input_value?.toString() || 'N/A'}
+                    </Body>
+                  </div>
+                ))}
               </div>
-              <div>
-                <Body style={{ fontSize: '11px', color: '#889397' }}>AI Lane</Body>
-                <Body weight="medium" style={{ fontSize: '14px', color: '#0B61A4' }}>
-                  {aiLane.total_fields || 0} fields
-                </Body>
-              </div>
+              <Body style={{ fontSize: '10px', color: '#7C3AED', marginTop: '8px', fontStyle: 'italic' }}>
+                These fields enable Solana blockchain settlement
+              </Body>
             </div>
-          </div>
+          )}
 
           {/* AI Lane Details (if any) */}
           {aiLane.total_fields > 0 && aiLane.fields && (
@@ -502,46 +551,82 @@ function renderEventDetails(event) {
             </div>
           )}
 
-          {/* Sample Fields Extracted */}
-          {rulesLane.fields && rulesLane.fields.length > 0 && (
-            <div>
-              <Body weight="bold" style={{ fontSize: '12px', color: '#0B61A4', marginBottom: '8px' }}>
-                FIELDS MAPPED ({rulesLane.fields.length})
-              </Body>
-              <div style={{
-                maxHeight: '150px',
-                overflow: 'auto',
-                background: 'white',
-                borderRadius: '4px',
-                padding: '8px'
-              }}>
-                {rulesLane.fields.slice(0, 10).map((field, idx) => (
-                  <div key={idx} style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    padding: '4px 0',
-                    borderBottom: idx < 9 ? '1px solid #E7EAEE' : 'none'
-                  }}>
-                    <Body style={{ fontSize: '11px', color: '#5C6C75' }}>
-                      {field.source_field}
-                    </Body>
-                    <Body style={{ fontSize: '11px', color: '#00A35C' }}>
-                      {field.input_value?.toString().slice(0, 30)}{field.input_value?.toString().length > 30 ? '...' : ''}
-                    </Body>
-                  </div>
-                ))}
-                {rulesLane.fields.length > 10 && (
-                  <Body style={{ fontSize: '10px', color: '#889397', marginTop: '4px' }}>
-                    ... and {rulesLane.fields.length - 10} more fields
-                  </Body>
-                )}
-              </div>
-            </div>
-          )}
         </div>
       );
 
+    // Crypto/blockchain events with dropdown details
+    case 'crypto_start':
+    case 'crypto_wallet_extract':
+    case 'crypto_tx_build':
+    case 'crypto_tx_sign':
+    case 'crypto_tx_submit':
+    case 'crypto_tx_confirm':
+    case 'crypto_complete':
+      if (event.dropdown) {
+        return (
+          <div style={{
+            marginTop: '8px',
+            padding: '12px',
+            background: 'linear-gradient(135deg, #F5F3FF 0%, #EDE9FE 100%)',
+            borderRadius: '6px',
+            fontSize: '12px',
+            border: '1px solid #C4B5FD'
+          }}>
+            <Body weight="bold" style={{ fontSize: '12px', color: '#7C3AED', marginBottom: '10px' }}>
+              {event.dropdown.title}
+            </Body>
+            <div style={{ paddingLeft: '8px' }}>
+              {event.dropdown.items?.map((item, idx) => (
+                <div key={idx} style={{ display: 'flex', gap: '8px', marginBottom: '6px' }}>
+                  <Body style={{ fontSize: '11px', color: '#7C3AED', minWidth: '8px' }}>•</Body>
+                  <Body style={{ fontSize: '11px', color: '#5C6C75', lineHeight: '1.4', fontFamily: item.includes(':') ? 'monospace' : 'inherit' }}>
+                    {item}
+                  </Body>
+                </div>
+              ))}
+            </div>
+            {event.explorer_url && (
+              <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #C4B5FD' }}>
+                <a
+                  href={event.explorer_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ fontSize: '11px', color: '#7C3AED', textDecoration: 'underline' }}
+                >
+                  View on Solana Explorer →
+                </a>
+              </div>
+            )}
+          </div>
+        );
+      }
+      return null;
+
     default:
+      // Generic dropdown rendering for any event with dropdown data
+      if (event.dropdown) {
+        return (
+          <div style={{
+            marginTop: '8px',
+            padding: '12px',
+            background: '#F9FBFA',
+            borderRadius: '6px',
+            fontSize: '12px'
+          }}>
+            <Body weight="bold" style={{ fontSize: '12px', color: '#5C6C75', marginBottom: '8px' }}>
+              {event.dropdown.title}
+            </Body>
+            <div style={{ paddingLeft: '8px' }}>
+              {event.dropdown.items?.map((item, idx) => (
+                <div key={idx} style={{ display: 'flex', gap: '8px', marginBottom: '4px' }}>
+                  <Body style={{ fontSize: '11px', color: '#00A35C', minWidth: '8px' }}>•</Body>
+                  <Body style={{ fontSize: '11px', color: '#5C6C75', lineHeight: '1.4' }}>{item}</Body>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      }
       return null;
   }
 }
@@ -558,9 +643,18 @@ function isExpandable(event) {
     'agent_resolution',
     'agent_execution',
     'hop1_complete',
-    'hop2_complete'
+    'hop2_complete',
+    // Crypto events with dropdown details
+    'crypto_start',
+    'crypto_wallet_extract',
+    'crypto_tx_build',
+    'crypto_tx_sign',
+    'crypto_tx_submit',
+    'crypto_tx_confirm',
+    'crypto_complete'
   ];
-  return expandableTypes.includes(event.type);
+  // Also check if event has dropdown data
+  return expandableTypes.includes(event.type) || event.dropdown;
 }
 
 /**

@@ -8,7 +8,6 @@ import asyncio
 
 from config import get_settings
 from src.api import router
-from src.services.circle_service import get_circle_service
 
 # Configure logging
 logging.basicConfig(
@@ -22,36 +21,12 @@ logger = logging.getLogger(__name__)
 settings = get_settings()
 
 
-async def fund_all_wallets():
-    """Request faucet funds for all wallets."""
-    try:
-        circle = get_circle_service()
-        if circle and circle.api_key:
-            wallets = circle.list_wallets().get("data", {}).get("wallets", [])
-            for w in wallets:
-                addr = w.get("address")
-                circle.fund_usdc(addr)
-                circle.fund_gas(addr)
-                logger.info(f"Faucet requested for {addr[:10]}...")
-    except Exception as e:
-        logger.warning(f"Auto-fund failed: {e}")
-
-
-async def hourly_faucet_task():
-    """Request faucet funds every hour."""
-    while True:
-        await asyncio.sleep(3600)  # 1 hour
-        logger.info("Hourly faucet request starting...")
-        await fund_all_wallets()
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Fund wallets on startup and schedule hourly refills."""
-    await fund_all_wallets()
-    task = asyncio.create_task(hourly_faucet_task())
+    """Application lifespan manager."""
+    logger.info("Payment Converter V2 starting up...")
     yield
-    task.cancel()
+    logger.info("Payment Converter V2 shutting down...")
 
 
 # Create FastAPI app
