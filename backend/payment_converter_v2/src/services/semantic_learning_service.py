@@ -103,43 +103,26 @@ class SemanticLearningService:
 
     async def _build_combined_lookup(self) -> None:
         """
-        Load ALL configs from MongoDB and build combined field-to-mapping lookup.
+        Load field lookup from MongoDB using aggregation pipeline.
+
+        Always fetches fresh data - no caching.
+        Uses database-level aggregation for efficient processing.
 
         Result structure:
         {
-            "20": {"mapping": {...}, "source_config": "MT103_to_JSON"},
-            "32A": {"mapping": {...}, "source_config": "MT103_to_JSON"},
+            "20": {"mapping": {...}, "source_config": "MT103_to_JSON", "has_extract_pattern": True},
+            "32A": {"mapping": {...}, "source_config": "MT103_to_JSON", "has_extract_pattern": True},
             ...
         }
         """
-        # Get all configs from MongoDB
-        all_configs = await self.db.list_configs()
+        # Use aggregation pipeline - always fresh, no caching
+        self._field_lookup = await self.db.get_field_lookup()
 
-        self._field_lookup = {}
-        self._source_configs = set()
-
-        for config in all_configs:
-            config_id = config.get("_id", "")
-            self._source_configs.add(config_id)
-
-            # Get extract patterns from this config
-            extract_patterns = config.get("extract", {})
-
-            # Process each mapping
-            for mapping in config.get("map", []):
-                field_id = mapping.get("from")
-
-                # Skip if field already in lookup (first config wins)
-                if field_id and field_id not in self._field_lookup:
-                    # has_extract_pattern: True if field has a regex pattern in extract section
-                    # This distinguishes source fields (need extraction) from derived fields
-                    has_pattern = field_id in extract_patterns
-                    self._field_lookup[field_id] = {
-                        "mapping": mapping.copy(),
-                        "extract_pattern": extract_patterns.get(field_id),
-                        "source_config": config_id,
-                        "has_extract_pattern": has_pattern
-                    }
+        # Build source_configs set from lookup values
+        self._source_configs = {
+            info["source_config"]
+            for info in self._field_lookup.values()
+        }
 
         logger.info(
             f"Built lookup with {len(self._field_lookup)} fields "
@@ -419,9 +402,3 @@ class SemanticLearningService:
         # These must be learned from existing configs
         logger.warning(f"Cannot generate extract pattern for non-SWIFT field: {field_id}")
         return None
-
-    def invalidate_cache(self) -> None:
-        """Clear the field lookup cache to force rebuild on next call."""
-        self._field_lookup = None
-        self._source_configs = set()
-        logger.info("SemanticLearningService cache invalidated")

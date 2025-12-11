@@ -173,21 +173,112 @@ class MongoDBService:
     async def list_configs(self) -> List[Dict[str, Any]]:
         """
         List all available conversion configurations.
-        
+
         Returns:
             List of configuration dictionaries
         """
         try:
             cursor = self.configs_collection.find()
             configs = await cursor.to_list(length=None)
-            
+
             logger.debug(f"Retrieved {len(configs)} configs")
             return configs
-            
+
         except Exception as e:
             logger.error(f"Error listing configs: {e}")
             raise
-    
+
+    async def get_field_lookup(self) -> Dict[str, Dict[str, Any]]:
+        """
+        Build field-to-mapping lookup using MongoDB aggregation pipeline.
+
+        Processes all configs at database level instead of Python iteration.
+        First config wins for duplicate field_ids (sorted by _id).
+
+        Returns:
+            Dictionary mapping field_id to lookup info:
+            {
+                "field_id": {
+                    "mapping": {...},
+                    "extract_pattern": "..." or None,
+                    "source_config": "config_id",
+                    "has_extract_pattern": bool
+                }
+            }
+        """
+        try:
+            pipeline = [
+                # Stage 1: Convert extract dict to array for dynamic field lookup
+                {"$addFields": {
+                    "extract_array": {"$objectToArray": {"$ifNull": ["$extract", {}]}}
+                }},
+
+                # Stage 2: Unwind map array - one doc per mapping
+                {"$unwind": {"path": "$map", "preserveNullAndEmptyArrays": False}},
+
+                # Stage 3: Filter to find matching extract pattern for this field
+                {"$addFields": {
+                    "matched_extract": {
+                        "$filter": {
+                            "input": "$extract_array",
+                            "as": "e",
+                            "cond": {"$eq": ["$$e.k", "$map.from"]}
+                        }
+                    }
+                }},
+
+                # Stage 4: Project intermediate structure
+                {"$project": {
+                    "_id": 0,
+                    "field_id": "$map.from",
+                    "mapping": "$map",
+                    "source_config": "$_id",
+                    "extract_pattern": {"$arrayElemAt": ["$matched_extract.v", 0]}
+                }},
+
+                # Stage 5: Sort for deterministic "first wins" ordering
+                {"$sort": {"source_config": 1}},
+
+                # Stage 6: Group by field_id, first config wins
+                {"$group": {
+                    "_id": "$field_id",
+                    "mapping": {"$first": "$mapping"},
+                    "extract_pattern": {"$first": "$extract_pattern"},
+                    "source_config": {"$first": "$source_config"}
+                }},
+
+                # Stage 7: Final projection with has_extract_pattern boolean
+                {"$project": {
+                    "_id": 0,
+                    "field_id": "$_id",
+                    "mapping": 1,
+                    "extract_pattern": 1,
+                    "source_config": 1,
+                    "has_extract_pattern": {
+                        "$and": [
+                            {"$ne": ["$extract_pattern", None]},
+                            {"$gt": [{"$strLenCP": {"$ifNull": ["$extract_pattern", ""]}}, 0]}
+                        ]
+                    }
+                }}
+            ]
+
+            cursor = self.configs_collection.aggregate(pipeline)
+            results = await cursor.to_list(length=None)
+
+            # Convert list to dictionary keyed by field_id
+            lookup = {}
+            for item in results:
+                field_id = item.pop("field_id")
+                lookup[field_id] = item
+
+            logger.debug(f"Aggregation returned {len(lookup)} field mappings")
+            return lookup
+
+        except Exception as e:
+            logger.error(f"Error building field lookup via aggregation: {e}")
+            return {}
+
     async def get_ai_prompt(self, field_type: str) -> Optional[Dict[str, Any]]:
         """
         Retrieve AI prompt template for a field type.

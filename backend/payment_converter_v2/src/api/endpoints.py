@@ -1200,9 +1200,6 @@ async def approve_config(config_id: str) -> ApproveConfigResponse:
         # Delete from temp storage
         await mongodb_service.delete_temp_config(config_id)
 
-        # Invalidate learning service cache (new config available)
-        semantic_learning_service.invalidate_cache()
-
         logger.info(f"Config {config_id} approved and saved permanently")
 
         return ApproveConfigResponse(
