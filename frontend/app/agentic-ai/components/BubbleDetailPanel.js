@@ -557,7 +557,7 @@ export default function BubbleDetailPanel({ bubbleType, data, stats }) {
                       </div>
                     </div>
 
-                    {/* Confidence Badge */}
+                    {/* Confidence Badge - Commented out per request
                     <div style={{
                       padding: '12px',
                       background: 'white',
@@ -576,6 +576,7 @@ export default function BubbleDetailPanel({ bubbleType, data, stats }) {
                         </Body>
                       )}
                     </div>
+                    */}
                   </>
                 )}
               </div>

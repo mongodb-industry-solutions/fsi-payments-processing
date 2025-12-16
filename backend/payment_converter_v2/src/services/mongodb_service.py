@@ -34,6 +34,7 @@ class MongoDBService:
         self.prompts_collection = self.db["ai_prompts"]
         self.json_storage_collection = self.db["canonical_json_storage"]
         self.temp_configs_collection = self.db["temp_configs"]
+        self.format_specs_collection = self.db["format_specifications"]
 
         logger.info(f"MongoDB service initialized for database: {database_name}")
     
@@ -278,6 +279,51 @@ class MongoDBService:
         except Exception as e:
             logger.error(f"Error building field lookup via aggregation: {e}")
             return {}
+
+    async def get_format_specification(self, format_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Retrieve format specification by ID.
+
+        Format specifications define all supported fields for a target format,
+        used by LLM to constrain field mapping suggestions.
+
+        Args:
+            format_id: Format identifier (e.g., "pacs.008", "pacs.009", "JSON")
+
+        Returns:
+            Format specification document or None if not found
+        """
+        try:
+            spec = await self.format_specs_collection.find_one({"_id": format_id})
+
+            if spec:
+                logger.debug(f"Retrieved format spec: {format_id}")
+            else:
+                logger.debug(f"Format spec not found: {format_id}")
+
+            return spec
+
+        except Exception as e:
+            logger.error(f"Error retrieving format spec {format_id}: {e}")
+            return None
+
+    async def list_format_specifications(self) -> List[Dict[str, Any]]:
+        """
+        List all format specifications.
+
+        Returns:
+            List of format specification documents
+        """
+        try:
+            cursor = self.format_specs_collection.find()
+            specs = await cursor.to_list(length=None)
+
+            logger.debug(f"Retrieved {len(specs)} format specifications")
+            return specs
+
+        except Exception as e:
+            logger.error(f"Error listing format specifications: {e}")
+            return []
 
     async def get_ai_prompt(self, field_type: str) -> Optional[Dict[str, Any]]:
         """

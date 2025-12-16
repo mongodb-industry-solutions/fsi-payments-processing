@@ -32,6 +32,7 @@ BENEFICIARY INSTITUTION
     message: `{1:F01BNPAFRPPAXXX0000000000}{2:I205DEUTDEFFXXXXN}{4:
 :20:MT205TEST001
 :21:REF2025MT205
+:13C:/CLSTIME/1800+0100
 :32A:250115USD750000,00
 :52A:BNPAFRPP
 :57A:DEUTDEFF
@@ -346,6 +347,85 @@ export default function ConfigBuilderPage() {
           color: var(--gray-dark1);
           font-size: 12px;
         }
+        .suggestions-section {
+          margin-top: 16px;
+          margin-bottom: 16px;
+        }
+        .suggestions-title {
+          font-size: 13px;
+          font-weight: 600;
+          color: var(--gray-dark2);
+          margin-bottom: 12px;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .suggestion-card {
+          background: var(--yellow-light3);
+          border: 1px solid var(--yellow-light1);
+          border-radius: 8px;
+          padding: 12px;
+          margin-bottom: 8px;
+        }
+        .suggestion-header {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin-bottom: 8px;
+        }
+        .suggestion-field-id {
+          font-family: monospace;
+          font-size: 13px;
+          font-weight: 600;
+          color: var(--yellow-dark2);
+          background: var(--yellow-light2);
+          padding: 2px 8px;
+          border-radius: 4px;
+        }
+        .suggestion-arrow {
+          color: var(--gray-base);
+          font-size: 14px;
+        }
+        .suggestion-target {
+          font-family: monospace;
+          font-size: 13px;
+          font-weight: 500;
+          color: var(--green-dark2);
+          background: var(--green-light3);
+          padding: 2px 8px;
+          border-radius: 4px;
+        }
+        .suggestion-value {
+          font-size: 11px;
+          color: var(--gray-dark1);
+          font-family: monospace;
+          background: white;
+          padding: 6px 8px;
+          border-radius: 4px;
+          margin-bottom: 8px;
+          max-height: 60px;
+          overflow: auto;
+          white-space: pre-wrap;
+          word-break: break-all;
+        }
+        .suggestion-reasoning {
+          font-size: 12px;
+          color: var(--gray-dark2);
+          line-height: 1.4;
+          padding-left: 8px;
+          border-left: 2px solid var(--yellow-base);
+        }
+        .suggestion-target-info {
+          font-size: 11px;
+          color: var(--gray-base);
+          margin-top: 6px;
+        }
+        .suggestion-target-info code {
+          background: var(--gray-light3);
+          padding: 1px 4px;
+          border-radius: 3px;
+          font-size: 10px;
+        }
         /* Sidebar drawer styles */
         .sidebar-drawer {
           position: fixed;
@@ -591,6 +671,43 @@ export default function ConfigBuilderPage() {
                   <span style={{ fontSize: '12px', color: 'var(--gray-dark1)' }}>Unknown fields:</span>
                   {generatedConfig.unknown_fields.map((f) => (
                     <Badge key={f} variant="yellow">{f}</Badge>
+                  ))}
+                </div>
+              )}
+
+              {/* LLM Suggestions for Unknown Fields */}
+              {generatedConfig.suggestions?.length > 0 && (
+                <div className="suggestions-section">
+                  <div className="suggestions-title">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                      <path d="M8 1a7 7 0 100 14A7 7 0 008 1zm0 12.5a5.5 5.5 0 110-11 5.5 5.5 0 010 11zM8 4a.75.75 0 00-.75.75v3.5a.75.75 0 001.5 0v-3.5A.75.75 0 008 4zm0 7a1 1 0 100-2 1 1 0 000 2z"/>
+                    </svg>
+                    AI Suggestions for Unknown Fields
+                    <Badge variant="yellow">{generatedConfig.suggestions.length}</Badge>
+                  </div>
+                  {generatedConfig.suggestions.map((suggestion, idx) => (
+                    <div key={idx} className="suggestion-card">
+                      <div className="suggestion-header">
+                        <span className="suggestion-field-id">{suggestion.field_id}</span>
+                        <span className="suggestion-arrow">→</span>
+                        <span className="suggestion-target">
+                          {suggestion.suggested_mapping?.to?.join(', ') || 'unknown'}
+                        </span>
+                      </div>
+                      {suggestion.field_value && (
+                        <div className="suggestion-value">
+                          {suggestion.field_value}
+                        </div>
+                      )}
+                      <div className="suggestion-reasoning">
+                        {suggestion.reasoning}
+                      </div>
+                      {suggestion.target_field_info?.path && (
+                        <div className="suggestion-target-info">
+                          Target path: <code>{suggestion.target_field_info.path}</code>
+                        </div>
+                      )}
+                    </div>
                   ))}
                 </div>
               )}

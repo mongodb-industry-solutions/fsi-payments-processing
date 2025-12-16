@@ -37,17 +37,19 @@ class SemanticLearningService:
         "merchant_info", "currency_code"
     ]
 
-    def __init__(self, mongodb_service):
+    def __init__(self, mongodb_service, llm_field_mapper=None):
         """
-        Initialize with MongoDB service.
+        Initialize with MongoDB service and optional LLM field mapper.
 
         Args:
             mongodb_service: MongoDBService instance
+            llm_field_mapper: Optional LLMFieldMapper instance for unknown field suggestions
         """
         self.db = mongodb_service
+        self.llm_mapper = llm_field_mapper
         self._field_lookup: Optional[Dict[str, Dict[str, Any]]] = None
         self._source_configs: Set[str] = set()
-        logger.info("SemanticLearningService initialized")
+        logger.info(f"SemanticLearningService initialized (LLM mapper: {'enabled' if llm_field_mapper else 'disabled'})")
 
     async def generate_config(
         self,
@@ -82,13 +84,48 @@ class SemanticLearningService:
         matched, unknown, learned_from = self._match_fields(detected_fields)
         logger.info(f"Matched {len(matched)} fields, {len(unknown)} unknown")
 
-        # 4. Build new config
+        # 4. Get LLM suggestions for unknown fields (display-only, NOT auto-applied)
+        suggestions = []
+        if unknown and self.llm_mapper:
+            try:
+                # Build unknown field info with values
+                unknown_with_values = [
+                    {"field_id": f, "value": detected_fields.get(f, "")}
+                    for f in unknown
+                ]
+
+                # Extract already-mapped target fields to avoid duplicate suggestions
+                already_mapped_targets = []
+                for mapping in matched.values():
+                    to_field = mapping.get("to")
+                    if isinstance(to_field, list):
+                        already_mapped_targets.extend(to_field)
+                    elif to_field:
+                        already_mapped_targets.append(to_field)
+
+                # Get LLM suggestions (these are hints, not auto-applied)
+                suggestions = await self.llm_mapper.suggest_mappings(
+                    unknown_with_values,
+                    target_format,
+                    source_format,
+                    already_mapped_targets
+                )
+                logger.info(f"LLM provided {len(suggestions)} suggestions for unknown fields")
+            except Exception as e:
+                logger.warning(f"LLM suggestion failed: {e}")
+                suggestions = []
+
+        # 5. Get target format spec for output paths
+        target_format_spec = await self.db.get_format_specification(target_format)
+
+        # 6. Build new config (only includes matched fields, NOT suggestions)
         new_config = self._build_config(
             source_format, target_format,
-            detected_fields, matched, unknown
+            detected_fields, matched, unknown,
+            target_format_spec
         )
 
-        # 5. Calculate confidence
+        # 6. Calculate confidence
         confidence = len(matched) / len(detected_fields) if detected_fields else 0
 
         return {
@@ -98,7 +135,8 @@ class SemanticLearningService:
             "fields_detected": len(detected_fields),
             "matched_fields": list(matched.keys()),
             "unknown_fields": unknown,
-            "learned_from": learned_from
+            "learned_from": learned_from,
+            "suggestions": suggestions  # Display-only LLM suggestions for unknown fields
         }
 
     async def _build_combined_lookup(self) -> None:
@@ -284,7 +322,8 @@ class SemanticLearningService:
         target_format: str,
         detected_fields: Dict[str, str],
         matched: Dict[str, Dict],
-        unknown: List[str]
+        unknown: List[str],
+        target_format_spec: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         """
         Build new config in simplified schema {_id, extract, map, output}.
@@ -298,6 +337,7 @@ class SemanticLearningService:
             detected_fields: All detected fields
             matched: Matched field mappings
             unknown: Unknown field IDs (excluded from config)
+            target_format_spec: Optional format specification for output paths
 
         Returns:
             Complete configuration dictionary
@@ -325,18 +365,30 @@ class SemanticLearningService:
         map_array = []
         output = {}
 
+        # Get supported fields from format spec for output path lookup
+        supported_fields = {}
+        if target_format_spec:
+            supported_fields = target_format_spec.get("supported_fields", {})
+
         # Add matched mappings (normalize to consistent format)
         for field_id, mapping in matched.items():
             new_mapping = self._normalize_mapping(mapping)
             map_array.append(new_mapping)
 
-            # Add to output based on "to" field
+            # Add to output based on "to" field, using format spec paths when available
             to_field = new_mapping.get("to")
             if isinstance(to_field, list):
                 for field in to_field:
-                    output[field] = field
+                    # Look up actual path from format spec, fallback to field name
+                    if field in supported_fields:
+                        output[field] = supported_fields[field].get("path", field)
+                    else:
+                        output[field] = field
             elif to_field:
-                output[to_field] = to_field
+                if to_field in supported_fields:
+                    output[to_field] = supported_fields[to_field].get("path", to_field)
+                else:
+                    output[to_field] = to_field
 
         return {
             "_id": config_id,

@@ -18,6 +18,7 @@ from src.services import (
 )
 from src.services.payment_agent_client import PaymentAgentClient
 from src.services.semantic_learning_service import SemanticLearningService
+from src.services.llm_field_mapper import LLMFieldMapper
 from src.services.solana_service import init_solana_service, get_solana_service
 from src.exceptions import CountryValidationException
 
@@ -46,8 +47,11 @@ agent_client = PaymentAgentClient(
     timeout=settings.payment_agent_timeout
 )
 
+# Initialize LLM field mapper (for unknown field suggestions in auto-config)
+llm_field_mapper = LLMFieldMapper(mongodb_service, bedrock_service)
+
 # Initialize semantic learning service (for auto-config generation)
-semantic_learning_service = SemanticLearningService(mongodb_service)
+semantic_learning_service = SemanticLearningService(mongodb_service, llm_field_mapper)
 
 # Initialize Solana service (for crypto/blockchain payments)
 solana_service = None
@@ -180,6 +184,7 @@ class AutoConfigureResponse(BaseModel):
     matched_fields: List[str] = Field(..., description="Fields matched from existing configs")
     unknown_fields: List[str] = Field(..., description="Fields not found in any existing config")
     learned_from: List[str] = Field(..., description="Config IDs used for learning")
+    suggestions: List[Dict[str, Any]] = Field(default=[], description="LLM-suggested mappings for unknown fields (display-only)")
 
 
 class ApproveConfigResponse(BaseModel):
@@ -588,6 +593,8 @@ async def convert_multi_hop_stream(request: MultiHopConversionRequest):
 
                         # Store conversion state for continuation after resume
                         # The frontend will call /agent/resume with the thread_id
+                        # Extract hop1_details from exception context for frontend display
+                        hop1_details = e.conversion_context.get('detailed_processing', {})
                         pending_conversions[event.get("thread_id")] = {
                             "conversion_run_id": conversion_run_id,
                             "source_format": request.source_format,
@@ -600,7 +607,8 @@ async def convert_multi_hop_stream(request: MultiHopConversionRequest):
                                 "conversion_context": e.conversion_context
                             },
                             "hop1_start": hop1_start,
-                            "start_time": start_time
+                            "start_time": start_time,
+                            "hop1_details": hop1_details  # Store for resume endpoint
                         }
 
                         # Forward the review_required event to frontend
@@ -874,6 +882,7 @@ async def resume_agent_workflow(request: ResumeAgentRequest):
         target_format = pending.get("target_format")
         original_message = pending.get("original_message")
         start_time = pending.get("start_time", time.time())
+        hop1_details = pending.get("hop1_details", {})  # Retrieve stored hop1 processing details
 
         # Resume agent workflow
         agent_result = await agent_client.resume_workflow(
@@ -934,6 +943,7 @@ async def resume_agent_workflow(request: ResumeAgentRequest):
                 "human_lane": lane_dist.get("HUMAN", 0)
             },
             "total_time": round(total_time, 2),
+            "hop1_details": hop1_details,  # Include hop1 processing details for frontend
             "hop2_details": hop2_result.get("detailed_processing", {})
         }
 
@@ -1145,7 +1155,8 @@ async def auto_configure(request: AutoConfigureRequest) -> AutoConfigureResponse
             fields_detected=result["fields_detected"],
             matched_fields=result["matched_fields"],
             unknown_fields=result["unknown_fields"],
-            learned_from=result["learned_from"]
+            learned_from=result["learned_from"],
+            suggestions=result.get("suggestions", [])
         )
 
     except ValueError as e:

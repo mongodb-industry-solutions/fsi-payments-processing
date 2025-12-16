@@ -322,6 +322,18 @@ export default function AgenticAIPage() {
           success: true
         });
 
+        // Update hop1 details from resume response (these were stored when validation failed)
+        if (result.hop1_details) {
+          console.log('📦 Captured hop1 detailed processing from resume:', result.hop1_details);
+          setHop1Details(result.hop1_details);
+          // Emit hop1_complete event for visualization
+          addEvent({
+            type: 'hop1_complete',
+            message: 'Hop 1 conversion complete (from resume)',
+            detailed_processing: result.hop1_details
+          });
+        }
+
         // Add hop 2 events if conversion continued
         if (result.output) {
           addEvent({
