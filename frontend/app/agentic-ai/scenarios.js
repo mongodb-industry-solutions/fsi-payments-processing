@@ -148,6 +148,98 @@ CLOUD INFRASTRUCTURE DEVELOPMENT
     message: '0200|F220000000000000|4659010123456789|000000|000000250000|1205143022|845623|143022|1205|UKSG20241205|TERM0042|SGPSIMLIM000001|SIM LIM SQUARE ELECTRONICS       SINGAPORE     SGP|702'
   },
 
+  internal_mx: {
+    id: 'internal_mx',
+    title: 'UK → Australia Internal MX Transition',
+    description: 'BP PLC pays BHP Group - A$8.5M AUD for mining services',
+    badge: 'MX TRANSITION',
+    badgeVariant: 'lightgray',
+    isAgentic: false,
+    info: {
+      process: 'Demonstrates internal MT-to-MX transition: bank receives pacs.008 externally, converts to internal canonical JSON for legacy system processing, then back to pacs.008 for outbound transmission.',
+      hop1: 'pacs.008 → JSON: Incoming ISO 20022 message converted to canonical JSON for internal routing and legacy system compatibility.',
+      hop2: 'JSON → pacs.008: After internal processing, canonical JSON converted back to ISO 20022 for cross-border settlement.'
+    },
+    sourceCountry: {
+      name: 'United Kingdom',
+      code: 'GB',
+      flag: '🇬🇧',
+      bank: 'Barclays',
+      city: 'London',
+      coords: [-0.1276, 51.5074]
+    },
+    targetCountry: {
+      name: 'Australia',
+      code: 'AU',
+      flag: '🇦🇺',
+      bank: 'ANZ Bank',
+      city: 'Melbourne',
+      coords: [144.9631, -37.8136]
+    },
+    sourceFormat: 'pacs.008',
+    targetFormat: 'pacs.008',
+    nodes: 3,
+    steps: 2,
+    formats: 'ISO20022, JSON, ISO20022',
+    message: `<?xml version="1.0" encoding="UTF-8"?>
+<Document xmlns="urn:iso:std:iso:20022:tech:xsd:pacs.008.001.08">
+  <FIToFICstmrCdtTrf>
+    <GrpHdr>
+      <MsgId>BP-BHP-2025-Q1-001</MsgId>
+      <CreDtTm>2025-01-15T09:30:00Z</CreDtTm>
+      <NbOfTxs>1</NbOfTxs>
+      <SttlmInf><SttlmMtd>CLRG</SttlmMtd></SttlmInf>
+      <IntrBkSttlmDt>2025-01-15</IntrBkSttlmDt>
+    </GrpHdr>
+    <CdtTrfTxInf>
+      <PmtId>
+        <InstrId>INSTR-GB-AU-2025-001</InstrId>
+        <EndToEndId>E2E-BP-BHP-2025-Q1</EndToEndId>
+      </PmtId>
+      <PmtTpInf>
+        <SvcLvl><Cd>URGP</Cd></SvcLvl>
+      </PmtTpInf>
+      <IntrBkSttlmAmt Ccy="AUD">8500000.00</IntrBkSttlmAmt>
+      <ChrgBr>SHAR</ChrgBr>
+      <Dbtr>
+        <Nm>BP PLC</Nm>
+        <PstlAdr>
+          <AdrLine>1 ST JAMES SQUARE LONDON SW1Y 4PD UK</AdrLine>
+        </PstlAdr>
+      </Dbtr>
+      <DbtrAcct>
+        <Id><IBAN>GB82BARC20035344264823</IBAN></Id>
+      </DbtrAcct>
+      <DbtrAgt>
+        <FinInstnId><BICFI>BABORGLGXXX</BICFI></FinInstnId>
+      </DbtrAgt>
+      <CdtrAgt>
+        <FinInstnId><BICFI>ANZBAU3MXXX</BICFI></FinInstnId>
+      </CdtrAgt>
+      <Cdtr>
+        <Nm>BHP GROUP LIMITED</Nm>
+        <PstlAdr>
+          <AdrLine>171 COLLINS STREET MELBOURNE VIC 3000 AUSTRALIA</AdrLine>
+        </PstlAdr>
+      </Cdtr>
+      <CdtrAcct>
+        <Id><IBAN>AU89ANZ0012345678901</IBAN></Id>
+      </CdtrAcct>
+      <RmtInf>
+        <Ustrd>Q1 2025 MINING EQUIPMENT AND SERVICES</Ustrd>
+        <Strd>
+          <RfrdDocInf>
+            <Tp><CdOrPrtry><Prtry>COMMERCIAL_INVOICE</Prtry></CdOrPrtry></Tp>
+            <Nb>INV-BHP-2025-Q1-7892</Nb>
+          </RfrdDocInf>
+          <AddtlRmtInf>IRON ORE PROCESSING EQUIPMENT MAINTENANCE CONTRACT</AddtlRmtInf>
+        </Strd>
+      </RmtInf>
+    </CdtTrfTxInf>
+  </FIToFICstmrCdtTrf>
+</Document>`
+  },
+
   crypto: {
     id: 'crypto',
     title: 'India → USA → Mexico Crypto Settlement',

@@ -216,28 +216,64 @@ export default function BubbleDetailPanel({ bubbleType, data, stats }) {
           {/* MongoDB Configuration Panel */}
           {configuration && Object.keys(configuration).length > 0 && (
             <div style={{ marginBottom: '24px' }}>
-              <button
-                onClick={() => setConfigExpanded(!configExpanded)}
-                style={{
-                  width: '100%',
-                  padding: '12px 16px',
-                  background: '#F9FBFA',
-                  border: '1px solid #E7EAEE',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center'
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Icon glyph="Database" size="small" fill="#0B61A4" />
-                  <Body weight="medium" style={{ fontSize: '13px', color: '#1C2D38' }}>
-                    View MongoDB Configuration
-                  </Body>
-                </div>
-                <Icon glyph={configExpanded ? 'ChevronUp' : 'ChevronDown'} size="small" fill="#889397" />
-              </button>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                background: '#F9FBFA',
+                border: '1px solid #E7EAEE',
+                borderRadius: '8px',
+                padding: '4px 4px 4px 0'
+              }}>
+                <button
+                  onClick={() => setConfigExpanded(!configExpanded)}
+                  style={{
+                    flex: 1,
+                    padding: '8px 12px',
+                    background: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Icon glyph="Database" size="small" fill="#0B61A4" />
+                    <Body weight="medium" style={{ fontSize: '13px', color: '#1C2D38' }}>
+                      View MongoDB Configuration
+                    </Body>
+                  </div>
+                  <Icon glyph={configExpanded ? 'ChevronUp' : 'ChevronDown'} size="small" fill="#889397" />
+                </button>
+
+                {/* Config Builder Link - Always visible */}
+                <a
+                  href="/config-builder"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                    padding: '6px 12px',
+                    background: '#00684A',
+                    color: 'white',
+                    borderRadius: '5px',
+                    fontSize: '11px',
+                    fontWeight: '500',
+                    textDecoration: 'none',
+                    whiteSpace: 'nowrap',
+                    transition: 'background 0.2s ease'
+                  }}
+                  onMouseOver={(e) => e.currentTarget.style.background = '#00A35C'}
+                  onMouseOut={(e) => e.currentTarget.style.background = '#00684A'}
+                >
+                  Config Builder
+                  <span style={{ fontSize: '12px' }}>↗</span>
+                </a>
+              </div>
 
               {configExpanded && (
                 <div className="bubble-detail-scrollable" style={{

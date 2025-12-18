@@ -1203,18 +1203,16 @@ export default function GeographicMapPanel({
                           fill: isHighlighted ? '#00A35C' : '#E7EAEE',
                           stroke: '#FFFFFF',
                           strokeWidth: 0.5,
-                          outline: 'none',
-                          transition: 'all 0.3s ease'
+                          outline: 'none'
                         },
                         hover: {
-                          fill: isHighlighted ? '#00854A' : '#D9DDE0',
+                          fill: isHighlighted ? '#00A35C' : '#E7EAEE',
                           stroke: '#FFFFFF',
                           strokeWidth: 0.5,
-                          outline: 'none',
-                          cursor: isHighlighted ? 'pointer' : 'default'
+                          outline: 'none'
                         },
                         pressed: {
-                          fill: isHighlighted ? '#00703D' : '#D9DDE0',
+                          fill: isHighlighted ? '#00A35C' : '#E7EAEE',
                           stroke: '#FFFFFF',
                           strokeWidth: 0.5,
                           outline: 'none'
