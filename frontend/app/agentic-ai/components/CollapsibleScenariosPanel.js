@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { H2, Body } from '@leafygreen-ui/typography';
+import { Body } from '@leafygreen-ui/typography';
 import Button from '@leafygreen-ui/button';
 import Icon from '@leafygreen-ui/icon';
 import ScenarioSelector from './ScenarioSelector';
@@ -117,15 +117,23 @@ export default function CollapsibleScenariosPanel({
             isStreaming={isStreaming}
           />
 
-          {/* Simulate Button */}
+          {/* Action Buttons */}
           {selectedScenario && (
             <div style={{
               display: 'flex',
               justifyContent: 'flex-end',
+              gap: '12px',
               marginTop: '16px',
               paddingTop: '16px',
               borderTop: '1px solid #E7EAEE'
             }}>
+              <Button
+                variant="danger"
+                onClick={onReset}
+                disabled={isStreaming}
+              >
+                Reset
+              </Button>
               <Button
                 variant="primary"
                 onClick={onSimulate}

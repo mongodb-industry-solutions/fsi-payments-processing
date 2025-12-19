@@ -62,7 +62,7 @@ export default function TransactionAgentPanel({
         justifyContent: 'space-between',
         background: '#F9FBFA'
       }}>
-        <H2>Transaction Agent</H2>
+        <H2>Transaction Logs</H2>
         <Badge variant={status.variant}>
           <div style={{
             display: 'flex',

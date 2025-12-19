@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Banner from '@leafygreen-ui/banner';
 import CollapsibleScenariosPanel from './components/CollapsibleScenariosPanel';
 import GeographicMapPanel from './components/GeographicMapPanel';
@@ -75,6 +75,10 @@ export default function AgenticAIPage() {
   const [hop2Details, setHop2Details] = useState(null);
   const [conversionRunId, setConversionRunId] = useState(null);
 
+  // Cache for scenario results - persists results when switching between scenarios
+  // Using ref to avoid stale closure issues with async state updates
+  const scenarioResultsCache = useRef({});
+
   // Human-in-the-loop review state
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [reviewData, setReviewData] = useState(null);
@@ -132,6 +136,7 @@ export default function AgenticAIPage() {
     setHop1Details(null);
     setHop2Details(null);
     setConversionRunId(null);
+    scenarioResultsCache.current = {}; // Clear all cached results
     setIsPanelExpanded(true); // Re-expand panel on reset
     // Reset review state
     setIsReviewModalOpen(false);
@@ -141,15 +146,48 @@ export default function AgenticAIPage() {
   };
 
   const handleSelectScenario = (scenarioId) => {
+    // Save current scenario results to cache before switching
+    if (selectedScenario && (events.length > 0 || output)) {
+      scenarioResultsCache.current[selectedScenario] = {
+        events,
+        output,
+        stats,
+        totalTime,
+        error,
+        hop1Details,
+        hop2Details,
+        conversionRunId,
+        expandedEvents: Array.from(expandedEvents)
+      };
+    }
+
+    // Switch to new scenario
     setSelectedScenario(scenarioId);
-    setEvents([]);
-    setOutput('');
-    setStats(null);
-    setTotalTime(0);
-    setError(null);
-    setHop1Details(null);
-    setHop2Details(null);
-    setConversionRunId(null);
+
+    // Restore cached results for new scenario (if any)
+    const cached = scenarioResultsCache.current[scenarioId];
+    if (cached) {
+      setEvents(cached.events || []);
+      setOutput(cached.output || '');
+      setStats(cached.stats || null);
+      setTotalTime(cached.totalTime || 0);
+      setError(cached.error || null);
+      setHop1Details(cached.hop1Details || null);
+      setHop2Details(cached.hop2Details || null);
+      setConversionRunId(cached.conversionRunId || null);
+      setExpandedEvents(new Set(cached.expandedEvents || []));
+    } else {
+      // No cached results - start fresh
+      setEvents([]);
+      setOutput('');
+      setStats(null);
+      setTotalTime(0);
+      setError(null);
+      setHop1Details(null);
+      setHop2Details(null);
+      setConversionRunId(null);
+      setExpandedEvents(new Set());
+    }
   };
 
   const handleTogglePanel = () => {

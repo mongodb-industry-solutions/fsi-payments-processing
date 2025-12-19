@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import { H3, Body, Label } from '@leafygreen-ui/typography';
 import Code from '@leafygreen-ui/code';
-import Badge from '@leafygreen-ui/badge';
 import Icon from '@leafygreen-ui/icon';
 
 // Use Next.js API routes to proxy to converter sidecar
@@ -201,13 +200,7 @@ export default function BubbleDetailPanel({ bubbleType, data, stats }) {
             paddingBottom: '16px',
             borderBottom: '1px solid #E7EAEE'
           }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <H3>Hop {hopNumber} Conversion</H3>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Icon glyph="Clock" size="small" fill="#889397" />
-                <Badge variant="gray">{data.time ? `${data.time.toFixed(2)}s` : 'N/A'}</Badge>
-              </div>
-            </div>
+            <H3>Hop {hopNumber} Conversion</H3>
             <Label style={{ fontSize: '12px', color: '#889397', marginTop: '8px', display: 'block' }}>
               {data.conversionId}
             </Label>
@@ -216,64 +209,30 @@ export default function BubbleDetailPanel({ bubbleType, data, stats }) {
           {/* MongoDB Configuration Panel */}
           {configuration && Object.keys(configuration).length > 0 && (
             <div style={{ marginBottom: '24px' }}>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                background: '#F9FBFA',
-                border: '1px solid #E7EAEE',
-                borderRadius: '8px',
-                padding: '4px 4px 4px 0'
-              }}>
-                <button
-                  onClick={() => setConfigExpanded(!configExpanded)}
-                  style={{
-                    flex: 1,
-                    padding: '8px 12px',
-                    background: 'transparent',
-                    border: 'none',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center'
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Icon glyph="Database" size="small" fill="#0B61A4" />
-                    <Body weight="medium" style={{ fontSize: '13px', color: '#1C2D38' }}>
-                      View MongoDB Configuration
-                    </Body>
-                  </div>
-                  <Icon glyph={configExpanded ? 'ChevronUp' : 'ChevronDown'} size="small" fill="#889397" />
-                </button>
-
-                {/* Config Builder Link - Always visible */}
-                <a
-                  href="/config-builder"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={(e) => e.stopPropagation()}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '5px',
-                    padding: '6px 12px',
-                    background: '#00684A',
-                    color: 'white',
-                    borderRadius: '5px',
-                    fontSize: '11px',
-                    fontWeight: '500',
-                    textDecoration: 'none',
-                    whiteSpace: 'nowrap',
-                    transition: 'background 0.2s ease'
-                  }}
-                  onMouseOver={(e) => e.currentTarget.style.background = '#00A35C'}
-                  onMouseOut={(e) => e.currentTarget.style.background = '#00684A'}
-                >
-                  Config Builder
-                  <span style={{ fontSize: '12px' }}>↗</span>
-                </a>
-              </div>
+              <button
+                onClick={() => setConfigExpanded(!configExpanded)}
+                style={{
+                  width: '100%',
+                  padding: '12px 16px',
+                  background: '#F9FBFA',
+                  border: '1px solid #E7EAEE',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Icon glyph="Database" size="small" fill="#0B61A4" />
+                  <Body weight="medium" style={{ fontSize: '13px', color: '#1C2D38' }}>
+                    MongoDB Configuration
+                  </Body>
+                </div>
+                <span style={{ fontSize: '11px', color: '#889397' }}>
+                  {configExpanded ? 'Hide' : 'Show'}
+                </span>
+              </button>
 
               {configExpanded && (
                 <div className="bubble-detail-scrollable" style={{
@@ -286,6 +245,32 @@ export default function BubbleDetailPanel({ bubbleType, data, stats }) {
                   </Code>
                 </div>
               )}
+
+              {/* Config Studio Link - Below the config panel */}
+              <a
+                href="/config-builder"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  marginTop: '12px',
+                  padding: '10px 14px',
+                  background: '#E3FCF7',
+                  border: '1px solid #C0FAE6',
+                  borderRadius: '6px',
+                  fontSize: '12px',
+                  color: '#00684A',
+                  textDecoration: 'none',
+                  fontWeight: '500'
+                }}
+                onMouseOver={(e) => e.currentTarget.style.background = '#C0FAE6'}
+                onMouseOut={(e) => e.currentTarget.style.background = '#E3FCF7'}
+              >
+                <span style={{ fontSize: '14px' }}>💡</span>
+                Learn how configs work in Config Studio
+              </a>
             </div>
           )}
 

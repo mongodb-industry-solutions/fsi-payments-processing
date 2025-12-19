@@ -47,9 +47,26 @@ function getEventIcon(type) {
 function getEventColor(type) {
   if (type.includes('complete')) return '#00A35C';
   if (type.includes('error') || type.includes('failed')) return '#CD4246';
+  if (type === 'agent_start') return '#7C3AED';  // Purple for agent activation
   if (type.includes('agent')) return '#0B61A4';
   if (type.includes('crypto')) return '#7C3AED';  // Purple for blockchain events
   return '#5C6C75';
+}
+
+/**
+ * Check if event type needs special banner styling
+ */
+function getEventBannerStyle(type) {
+  if (type === 'agent_start') {
+    return {
+      background: 'linear-gradient(135deg, #F5F3FF 0%, #EDE9FE 100%)',
+      border: '1px solid #C4B5FD',
+      borderRadius: '8px',
+      margin: '8px 12px',
+      padding: '12px 16px'
+    };
+  }
+  return null;
 }
 
 /**
@@ -677,6 +694,8 @@ export default function EventItem({ event, isExpanded, onToggleExpand }) {
   const message = formatEventMessage(event);
   const details = renderEventDetails(event);
   const canExpand = isExpandable(event);
+  const bannerStyle = getEventBannerStyle(event.type);
+  const isAgentStart = event.type === 'agent_start';
   
   // Show code button only for agent_execution events with conversion_run_id
   const showCodeButton = event.type === 'agent_execution' && event.conversion_run_id;
@@ -719,7 +738,11 @@ export default function EventItem({ event, isExpanded, onToggleExpand }) {
 
   return (
     <div
-      style={{
+      style={bannerStyle ? {
+        ...bannerStyle,
+        cursor: canExpand ? 'pointer' : 'default',
+        transition: 'all 0.15s ease'
+      } : {
         padding: '12px 16px',
         borderBottom: '1px solid #E7EAEE',
         cursor: canExpand ? 'pointer' : 'default',
@@ -728,10 +751,10 @@ export default function EventItem({ event, isExpanded, onToggleExpand }) {
       }}
       onClick={canExpand ? onToggleExpand : undefined}
       onMouseEnter={(e) => {
-        if (canExpand) e.currentTarget.style.background = '#F9FBFA';
+        if (canExpand && !bannerStyle) e.currentTarget.style.background = '#F9FBFA';
       }}
       onMouseLeave={(e) => {
-        if (canExpand && !isExpanded) e.currentTarget.style.background = 'transparent';
+        if (canExpand && !isExpanded && !bannerStyle) e.currentTarget.style.background = 'transparent';
       }}
     >
       <div style={{
@@ -740,8 +763,18 @@ export default function EventItem({ event, isExpanded, onToggleExpand }) {
         gap: '12px'
       }}>
         {/* Icon */}
-        <div style={{ marginTop: '2px' }}>
-          <Icon glyph={icon} fill={color} size="small" />
+        <div style={{
+          marginTop: '2px',
+          ...(isAgentStart && {
+            background: '#7C3AED',
+            borderRadius: '50%',
+            padding: '6px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          })
+        }}>
+          <Icon glyph={icon} fill={isAgentStart ? 'white' : color} size="small" />
         </div>
 
         {/* Content */}
@@ -753,9 +786,16 @@ export default function EventItem({ event, isExpanded, onToggleExpand }) {
             marginBottom: '4px',
             gap: '8px'
           }}>
-            <Body weight="medium" style={{ fontSize: '13px', flex: 1 }}>
-              {message}
-            </Body>
+            <div style={{ flex: 1 }}>
+              {isAgentStart && (
+                <Body style={{ fontSize: '10px', color: '#7C3AED', fontWeight: '600', marginBottom: '2px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  Agent Activated
+                </Body>
+              )}
+              <Body weight="medium" style={{ fontSize: '13px', color: isAgentStart ? '#5B21B6' : 'inherit' }}>
+                {message}
+              </Body>
+            </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
               {showCodeButton && (
                 <button
