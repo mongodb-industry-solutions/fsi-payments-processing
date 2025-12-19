@@ -12,9 +12,15 @@ Key Points:
 - Return structured data (dicts) for easy processing
 
 Resolution Agent Tools:
-- transliterate_text: Convert text to Japanese script (AI fallback)
-- lookup_company_katakana: Look up pre-translated Katakana names (fast DB lookup)
-- lookup_ifsc: Look up IFSC code for Indian banks
+- lookup_company_katakana: Look up pre-translated Katakana names (fast DB lookup) - TRY FIRST
+- lookup_ifsc: Look up IFSC code for Indian banks - TRY FIRST
+- atlas_search: Generic fuzzy search using MongoDB Atlas Search - FALLBACK for typos/variations
+- transliterate_text: Convert text to Japanese script (AI fallback) - LAST RESORT
+
+Tool Priority:
+1. Exact lookup (lookup_company_katakana, lookup_ifsc) → confidence: 1.0, ~5ms
+2. Fuzzy search (atlas_search) → confidence: 0.7-0.95, ~20ms
+3. AI generation (transliterate_text) → confidence: 0.9, ~1-2s
 
 Execution Agent Tools:
 - update_payment_field: Update a field in payment document
@@ -321,6 +327,200 @@ def lookup_ifsc(bank_name: str, branch: str, city: str) -> Dict[str, Any]:
             "city": city,
             "confidence": 0.0,
             "found": False,
+            "error": str(e)
+        }
+
+
+@tool
+def atlas_search(
+    collection: str,
+    query: str,
+    search_fields: list,
+    return_fields: list = None,
+    fuzzy: bool = True,
+    limit: int = 3
+) -> Dict[str, Any]:
+    """
+    Search any MongoDB collection using Atlas Search with optional fuzzy matching.
+
+    Use this tool when exact lookup fails and you need typo-tolerant search. Atlas Search
+    provides fuzzy matching that can find results even with misspellings or variations
+    in the query text.
+
+    This is a FALLBACK tool - always try exact lookup tools first (lookup_company_katakana,
+    lookup_ifsc), then use this if they don't find a match.
+
+    Supported Collections:
+    - "bank_details": Company names, Katakana translations, bank info
+    - "ifsc_codes": Indian bank IFSC codes, branches, cities
+    - "registered_entities": Legal names and trading names for name verification
+
+    Fuzzy Matching:
+    - Handles typos like "DENSOO" → "DENSO CORPORATION"
+    - Handles spacing issues like "VOLKS WAGEN" → "VOLKSWAGEN AG"
+    - Handles partial matches like "Toyota Motor" → "TOYOTA MOTOR CORPORATION"
+
+    Args:
+        collection: Collection name ("bank_details" or "ifsc_codes")
+        query: Search text (e.g., "DENSOO", "HDFC Connaught Delhi")
+        search_fields: Fields to search in (e.g., ["name_english"] or ["bank", "branch", "city"])
+        return_fields: Fields to return (optional, returns matched fields if not specified)
+        fuzzy: Enable fuzzy matching for typo tolerance (default: True)
+        limit: Max results to return (default: 3)
+
+    Returns:
+        dict: {
+            "found": bool,           # True if results found with good score
+            "results": list,         # All matching documents
+            "top_result": dict,      # Best match (highest score)
+            "search_score": float,   # Atlas Search relevance score
+            "confidence": float,     # Mapped confidence (0.7-0.95 for fuzzy)
+            "match_type": "fuzzy"    # Always "fuzzy" for this tool
+        }
+
+    Examples:
+        # Find company with typo in name
+        >>> atlas_search("bank_details", "DENSOO CORP", ["name_english"])
+        {"found": True, "top_result": {"name_english": "DENSO CORPORATION", ...}, ...}
+
+        # Find IFSC with partial bank/branch info
+        >>> atlas_search("ifsc_codes", "HDFC Connaught Delhi", ["bank", "branch", "city"])
+        {"found": True, "top_result": {"ifsc": "HDFC0000001", ...}, ...}
+
+        # Find legal name from trading name
+        >>> atlas_search("registered_entities", "Acme Co.", ["legal_name", "trading_names"])
+        {"found": True, "top_result": {"legal_name": "Acme Corporation Limited", ...}, ...}
+    """
+    from services.mongodb_service import get_mongodb_service
+    from config.settings import settings
+
+    logger.info(f"Atlas Search: collection={collection}, query='{query}', fields={search_fields}")
+
+    # Check if Atlas Search is enabled
+    if not settings.atlas_search_enabled:
+        logger.info("Atlas Search is disabled in settings")
+        return {
+            "found": False,
+            "results": [],
+            "top_result": None,
+            "search_score": 0,
+            "confidence": 0,
+            "match_type": "fuzzy",
+            "error": "Atlas Search is disabled"
+        }
+
+    # Map collection to its search index name
+    index_map = {
+        "bank_details": "bank_details_search",
+        "ifsc_codes": "ifsc_codes_search",
+        "registered_entities": "registered_entities_search"
+    }
+    index_name = index_map.get(collection)
+
+    if not index_name:
+        logger.error(f"No search index configured for collection: {collection}")
+        return {
+            "found": False,
+            "results": [],
+            "top_result": None,
+            "search_score": 0,
+            "confidence": 0,
+            "match_type": "fuzzy",
+            "error": f"No search index for collection: {collection}. Supported: {list(index_map.keys())}"
+        }
+
+    try:
+        mongo = get_mongodb_service()
+        coll = mongo.get_collection(collection)
+
+        # Build search query - compound if multiple fields, text if single
+        max_edits = settings.atlas_search_max_edits if fuzzy else 0
+        fuzzy_config = {"maxEdits": max_edits} if fuzzy else {}
+
+        if len(search_fields) == 1:
+            search_query = {
+                "text": {
+                    "query": query,
+                    "path": search_fields[0],
+                    "fuzzy": fuzzy_config
+                }
+            }
+        else:
+            # Compound query for multiple fields
+            search_query = {
+                "compound": {
+                    "should": [
+                        {
+                            "text": {
+                                "query": query,
+                                "path": field,
+                                "fuzzy": fuzzy_config
+                            }
+                        }
+                        for field in search_fields
+                    ],
+                    "minimumShouldMatch": 1
+                }
+            }
+
+        # Build projection - always include search score
+        projection = {"score": {"$meta": "searchScore"}, "_id": 0}
+        if return_fields:
+            for field in return_fields:
+                projection[field] = 1
+        else:
+            # If no return_fields specified, include all search_fields
+            for field in search_fields:
+                projection[field] = 1
+
+        # Build aggregation pipeline
+        pipeline = [
+            {"$search": {"index": index_name, **search_query}},
+            {"$limit": limit},
+            {"$project": projection}
+        ]
+
+        logger.debug(f"Atlas Search pipeline: {pipeline}")
+
+        results = list(coll.aggregate(pipeline))
+
+        min_score = settings.fuzzy_search_min_score
+        if results and results[0].get("score", 0) > min_score:
+            top = results[0]
+            score = top.get("score", 0)
+            # Map score to confidence: 0.5 score → 0.7 confidence, higher scores → up to 0.95
+            confidence = min(0.95, 0.7 + (score - 0.5) * 0.5)
+
+            logger.info(f"Atlas Search found {len(results)} results, top score: {score:.2f}")
+
+            return {
+                "found": True,
+                "results": results,
+                "top_result": top,
+                "search_score": round(score, 3),
+                "confidence": round(confidence, 2),
+                "match_type": "fuzzy"
+            }
+
+        logger.info(f"Atlas Search: no results above threshold for query '{query}'")
+        return {
+            "found": False,
+            "results": results,
+            "top_result": None,
+            "search_score": 0,
+            "confidence": 0,
+            "match_type": "fuzzy"
+        }
+
+    except Exception as e:
+        logger.error(f"Atlas Search error: {e}")
+        return {
+            "found": False,
+            "results": [],
+            "top_result": None,
+            "search_score": 0,
+            "confidence": 0,
+            "match_type": "fuzzy",
             "error": str(e)
         }
 

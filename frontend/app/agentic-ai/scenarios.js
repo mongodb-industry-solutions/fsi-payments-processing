@@ -318,6 +318,63 @@ CLOUD INFRASTRUCTURE DEVELOPMENT
     </CdtTrfTxInf>
   </FIToFICstmrCdtTrf>
 </Document>`
+  },
+
+  name_mismatch: {
+    id: 'name_mismatch',
+    title: 'USA → UK Banking Services',
+    description: 'Goldman Sachs pays HSBC for custody services - £5M GBP - Name verification required',
+    badge: 'NAME VERIFICATION',
+    badgeVariant: 'orange',
+    isAgentic: true,
+    info: {
+      problem: 'Payment creditor shows "HSBC" but sanctions screening requires exact legal name match. Trading names and abbreviations often fail compliance checks.',
+      solution: 'Transaction Agent searches the KYC registry to find "HSBC Holdings plc" as the official legal name matching the trading name "HSBC".',
+      whyAgent: 'Name verification requires fuzzy matching against KYC registry - trading names, abbreviations, and typos need intelligent resolution.'
+    },
+    sourceCountry: {
+      name: 'United States',
+      code: 'US',
+      flag: '🇺🇸',
+      bank: 'Goldman Sachs',
+      city: 'New York',
+      coords: [-74.0060, 40.7128]
+    },
+    targetCountry: {
+      name: 'United Kingdom',
+      code: 'GB',
+      flag: '🇬🇧',
+      bank: 'HSBC',
+      city: 'London',
+      coords: [-0.1276, 51.5074]
+    },
+    sourceFormat: 'MT103',
+    targetFormat: 'pacs.008',
+    nodes: 3,
+    steps: 2,
+    formats: 'MT103, ISO20022',
+    message: `{1:F01GABORUSS33XXX0000000000}{2:I103MIDLGB22XXXXN}{4:
+:20:GS-HSBC-2025-Q1-001
+:23B:CRED
+:32A:250115GBP5000000,00
+:50K:/US33GSBUS33XXX1234567890
+GOLDMAN SACHS AND CO LLC
+200 WEST STREET
+NEW YORK NY 10282
+UNITED STATES
+:52A:GABORUSS33
+:57A:MIDLGB22
+:59:/GB82MIDL40051512345678
+HSBC
+8 CANADA SQUARE
+CANARY WHARF LONDON E14 5HQ
+UNITED KINGDOM
+:70:INVOICE GS-HSBC-2025-Q1-8901 DATED 10.01.2025
+GLOBAL CUSTODY SERVICES Q1 2025
+SECURITIES SETTLEMENT AND CLEARING
+ASSET SERVICING FEES
+:71A:SHA
+-}`
   }
 };
 
