@@ -17,12 +17,23 @@ export default function ScenarioSelector({
   onSelectScenario,
   isStreaming
 }) {
+  const hasMoreRows = scenarios.length > 4;
+
   return (
-    <div style={{
-      display: 'flex',
-      gap: '10px',
-      flexWrap: 'wrap'
-    }}>
+    <>
+    <div style={{ position: 'relative' }}>
+      <div
+        className="scenario-grid"
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(4, 1fr)',
+          gap: '10px',
+          maxHeight: '110px',
+          overflowY: 'auto',
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none'
+        }}
+      >
       {scenarios.map((scenario) => {
         const isSelected = scenario.id === selectedScenario;
         return (
@@ -37,9 +48,7 @@ export default function ScenarioSelector({
               cursor: 'pointer',
               backgroundColor: isSelected ? '#F0F8F4' : 'white',
               boxShadow: isSelected ? '0 2px 8px rgba(0, 163, 92, 0.2)' : 'none',
-              minWidth: '200px',
-              maxWidth: '280px',
-              flex: '1 1 200px'
+              width: '100%'
             }}
             onMouseEnter={(e) => {
               if (!isSelected) {
@@ -175,6 +184,31 @@ export default function ScenarioSelector({
           </Card>
         );
       })}
+      </div>
+      {/* Scroll indicator - subtle hint that more rows exist */}
+      {hasMoreRows && (
+        <div style={{
+          position: 'absolute',
+          bottom: '-12px',
+          left: 0,
+          right: 0,
+          height: '24px',
+          background: 'linear-gradient(transparent, rgba(255,255,255,0.95))',
+          pointerEvents: 'none',
+          display: 'flex',
+          alignItems: 'flex-end',
+          justifyContent: 'center',
+          paddingBottom: '0px'
+        }}>
+          <Icon glyph="ChevronDown" size="small" fill="#889397" />
+        </div>
+      )}
     </div>
+    <style jsx>{`
+      .scenario-grid::-webkit-scrollbar {
+        display: none;
+      }
+    `}</style>
+    </>
   );
 }
