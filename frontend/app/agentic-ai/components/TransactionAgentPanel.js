@@ -4,6 +4,7 @@ import React from 'react';
 import { H2, Body } from '@leafygreen-ui/typography';
 import Card from '@leafygreen-ui/card';
 import Badge from '@leafygreen-ui/badge';
+import Icon from '@leafygreen-ui/icon';
 import EventItem from './EventItem';
 import OutputCard from './OutputCard';
 
@@ -13,7 +14,7 @@ import OutputCard from './OutputCard';
 function getAgentStatus(isStreaming, events, output) {
   if (output) return { label: 'Complete', variant: 'green' };
   if (isStreaming) return { label: 'Processing', variant: 'blue' };
-  return { label: 'Idle', variant: 'lightgray' };
+  return { label: 'Ready', variant: 'lightgray' };
 }
 
 /**
@@ -47,10 +48,14 @@ export default function TransactionAgentPanel({
     <Card
       style={{
         padding: '0',
-        height: '900px',
+        height: 'calc(100vh - 280px)',
+        minHeight: '500px',
+        maxHeight: '900px',
         display: 'flex',
         flexDirection: 'column',
-        overflow: 'hidden'
+        overflow: 'hidden',
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
+        border: '1px solid #E7EAEE'
       }}
     >
       {/* Header */}
@@ -90,42 +95,38 @@ export default function TransactionAgentPanel({
         flex: 1,
         overflow: 'auto',
         scrollbarWidth: 'thin',
-        scrollbarColor: 'rgba(0, 0, 0, 0.2) transparent'
+        scrollbarColor: 'rgba(0, 0, 0, 0.2) transparent',
+        display: 'flex',
+        alignItems: hasActivity ? 'flex-start' : 'center',
+        justifyContent: 'center'
       }}
       className="custom-scrollbar"
       >
         {!hasActivity ? (
           // Empty State
           <div style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            minHeight: '400px',
-            padding: '40px'
+            textAlign: 'center',
+            padding: '48px 40px',
+            background: 'linear-gradient(180deg, #FFFFFF 0%, #F9FBFA 100%)',
+            borderRadius: '12px'
           }}>
             <div style={{
-              width: '120px',
-              height: '120px',
-              marginBottom: '24px',
-              opacity: 0.3
+              width: '80px',
+              height: '80px',
+              borderRadius: '50%',
+              background: 'linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 20px auto'
             }}>
-              <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
-                {/* Simple robot illustration */}
-                <circle cx="100" cy="80" r="60" fill="#00A35C" opacity="0.2" />
-                <rect x="70" y="50" width="60" height="60" rx="10" fill="#00A35C" opacity="0.3" />
-                <circle cx="85" cy="70" r="8" fill="#00A35C" />
-                <circle cx="115" cy="70" r="8" fill="#00A35C" />
-                <rect x="85" y="90" width="30" height="4" rx="2" fill="#00A35C" />
-                <rect x="60" y="120" width="80" height="40" rx="8" fill="#00A35C" opacity="0.2" />
-                <circle cx="100" cy="180" r="15" fill="#1C2D38" opacity="0.2" />
-              </svg>
+              <Icon glyph="ActivityFeed" size="xlarge" fill="#00A35C" />
             </div>
-            <Body weight="medium" style={{ fontSize: '16px', color: '#5C6C75', marginBottom: '8px' }}>
-              Agent Ready
+            <Body weight="medium" style={{ fontSize: '18px', color: '#1C2D38', marginBottom: '8px' }}>
+              Ready to Process
             </Body>
-            <Body style={{ fontSize: '14px', color: '#889397', textAlign: 'center' }}>
-              Select a scenario and click "Simulate Transaction" to begin
+            <Body style={{ fontSize: '14px', color: '#5C6C75', textAlign: 'center', maxWidth: '280px', lineHeight: '1.5' }}>
+              Select a payment scenario and click "Simulate Transaction" to see the processing logs
             </Body>
           </div>
         ) : (

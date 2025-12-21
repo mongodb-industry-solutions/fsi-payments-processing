@@ -17,8 +17,6 @@ export default function ScenarioSelector({
   onSelectScenario,
   isStreaming
 }) {
-  const hasMoreRows = scenarios.length > 4;
-
   return (
     <>
     <div style={{ position: 'relative' }}>
@@ -27,11 +25,12 @@ export default function ScenarioSelector({
         style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(4, 1fr)',
-          gap: '10px',
-          maxHeight: '110px',
+          gap: '12px',
+          maxHeight: '220px',
           overflowY: 'auto',
-          scrollbarWidth: 'none',
-          msOverflowStyle: 'none'
+          scrollbarWidth: 'thin',
+          scrollbarColor: 'rgba(0, 0, 0, 0.2) transparent',
+          padding: '4px'
         }}
       >
       {scenarios.map((scenario) => {
@@ -42,24 +41,29 @@ export default function ScenarioSelector({
             as="div"
             onClick={() => onSelectScenario(scenario.id)}
             style={{
-              padding: '10px 12px',
+              padding: '16px',
               border: isSelected ? '2px solid #00A35C' : '1px solid #E7EAEE',
-              transition: 'all 0.15s ease',
+              transition: 'all 0.2s ease',
               cursor: 'pointer',
-              backgroundColor: isSelected ? '#F0F8F4' : 'white',
-              boxShadow: isSelected ? '0 2px 8px rgba(0, 163, 92, 0.2)' : 'none',
-              width: '100%'
+              backgroundColor: isSelected ? '#F0FDF4' : 'white',
+              boxShadow: isSelected
+                ? '0 4px 12px rgba(0, 163, 92, 0.15), 0 2px 4px rgba(0, 163, 92, 0.1)'
+                : '0 1px 3px rgba(0, 0, 0, 0.04)',
+              width: '100%',
+              transform: isSelected ? 'translateY(-1px)' : 'none'
             }}
             onMouseEnter={(e) => {
               if (!isSelected) {
-                e.currentTarget.style.borderColor = '#C1C7CD';
-                e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.08)';
+                e.currentTarget.style.borderColor = '#00A35C';
+                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.08)';
+                e.currentTarget.style.transform = 'translateY(-2px)';
               }
             }}
             onMouseLeave={(e) => {
               if (!isSelected) {
                 e.currentTarget.style.borderColor = '#E7EAEE';
-                e.currentTarget.style.boxShadow = 'none';
+                e.currentTarget.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.04)';
+                e.currentTarget.style.transform = 'none';
               }
             }}
           >
@@ -68,19 +72,19 @@ export default function ScenarioSelector({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              marginBottom: '6px'
+              marginBottom: '8px'
             }}>
               {/* Country Route */}
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '6px'
+                gap: '8px'
               }}>
-                <Body style={{ fontSize: '12px', fontWeight: '600', color: '#1C2D38' }}>
+                <Body style={{ fontSize: '14px', fontWeight: '700', color: '#1C2D38' }}>
                   {scenario.sourceCountry.code}
                 </Body>
-                <Icon glyph="ArrowRight" size="small" fill="#889397" />
-                <Body style={{ fontSize: '12px', fontWeight: '600', color: '#1C2D38' }}>
+                <Icon glyph="ArrowRight" size="small" fill="#5C6C75" />
+                <Body style={{ fontSize: '14px', fontWeight: '700', color: '#1C2D38' }}>
                   {scenario.targetCountry.code}
                 </Body>
               </div>
@@ -101,12 +105,16 @@ export default function ScenarioSelector({
               )}
             </div>
 
-            {/* Title */}
-            <Body weight="medium" style={{
-              fontSize: '11px',
-              color: '#5C6C75',
+            {/* Description */}
+            <Body style={{
+              fontSize: '12px',
+              color: '#4A5568',
               marginBottom: '8px',
-              lineHeight: '1.3'
+              lineHeight: '1.4',
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden'
             }}>
               {scenario.description}
             </Body>
@@ -115,14 +123,14 @@ export default function ScenarioSelector({
             <div style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '6px',
+              gap: '8px',
               flexWrap: 'wrap'
             }}>
-              <Badge variant={scenario.badgeVariant} style={{ fontSize: '9px' }}>
+              <Badge variant={scenario.badgeVariant} style={{ fontSize: '10px' }}>
                 {scenario.badge}
               </Badge>
               {scenario.isAgentic && (
-                <Badge variant="purple" style={{ fontSize: '9px' }}>
+                <Badge variant="purple" style={{ fontSize: '10px' }}>
                   AGENTIC
                 </Badge>
               )}
@@ -185,28 +193,21 @@ export default function ScenarioSelector({
         );
       })}
       </div>
-      {/* Scroll indicator - subtle hint that more rows exist */}
-      {hasMoreRows && (
-        <div style={{
-          position: 'absolute',
-          bottom: '-12px',
-          left: 0,
-          right: 0,
-          height: '24px',
-          background: 'linear-gradient(transparent, rgba(255,255,255,0.95))',
-          pointerEvents: 'none',
-          display: 'flex',
-          alignItems: 'flex-end',
-          justifyContent: 'center',
-          paddingBottom: '0px'
-        }}>
-          <Icon glyph="ChevronDown" size="small" fill="#889397" />
-        </div>
-      )}
     </div>
     <style jsx>{`
       .scenario-grid::-webkit-scrollbar {
-        display: none;
+        width: 6px;
+        height: 6px;
+      }
+      .scenario-grid::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      .scenario-grid::-webkit-scrollbar-thumb {
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 3px;
+      }
+      .scenario-grid::-webkit-scrollbar-thumb:hover {
+        background: rgba(0, 0, 0, 0.3);
       }
     `}</style>
     </>

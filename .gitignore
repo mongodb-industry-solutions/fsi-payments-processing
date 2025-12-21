@@ -19,6 +19,8 @@ backend/plans
 
 frontend/plan
 
+.*-mcp
+
 # Environments
 backend/converter_service_copy
 .env

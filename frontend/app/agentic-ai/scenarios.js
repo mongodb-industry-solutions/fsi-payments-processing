@@ -325,7 +325,7 @@ CLOUD INFRASTRUCTURE DEVELOPMENT
     title: 'USA → UK Banking Services',
     description: 'Goldman Sachs pays HSBC for custody services - £5M GBP - Name verification required',
     badge: 'NAME VERIFICATION',
-    badgeVariant: 'orange',
+    badgeVariant: 'yellow',
     isAgentic: true,
     info: {
       problem: 'Payment creditor shows "HSBC" but sanctions screening requires exact legal name match. Trading names and abbreviations often fail compliance checks.',

@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { H2, Body } from '@leafygreen-ui/typography';
 import Card from '@leafygreen-ui/card';
 import Icon from '@leafygreen-ui/icon';
+import { Tabs, Tab } from '@leafygreen-ui/tabs';
 import {
   ComposableMap,
   Geographies,
@@ -1030,8 +1031,14 @@ export default function GeographicMapPanel({
   conversionRunId = null
 }) {
   const [hoveredCountry, setHoveredCountry] = useState(null);
-  const [activeTab, setActiveTab] = useState('map');
+  const [selectedTabIndex, setSelectedTabIndex] = useState(0);
   const [firstLegAnimationComplete, setFirstLegAnimationComplete] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+
+  // Handle SSR hydration - only render Tabs on client
+  React.useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Reset first leg complete state when scenario changes or streaming starts fresh
   React.useEffect(() => {
@@ -1058,79 +1065,37 @@ export default function GeographicMapPanel({
     <Card
       style={{
         padding: '0',
-        height: '900px',
+        height: 'calc(100vh - 280px)',
+        minHeight: '500px',
+        maxHeight: '900px',
         display: 'flex',
         flexDirection: 'column',
         background: '#F9FBFA',
-        overflow: 'hidden'
+        overflow: 'hidden',
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
+        border: '1px solid #E7EAEE'
       }}
     >
       {/* Header */}
       <div style={{
         padding: '20px 24px',
+        background: '#F9FBFA',
         borderBottom: '1px solid #E7EAEE',
-        background: 'white',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between'
       }}>
         <H2>Payment Journey Visualization</H2>
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <button
-            onClick={() => setActiveTab('map')}
-            style={{
-              padding: '8px 16px',
-              background: activeTab === 'map' ? '#00A35C' : 'transparent',
-              color: activeTab === 'map' ? 'white' : '#5C6C75',
-              border: activeTab === 'map' ? 'none' : '1px solid #E7EAEE',
-              borderRadius: '6px',
-              fontSize: '14px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-              fontFamily: 'system-ui, -apple-system, sans-serif'
-            }}
-            onMouseEnter={(e) => {
-              if (activeTab !== 'map') {
-                e.currentTarget.style.background = '#F9FBFA';
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (activeTab !== 'map') {
-                e.currentTarget.style.background = 'transparent';
-              }
-            }}
+        {isMounted && (
+          <Tabs
+            value={selectedTabIndex}
+            onValueChange={setSelectedTabIndex}
+            aria-label="View toggle"
           >
-            Map
-          </button>
-          <button
-            onClick={() => setActiveTab('backend')}
-            style={{
-              padding: '8px 16px',
-              background: activeTab === 'backend' ? '#00A35C' : 'transparent',
-              color: activeTab === 'backend' ? 'white' : '#5C6C75',
-              border: activeTab === 'backend' ? 'none' : '1px solid #E7EAEE',
-              borderRadius: '6px',
-              fontSize: '14px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-              fontFamily: 'system-ui, -apple-system, sans-serif'
-            }}
-            onMouseEnter={(e) => {
-              if (activeTab !== 'backend') {
-                e.currentTarget.style.background = '#F9FBFA';
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (activeTab !== 'backend') {
-                e.currentTarget.style.background = 'transparent';
-              }
-            }}
-          >
-            Backend
-          </button>
-        </div>
+            <Tab name="Map" />
+            <Tab name="Backend" />
+          </Tabs>
+        )}
       </div>
 
       {/* Map Content */}
@@ -1142,28 +1107,43 @@ export default function GeographicMapPanel({
         position: 'relative',
         overflow: 'hidden'
       }}>
-        {activeTab === 'map' ? (
+        {selectedTabIndex === 0 ? (
           <>
             {!isActive ? (
               /* Empty State */
               <div style={{
                 textAlign: 'center',
-                zIndex: 1
+                zIndex: 1,
+                padding: '48px 40px',
+                background: 'linear-gradient(180deg, #FFFFFF 0%, #F9FBFA 100%)',
+                borderRadius: '12px'
               }}>
-                <Icon glyph="Charts" size="xlarge" fill="#C1C7CD" />
+                <div style={{
+                  width: '80px',
+                  height: '80px',
+                  borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '0 auto 20px auto'
+                }}>
+                  <Icon glyph="Charts" size="xlarge" fill="#0B61A4" />
+                </div>
                 <Body weight="medium" style={{
-                  fontSize: '16px',
-                  color: '#5C6C75',
-                  marginTop: '16px',
+                  fontSize: '18px',
+                  color: '#1C2D38',
                   marginBottom: '8px'
                 }}>
                   Select a scenario to begin
                 </Body>
                 <Body style={{
                   fontSize: '14px',
-                  color: '#889397'
+                  color: '#5C6C75',
+                  maxWidth: '280px',
+                  lineHeight: '1.5'
                 }}>
-                  Geographic visualization will show payment routing
+                  Geographic visualization will show payment routing across borders
                 </Body>
               </div>
             ) : (
@@ -1411,21 +1391,38 @@ export default function GeographicMapPanel({
               alignItems: 'center',
               justifyContent: 'center'
             }}>
-              <div style={{ textAlign: 'center' }}>
-                <Icon glyph="Code" size="xlarge" fill="#C1C7CD" />
+              <div style={{
+                textAlign: 'center',
+                padding: '48px 40px',
+                background: 'linear-gradient(180deg, #FFFFFF 0%, #F9FBFA 100%)',
+                borderRadius: '12px'
+              }}>
+                <div style={{
+                  width: '80px',
+                  height: '80px',
+                  borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #FFF3E0 0%, #FFE0B2 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '0 auto 20px auto'
+                }}>
+                  <Icon glyph="Code" size="xlarge" fill="#E65100" />
+                </div>
                 <Body weight="medium" style={{
-                  fontSize: '16px',
-                  color: '#5C6C75',
-                  marginTop: '16px',
+                  fontSize: '18px',
+                  color: '#1C2D38',
                   marginBottom: '8px'
                 }}>
                   Select a scenario to begin
                 </Body>
                 <Body style={{
                   fontSize: '14px',
-                  color: '#889397'
+                  color: '#5C6C75',
+                  maxWidth: '280px',
+                  lineHeight: '1.5'
                 }}>
-                  Backend processing details will appear here
+                  Backend processing details and conversion pipeline will appear here
                 </Body>
               </div>
             </div>
