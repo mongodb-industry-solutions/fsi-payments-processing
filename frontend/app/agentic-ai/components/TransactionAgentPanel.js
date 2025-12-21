@@ -131,7 +131,7 @@ export default function TransactionAgentPanel({
           </div>
         ) : (
           // Events Stream
-          <div>
+          <div style={{ width: '100%' }}>
             {events.map((event) => (
               <EventItem
                 key={event.id}

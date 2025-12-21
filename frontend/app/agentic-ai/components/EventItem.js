@@ -354,7 +354,9 @@ function renderEventDetails(event) {
             borderRadius: '4px',
             fontSize: '11px',
             overflow: 'auto',
-            maxHeight: '200px'
+            maxHeight: '200px',
+            whiteSpace: 'pre-wrap',
+            wordBreak: 'break-word'
           }}>
             {JSON.stringify(event.args || {}, null, 2)}
           </pre>
@@ -378,7 +380,9 @@ function renderEventDetails(event) {
             borderRadius: '4px',
             fontSize: '11px',
             overflow: 'auto',
-            maxHeight: '200px'
+            maxHeight: '200px',
+            whiteSpace: 'pre-wrap',
+            wordBreak: 'break-word'
           }}>
             {JSON.stringify(event.result || {}, null, 2)}
           </pre>
@@ -555,7 +559,9 @@ function renderEventDetails(event) {
                       marginTop: '4px',
                       fontSize: '10px',
                       color: '#00A35C',
-                      whiteSpace: 'pre-wrap'
+                      whiteSpace: 'pre-wrap',
+                      wordBreak: 'break-word',
+                      overflow: 'hidden'
                     }}>
                       {JSON.stringify(field.ai_response, null, 2)}
                     </pre>
@@ -741,13 +747,15 @@ export default function EventItem({ event, isExpanded, onToggleExpand }) {
       style={bannerStyle ? {
         ...bannerStyle,
         cursor: canExpand ? 'pointer' : 'default',
-        transition: 'all 0.15s ease'
+        transition: 'all 0.15s ease',
+        overflow: 'hidden'
       } : {
         padding: '12px 16px',
         borderBottom: '1px solid #E7EAEE',
         cursor: canExpand ? 'pointer' : 'default',
         transition: 'background 0.15s ease',
-        background: isExpanded ? '#F9FBFA' : 'transparent'
+        background: isExpanded ? '#F9FBFA' : 'transparent',
+        overflow: 'hidden'
       }}
       onClick={canExpand ? onToggleExpand : undefined}
       onMouseEnter={(e) => {
@@ -778,7 +786,7 @@ export default function EventItem({ event, isExpanded, onToggleExpand }) {
         </div>
 
         {/* Content */}
-        <div style={{ flex: 1 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{
             display: 'flex',
             alignItems: 'center',
