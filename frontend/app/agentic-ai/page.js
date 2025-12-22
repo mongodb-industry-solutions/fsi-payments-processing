@@ -24,6 +24,8 @@ function isAgentRelatedEvent(event) {
     'tool_call',          // Tool invocation (IFSC lookup, transliteration)
     'tool_result',        // Tool results
     'agent_resolution',   // Proposed solution
+    'review_approved',    // Human approved change
+    'review_rejected',    // Human rejected change
     'agent_execution',    // Field update
     'agent_complete',     // Agent finished
     'error'               // Errors

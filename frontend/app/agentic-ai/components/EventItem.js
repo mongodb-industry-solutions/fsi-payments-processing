@@ -24,6 +24,8 @@ function getEventIcon(type) {
     'tool_call': 'Wrench',
     'tool_result': 'CheckmarkWithCircle',
     'agent_resolution': 'Bulb',
+    'review_approved': 'CheckmarkWithCircle',
+    'review_rejected': 'X',
     'agent_execution': 'Edit',
     'agent_complete': 'CheckmarkWithCircle',
     'complete': 'CheckmarkWithCircle',
@@ -45,8 +47,8 @@ function getEventIcon(type) {
  * Get color for event type
  */
 function getEventColor(type) {
-  if (type.includes('complete')) return '#00A35C';
-  if (type.includes('error') || type.includes('failed')) return '#CD4246';
+  if (type.includes('complete') || type === 'review_approved') return '#00A35C';
+  if (type.includes('error') || type.includes('failed') || type === 'review_rejected') return '#CD4246';
   if (type === 'agent_start') return '#7C3AED';  // Purple for agent activation
   if (type.includes('agent')) return '#0B61A4';
   if (type.includes('crypto')) return '#7C3AED';  // Purple for blockchain events
@@ -119,6 +121,10 @@ function formatEventMessage(event) {
         }
       }
       return `Solution proposed for ${fieldName}`;
+    case 'review_approved':
+      return event.message || 'Human approved proposed change';
+    case 'review_rejected':
+      return event.message || 'Human rejected proposed change';
     case 'agent_execution':
       // Show "Added" for new fields, "Updated" for existing fields
       const isNewField = !event.old_value || event.old_value === '';

@@ -84,303 +84,141 @@ function CustomArcPath({ from, to, stroke, strokeWidth, isStreaming }) {
 }
 
 /**
- * EventBadge Component
- * Displays event details on the map with smart positioning
+ * StatusPill Component
+ * Minimal, clean status indicator for map events
  */
-function EventBadge({ event, x, y, isActive, showHealingButton, onHealingStart, mapWidth = 800, mapHeight = 900, forceBelow = false, disableSmartPosition = false, markerX = null, markerY = null }) {
-  if (!event) return null;
+function StatusPill({ status, x, y, isActive }) {
+  if (!isActive) return null;
 
-  // Get badge configuration based on event type
-  const getBadgeConfig = () => {
-    switch (event.type) {
-      case 'hop1_start':
-      case 'hop2_start':
-        return {
-          title: 'PROCESSING',
-          color: '#0B61A4',
-          details: ['Processing payment']
-        };
-      case 'validation_failed':
-        return {
-          title: 'VALIDATION ERROR',
-          color: '#CD4246',
-          details: [
-            event.field ? `Field: ${event.field}` : null,
-            event.country ? `Country: ${event.country}` : null,
-            event.message || event.error || 'Validation failed'
-          ].filter(Boolean),
-          isError: true
-        };
-      case 'agent_start':
-        return {
-          title: 'AGENT RESOLVING',
-          color: '#FFC010',
-          details: ['Analyzing validation error']
-        };
-      case 'agent_supervisor':
-        return {
-          title: 'AGENT ROUTING',
-          color: '#FFC010',
-          details: ['Routing to resolution agent']
-        };
-      case 'tool_call':
-        return {
-          title: 'TOOL EXECUTING',
-          color: '#7C4DFF',
-          details: [
-            event.tool === 'ifsc_lookup' ? 'Looking up IFSC code' :
-            event.tool === 'transliterate_name' ? 'Transliterating name' :
-            event.tool || 'Processing'
-          ]
-        };
-      case 'agent_complete':
-        return {
-          title: 'RESOLVED',
-          color: '#00A35C',
-          details: [
-            event.field ? `Field: ${event.field}` : null,
-            'Issue resolved successfully'
-          ].filter(Boolean)
-        };
+  const getConfig = () => {
+    switch (status) {
+      case 'processing':
+        return { label: 'Processing', color: '#0B61A4', icon: '→' };
+      case 'error':
+        return { label: 'Validation Error', color: '#CD4246', icon: '!' };
+      case 'resolving':
+        return { label: 'Resolving', color: '#FFC010', icon: '⚙' };
+      case 'resolved':
+        return { label: 'Resolved', color: '#00A35C', icon: '✓' };
       case 'complete':
-        return {
-          title: 'SUCCESS',
-          color: '#00A35C',
-          details: ['Conversion completed']
-        };
+        return { label: 'Complete', color: '#00A35C', icon: '✓' };
       default:
-        return {
-          title: event.type.toUpperCase().replace(/_/g, ' '),
-          color: '#5C6C75',
-          details: []
-        };
+        return { label: status, color: '#5C6C75', icon: '•' };
     }
   };
 
-  const config = getBadgeConfig();
-  const maxWidth = config.isError ? 320 : 280;  // Wider for error messages
-  const lineHeight = config.isError ? 20 : 16;  // More spacing for errors
-  const padding = config.isError ? 16 : 10;  // More padding for errors
-  const titleHeight = config.isError ? 22 : 18;  // Larger title for errors
-  const detailsHeight = config.details.length * lineHeight;
-  const buttonHeight = showHealingButton ? 54 : 0;  // Add space for button if needed
-  const totalHeight = titleHeight + detailsHeight + buttonHeight + (padding * 3);
-
-  let badgeX, badgeY, lineStartY;
-  
-  if (disableSmartPosition) {
-    // Use coordinates directly without offset - for agent progress badge
-    badgeX = x;
-    badgeY = y;
-    lineStartY = y + totalHeight; // Line goes from bottom of badge down to marker
-  } else {
-    // Smart positioning: Determine which quadrant the marker is in
-    const centerX = mapWidth / 2;
-    const centerY = mapHeight / 2;
-    const isTopHalf = y < centerY;
-    
-    // Calculate badge offset from marker
-    const horizontalOffset = 0;
-    let verticalOffset;
-    
-    if (forceBelow) {
-      verticalOffset = 60; // Below marker
-    } else {
-      verticalOffset = isTopHalf ? 60 : -totalHeight - 60;
-    }
-    
-    // Badge position
-    badgeX = x + horizontalOffset;
-    badgeY = y + verticalOffset;
-    
-    // Leader line connection point
-    lineStartY = verticalOffset < 0 ? badgeY + totalHeight : badgeY;
-  }
+  const config = getConfig();
+  const pillWidth = config.label.length * 7 + 36;
+  const pillHeight = 28;
 
   return (
     <g style={{
-      opacity: isActive ? 1 : 0,
-      transition: 'opacity 0.5s ease-in-out',
-      pointerEvents: isActive ? 'auto' : 'none'
+      opacity: 1,
+      animation: 'pillFadeIn 0.3s ease-out'
     }}>
-      {/* Leader line connecting badge to marker */}
-      <line
-        x1={markerX !== null ? markerX : x}
-        y1={markerY !== null ? markerY : y}
-        x2={badgeX}
-        y2={lineStartY}
-        stroke={config.color}
-        strokeWidth={2}
-        strokeOpacity={0.4}
-        strokeDasharray="4 3"
-      />
-      
-      {/* Badge background */}
+      {/* Pill background */}
       <rect
-        x={badgeX - maxWidth / 2}
-        y={badgeY}
-        width={maxWidth}
-        height={totalHeight}
-        rx={6}
-        fill="white"
-        fillOpacity={0.98}
-        stroke={config.isError ? config.color : "#E7EAEE"}
-        strokeWidth={config.isError ? 2 : 1}
-        filter="url(#badge-shadow)"
-        style={{ transition: 'all 0.3s ease' }}
-      />
-
-      {/* Error background tint */}
-      {config.isError && (
-        <rect
-          x={badgeX - maxWidth / 2}
-          y={badgeY}
-          width={maxWidth}
-          height={totalHeight}
-          rx={6}
-          fill={config.color}
-          fillOpacity={0.04}
-        />
-      )}
-
-      {/* Color indicator bar */}
-      <rect
-        x={badgeX - maxWidth / 2}
-        y={badgeY}
-        width={config.isError ? 5 : 4}
-        height={totalHeight}
-        rx={config.isError ? 6 : 4}
+        x={x - pillWidth / 2}
+        y={y - 45}
+        width={pillWidth}
+        height={pillHeight}
+        rx={pillHeight / 2}
         fill={config.color}
       />
-
-      {/* Title */}
+      {/* Icon circle */}
+      <circle
+        cx={x - pillWidth / 2 + 16}
+        cy={y - 45 + pillHeight / 2}
+        r={9}
+        fill="rgba(255,255,255,0.25)"
+      />
+      {/* Icon */}
       <text
-        x={badgeX - maxWidth / 2 + padding + 6}
-        y={badgeY + padding + 14}
-        fontSize={config.isError ? 14 : 13}
-        fontWeight="700"
-        fill={config.color}
+        x={x - pillWidth / 2 + 16}
+        y={y - 45 + pillHeight / 2 + 1}
+        textAnchor="middle"
+        dominantBaseline="central"
+        fontSize="11"
+        fontWeight="600"
+        fill="white"
+        fontFamily="system-ui, -apple-system, sans-serif"
+      >
+        {config.icon}
+      </text>
+      {/* Label */}
+      <text
+        x={x - pillWidth / 2 + 32}
+        y={y - 45 + pillHeight / 2 + 1}
+        dominantBaseline="central"
+        fontSize="12"
+        fontWeight="600"
+        fill="white"
         fontFamily="system-ui, -apple-system, sans-serif"
         letterSpacing="0.3"
       >
-        {config.title}
+        {config.label}
       </text>
+    </g>
+  );
+}
 
-      {/* Details with proper text wrapping */}
-      <foreignObject
-        x={badgeX - maxWidth / 2 + padding + 6}
-        y={badgeY + padding + titleHeight + 10}
-        width={maxWidth - (padding * 2) - 12}
-        height={detailsHeight + 20}
+/**
+ * ErrorCard Component
+ * Shown only for validation errors - clean and minimal
+ */
+function ErrorCard({ event, x, y, isActive }) {
+  if (!isActive || !event) return null;
+
+  const cardWidth = 200;
+  const cardHeight = 52;
+
+  return (
+    <g style={{
+      opacity: 1,
+      animation: 'cardSlideIn 0.3s ease-out'
+    }}>
+      {/* Card background with subtle shadow effect */}
+      <rect
+        x={x - cardWidth / 2}
+        y={y + 35}
+        width={cardWidth}
+        height={cardHeight}
+        rx={8}
+        fill="white"
+        stroke="#E7EAEE"
+        strokeWidth={1}
+      />
+      {/* Red accent line at top */}
+      <rect
+        x={x - cardWidth / 2 + 12}
+        y={y + 35}
+        width={cardWidth - 24}
+        height={3}
+        rx={1.5}
+        fill="#CD4246"
+      />
+      {/* Field name */}
+      <text
+        x={x - cardWidth / 2 + 12}
+        y={y + 56}
+        fontSize="12"
+        fontWeight="600"
+        fill="#1C2D38"
+        fontFamily="system-ui, -apple-system, sans-serif"
       >
-        <div xmlns="http://www.w3.org/1999/xhtml" style={{
-          fontSize: config.isError ? '12px' : '11px',
-          color: config.isError ? "#1C2D38" : "#5C6C75",
-          fontFamily: "system-ui, -apple-system, sans-serif",
-          lineHeight: '1.5',
-          wordWrap: 'break-word',
-          overflowWrap: 'break-word'
-        }}>
-          {config.details.map((detail, i) => (
-            <div 
-              key={i}
-              style={{
-                marginBottom: i < config.details.length - 1 ? '4px' : '0',
-                fontWeight: config.isError && i < config.details.length - 1 ? "500" : "400"
-              }}
-            >
-              {detail}
-            </div>
-          ))}
-        </div>
-      </foreignObject>
-
-      {/* Self-Healing Agent Button */}
-      {showHealingButton && onHealingStart && (
-        <g
-          onClick={(e) => {
-            e.stopPropagation();
-            onHealingStart();
-          }}
-          style={{ cursor: 'pointer' }}
-        >
-          {console.log('🎨 RENDERING BUTTON at:', x, y, 'showHealingButton:', showHealingButton)}
-          {/* Button background with subtle gradient */}
-          <defs>
-            <linearGradient id="button-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" style={{ stopColor: '#00A35C', stopOpacity: 1 }} />
-              <stop offset="100%" style={{ stopColor: '#008F4D', stopOpacity: 1 }} />
-            </linearGradient>
-          </defs>
-          <rect
-            x={badgeX - 130}  // 260px wide button centered
-            y={badgeY + padding + titleHeight + detailsHeight + 20}
-            width={260}
-            height={44}
-            rx={8}
-            fill="url(#button-gradient)"
-            stroke="#00854A"
-            strokeWidth={1.5}
-            style={{ cursor: 'pointer', pointerEvents: 'auto' }}
-            filter="url(#button-shadow)"
-            onMouseEnter={(e) => {
-              e.currentTarget.setAttribute('fill', '#008F4D');
-              e.currentTarget.setAttribute('stroke', '#00703D');
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.setAttribute('fill', 'url(#button-gradient)');
-              e.currentTarget.setAttribute('stroke', '#00854A');
-            }}
-          />
-          {/* Icon - Gear/Settings symbol */}
-          <circle
-            cx={badgeX - 95}
-            cy={badgeY + padding + titleHeight + detailsHeight + 42}
-            r={11}
-            fill="white"
-            fillOpacity={0.25}
-            style={{ pointerEvents: 'none' }}
-          />
-          <text
-            x={badgeX - 95}
-            y={badgeY + padding + titleHeight + detailsHeight + 42}
-            fontSize={15}
-            fill="white"
-            textAnchor="middle"
-            dominantBaseline="central"
-            fontFamily="system-ui, -apple-system, sans-serif"
-            style={{ pointerEvents: 'none' }}
-          >
-            ⚙
-          </text>
-          {/* Button text */}
-          <text
-            x={badgeX + 25}
-            y={badgeY + padding + titleHeight + detailsHeight + 42}
-            fontSize={13}
-            fontWeight="600"
-            fill="white"
-            textAnchor="middle"
-            dominantBaseline="central"
-            fontFamily="system-ui, -apple-system, sans-serif"
-            letterSpacing="0.5"
-            style={{ pointerEvents: 'none' }}
-          >
-            Activate Auto-Resolution
-          </text>
-        </g>
-      )}
-      {showHealingButton && !onHealingStart && console.log('⚠️ Button requested but no handler provided')}
-
-      {/* Drop shadow filter definitions */}
-      <defs>
-        <filter id="badge-shadow" x="-50%" y="-50%" width="200%" height="200%">
-          <feDropShadow dx="0" dy="3" stdDeviation="6" floodOpacity={config.isError ? "0.20" : "0.15"}/>
-        </filter>
-        <filter id="button-shadow" x="-50%" y="-50%" width="200%" height="200%">
-          <feDropShadow dx="0" dy="2" stdDeviation="5" floodOpacity="0.25"/>
-        </filter>
-      </defs>
+        {event.field || 'Unknown field'}
+      </text>
+      {/* Error message */}
+      <text
+        x={x - cardWidth / 2 + 12}
+        y={y + 74}
+        fontSize="11"
+        fill="#889397"
+        fontFamily="system-ui, -apple-system, sans-serif"
+      >
+        {(event.message || event.error || 'Validation failed').substring(0, 26)}
+        {(event.message || event.error || '').length > 26 ? '...' : ''}
+      </text>
     </g>
   );
 }
@@ -394,9 +232,6 @@ function AnimatedPaymentJourney({ from, to, events, isStreaming, onFirstLegCompl
 
   // Configuration constants
   const ERROR_PAUSE_DURATION_MS = 3000; // 3 seconds pause on error
-
-  // Self-healing agent state
-  const [healingStarted, setHealingStarted] = React.useState(false);
 
   const [journeyState, setJourneyState] = React.useState({
     progress: 0, // 0-100
@@ -420,7 +255,8 @@ function AnimatedPaymentJourney({ from, to, events, isStreaming, onFirstLegCompl
     const hasError = events.some(e => e.type === 'validation_failed');
     const hasAgentStart = events.some(e => e.type === 'agent_start');
     const hasAgentComplete = events.some(e => e.type === 'agent_complete');
-    const isComplete = lastEvent?.type === 'complete';
+    // Check if complete event exists anywhere in events (not just last) for robustness
+    const isComplete = events.some(e => e.type === 'complete');
 
     // Check for crypto scenario - if crypto events exist, first leg should complete on hop1_complete
     const hasCryptoEvents = events.some(e => e.type?.startsWith('crypto_'));
@@ -449,23 +285,15 @@ function AnimatedPaymentJourney({ from, to, events, isStreaming, onFirstLegCompl
     } else if (isComplete) {
       setJourneyState({ progress: 100, status: 'complete', errorPosition: null, errorPauseEndTime: null, resolvedTimestamp: null });
     } else if (hasAgentComplete && !isComplete) {
-      // Agent resolved, continuing journey
-      setJourneyState(prev => ({ 
-        ...prev, 
+      // Agent resolved, continuing journey - clear pause to allow animation
+      setJourneyState(prev => ({
+        ...prev,
         status: 'resolved',
-        resolvedTimestamp: prev.resolvedTimestamp || Date.now() // Set timestamp on first resolution
+        resolvedTimestamp: prev.resolvedTimestamp || Date.now(),
+        errorPauseEndTime: null // Clear pause so animation can continue
       }));
-    } else if (hasError && !healingStarted) {
-      // Error occurred, stop and wait for user to trigger healing (CHECK THIS FIRST!)
-      console.log('🚨 ERROR DETECTED - Waiting for user to start healing');
-      setJourneyState({
-        progress: 50,
-        status: 'error_awaiting_healing',
-        errorPosition: 50,
-        errorPauseEndTime: null // No time limit - wait for user interaction
-      });
-    } else if (hasAgentStart && hasError && healingStarted) {
-      // Agent is working on an error (only if user triggered healing)
+    } else if (hasAgentStart && hasError) {
+      // Agent is working on an error - auto-resolution started
       console.log('🔧 Agent working on error - Setting errorPosition at 50%');
       setJourneyState(prev => ({
         ...prev,
@@ -474,6 +302,15 @@ function AnimatedPaymentJourney({ from, to, events, isStreaming, onFirstLegCompl
         progress: prev.errorPosition || 50,
         errorPauseEndTime: prev.errorPauseEndTime || (Date.now() + ERROR_PAUSE_DURATION_MS)
       }));
+    } else if (hasError && !hasAgentStart) {
+      // Error occurred, show error badge while waiting for agent to start
+      console.log('🚨 ERROR DETECTED - Showing error badge');
+      setJourneyState({
+        progress: 50,
+        status: 'error_awaiting_healing',
+        errorPosition: 50,
+        errorPauseEndTime: null
+      });
     } else if (hasAgentStart) {
       // Agent is working on non-error issue
       setJourneyState(prev => ({ ...prev, status: 'agent_working' }));
@@ -485,7 +322,7 @@ function AnimatedPaymentJourney({ from, to, events, isStreaming, onFirstLegCompl
         progress: Math.min(prev.progress + 2, 95) // Cap at 95% until complete
       }));
     }
-  }, [events, isStreaming, healingStarted, ERROR_PAUSE_DURATION_MS]);
+  }, [events, isStreaming, ERROR_PAUSE_DURATION_MS]);
 
   // Animate progress when traveling, resolved, or completing first leg
   React.useEffect(() => {
@@ -547,12 +384,6 @@ function AnimatedPaymentJourney({ from, to, events, isStreaming, onFirstLegCompl
       return () => clearTimeout(timer);
     }
   }, [journeyState.status, journeyState.resolvedTimestamp]);
-
-  // Handler for starting the self-healing agent
-  const handleStartHealing = () => {
-    console.log('🤖 User triggered self-healing agent');
-    setHealingStarted(true);
-  };
 
   // Adjust coordinates to avoid date line wrapping
   let [fromLng, fromLat] = from;
@@ -616,30 +447,8 @@ function AnimatedPaymentJourney({ from, to, events, isStreaming, onFirstLegCompl
     return null;
   }
 
-  // Get current and error events for badge display
+  // Get error event for error card display
   const errorEvent = events.find(e => e.type === 'validation_failed');
-  const lastEvent = events.length > 0 ? events[events.length - 1] : null;
-
-  // Get most recent agent event for progress indicator
-  const agentEvents = events.filter(e => 
-    e.type === 'agent_start' || 
-    e.type === 'agent_supervisor' || 
-    e.type === 'tool_call' || 
-    e.type === 'agent_complete'
-  );
-  const currentAgentEvent = agentEvents.length > 0 ? agentEvents[agentEvents.length - 1] : null;
-
-  console.log('🏷️ Badge Render Check:', {
-    errorEvent: errorEvent?.type || 'none',
-    errorField: errorEvent?.field,
-    journeyStatus: journeyState.status,
-    errorPosition: journeyState.errorPosition,
-    currentAgentEvent: currentAgentEvent?.type || 'none',
-    shouldRenderBadge: !!(errorEvent && journeyState.errorPosition && journeyState.status !== 'complete')
-  });
-
-  // Determine which event to show on marker (non-error travel events)
-  const currentEvent = lastEvent?.type !== 'complete' && lastEvent?.type !== 'validation_failed' ? lastEvent : null;
 
   return (
     <g>
@@ -716,60 +525,26 @@ function AnimatedPaymentJourney({ from, to, events, isStreaming, onFirstLegCompl
             </text>
           </g>
           
-          {/* Main badge - shows error, agent progress, or success */}
-          {journeyState.status === 'resolved' ? (
-            // Success badge when resolved
-            <EventBadge
-              event={{
-                type: 'agent_complete',
-                field: errorEvent?.field,
-                message: 'Issue resolved successfully'
-              }}
+          {/* Status pill - clean minimal indicator */}
+          <StatusPill
+            status={
+              journeyState.status === 'resolved' ? 'resolved' :
+              journeyState.status === 'agent_working' ? 'resolving' :
+              'error'
+            }
+            x={errorX}
+            y={errorY}
+            isActive={true}
+          />
+
+          {/* Error card - shown for validation errors and during resolution */}
+          {(journeyState.status === 'error_awaiting_healing' || journeyState.status === 'agent_working') && errorEvent && (
+            <ErrorCard
+              event={errorEvent}
               x={errorX}
               y={errorY}
               isActive={true}
-              showHealingButton={false}
-              mapWidth={800}
-              mapHeight={900}
             />
-          ) : (
-            // Error badge - shows validation error (stable)
-            errorEvent && (
-              <EventBadge
-                event={errorEvent}
-                x={errorX}
-                y={errorY}
-                isActive={true}
-                showHealingButton={journeyState.status === 'error_awaiting_healing'}
-                onHealingStart={handleStartHealing}
-                mapWidth={800}
-                mapHeight={900}
-              />
-            )
-          )}
-          
-          {/* Agent progress badge - shows above main badge during healing */}
-          {journeyState.status === 'agent_working' && currentAgentEvent && (
-            <g 
-              key={`agent-badge-${currentAgentEvent.type}-${agentEvents.length}`}
-              style={{
-                opacity: 1,
-                animation: 'slideInFromTop 0.4s ease-out',
-                transition: 'all 0.4s ease'
-              }}>
-              <EventBadge
-                event={currentAgentEvent}
-                x={errorX}
-                y={errorY - 180}
-                isActive={true}
-                showHealingButton={false}
-                mapWidth={800}
-                mapHeight={900}
-                disableSmartPosition={true}
-                markerX={errorX}
-                markerY={errorY}
-              />
-            </g>
           )}
         </g>
       )}
@@ -777,7 +552,7 @@ function AnimatedPaymentJourney({ from, to, events, isStreaming, onFirstLegCompl
       {/* Traveling payment marker */}
       {journeyState.progress > 0 && journeyState.status !== 'complete' && journeyState.status !== 'error_awaiting_healing' && journeyState.status !== 'agent_working' && (
         <g style={{
-          opacity: journeyState.status === 'resolved' ? 1 : 1,
+          opacity: 1,
           transition: 'opacity 0.3s ease-in',
           animation: journeyState.status === 'resolved' ? 'fadeIn 0.5s ease-in' : 'none'
         }}>
@@ -807,19 +582,18 @@ function AnimatedPaymentJourney({ from, to, events, isStreaming, onFirstLegCompl
             strokeWidth={2}
             style={{ transition: 'fill 0.5s ease' }}
           />
-          {/* Current event badge - follows marker */}
-          {currentEvent && currentEvent.type !== 'validation_failed' && journeyState.status !== 'resolved' && (
-            <EventBadge
-              event={currentEvent}
+          {/* Status pill - follows marker during travel */}
+          {journeyState.status === 'traveling' && (
+            <StatusPill
+              status="processing"
               x={markerX}
               y={markerY}
               isActive={true}
-              mapWidth={800}
-              mapHeight={900}
             />
           )}
         </g>
       )}
+
     </g>
   );
 }
@@ -1034,16 +808,24 @@ export default function GeographicMapPanel({
   const [selectedTabIndex, setSelectedTabIndex] = useState(0);
   const [firstLegAnimationComplete, setFirstLegAnimationComplete] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const [isJourneyComplete, setIsJourneyComplete] = useState(false);
 
   // Handle SSR hydration - only render Tabs on client
   React.useEffect(() => {
     setIsMounted(true);
   }, []);
 
-  // Reset first leg complete state when scenario changes or streaming starts fresh
+  // Track journey completion based on events
+  React.useEffect(() => {
+    const hasCompleteEvent = events.some(e => e.type === 'complete');
+    setIsJourneyComplete(hasCompleteEvent);
+  }, [events]);
+
+  // Reset states when scenario changes or streaming starts fresh
   React.useEffect(() => {
     if (!isStreaming && events.length === 0) {
       setFirstLegAnimationComplete(false);
+      setIsJourneyComplete(false);
     }
   }, [isStreaming, events.length]);
 
@@ -1228,31 +1010,10 @@ export default function GeographicMapPanel({
             {/* Source Marker */}
             {scenario?.sourceCountry?.coords && (
               <Marker coordinates={scenario.sourceCountry.coords}>
-                <g transform="translate(-12, -24)">
-                  {/* Pin Shape */}
-                  <path
-                    d="M12 0C7.03 0 3 4.03 3 9c0 5.25 9 15 9 15s9-9.75 9-15c0-4.97-4.03-9-9-9z"
-                    fill="#00A35C"
-                    stroke="white"
-                    strokeWidth="1.5"
-                  />
-                  {/* Flag Emoji */}
-                  <text
-                    textAnchor="middle"
-                    x={12}
-                    y={11}
-                    style={{
-                      fontSize: '10px',
-                      pointerEvents: 'none'
-                    }}
-                  >
-                    {scenario.sourceCountry.flag}
-                  </text>
-                </g>
                 {/* City Label */}
                 <text
                   textAnchor="middle"
-                  y={-28}
+                  y={-20}
                   style={{
                     fontSize: '11px',
                     fill: '#1C2D38',
@@ -1262,37 +1023,32 @@ export default function GeographicMapPanel({
                 >
                   {scenario.sourceCountry.city}
                 </text>
+                {/* Outer pulse ring */}
+                <circle
+                  r={12}
+                  fill="none"
+                  stroke="#00A35C"
+                  strokeWidth={2}
+                  opacity={0.4}
+                  style={{ animation: 'markerPulse 2s ease-out infinite' }}
+                />
+                {/* Main dot */}
+                <circle
+                  r={8}
+                  fill="#00A35C"
+                  stroke="white"
+                  strokeWidth={2}
+                />
               </Marker>
             )}
 
             {/* Target Marker */}
             {scenario?.targetCountry?.coords && (
               <Marker coordinates={scenario.targetCountry.coords}>
-                <g transform="translate(-12, -24)">
-                  {/* Pin Shape */}
-                  <path
-                    d="M12 0C7.03 0 3 4.03 3 9c0 5.25 9 15 9 15s9-9.75 9-15c0-4.97-4.03-9-9-9z"
-                    fill={scenario?.finalCountry ? '#FFC010' : '#0B61A4'}
-                    stroke="white"
-                    strokeWidth="1.5"
-                  />
-                  {/* Flag Emoji */}
-                  <text
-                    textAnchor="middle"
-                    x={12}
-                    y={11}
-                    style={{
-                      fontSize: '10px',
-                      pointerEvents: 'none'
-                    }}
-                  >
-                    {scenario.targetCountry.flag}
-                  </text>
-                </g>
                 {/* City Label */}
                 <text
                   textAnchor="middle"
-                  y={-28}
+                  y={-20}
                   style={{
                     fontSize: '11px',
                     fill: '#1C2D38',
@@ -1302,6 +1058,48 @@ export default function GeographicMapPanel({
                 >
                   {scenario.targetCountry.city}
                 </text>
+                {/* Outer pulse ring */}
+                <circle
+                  r={12}
+                  fill="none"
+                  stroke={
+                    // For crypto scenarios with finalCountry, target is intermediate - show green when complete but no checkmark
+                    // For regular scenarios, target is final destination - show green with checkmark
+                    (isJourneyComplete && !scenario?.finalCountry) ? '#00A35C' :
+                    (scenario?.finalCountry ? '#FFC010' : '#0B61A4')
+                  }
+                  strokeWidth={2}
+                  opacity={0.4}
+                  style={{
+                    animation: (isJourneyComplete && !scenario?.finalCountry)
+                      ? 'successPulse 0.8s ease-out'
+                      : 'markerPulse 2s ease-out infinite 0.5s'
+                  }}
+                />
+                {/* Main dot */}
+                <circle
+                  r={8}
+                  fill={
+                    (isJourneyComplete && !scenario?.finalCountry) ? '#00A35C' :
+                    (scenario?.finalCountry ? '#FFC010' : '#0B61A4')
+                  }
+                  stroke="white"
+                  strokeWidth={2}
+                  style={{ transition: 'fill 0.3s ease' }}
+                />
+                {/* Checkmark when complete - only for non-crypto scenarios (no finalCountry) */}
+                {isJourneyComplete && !scenario?.finalCountry && (
+                  <text
+                    textAnchor="middle"
+                    dominantBaseline="central"
+                    fontSize="10"
+                    fontWeight="bold"
+                    fill="white"
+                    style={{ pointerEvents: 'none' }}
+                  >
+                    ✓
+                  </text>
+                )}
               </Marker>
             )}
 
@@ -1319,10 +1117,10 @@ export default function GeographicMapPanel({
                 />
                 {/* Final Destination Marker with pop animation */}
                 <Marker coordinates={scenario.finalCountry.coords}>
-                  {/* City Label - above pin */}
+                  {/* City Label */}
                   <text
                     textAnchor="middle"
-                    y={-30}
+                    y={-20}
                     style={{
                       fontSize: '11px',
                       fill: '#1C2D38',
@@ -1333,48 +1131,60 @@ export default function GeographicMapPanel({
                   >
                     {scenario.finalCountry.city}
                   </text>
-                  {/* Pin - outer g for positioning, inner g for animation */}
-                  <g transform="translate(-12, -24)">
-                    <g style={{
-                      transformOrigin: '12px 12px',
-                      animation: 'popIn 0.5s ease-out forwards'
-                    }}>
-                      {/* Pin Shape - Purple for crypto destination */}
-                      <path
-                        d="M12 0C7.03 0 3 4.03 3 9c0 5.25 9 15 9 15s9-9.75 9-15c0-4.97-4.03-9-9-9z"
-                        fill="#7C3AED"
-                        stroke="white"
-                        strokeWidth="1.5"
-                      />
-                      {/* Flag Emoji */}
+                  {/* Animated entrance group */}
+                  <g style={{ animation: 'popIn 0.5s ease-out forwards' }}>
+                    {/* Outer pulse ring */}
+                    <circle
+                      r={12}
+                      fill="none"
+                      stroke={isJourneyComplete ? '#00A35C' : '#7C3AED'}
+                      strokeWidth={2}
+                      opacity={0.4}
+                      style={{
+                        animation: isJourneyComplete
+                          ? 'successPulse 0.8s ease-out'
+                          : 'markerPulse 2s ease-out infinite 1s'
+                      }}
+                    />
+                    {/* Main dot - Green when complete, Purple for crypto in progress */}
+                    <circle
+                      r={8}
+                      fill={isJourneyComplete ? '#00A35C' : '#7C3AED'}
+                      stroke="white"
+                      strokeWidth={2}
+                      style={{ transition: 'fill 0.3s ease' }}
+                    />
+                    {/* Checkmark when complete */}
+                    {isJourneyComplete && (
                       <text
                         textAnchor="middle"
-                        x={12}
-                        y={11}
-                        style={{
-                          fontSize: '10px',
-                          pointerEvents: 'none'
-                        }}
+                        dominantBaseline="central"
+                        fontSize="10"
+                        fontWeight="bold"
+                        fill="white"
+                        style={{ pointerEvents: 'none' }}
                       >
-                        {scenario.finalCountry.flag}
+                        ✓
                       </text>
-                    </g>
+                    )}
                   </g>
-                  {/* Crypto Badge - below pin */}
-                  <text
-                    textAnchor="middle"
-                    y={8}
-                    style={{
-                      fontSize: '8px',
-                      fill: '#7C3AED',
-                      fontWeight: '700',
-                      pointerEvents: 'none',
-                      animation: 'fadeIn 0.5s ease-out 0.2s forwards',
-                      opacity: 0
-                    }}
-                  >
-                    SOLANA
-                  </text>
+                  {/* Crypto Badge - below marker (hide when complete) */}
+                  {!isJourneyComplete && (
+                    <text
+                      textAnchor="middle"
+                      y={22}
+                      style={{
+                        fontSize: '8px',
+                        fill: '#7C3AED',
+                        fontWeight: '700',
+                        pointerEvents: 'none',
+                        animation: 'fadeIn 0.5s ease-out 0.2s forwards',
+                        opacity: 0
+                      }}
+                    >
+                      SOLANA
+                    </text>
+                  )}
                 </Marker>
               </>
             )}
@@ -1453,6 +1263,17 @@ export default function GeographicMapPanel({
           50% {
             opacity: 0.6;
             stroke-width: 3.5;
+          }
+        }
+
+        @keyframes markerPulse {
+          0% {
+            r: 12;
+            opacity: 0.4;
+          }
+          100% {
+            r: 20;
+            opacity: 0;
           }
         }
 
@@ -1546,6 +1367,28 @@ export default function GeographicMapPanel({
           100% {
             transform: scale(1) translateY(0);
             opacity: 1;
+          }
+        }
+
+        @keyframes pillFadeIn {
+          0% {
+            opacity: 0;
+            transform: translateY(8px);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes cardSlideIn {
+          0% {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0);
           }
         }
       `}</style>
