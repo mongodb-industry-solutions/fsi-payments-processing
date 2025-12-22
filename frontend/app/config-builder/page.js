@@ -145,6 +145,328 @@ const FORMAT_INFO = {
   }
 };
 
+// LLM Prompt Details Component
+function LLMPromptDetails({ promptInfo }) {
+  const [activePromptTab, setActivePromptTab] = useState(0);
+
+  if (!promptInfo) return null;
+
+  return (
+    <div className="prompt-details">
+      <style jsx>{`
+        .prompt-details {
+          font-size: 13px;
+        }
+        .prompt-meta {
+          display: flex;
+          gap: 16px;
+          margin-bottom: 16px;
+          padding: 12px;
+          background: var(--gray-light3);
+          border-radius: 6px;
+          flex-wrap: wrap;
+        }
+        .prompt-meta-item {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+        .prompt-meta-label {
+          font-size: 11px;
+          color: var(--gray-base);
+          text-transform: uppercase;
+        }
+        .prompt-meta-value {
+          font-weight: 500;
+          font-family: monospace;
+          font-size: 12px;
+        }
+        .construction-steps {
+          margin-bottom: 16px;
+        }
+        .step-item {
+          display: flex;
+          gap: 12px;
+          padding: 10px 0;
+          border-bottom: 1px solid var(--gray-light2);
+        }
+        .step-item:last-child {
+          border-bottom: none;
+        }
+        .step-number {
+          width: 24px;
+          height: 24px;
+          background: #E1F7FF;
+          color: #0B61A4;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 12px;
+          font-weight: 600;
+          flex-shrink: 0;
+        }
+        .step-content {
+          flex: 1;
+        }
+        .step-name {
+          font-weight: 600;
+          margin-bottom: 2px;
+        }
+        .step-desc {
+          color: var(--gray-dark1);
+          font-size: 12px;
+        }
+        .fields-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 16px;
+          margin-bottom: 16px;
+        }
+        .fields-section {
+          background: var(--gray-light3);
+          border-radius: 6px;
+          padding: 12px;
+        }
+        .fields-section-title {
+          font-size: 12px;
+          font-weight: 600;
+          margin-bottom: 8px;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+        .field-list {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+          max-height: 150px;
+          overflow-y: auto;
+        }
+        .field-item {
+          font-size: 11px;
+          padding: 4px 8px;
+          background: white;
+          border-radius: 4px;
+          font-family: monospace;
+        }
+        .field-item.blocked {
+          background: #FFEBE6;
+          color: #A6260D;
+          text-decoration: line-through;
+        }
+        .field-item.available {
+          background: #E3FCF7;
+          color: #00684A;
+        }
+        .prompt-tabs {
+          display: flex;
+          gap: 8px;
+          margin-bottom: 12px;
+        }
+        .prompt-tab {
+          padding: 6px 12px;
+          font-size: 12px;
+          border: 1px solid var(--gray-light2);
+          border-radius: 4px;
+          background: white;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+        .prompt-tab:hover {
+          border-color: var(--blue-base);
+        }
+        .prompt-tab.active {
+          background: #E1F7FF;
+          border-color: #0B61A4;
+          color: #0B61A4;
+        }
+        .prompt-code {
+          background: var(--gray-dark4);
+          border-radius: 6px;
+          max-height: 300px;
+          overflow: auto;
+          padding: 12px;
+          font-family: monospace;
+          font-size: 11px;
+          white-space: pre-wrap;
+          word-break: break-word;
+          color: #E0E0E0;
+        }
+        .section-divider {
+          font-weight: 600;
+          margin: 16px 0 8px;
+          font-size: 12px;
+          color: var(--gray-dark2);
+        }
+      `}</style>
+
+      {/* Meta info */}
+      <div className="prompt-meta">
+        <div className="prompt-meta-item">
+          <span className="prompt-meta-label">Model</span>
+          <span className="prompt-meta-value">{promptInfo.model_id?.split('.').pop() || 'claude-3-haiku'}</span>
+        </div>
+        <div className="prompt-meta-item">
+          <span className="prompt-meta-label">Source</span>
+          <span className="prompt-meta-value">{promptInfo.source_format}</span>
+        </div>
+        <div className="prompt-meta-item">
+          <span className="prompt-meta-label">Target</span>
+          <span className="prompt-meta-value">{promptInfo.target_format}</span>
+        </div>
+        <div className="prompt-meta-item">
+          <span className="prompt-meta-label">Unknown Fields</span>
+          <span className="prompt-meta-value">{promptInfo.unknown_fields?.length || 0}</span>
+        </div>
+      </div>
+
+      {/* Construction Steps */}
+      <div className="section-divider">How the Prompt is Constructed</div>
+      <div className="construction-steps">
+        {promptInfo.construction_steps?.map((step) => (
+          <div key={step.step} className="step-item">
+            <span className="step-number">{step.step}</span>
+            <div className="step-content">
+              <div className="step-name">{step.name}</div>
+              <div className="step-desc">{step.description}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Format Specification Source */}
+      {promptInfo.format_specification && (
+        <>
+          <div className="section-divider">Format Specification Source (MongoDB)</div>
+          <div style={{
+            background: '#F5F6F7',
+            border: '1px solid #E8EDEB',
+            borderRadius: '6px',
+            padding: '12px',
+            marginBottom: '16px',
+            fontFamily: 'monospace',
+            fontSize: '12px'
+          }}>
+            {/* Header row */}
+            <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap', marginBottom: '12px' }}>
+              <div>
+                <span style={{ color: '#5C6C75' }}>Collection: </span>
+                <span style={{ color: '#00684A', fontWeight: 500 }}>{promptInfo.format_specification.collection}</span>
+              </div>
+              <div>
+                <span style={{ color: '#5C6C75' }}>Document ID: </span>
+                <span style={{ color: '#0B61A4', fontWeight: 500 }}>{promptInfo.format_specification.document_id}</span>
+              </div>
+              <div>
+                <span style={{ color: '#5C6C75' }}>Format Type: </span>
+                <span style={{ fontWeight: 500 }}>{promptInfo.format_specification.format_type}</span>
+              </div>
+              <div>
+                <span style={{ color: '#5C6C75' }}>Total Fields: </span>
+                <span style={{ fontWeight: 500 }}>{promptInfo.format_specification.total_fields}</span>
+              </div>
+            </div>
+            {promptInfo.format_specification.description && (
+              <div style={{ marginBottom: '12px', color: '#5C6C75', fontStyle: 'italic' }}>
+                {promptInfo.format_specification.description}
+              </div>
+            )}
+            {/* Full document JSON */}
+            <div style={{
+              background: '#1E2022',
+              borderRadius: '4px',
+              padding: '10px',
+              maxHeight: '200px',
+              overflow: 'auto',
+              fontSize: '11px',
+              color: '#E0E0E0',
+              whiteSpace: 'pre-wrap'
+            }}>
+              <div style={{ color: '#888', marginBottom: '4px' }}>// Document in collection</div>
+              {JSON.stringify({
+                _id: promptInfo.format_specification.document_id,
+                format_type: promptInfo.format_specification.format_type,
+                description: promptInfo.format_specification.description,
+                supported_fields: promptInfo.format_specification.supported_fields
+              }, null, 2)}
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Target Fields Grid */}
+      <div className="section-divider">Target Field Constraints</div>
+      <div className="fields-grid">
+        <div className="fields-section">
+          <div className="fields-section-title">
+            <Badge variant="green" style={{ fontSize: '10px' }}>Available</Badge>
+            ({promptInfo.available_target_fields?.length || 0})
+          </div>
+          <div className="field-list">
+            {promptInfo.available_target_fields?.slice(0, 15).map((f) => (
+              <div key={f.name} className="field-item available" title={f.description}>
+                {f.name}
+              </div>
+            ))}
+            {promptInfo.available_target_fields?.length > 15 && (
+              <div style={{ fontSize: '11px', color: 'var(--gray-base)', padding: '4px' }}>
+                +{promptInfo.available_target_fields.length - 15} more...
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="fields-section">
+          <div className="fields-section-title">
+            <Badge variant="red" style={{ fontSize: '10px' }}>Blocked</Badge>
+            Already Mapped ({promptInfo.blocked_target_fields?.length || 0})
+          </div>
+          <div className="field-list">
+            {promptInfo.blocked_target_fields?.length > 0 ? (
+              promptInfo.blocked_target_fields.map((f) => (
+                <div key={f.name} className="field-item blocked" title={f.description}>
+                  {f.name}
+                </div>
+              ))
+            ) : (
+              <div style={{ color: 'var(--gray-base)', fontSize: '11px', padding: '4px' }}>None</div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Prompt/Response Tabs */}
+      <div className="section-divider">Raw Prompt & Response</div>
+      <div className="prompt-tabs">
+        <button
+          className={`prompt-tab ${activePromptTab === 0 ? 'active' : ''}`}
+          onClick={() => setActivePromptTab(0)}
+        >
+          Full Prompt Sent
+        </button>
+        <button
+          className={`prompt-tab ${activePromptTab === 1 ? 'active' : ''}`}
+          onClick={() => setActivePromptTab(1)}
+        >
+          LLM Response
+        </button>
+      </div>
+
+      <div className="prompt-code">
+        {activePromptTab === 0
+          ? promptInfo.full_prompt || 'No prompt available'
+          : promptInfo.llm_response || 'No response available'}
+      </div>
+
+      {promptInfo.error && (
+        <Banner variant="warning" style={{ marginTop: '12px' }}>
+          LLM Error: {promptInfo.error}
+        </Banner>
+      )}
+    </div>
+  );
+}
+
 export default function ConfigBuilderPage() {
   // State
   const [configs, setConfigs] = useState([]);
@@ -165,6 +487,7 @@ export default function ConfigBuilderPage() {
   const [showCanonicalJson, setShowCanonicalJson] = useState(false);
   const [schemaConfigId, setSchemaConfigId] = useState(''); // For Schema Reference tab
   const [mounted, setMounted] = useState(false); // For hydration fix
+  const [showPromptDetails, setShowPromptDetails] = useState(false); // For LLM prompt details
 
   // Fix hydration mismatch - only render Tabs after mount
   useEffect(() => {
@@ -1233,6 +1556,32 @@ export default function ConfigBuilderPage() {
                       )}
                     </div>
                   ))}
+                </div>
+              )}
+
+              {/* LLM Prompt Construction Details */}
+              {generatedConfig.llm_prompt_info && (
+                <div className="expandable-section" style={{ marginTop: '16px' }}>
+                  <div
+                    className="expandable-header"
+                    onClick={() => setShowPromptDetails(!showPromptDetails)}
+                  >
+                    <span className="expandable-title">
+                      <Badge variant="blue">LLM</Badge>
+                      Prompt Construction Details
+                    </span>
+                    <svg width="12" height="12" viewBox="0 0 12 12" style={{
+                      transform: showPromptDetails ? 'rotate(180deg)' : 'none',
+                      transition: 'transform 0.2s'
+                    }}>
+                      <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" fill="none"/>
+                    </svg>
+                  </div>
+                  {showPromptDetails && (
+                    <div className="expandable-content">
+                      <LLMPromptDetails promptInfo={generatedConfig.llm_prompt_info} />
+                    </div>
+                  )}
                 </div>
               )}
 

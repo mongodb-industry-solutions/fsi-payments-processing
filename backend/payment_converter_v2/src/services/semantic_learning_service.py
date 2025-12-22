@@ -86,6 +86,7 @@ class SemanticLearningService:
 
         # 4. Get LLM suggestions for unknown fields (display-only, NOT auto-applied)
         suggestions = []
+        prompt_info = None
         if unknown and self.llm_mapper:
             try:
                 # Build unknown field info with values
@@ -103,13 +104,15 @@ class SemanticLearningService:
                     elif to_field:
                         already_mapped_targets.append(to_field)
 
-                # Get LLM suggestions (these are hints, not auto-applied)
-                suggestions = await self.llm_mapper.suggest_mappings(
+                # Get LLM suggestions (returns dict with suggestions and prompt_info)
+                llm_result = await self.llm_mapper.suggest_mappings(
                     unknown_with_values,
                     target_format,
                     source_format,
                     already_mapped_targets
                 )
+                suggestions = llm_result.get("suggestions", [])
+                prompt_info = llm_result.get("prompt_info")
                 logger.info(f"LLM provided {len(suggestions)} suggestions for unknown fields")
             except Exception as e:
                 logger.warning(f"LLM suggestion failed: {e}")
@@ -125,7 +128,7 @@ class SemanticLearningService:
             target_format_spec
         )
 
-        # 6. Calculate confidence
+        # 7. Calculate confidence
         confidence = len(matched) / len(detected_fields) if detected_fields else 0
 
         return {
@@ -136,7 +139,8 @@ class SemanticLearningService:
             "matched_fields": list(matched.keys()),
             "unknown_fields": unknown,
             "learned_from": learned_from,
-            "suggestions": suggestions  # Display-only LLM suggestions for unknown fields
+            "suggestions": suggestions,  # Display-only LLM suggestions for unknown fields
+            "llm_prompt_info": prompt_info  # Prompt construction details for frontend
         }
 
     async def _build_combined_lookup(self) -> None:

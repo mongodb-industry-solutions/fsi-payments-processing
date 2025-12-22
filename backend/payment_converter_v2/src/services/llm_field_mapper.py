@@ -40,7 +40,7 @@ class LLMFieldMapper:
         target_format: str,
         source_format: str,
         already_mapped_targets: Optional[List[str]] = None
-    ) -> List[Dict[str, Any]]:
+    ) -> Dict[str, Any]:
         """
         Suggest mappings for unknown fields (display-only).
 
@@ -52,42 +52,40 @@ class LLMFieldMapper:
             already_mapped_targets: List of target field names already used by matched fields
 
         Returns:
-            List of suggestions for user to review:
-            [
-                {
-                    "field_id": "13C",
-                    "field_value": "/CLSTIME/1800+0100",
-                    "suggested_mapping": {
-                        "from": "13C",
-                        "to": ["settlement_time"]
-                    },
-                    "target_field_info": {
-                        "name": "settlement_time",
-                        "path": "...",
-                        "description": "..."
-                    },
-                    "reasoning": "..."
+            Dict with 'suggestions' list and 'prompt_info' dict:
+            {
+                "suggestions": [...],
+                "prompt_info": {
+                    "full_prompt": "...",
+                    "llm_response": "...",
+                    "construction_steps": [...],
+                    ...
                 }
-            ]
+            }
         """
         if not unknown_fields:
-            return []
+            return {"suggestions": [], "prompt_info": None}
 
         # Get target format specification
         target_spec = await self.db.get_format_specification(target_format)
         if not target_spec:
             logger.warning(f"No format spec for {target_format}, cannot suggest mappings")
-            return []
+            return {"suggestions": [], "prompt_info": None}
 
         supported_fields = target_spec.get("supported_fields", {})
         if not supported_fields:
             logger.warning(f"Format spec {target_format} has no supported_fields")
-            return []
+            return {"suggestions": [], "prompt_info": None}
 
-        # Build and call LLM
+        # Build prompt and prompt info for frontend display
         prompt = self._build_prompt(
             unknown_fields, supported_fields, source_format, target_format,
             already_mapped_targets or []
+        )
+
+        prompt_info = self._build_prompt_info(
+            unknown_fields, supported_fields, source_format, target_format,
+            already_mapped_targets or [], target_spec
         )
 
         try:
@@ -105,11 +103,26 @@ class LLMFieldMapper:
             suggestions = self._parse_suggestions(response_text, unknown_fields, supported_fields)
 
             logger.info(f"LLM suggested {len(suggestions)} mappings for {len(unknown_fields)} unknown fields")
-            return suggestions
+
+            return {
+                "suggestions": suggestions,
+                "prompt_info": {
+                    **prompt_info,
+                    "full_prompt": prompt,
+                    "llm_response": response_text
+                }
+            }
 
         except Exception as e:
             logger.error(f"Error getting LLM suggestions: {e}")
-            return []
+            return {
+                "suggestions": [],
+                "prompt_info": {
+                    **prompt_info,
+                    "full_prompt": prompt,
+                    "error": str(e)
+                }
+            }
 
     def _build_prompt(
         self,
@@ -176,6 +189,84 @@ Example response:
 ]
 
 JSON response:"""
+
+    def _build_prompt_info(
+        self,
+        unknown_fields: List[Dict[str, str]],
+        supported_fields: Dict[str, Dict],
+        source_format: str,
+        target_format: str,
+        already_mapped_targets: List[str],
+        target_spec: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Build structured info about prompt construction for frontend display.
+
+        Returns metadata about how the prompt is constructed, including:
+        - Format specification from MongoDB
+        - Available vs blocked target fields
+        - Construction steps breakdown
+        - Model and format info
+        """
+        # Categorize target fields
+        available_fields = []
+        blocked_fields = []
+
+        for field_name, info in supported_fields.items():
+            field_info = {
+                "name": field_name,
+                "description": info.get("description", ""),
+                "path": info.get("path", "")
+            }
+            if field_name in already_mapped_targets:
+                blocked_fields.append(field_info)
+            else:
+                available_fields.append(field_info)
+
+        return {
+            "source_format": source_format,
+            "target_format": target_format,
+            "unknown_fields": unknown_fields,
+            "available_target_fields": available_fields,
+            "blocked_target_fields": blocked_fields,
+            "model_id": self.MODEL_ID,
+            # Format specification document from MongoDB
+            "format_specification": {
+                "collection": "format_specifications",
+                "document_id": target_spec.get("_id"),
+                "format_type": target_spec.get("format_type"),
+                "description": target_spec.get("description"),
+                "total_fields": len(supported_fields),
+                "supported_fields": supported_fields  # Full document content
+            },
+            "construction_steps": [
+                {
+                    "step": 1,
+                    "name": "Context Setup",
+                    "description": f"Set role as payment message expert, define source ({source_format}) and target ({target_format}) formats"
+                },
+                {
+                    "step": 2,
+                    "name": "Unknown Fields",
+                    "description": f"Include {len(unknown_fields)} unknown field(s) with their sample values"
+                },
+                {
+                    "step": 3,
+                    "name": "Target Constraints",
+                    "description": f"Load {len(supported_fields)} fields from format_specifications.{target_spec.get('_id')}, mark {len(blocked_fields)} as already mapped"
+                },
+                {
+                    "step": 4,
+                    "name": "Analysis Instructions",
+                    "description": "Request analysis of field ID pattern, value structure, and semantic meaning"
+                },
+                {
+                    "step": 5,
+                    "name": "Output Format",
+                    "description": "Request JSON array with field_id, suggested_to, and reasoning"
+                }
+            ]
+        }
 
     def _parse_suggestions(
         self,

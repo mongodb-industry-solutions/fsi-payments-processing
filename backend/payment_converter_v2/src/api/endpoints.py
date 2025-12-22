@@ -185,6 +185,7 @@ class AutoConfigureResponse(BaseModel):
     unknown_fields: List[str] = Field(..., description="Fields not found in any existing config")
     learned_from: List[str] = Field(..., description="Config IDs used for learning")
     suggestions: List[Dict[str, Any]] = Field(default=[], description="LLM-suggested mappings for unknown fields (display-only)")
+    llm_prompt_info: Optional[Dict[str, Any]] = Field(default=None, description="LLM prompt construction details for frontend display")
 
 
 class ApproveConfigResponse(BaseModel):
@@ -1156,7 +1157,8 @@ async def auto_configure(request: AutoConfigureRequest) -> AutoConfigureResponse
             matched_fields=result["matched_fields"],
             unknown_fields=result["unknown_fields"],
             learned_from=result["learned_from"],
-            suggestions=result.get("suggestions", [])
+            suggestions=result.get("suggestions", []),
+            llm_prompt_info=result.get("llm_prompt_info")
         )
 
     except ValueError as e:
