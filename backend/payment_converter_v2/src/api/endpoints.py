@@ -1105,6 +1105,25 @@ async def list_all_configs():
         )
 
 
+@router.get("/format-specifications", status_code=status.HTTP_200_OK)
+async def list_format_specifications():
+    """
+    List all target format specifications.
+
+    Returns format specs from MongoDB for the Config Builder target format dropdown.
+    Each spec includes _id (format name), description, format_type, and supported_fields.
+    """
+    try:
+        specs = await mongodb_service.list_format_specifications()
+        return {"specifications": specs}
+    except Exception as e:
+        logger.error(f"Failed to list format specifications: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to list format specifications: {str(e)}"
+        )
+
+
 # ============================================================================
 # Auto-Configure Endpoints (Semantic Learning)
 # ============================================================================

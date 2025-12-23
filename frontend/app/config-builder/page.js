@@ -488,6 +488,7 @@ export default function ConfigBuilderPage() {
   const [schemaConfigId, setSchemaConfigId] = useState(''); // For Schema Reference tab
   const [mounted, setMounted] = useState(false); // For hydration fix
   const [showPromptDetails, setShowPromptDetails] = useState(false); // For LLM prompt details
+  const [formatSpecs, setFormatSpecs] = useState([]); // Target format specifications from MongoDB
 
   // Fix hydration mismatch - only render Tabs after mount
   useEffect(() => {
@@ -508,9 +509,10 @@ export default function ConfigBuilderPage() {
   const sourceInfo = FORMAT_INFO[schemaSource] || null;
   const targetInfo = FORMAT_INFO[schemaTarget] || null;
 
-  // Load existing configs on mount
+  // Load existing configs and format specs on mount
   useEffect(() => {
     loadConfigs();
+    loadFormatSpecs();
   }, []);
 
   const loadConfigs = async () => {
@@ -528,10 +530,23 @@ export default function ConfigBuilderPage() {
     }
   };
 
-  const handleSampleChange = (key) => {
-    const sample = SAMPLE_MESSAGES[key];
+  const loadFormatSpecs = async () => {
+    try {
+      const response = await fetch(`${API_BASE}/api/v1/format-specifications`);
+      if (response.ok) {
+        const data = await response.json();
+        setFormatSpecs(data.specifications || []);
+      }
+    } catch (err) {
+      console.warn('Could not load format specifications:', err.message);
+    }
+  };
+
+  // Handle source format change - update sample message
+  const handleSourceFormatChange = (value) => {
+    setSourceFormat(value);
+    const sample = SAMPLE_MESSAGES[value];
     if (sample) {
-      setSourceFormat(key);
       setSampleMessage(sample.message);
     }
   };
@@ -1406,56 +1421,89 @@ export default function ConfigBuilderPage() {
                 </div>
 
                 <div className="build-form-card">
-                  {/* Step 1: Select Template */}
+                  {/* Format Selection Row */}
                   <div className="build-step">
                     <div className="build-step-header">
                       <span className="build-step-number">1</span>
-                      <span className="build-step-title">Select Sample Template</span>
+                      <span className="build-step-title">Select Conversion Path</span>
                     </div>
-                    <div className="sample-buttons">
-                      {Object.entries(SAMPLE_MESSAGES).map(([key, val]) => (
-                        <button
-                          key={key}
-                          className={`sample-btn ${sourceFormat === key ? 'active' : ''}`}
-                          onClick={() => handleSampleChange(key)}
+                    <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                      {/* Source Format Dropdown */}
+                      <div style={{ flex: 1, minWidth: '200px' }}>
+                        <label style={{ display: 'block', fontSize: '12px', fontWeight: 500, marginBottom: '6px', color: 'var(--gray-dark2)' }}>
+                          Source Format
+                        </label>
+                        <Select
+                          aria-label="Select source format"
+                          value={sourceFormat}
+                          onChange={handleSourceFormatChange}
+                          allowDeselect={false}
+                          style={{ width: '100%' }}
                         >
-                          {val.label}
-                        </button>
-                      ))}
+                          {Object.entries(SAMPLE_MESSAGES).map(([key, val]) => (
+                            <Option key={key} value={key}>
+                              {key} - {val.label}
+                            </Option>
+                          ))}
+                        </Select>
+                      </div>
+
+                      {/* Arrow */}
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        padding: '0 8px',
+                        color: 'var(--gray-dark1)',
+                        fontSize: '20px',
+                        marginBottom: '8px'
+                      }}>
+                        →
+                      </div>
+
+                      {/* Target Format Dropdown */}
+                      <div style={{ flex: 1, minWidth: '200px' }}>
+                        <label style={{ display: 'block', fontSize: '12px', fontWeight: 500, marginBottom: '6px', color: 'var(--gray-dark2)' }}>
+                          Target Format
+                        </label>
+                        <Select
+                          aria-label="Select target format"
+                          value={targetFormat}
+                          onChange={(value) => setTargetFormat(value)}
+                          allowDeselect={false}
+                          style={{ width: '100%' }}
+                        >
+                          <Option value="JSON">JSON - Canonical JSON (Universal Bridge)</Option>
+                          <Option value="pacs.008">pacs.008 - Customer Credit Transfer</Option>
+                          <Option value="pacs.009">pacs.009 - FI Credit Transfer</Option>
+                          <Option value="cain.001">cain.001 - Card Transaction</Option>
+                          {formatSpecs.filter(s => !['JSON', 'pacs.008', 'pacs.009', 'cain.001'].includes(s._id)).map((spec) => (
+                            <Option key={spec._id} value={spec._id}>
+                              {spec._id} - {spec.description || spec.format_type}
+                            </Option>
+                          ))}
+                        </Select>
+                      </div>
+                    </div>
+
+                    {/* Conversion Preview Badge */}
+                    <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontSize: '12px', color: 'var(--gray-dark1)' }}>Creating config:</span>
+                      <Badge variant="blue">{sourceFormat}</Badge>
+                      <span style={{ color: 'var(--gray-dark1)' }}>→</span>
+                      <Badge variant="green">{targetFormat}</Badge>
                     </div>
                   </div>
 
-                  {/* Step 2: Configure Formats */}
+                  {/* Sample Message */}
                   <div className="build-step">
                     <div className="build-step-header">
                       <span className="build-step-number">2</span>
-                      <span className="build-step-title">Configure Formats</span>
-                    </div>
-                    <div className="form-row">
-                      <div className="form-group" style={{ marginBottom: 0 }}>
-                        <TextInput
-                          label="Source Format"
-                          value={sourceFormat}
-                          onChange={(e) => setSourceFormat(e.target.value)}
-                          placeholder="e.g., MT202"
-                        />
-                      </div>
-                      <div className="form-group" style={{ marginBottom: 0 }}>
-                        <TextInput
-                          label="Target Format"
-                          value={targetFormat}
-                          onChange={(e) => setTargetFormat(e.target.value)}
-                          placeholder="e.g., JSON"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Step 3: Sample Message */}
-                  <div className="build-step">
-                    <div className="build-step-header">
-                      <span className="build-step-number">3</span>
                       <span className="build-step-title">Sample Message</span>
+                      {SAMPLE_MESSAGES[sourceFormat] && (
+                        <Badge variant="lightgray" style={{ marginLeft: 'auto' }}>
+                          {SAMPLE_MESSAGES[sourceFormat].format}
+                        </Badge>
+                      )}
                     </div>
                     <textarea
                       className="message-textarea"
