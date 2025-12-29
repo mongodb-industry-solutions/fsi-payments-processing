@@ -311,7 +311,6 @@ CLOUD INFRASTRUCTURE DEVELOPMENT
       <RmtInf>
         <Ustrd>INVOICE FINTECH-MX-2025-Q1-001 SOFTWARE SERVICES</Ustrd>
         <Ustrd>/CRYPTO/SOL/SETTLEMENT</Ustrd>
-        <Ustrd>/SENDER/FZFmhRpaDf8WDgsvHXfyPCd9t1vR7eBAfh4gzQt9gd3b</Ustrd>
         <Ustrd>/RECEIVER/EJ4KSoUY3fisJQE4NvJWpErTRBKLKyqbaiJDLKFEkTtK</Ustrd>
         <Ustrd>/AMOUNT_SOL/50000</Ustrd>
       </RmtInf>

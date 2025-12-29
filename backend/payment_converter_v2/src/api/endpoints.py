@@ -654,7 +654,7 @@ async def convert_multi_hop_stream(request: MultiHopConversionRequest):
             hop1_json = json.loads(hop1_result['converted_message']) if isinstance(hop1_result['converted_message'], str) else hop1_result['converted_message']
 
             is_crypto_settlement = (
-                hop1_json.get('crypto_sender_wallet') is not None and
+                hop1_json.get('crypto_blockchain') is not None and
                 hop1_json.get('crypto_receiver_wallet') is not None
             )
 
@@ -662,20 +662,20 @@ async def convert_multi_hop_stream(request: MultiHopConversionRequest):
                 # ============================================================
                 # Crypto Settlement Flow - Execute Solana transfer instead of hop2
                 # ============================================================
-                sender_wallet = hop1_json.get('crypto_sender_wallet')
+                blockchain = hop1_json.get('crypto_blockchain')
                 receiver_wallet = hop1_json.get('crypto_receiver_wallet')
                 # Hardcoded demo amount - actual payment value shown in message, this is just for blockchain proof
                 amount_sol = 0.001
 
-                yield f"data: {json.dumps({'type': 'crypto_start', 'detail': 'Initiating Solana blockchain settlement using canonical JSON fields', 'dropdown': {'title': 'Canonical JSON → Blockchain Bridge', 'items': ['Canonical JSON serves as universal payment format', 'Crypto fields extracted: crypto_sender_wallet, crypto_receiver_wallet', 'Solana SDK initialized with devnet RPC endpoint', 'Transaction will be recorded on immutable blockchain ledger']}})}\n\n"
+                yield f"data: {json.dumps({'type': 'crypto_start', 'detail': 'Initiating Solana blockchain settlement using canonical JSON fields', 'dropdown': {'title': 'Canonical JSON → Blockchain Bridge', 'items': ['Canonical JSON serves as universal payment format', f'Blockchain: {blockchain}', 'Receiver wallet extracted from crypto_receiver_wallet field', 'Solana SDK initialized with devnet RPC endpoint', 'Transaction will be recorded on immutable blockchain ledger']}})}\n\n"
 
-                yield f"data: {json.dumps({'type': 'crypto_wallet_extract', 'sender': sender_wallet, 'receiver': receiver_wallet, 'detail': 'Extracted wallet addresses from canonical JSON', 'dropdown': {'title': 'Wallet Extraction Details', 'items': [f'Source field: canonical_json.crypto_sender_wallet', f'Sender: {sender_wallet}', f'Source field: canonical_json.crypto_receiver_wallet', f'Receiver: {receiver_wallet}', 'Wallets validated as valid Solana public keys (Base58)']}})}\n\n"
+                yield f"data: {json.dumps({'type': 'crypto_wallet_extract', 'receiver': receiver_wallet, 'detail': 'Extracted receiver wallet from canonical JSON', 'dropdown': {'title': 'Wallet Extraction Details', 'items': [f'Source field: canonical_json.crypto_receiver_wallet', f'Receiver: {receiver_wallet}', 'Wallet validated as valid Solana public key (Base58)', 'Service wallet will execute transfer on behalf of payer']}})}\n\n"
 
                 # Build transaction
-                yield f"data: {json.dumps({'type': 'crypto_tx_build', 'detail': 'Building Solana transfer instruction', 'dropdown': {'title': 'Transaction Construction', 'items': ['Fetching latest blockhash from Solana RPC', 'Creating SystemProgram.transfer instruction', f'From: {sender_wallet[:16]}...', f'To: {receiver_wallet[:16]}...', f'Amount: {amount_sol} SOL (demo proof-of-settlement)', 'Compiling MessageV0 with transfer instruction']}})}\n\n"
+                yield f"data: {json.dumps({'type': 'crypto_tx_build', 'detail': 'Building Solana transfer instruction', 'dropdown': {'title': 'Transaction Construction', 'items': ['Fetching latest blockhash from Solana RPC', 'Creating SystemProgram.transfer instruction', 'From: Service wallet (custodial)', f'To: {receiver_wallet[:16]}...', f'Amount: {amount_sol} SOL (demo proof-of-settlement)', 'Compiling MessageV0 with transfer instruction']}})}\n\n"
 
                 # Sign transaction
-                yield f"data: {json.dumps({'type': 'crypto_tx_sign', 'detail': 'Signing transaction with sender private key', 'dropdown': {'title': 'Cryptographic Signing', 'items': ['Loading sender keypair from secure storage', 'Creating VersionedTransaction with MessageV0', 'Signing with Ed25519 signature algorithm', 'Transaction signature generated (64 bytes)']}})}\n\n"
+                yield f"data: {json.dumps({'type': 'crypto_tx_sign', 'detail': 'Signing transaction with service wallet', 'dropdown': {'title': 'Cryptographic Signing', 'items': ['Loading service keypair from secure storage', 'Creating VersionedTransaction with MessageV0', 'Signing with Ed25519 signature algorithm', 'Transaction signature generated (64 bytes)']}})}\n\n"
 
                 # Submit transaction
                 yield f"data: {json.dumps({'type': 'crypto_tx_submit', 'detail': 'Broadcasting to Solana devnet', 'dropdown': {'title': 'Network Broadcast', 'items': ['RPC Endpoint: https://api.devnet.solana.com', 'Method: sendRawTransaction', 'Commitment level: confirmed', 'Waiting for validator confirmation...']}})}\n\n"
