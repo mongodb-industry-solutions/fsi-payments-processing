@@ -19,7 +19,7 @@ export default function Home() {
     <div className={styles.container}>
       <div className={styles.hero}>
         <H1 className={styles.title}>
-          Self-Improving Payment Format Converter
+          Agentic Payment Converter
         </H1>
         <Subtitle className={styles.subtitle}>
           Document-driven. Intelligent learning. Universal compatibility.

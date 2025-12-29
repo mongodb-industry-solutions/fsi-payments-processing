@@ -16,8 +16,10 @@ backend/converter_service/schemas/
 backend/converter_service/scripts
 backend/converter_service/tests
 backend/plans
-
+content/
 frontend/plan
+
+.*-mcp
 
 # Environments
 backend/converter_service_copy
@@ -427,3 +429,5 @@ backend/payment_agent/temp_india_payload.json
 backend/payment_agent/temp_japan_payload.json
 logs/
 security_check.sh
+ChatGPT - Agentic AI in pacs.008.pdf
+ChatGPT - Agentic AI in pacs.008-2.pdf

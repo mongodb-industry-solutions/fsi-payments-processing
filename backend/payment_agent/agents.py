@@ -92,9 +92,10 @@ AVAILABLE AGENTS:
 1. Resolution Agent - Use when you need to DETERMINE the correct value for a field
    - Tasks: company name lookup, transliteration, IFSC code lookup, data enrichment
    - Has tools (in priority order):
-     * lookup_company_katakana: Fast DB lookup for known company Katakana names
-     * transliterate_text: AI-based transliteration (fallback if DB lookup fails)
-     * lookup_ifsc: Look up IFSC codes for Indian banks
+     * lookup_company_katakana: Fast DB lookup for known company Katakana names (exact match)
+     * lookup_ifsc: Look up IFSC codes for Indian banks (exact match)
+     * atlas_search: Fuzzy search with typo tolerance (fallback if exact lookup fails)
+     * transliterate_text: AI-based transliteration (last resort)
    - Use for: "japan_transliteration", "india_ifsc", similar research tasks
 
 2. Execution Agent - Use when you need to APPLY a known value to the database
@@ -106,6 +107,8 @@ TASK TYPES YOU'LL SEE:
 - "japan_transliteration": Need Japanese katakana for company/person names → Route to RESOLUTION
   (Resolution Agent will first try lookup_company_katakana, then fallback to transliterate_text)
 - "india_ifsc": Need to look up IFSC code for Indian bank → Route to RESOLUTION
+- "name_verification": Need to match trading/informal name to official legal name → Route to RESOLUTION
+  (Resolution Agent will use atlas_search on registered_entities collection)
 - "direct_update": Need to apply a known value → Route to EXECUTION
 
 DECISION PROCESS:
@@ -239,54 +242,78 @@ def create_resolution_agent():
     Returns:
         ReAct agent that can resolve payment issues
     """
-    from tools import transliterate_text, lookup_company_katakana, lookup_ifsc
+    from tools import transliterate_text, lookup_company_katakana, lookup_ifsc, atlas_search
 
     # System prompt that defines the Resolution Agent's role
     system_prompt = """You are a Resolution Agent for a payment processing system.
 
 Your role is to analyze payment issues and DETERMINE the correct values using your tools.
 
-AVAILABLE TOOLS (use in this priority order):
-1. lookup_company_katakana - Look up pre-translated Katakana names from database
-   - ALWAYS TRY THIS FIRST for Japan-bound payments with company names
-   - Fast, accurate, uses official registered names
-   - If found=False, fallback to transliterate_text
+AVAILABLE TOOLS (use in this STRICT priority order):
 
-2. transliterate_text - Convert Western text to Japanese katakana or hiragana using AI
-   - Use as FALLBACK when lookup_company_katakana returns found=False
-   - Use for person names or unknown companies
+FOR JAPAN TRANSLITERATION (company/person names to Katakana):
+1. lookup_company_katakana - TRY FIRST (exact DB match)
+   - Fast (~5ms), confidence: 1.0
+   - Uses official registered names from database
+   - If found=False, proceed to step 2
+
+2. atlas_search - TRY SECOND (fuzzy matching)
+   - Use: atlas_search("bank_details", query, ["name_english"])
+   - Handles typos: "DENSOO" → "DENSO CORPORATION"
+   - Handles variations: "Toyota Motor" → "TOYOTA MOTOR CORPORATION"
+   - Fast (~20ms), confidence: 0.7-0.95
+   - If found=False, proceed to step 3
+
+3. transliterate_text - LAST RESORT (AI generation)
+   - Use when DB lookups fail
+   - Slower (~1-2s), confidence: 0.9
    - Katakana is standard for foreign names/companies
 
-3. lookup_ifsc - Look up IFSC codes for Indian bank branches
-   - Use for India-bound payments that need IFSC codes
-   - IFSC codes are mandatory for NEFT, RTGS, IMPS transfers
+FOR INDIA IFSC (bank branch codes):
+1. lookup_ifsc - TRY FIRST (exact DB match)
+   - Fast, confidence: 1.0
+   - If found=False, proceed to step 2
+
+2. atlas_search - TRY SECOND (fuzzy matching)
+   - Use: atlas_search("ifsc_codes", query, ["bank", "branch", "city"])
+   - Handles partial matches: "HDFC Connaught Delhi" → finds HDFC0000001
+   - Fast (~20ms), confidence: 0.7-0.95
+
+FOR NAME VERIFICATION (match trading/informal name to legal name):
+1. atlas_search - USE DIRECTLY (fuzzy matching on registered entities)
+   - Use: atlas_search("registered_entities", query, ["legal_name", "trading_names"])
+   - Matches trading names: "Acme Co." → "Acme Corporation Limited"
+   - Matches abbreviations: "IBM" → "International Business Machines Corporation"
+   - Handles typos: "Volkswagon" → "Volkswagen Aktiengesellschaft"
+   - Fast (~20ms), confidence: 0.7-0.95
+   - Returns legal_name from top_result
 
 YOUR PROCESS:
 1. Understand the task from the payment context
 2. Identify what value needs to be determined
-3. Choose and use the appropriate tool(s)
-4. Analyze the tool results
-5. Provide a clear solution with confidence assessment
+3. Follow the STRICT tool priority order above
+4. If exact lookup fails, try fuzzy search before AI
+5. Analyze tool results and provide solution with confidence
 
 IMPORTANT GUIDELINES:
-- Use your reasoning ability to understand the context
-- Don't make assumptions - use tools to get accurate data
-- If a tool returns an error or no result, explain what went wrong
-- Provide confidence scores based on tool results
-- Be thorough but efficient - don't call unnecessary tools
+- ALWAYS follow the tool priority order - exact → fuzzy → AI
+- Don't skip to AI if fuzzy search might work
+- Check match_type in results: "exact" (confidence: 1.0), "fuzzy" (0.7-0.95), "ai" (0.9)
+- Provide confidence scores based on actual tool results
+- Be thorough but efficient
 
 When you've determined the solution, summarize:
 - What field needs to be updated
 - What the new value should be
-- Why this is the correct value
+- Match type used (exact/fuzzy/ai)
 - Your confidence level (0-1)
 """
 
     # Create LLM for Resolution Agent
     llm = create_llm(temperature=0.1)
 
-    # Create tools list (DB lookup first, then AI fallback, then IFSC)
-    tools = [lookup_company_katakana, transliterate_text, lookup_ifsc]
+    # Create tools list (priority: exact lookup → fuzzy search → AI fallback)
+    tools = [lookup_company_katakana, lookup_ifsc, atlas_search, transliterate_text]
 
     # Create the ReAct agent with tools
     agent = create_react_agent(
@@ -373,33 +400,74 @@ Use your tools to research and find the accurate information.
 
             # Populate proposed_value based on task_type and tool results
             proposed_value = ""
+            match_type = "unknown"
 
             if task_type == "japan_transliteration":
-                # Check lookup_company_katakana first (DB lookup is preferred)
+                # Priority 1: Check lookup_company_katakana (exact DB match)
                 if "lookup_company_katakana" in tool_result_values:
                     lookup_result = tool_result_values["lookup_company_katakana"]
                     if lookup_result.get("found") and lookup_result.get("name_katakana"):
                         proposed_value = lookup_result["name_katakana"]
-                        logger.info(f"Extracted Katakana from DB lookup: {proposed_value}")
+                        match_type = "exact"
+                        logger.info(f"Extracted Katakana from exact DB lookup: {proposed_value}")
 
-                # Fallback to transliterate_text (AI-based)
+                # Priority 2: Check atlas_search (fuzzy match)
+                if not proposed_value and "atlas_search" in tool_result_values:
+                    fuzzy_result = tool_result_values["atlas_search"]
+                    if fuzzy_result.get("found") and fuzzy_result.get("top_result"):
+                        top = fuzzy_result["top_result"]
+                        proposed_value = top.get("name_katakana", "")
+                        match_type = "fuzzy"
+                        logger.info(f"Extracted Katakana from fuzzy search: {proposed_value} (score: {fuzzy_result.get('search_score')})")
+
+                # Priority 3: Fallback to transliterate_text (AI-based)
                 if not proposed_value and "transliterate_text" in tool_result_values:
                     proposed_value = tool_result_values["transliterate_text"].get("transliterated", "")
+                    match_type = "ai"
                     logger.info(f"Extracted Katakana from AI transliteration: {proposed_value}")
 
-            elif task_type == "india_ifsc" and "lookup_ifsc" in tool_result_values:
-                proposed_value = tool_result_values["lookup_ifsc"].get("ifsc", "")
-                logger.info(f"Extracted IFSC code: {proposed_value}")
+            elif task_type == "india_ifsc":
+                # Priority 1: Check lookup_ifsc (exact match)
+                if "lookup_ifsc" in tool_result_values:
+                    lookup_result = tool_result_values["lookup_ifsc"]
+                    if lookup_result.get("found"):
+                        proposed_value = lookup_result.get("ifsc", "")
+                        match_type = "exact"
+                        logger.info(f"Extracted IFSC from exact lookup: {proposed_value}")
+
+                # Priority 2: Check atlas_search (fuzzy match)
+                if not proposed_value and "atlas_search" in tool_result_values:
+                    fuzzy_result = tool_result_values["atlas_search"]
+                    if fuzzy_result.get("found") and fuzzy_result.get("top_result"):
+                        top = fuzzy_result["top_result"]
+                        proposed_value = top.get("ifsc", "")
+                        match_type = "fuzzy"
+                        logger.info(f"Extracted IFSC from fuzzy search: {proposed_value} (score: {fuzzy_result.get('search_score')})")
+
+            elif task_type == "name_verification":
+                # Check atlas_search on registered_entities (fuzzy match)
+                if "atlas_search" in tool_result_values:
+                    fuzzy_result = tool_result_values["atlas_search"]
+                    if fuzzy_result.get("found") and fuzzy_result.get("top_result"):
+                        top = fuzzy_result["top_result"]
+                        proposed_value = top.get("legal_name", "")
+                        match_type = "fuzzy"
+                        logger.info(f"Extracted legal_name from entity search: {proposed_value} (score: {fuzzy_result.get('search_score')})")
 
             if not proposed_value:
                 logger.warning(f"No proposed_value extracted for task_type '{task_type}' - tool results: {list(tool_result_values.keys())}")
+
+            # Determine confidence based on match_type
+            confidence_map = {"exact": 1.0, "fuzzy": 0.85, "ai": 0.9, "unknown": 0.5}
+            confidence = confidence_map.get(match_type, 0.5)
 
             # Parse the agent's response to extract solution
             solution = {
                 "field_name": field_name,
                 "proposed_value": proposed_value,  # NOW POPULATED from tool results
+                "match_type": match_type,  # exact, fuzzy, or ai
                 "reasoning": final_message.content if final_message else "No response from agent",
-                "confidence": 0.8,  # Default confidence
+                "confidence": confidence,
                 "tool_results": tool_results
             }
 

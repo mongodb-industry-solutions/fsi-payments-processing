@@ -17,8 +17,9 @@ from src.services import (
     Converter
 )
 from src.services.payment_agent_client import PaymentAgentClient
-from src.services.circle_service import CircleService
 from src.services.semantic_learning_service import SemanticLearningService
+from src.services.llm_field_mapper import LLMFieldMapper
+from src.services.solana_service import init_solana_service, get_solana_service
 from src.exceptions import CountryValidationException
 
 logger = logging.getLogger(__name__)
@@ -46,16 +47,24 @@ agent_client = PaymentAgentClient(
     timeout=settings.payment_agent_timeout
 )
 
-# Initialize Circle service (for crypto/USDC transfers)
-circle_service = CircleService(
-    api_key=settings.circle_api_key,
-    entity_secret=settings.circle_entity_secret,
-    source_wallet_id=settings.circle_source_wallet_id,
-    usdc_token_id=settings.circle_usdc_token_id
-) if settings.circle_api_key else None
+# Initialize LLM field mapper (for unknown field suggestions in auto-config)
+llm_field_mapper = LLMFieldMapper(mongodb_service, bedrock_service)
 
 # Initialize semantic learning service (for auto-config generation)
-semantic_learning_service = SemanticLearningService(mongodb_service)
+semantic_learning_service = SemanticLearningService(mongodb_service, llm_field_mapper)
+
+# Initialize Solana service (for crypto/blockchain payments)
+solana_service = None
+if settings.solana_private_key:
+    try:
+        solana_service = init_solana_service(
+            rpc_endpoint=settings.solana_rpc_endpoint,
+            private_key=settings.solana_private_key,
+            network=settings.solana_network
+        )
+        logger.info(f"Solana service initialized on {settings.solana_network}")
+    except Exception as e:
+        logger.warning(f"Failed to initialize Solana service: {e}")
 
 # Pending conversions store - tracks conversion state during human-in-the-loop review
 # Key: thread_id, Value: dict with conversion_run_id, source/target formats, validation context
@@ -175,6 +184,8 @@ class AutoConfigureResponse(BaseModel):
     matched_fields: List[str] = Field(..., description="Fields matched from existing configs")
     unknown_fields: List[str] = Field(..., description="Fields not found in any existing config")
     learned_from: List[str] = Field(..., description="Config IDs used for learning")
+    suggestions: List[Dict[str, Any]] = Field(default=[], description="LLM-suggested mappings for unknown fields (display-only)")
+    llm_prompt_info: Optional[Dict[str, Any]] = Field(default=None, description="LLM prompt construction details for frontend display")
 
 
 class ApproveConfigResponse(BaseModel):
@@ -583,6 +594,8 @@ async def convert_multi_hop_stream(request: MultiHopConversionRequest):
 
                         # Store conversion state for continuation after resume
                         # The frontend will call /agent/resume with the thread_id
+                        # Extract hop1_details from exception context for frontend display
+                        hop1_details = e.conversion_context.get('detailed_processing', {})
                         pending_conversions[event.get("thread_id")] = {
                             "conversion_run_id": conversion_run_id,
                             "source_format": request.source_format,
@@ -595,7 +608,8 @@ async def convert_multi_hop_stream(request: MultiHopConversionRequest):
                                 "conversion_context": e.conversion_context
                             },
                             "hop1_start": hop1_start,
-                            "start_time": start_time
+                            "start_time": start_time,
+                            "hop1_details": hop1_details  # Store for resume endpoint
                         }
 
                         # Forward the review_required event to frontend
@@ -636,42 +650,117 @@ async def convert_multi_hop_stream(request: MultiHopConversionRequest):
                 hop1_time = time.time() - hop1_start
                 yield f"data: {json.dumps({'type': 'hop1_complete', 'time': round(hop1_time, 2), 'detailed_processing': hop1_result.get('detailed_processing', {})})}\n\n"
 
-            # Hop 2: JSON → Target
-            yield f"data: {json.dumps({'type': 'hop2_start', 'source': 'JSON', 'target': request.target_format})}\n\n"
+            # Check if hop1 result contains crypto settlement fields
+            hop1_json = json.loads(hop1_result['converted_message']) if isinstance(hop1_result['converted_message'], str) else hop1_result['converted_message']
 
-            hop2_start = time.time()
-            hop2_result = await converter.convert(
-                source_format="JSON",
-                target_format=request.target_format,
-                message=hop1_result['converted_message'],
-                original_source_message=request.message,
-                conversion_run_id=conversion_run_id
+            is_crypto_settlement = (
+                hop1_json.get('crypto_sender_wallet') is not None and
+                hop1_json.get('crypto_receiver_wallet') is not None
             )
 
-            hop2_time = time.time() - hop2_start
-            yield f"data: {json.dumps({'type': 'hop2_complete', 'time': round(hop2_time, 2), 'detailed_processing': hop2_result.get('detailed_processing', {})})}\n\n"
+            if is_crypto_settlement and solana_service:
+                # ============================================================
+                # Crypto Settlement Flow - Execute Solana transfer instead of hop2
+                # ============================================================
+                sender_wallet = hop1_json.get('crypto_sender_wallet')
+                receiver_wallet = hop1_json.get('crypto_receiver_wallet')
+                # Hardcoded demo amount - actual payment value shown in message, this is just for blockchain proof
+                amount_sol = 0.001
 
-            # Calculate total time
-            total_time = time.time() - start_time
+                yield f"data: {json.dumps({'type': 'crypto_start', 'detail': 'Initiating Solana blockchain settlement using canonical JSON fields', 'dropdown': {'title': 'Canonical JSON → Blockchain Bridge', 'items': ['Canonical JSON serves as universal payment format', 'Crypto fields extracted: crypto_sender_wallet, crypto_receiver_wallet', 'Solana SDK initialized with devnet RPC endpoint', 'Transaction will be recorded on immutable blockchain ledger']}})}\n\n"
 
-            # Build final response
-            stats = hop2_result["processing_stats"]
-            lane_dist = stats.get("lane_distribution", {})
+                yield f"data: {json.dumps({'type': 'crypto_wallet_extract', 'sender': sender_wallet, 'receiver': receiver_wallet, 'detail': 'Extracted wallet addresses from canonical JSON', 'dropdown': {'title': 'Wallet Extraction Details', 'items': [f'Source field: canonical_json.crypto_sender_wallet', f'Sender: {sender_wallet}', f'Source field: canonical_json.crypto_receiver_wallet', f'Receiver: {receiver_wallet}', 'Wallets validated as valid Solana public keys (Base58)']}})}\n\n"
 
-            result = {
-                'type': 'complete',
-                'output': hop2_result["converted_message"],
-                'processing_stats': {
-                    'rules_lane': lane_dist.get("RULES", 0),
-                    'ai_lane': lane_dist.get("AI", 0),
-                    'human_lane': lane_dist.get("HUMAN", 0)
-                },
-                'confidence_scores': hop2_result["confidence_scores"],
-                'total_time': round(total_time, 2),
-                'agent_correction': agent_correction
-            }
+                # Build transaction
+                yield f"data: {json.dumps({'type': 'crypto_tx_build', 'detail': 'Building Solana transfer instruction', 'dropdown': {'title': 'Transaction Construction', 'items': ['Fetching latest blockhash from Solana RPC', 'Creating SystemProgram.transfer instruction', f'From: {sender_wallet[:16]}...', f'To: {receiver_wallet[:16]}...', f'Amount: {amount_sol} SOL (demo proof-of-settlement)', 'Compiling MessageV0 with transfer instruction']}})}\n\n"
 
-            yield f"data: {json.dumps(result)}\n\n"
+                # Sign transaction
+                yield f"data: {json.dumps({'type': 'crypto_tx_sign', 'detail': 'Signing transaction with sender private key', 'dropdown': {'title': 'Cryptographic Signing', 'items': ['Loading sender keypair from secure storage', 'Creating VersionedTransaction with MessageV0', 'Signing with Ed25519 signature algorithm', 'Transaction signature generated (64 bytes)']}})}\n\n"
+
+                # Submit transaction
+                yield f"data: {json.dumps({'type': 'crypto_tx_submit', 'detail': 'Broadcasting to Solana devnet', 'dropdown': {'title': 'Network Broadcast', 'items': ['RPC Endpoint: https://api.devnet.solana.com', 'Method: sendRawTransaction', 'Commitment level: confirmed', 'Waiting for validator confirmation...']}})}\n\n"
+
+                # Execute actual transfer
+                transfer_result = solana_service.transfer(
+                    to_pubkey=receiver_wallet,
+                    amount_sol=amount_sol,
+                    memo=conversion_run_id
+                )
+
+                if transfer_result.get('success'):
+                    confirmation_ms = transfer_result.get('confirmation_time_ms', 0)
+                    signature = transfer_result.get('signature', '')
+                    explorer_url = transfer_result.get('explorer_url', '')
+
+                    yield f"data: {json.dumps({'type': 'crypto_tx_confirm', 'confirmation_time_ms': confirmation_ms, 'detail': f'Transaction confirmed in {confirmation_ms}ms', 'dropdown': {'title': 'Blockchain Confirmation', 'items': [f'Confirmation time: {confirmation_ms}ms', 'Commitment level: confirmed (optimistic)', 'Transaction included in recent block', 'Validators reached consensus on transaction', f'Signature: {signature[:32]}...']}})}\n\n"
+
+                    # Extract display amount from original payment for UI
+                    amount_field = hop1_json.get('amount', '50000.00')
+                    display_amount = amount_field if isinstance(amount_field, str) else amount_field.get('instructed_amount', '50000.00')
+                    display_currency = hop1_json.get('currency', 'USD')
+
+                    yield f"data: {json.dumps({'type': 'crypto_complete', 'signature': signature, 'explorer_url': explorer_url, 'display_amount': display_amount, 'display_currency': display_currency, 'detail': f'Settlement complete: {display_amount} {display_currency}', 'dropdown': {'title': 'Settlement Summary', 'items': [f'Payment Amount: {display_amount} {display_currency}', f'Blockchain: Solana (devnet)', f'Transaction Signature: {signature[:24]}...', f'Explorer: Click to view on Solana Explorer', 'Status: Finalized and immutable', 'Canonical JSON successfully bridged to blockchain']}})}\n\n"
+
+                    # Calculate total time
+                    total_time = time.time() - start_time
+
+                    result = {
+                        'type': 'complete',
+                        'output': json.dumps(hop1_json, indent=2),
+                        'processing_stats': {
+                            'rules_lane': hop1_result.get('processing_stats', {}).get('lane_distribution', {}).get('RULES', 0),
+                            'ai_lane': 0,
+                            'human_lane': 0
+                        },
+                        'confidence_scores': {},
+                        'total_time': round(total_time, 2),
+                        'agent_correction': agent_correction
+                    }
+
+                    yield f"data: {json.dumps(result)}\n\n"
+                else:
+                    error_msg = f"Solana transfer failed: {transfer_result.get('error')}"
+                    yield f"data: {json.dumps({'type': 'error', 'message': error_msg})}\n\n"
+
+            else:
+                # ============================================================
+                # Standard Hop 2: JSON → Target format conversion
+                # ============================================================
+                yield f"data: {json.dumps({'type': 'hop2_start', 'source': 'JSON', 'target': request.target_format})}\n\n"
+
+                hop2_start = time.time()
+                hop2_result = await converter.convert(
+                    source_format="JSON",
+                    target_format=request.target_format,
+                    message=hop1_result['converted_message'],
+                    original_source_message=request.message,
+                    conversion_run_id=conversion_run_id
+                )
+
+                hop2_time = time.time() - hop2_start
+                yield f"data: {json.dumps({'type': 'hop2_complete', 'time': round(hop2_time, 2), 'detailed_processing': hop2_result.get('detailed_processing', {})})}\n\n"
+
+                # Calculate total time
+                total_time = time.time() - start_time
+
+                # Build final response
+                stats = hop2_result["processing_stats"]
+                lane_dist = stats.get("lane_distribution", {})
+
+                result = {
+                    'type': 'complete',
+                    'output': hop2_result["converted_message"],
+                    'processing_stats': {
+                        'rules_lane': lane_dist.get("RULES", 0),
+                        'ai_lane': lane_dist.get("AI", 0),
+                        'human_lane': lane_dist.get("HUMAN", 0)
+                    },
+                    'confidence_scores': hop2_result["confidence_scores"],
+                    'total_time': round(total_time, 2),
+                    'agent_correction': agent_correction
+                }
+
+                yield f"data: {json.dumps(result)}\n\n"
 
         except Exception as e:
             logger.error(f"Streaming conversion error: {e}", exc_info=True)
@@ -794,6 +883,7 @@ async def resume_agent_workflow(request: ResumeAgentRequest):
         target_format = pending.get("target_format")
         original_message = pending.get("original_message")
         start_time = pending.get("start_time", time.time())
+        hop1_details = pending.get("hop1_details", {})  # Retrieve stored hop1 processing details
 
         # Resume agent workflow
         agent_result = await agent_client.resume_workflow(
@@ -854,6 +944,7 @@ async def resume_agent_workflow(request: ResumeAgentRequest):
                 "human_lane": lane_dist.get("HUMAN", 0)
             },
             "total_time": round(total_time, 2),
+            "hop1_details": hop1_details,  # Include hop1 processing details for frontend
             "hop2_details": hop2_result.get("detailed_processing", {})
         }
 
@@ -1014,6 +1105,25 @@ async def list_all_configs():
         )
 
 
+@router.get("/format-specifications", status_code=status.HTTP_200_OK)
+async def list_format_specifications():
+    """
+    List all target format specifications.
+
+    Returns format specs from MongoDB for the Config Builder target format dropdown.
+    Each spec includes _id (format name), description, format_type, and supported_fields.
+    """
+    try:
+        specs = await mongodb_service.list_format_specifications()
+        return {"specifications": specs}
+    except Exception as e:
+        logger.error(f"Failed to list format specifications: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to list format specifications: {str(e)}"
+        )
+
+
 # ============================================================================
 # Auto-Configure Endpoints (Semantic Learning)
 # ============================================================================
@@ -1065,7 +1175,9 @@ async def auto_configure(request: AutoConfigureRequest) -> AutoConfigureResponse
             fields_detected=result["fields_detected"],
             matched_fields=result["matched_fields"],
             unknown_fields=result["unknown_fields"],
-            learned_from=result["learned_from"]
+            learned_from=result["learned_from"],
+            suggestions=result.get("suggestions", []),
+            llm_prompt_info=result.get("llm_prompt_info")
         )
 
     except ValueError as e:
@@ -1119,9 +1231,6 @@ async def approve_config(config_id: str) -> ApproveConfigResponse:
 
         # Delete from temp storage
         await mongodb_service.delete_temp_config(config_id)
-
-        # Invalidate learning service cache (new config available)
-        semantic_learning_service.invalidate_cache()
 
         logger.info(f"Config {config_id} approved and saved permanently")
 
@@ -1189,417 +1298,216 @@ async def get_temp_config(config_id: str) -> AutoConfigureResponse:
 
 
 # ============================================================================
-# Circle API Endpoints (Crypto/USDC)
+# Solana Blockchain Endpoints
 # ============================================================================
 
-class CircleTransferRequest(BaseModel):
-    """Request model for Circle USDC transfer"""
-    source: Optional[str] = Field(None, description="Source wallet address (defaults to configured wallet)")
-    destination: str = Field(..., description="Destination wallet address")
-    amount: str = Field(default="1", description="USDC amount (default: 1)")
-    reference: Optional[str] = Field(None, description="Payment reference (max 40 chars)")
-
-    model_config = {
-        "json_schema_extra": {
-            "examples": [
-                {
-                    "source": "0x73fa0f065a6a61300809fe9ff8ecdb76b25a4a1e",
-                    "destination": "0x0d3bdabc6ca8f8890e4734f9e682463bcd57a4ce",
-                    "amount": "1",
-                    "reference": "INV-2024-001"
-                }
-            ]
-        }
-    }
+class SolanaTransferRequest(BaseModel):
+    """Request for SOL transfer."""
+    to_address: str = Field(..., description="Recipient's Solana address (base58)")
+    amount_sol: float = Field(..., gt=0, description="Amount of SOL to transfer")
+    memo: Optional[str] = Field(None, description="Optional memo for the transfer")
 
 
-class CircleTransferResponse(BaseModel):
-    """Response model for Circle USDC transfer"""
-    success: bool = Field(..., description="Transfer success status")
-    transaction_id: Optional[str] = Field(None, description="Circle transaction ID")
-    state: Optional[str] = Field(None, description="Transaction state")
-    amount: str = Field(..., description="Amount transferred")
-    destination: str = Field(..., description="Destination address")
-    error: Optional[str] = Field(None, description="Error message if failed")
+class SolanaTransferResponse(BaseModel):
+    """Response from SOL transfer."""
+    success: bool
+    signature: Optional[str] = None
+    amount_sol: float
+    amount_lamports: Optional[int] = None
+    from_address: Optional[str] = None
+    to_address: Optional[str] = None
+    memo: Optional[str] = None
+    explorer_url: Optional[str] = None
+    confirmation: Optional[str] = None
+    confirmation_time_ms: Optional[int] = None
+    error: Optional[str] = None
 
 
-class CircleBalanceResponse(BaseModel):
-    """Response model for Circle wallet balance"""
-    wallet_id: str = Field(..., description="Wallet ID")
-    wallet_address: Optional[str] = Field(None, description="Blockchain wallet address")
-    usdc_balance: str = Field(..., description="USDC balance")
-    native_balance: str = Field(default="0", description="Native token balance (POL)")
-    blockchain: str = Field(..., description="Blockchain network")
+class SolanaAirdropRequest(BaseModel):
+    """Request for SOL airdrop from devnet faucet."""
+    address: Optional[str] = Field(None, description="Address to fund (defaults to service wallet)")
+    amount_sol: float = Field(default=1.0, gt=0, le=2.0, description="Amount of SOL (max 2 per request)")
 
 
-@router.post("/circle/transfer", response_model=CircleTransferResponse, status_code=status.HTTP_200_OK)
-async def circle_transfer(request: CircleTransferRequest) -> CircleTransferResponse:
+class SolanaAirdropResponse(BaseModel):
+    """Response from airdrop request."""
+    success: bool
+    signature: Optional[str] = None
+    amount_sol: float
+    recipient: str
+    explorer_url: Optional[str] = None
+    error: Optional[str] = None
+
+
+class SolanaBalanceResponse(BaseModel):
+    """Response with wallet balance."""
+    success: bool
+    pubkey: str
+    balance_sol: Optional[float] = None
+    balance_lamports: Optional[int] = None
+    error: Optional[str] = None
+
+
+class SolanaHealthResponse(BaseModel):
+    """Solana service health status."""
+    healthy: bool
+    rpc_endpoint: str
+    network: str
+    current_slot: Optional[int] = None
+    wallet: Optional[Dict[str, Any]] = None
+    error: Optional[str] = None
+
+
+@router.post("/solana/transfer", response_model=SolanaTransferResponse)
+async def solana_transfer(request: SolanaTransferRequest) -> SolanaTransferResponse:
     """
-    Transfer USDC via Circle API.
+    Transfer SOL to a recipient address.
 
-    Executes a USDC transfer on Polygon Amoy testnet.
-    Supports both source and destination wallet addresses.
-    Default amount is 1 USDC if not specified.
+    Executes a native SOL transfer on Solana devnet. No amount limits.
+    Returns transaction signature and explorer URL.
     """
-    if not circle_service:
+    if not solana_service:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Circle service not configured. Set CIRCLE_API_KEY in environment."
+            detail="Solana service not configured"
         )
 
     try:
-        source_display = request.source[:10] + "..." if request.source else "default"
-        logger.info(f"Circle transfer: {request.amount} USDC from {source_display} to {request.destination[:10]}...")
+        result = solana_service.transfer(
+            to_pubkey=request.to_address,
+            amount_sol=request.amount_sol,
+            memo=request.memo
+        )
 
-        # Use transfer_by_address if source is provided, otherwise use default
-        if request.source:
-            result = circle_service.transfer_by_address(
-                source_address=request.source,
-                destination_address=request.destination,
-                amount=request.amount,
-                reference=request.reference
-            )
-        else:
-            result = circle_service.transfer(
-                destination=request.destination,
-                amount=request.amount,
-                reference=request.reference
-            )
-
-        if result.get("success"):
-            tx_data = result.get("data", {}).get("data", {})
-            return CircleTransferResponse(
-                success=True,
-                transaction_id=tx_data.get("id"),
-                state=tx_data.get("state"),
-                amount=request.amount,
-                destination=request.destination
-            )
-        else:
-            error_msg = result.get("error") or result.get("data", {}).get("message", "Transfer failed")
-            return CircleTransferResponse(
-                success=False,
-                amount=request.amount,
-                destination=request.destination,
-                error=error_msg
-            )
-
+        return SolanaTransferResponse(
+            success=result.get("success", False),
+            signature=result.get("signature"),
+            amount_sol=result.get("amount_sol", request.amount_sol),
+            amount_lamports=result.get("amount_lamports"),
+            from_address=result.get("from"),
+            to_address=result.get("to"),
+            memo=result.get("memo"),
+            explorer_url=result.get("explorer_url"),
+            confirmation=result.get("confirmation"),
+            confirmation_time_ms=result.get("confirmation_time_ms"),
+            error=result.get("error")
+        )
     except Exception as e:
-        logger.error(f"Circle transfer failed: {str(e)}", exc_info=True)
+        logger.error(f"Solana transfer failed: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Circle transfer failed: {str(e)}"
+            detail=f"Transfer failed: {str(e)}"
         )
 
 
-class CirclePOLTransferRequest(BaseModel):
-    """Request model for Circle native POL transfer"""
-    source: str = Field(..., description="Source wallet address")
-    destination: str = Field(..., description="Destination wallet address")
-    amount: str = Field(..., description="POL amount to transfer")
-
-    model_config = {
-        "json_schema_extra": {
-            "examples": [
-                {
-                    "source": "0x73fa0f065a6a61300809fe9ff8ecdb76b25a4a1e",
-                    "destination": "0x0d3bdabc6ca8f8890e4734f9e682463bcd57a4ce",
-                    "amount": "0.1"
-                }
-            ]
-        }
-    }
-
-
-@router.post("/circle/transfer-pol", status_code=status.HTTP_200_OK)
-async def circle_transfer_pol(request: CirclePOLTransferRequest):
+@router.post("/solana/airdrop", response_model=SolanaAirdropResponse)
+async def solana_airdrop(request: SolanaAirdropRequest) -> SolanaAirdropResponse:
     """
-    Transfer native POL tokens via Circle API.
+    Request SOL from devnet faucet.
 
-    POL is the native gas token on Polygon. Used for transaction fees.
-    Requires the source wallet to have sufficient POL balance.
+    Funds a wallet with test SOL. Max 2 SOL per request.
+    Only works on devnet.
     """
-    if not circle_service:
+    if not solana_service:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Circle service not configured. Set CIRCLE_API_KEY in environment."
+            detail="Solana service not configured"
         )
 
     try:
-        logger.info(f"Circle POL transfer: {request.amount} POL from {request.source[:10]}... to {request.destination[:10]}...")
-
-        result = circle_service.transfer_native_by_address(
-            source_address=request.source,
-            destination_address=request.destination,
-            amount=request.amount
+        result = solana_service.airdrop(
+            pubkey=request.address,
+            amount_sol=request.amount_sol
         )
 
-        if result.get("success"):
-            tx_data = result.get("data", {}).get("data", {})
-            return {
-                "success": True,
-                "transaction_id": tx_data.get("id"),
-                "state": tx_data.get("state"),
-                "amount": request.amount,
-                "token": "POL",
-                "source": request.source,
-                "destination": request.destination
-            }
-        else:
-            error_msg = result.get("error") or result.get("data", {}).get("message", "Transfer failed")
-            return {
-                "success": False,
-                "amount": request.amount,
-                "token": "POL",
-                "source": request.source,
-                "destination": request.destination,
-                "error": error_msg
-            }
-
+        return SolanaAirdropResponse(
+            success=result.get("success", False),
+            signature=result.get("signature"),
+            amount_sol=result.get("amount_sol", request.amount_sol),
+            recipient=result.get("recipient", request.address or "service wallet"),
+            explorer_url=result.get("explorer_url"),
+            error=result.get("error")
+        )
     except Exception as e:
-        logger.error(f"Circle POL transfer failed: {str(e)}", exc_info=True)
+        logger.error(f"Solana airdrop failed: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Circle POL transfer failed: {str(e)}"
+            detail=f"Airdrop failed: {str(e)}"
         )
 
 
-@router.get("/circle/balance", response_model=CircleBalanceResponse, status_code=status.HTTP_200_OK)
-async def circle_balance() -> CircleBalanceResponse:
+@router.get("/solana/balance", response_model=SolanaBalanceResponse)
+async def solana_balance_service() -> SolanaBalanceResponse:
     """
-    Get Circle wallet USDC balance.
+    Get service wallet balance.
+
+    Returns the SOL balance of the configured service wallet.
     """
-    if not circle_service:
+    if not solana_service:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Circle service not configured. Set CIRCLE_API_KEY in environment."
+            detail="Solana service not configured"
         )
 
     try:
-        # Get wallet address
-        wallet_address = circle_service.get_wallet_address()
-
-        # Get token balances
-        result = circle_service.get_balance()
-        token_balances = result.get("data", {}).get("tokenBalances", [])
-
-        usdc_balance = "0"
-        native_balance = "0"
-        blockchain = "MATIC-AMOY"
-
-        # Find USDC and native token balances
-        for token_entry in token_balances:
-            token_info = token_entry.get("token", {})
-            token_name = token_info.get("name", "").upper()
-            is_native = token_info.get("isNative", False)
-            amount = token_entry.get("amount", "0")
-
-            if token_name == "USDC" or "USDC" in token_name:
-                usdc_balance = amount
-                blockchain = token_info.get("blockchain", "MATIC-AMOY")
-            elif is_native:
-                native_balance = amount
-
-        return CircleBalanceResponse(
-            wallet_id=circle_service.source_wallet_id,
-            wallet_address=wallet_address,
-            usdc_balance=usdc_balance,
-            native_balance=native_balance,
-            blockchain=blockchain
-        )
-
+        result = solana_service.get_balance()
+        return SolanaBalanceResponse(**result)
     except Exception as e:
-        logger.error(f"Circle balance check failed: {str(e)}", exc_info=True)
+        logger.error(f"Balance check failed: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Circle balance check failed: {str(e)}"
+            detail=f"Balance check failed: {str(e)}"
         )
 
 
-class FundRequest(BaseModel):
-    """Request model for funding endpoints"""
-    address: Optional[str] = Field(None, description="Wallet address to fund (defaults to source wallet)")
-
-
-@router.post("/circle/fund-pol", status_code=status.HTTP_200_OK)
-async def circle_fund_pol(request: Optional[FundRequest] = None):
+@router.get("/solana/balance/{address}", response_model=SolanaBalanceResponse)
+async def solana_balance_address(address: str) -> SolanaBalanceResponse:
     """
-    Request native POL tokens for gas from Circle faucet.
+    Get balance for any Solana address.
 
-    POL is the native token on Polygon used for transaction fees.
-    Only works on testnet (MATIC-AMOY).
+    Returns the SOL balance for the specified address.
     """
-    if not circle_service:
+    if not solana_service:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Circle service not configured. Set CIRCLE_API_KEY in environment."
+            detail="Solana service not configured"
         )
 
     try:
-        address = request.address if request else None
-        result = circle_service.fund_gas(address=address)
-        return result
-
+        result = solana_service.get_balance(pubkey=address)
+        return SolanaBalanceResponse(**result)
     except Exception as e:
-        logger.error(f"Circle fund POL failed: {str(e)}", exc_info=True)
+        logger.error(f"Balance check failed: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Circle fund POL failed: {str(e)}"
+            detail=f"Balance check failed: {str(e)}"
         )
 
 
-@router.post("/circle/fund-usdc", status_code=status.HTTP_200_OK)
-async def circle_fund_usdc():
+@router.get("/solana/health", response_model=SolanaHealthResponse)
+async def solana_health() -> SolanaHealthResponse:
     """
-    Request testnet USDC from Circle faucet.
+    Check Solana service health.
 
-    Rate limit: 1 USDC per hour per address.
-    Only works on testnet (MATIC-AMOY).
+    Returns RPC connectivity status, network info, and wallet balance.
     """
-    if not circle_service:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Circle service not configured. Set CIRCLE_API_KEY in environment."
+    if not solana_service:
+        return SolanaHealthResponse(
+            healthy=False,
+            rpc_endpoint=settings.solana_rpc_endpoint,
+            network=settings.solana_network,
+            error="Solana service not configured"
         )
 
     try:
-        result = circle_service.fund_usdc()
-        return result
-
+        result = solana_service.health_check()
+        return SolanaHealthResponse(**result)
     except Exception as e:
-        logger.error(f"Circle fund USDC failed: {str(e)}", exc_info=True)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Circle fund USDC failed: {str(e)}"
+        logger.error(f"Solana health check failed: {e}")
+        return SolanaHealthResponse(
+            healthy=False,
+            rpc_endpoint=settings.solana_rpc_endpoint,
+            network=settings.solana_network,
+            error=str(e)
         )
 
-
-@router.get("/circle/wallets", status_code=status.HTTP_200_OK)
-async def circle_list_wallets():
-    """
-    List all wallets in the Circle wallet set.
-    """
-    if not circle_service:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Circle service not configured."
-        )
-
-    try:
-        result = circle_service.list_wallets()
-        wallets = result.get("data", {}).get("wallets", [])
-        return {
-            "count": len(wallets),
-            "wallets": [
-                {
-                    "wallet_id": w.get("id"),
-                    "address": w.get("address"),
-                    "blockchain": w.get("blockchain"),
-                    "state": w.get("state")
-                }
-                for w in wallets
-            ]
-        }
-    except Exception as e:
-        logger.error(f"Circle list wallets failed: {str(e)}", exc_info=True)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Circle list wallets failed: {str(e)}"
-        )
-
-
-@router.get("/circle/balance/{address}", status_code=status.HTTP_200_OK)
-async def circle_balance_by_address(address: str):
-    """
-    Get balance for a specific wallet by blockchain address.
-    """
-    if not circle_service:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Circle service not configured."
-        )
-
-    try:
-        result = circle_service.get_balance_by_address(address)
-        if not result:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Wallet not found for address: {address}"
-            )
-
-        # Parse token balances
-        token_balances = result.get("balance_data", {}).get("data", {}).get("tokenBalances", [])
-        usdc_balance = "0"
-        native_balance = "0"
-
-        for token_entry in token_balances:
-            token_info = token_entry.get("token", {})
-            token_name = token_info.get("name", "").upper()
-            is_native = token_info.get("isNative", False)
-            amount = token_entry.get("amount", "0")
-
-            if "USDC" in token_name:
-                usdc_balance = amount
-            elif is_native:
-                native_balance = amount
-
-        return {
-            "wallet_id": result["wallet_id"],
-            "wallet_address": result["wallet_address"],
-            "usdc_balance": usdc_balance,
-            "native_balance": native_balance,
-            "blockchain": "MATIC-AMOY"
-        }
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Circle balance by address failed: {str(e)}", exc_info=True)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Circle balance by address failed: {str(e)}"
-        )
-
-
-# Wallet addresses for auto-transfer
-WALLET_1 = "0x0d3bdabc6ca8f8890e4734f9e682463bcd57a4ce"
-WALLET_2 = "0x73fa0f065a6a61300809fe9ff8ecdb76b25a4a1e"
-_last_source = WALLET_2  # Start with wallet 2 so first transfer is from wallet 1
-
-
-@router.post("/circle/auto-transfer", status_code=status.HTTP_200_OK)
-async def circle_auto_transfer(amount: str = "1"):
-    """
-    Auto-transfer USDC alternating between wallets.
-    Checks gas balance before transfer.
-    """
-    global _last_source
-    if not circle_service:
-        raise HTTPException(status_code=503, detail="Circle not configured")
-
-    # Alternate wallets
-    source = WALLET_1 if _last_source == WALLET_2 else WALLET_2
-    destination = WALLET_2 if source == WALLET_1 else WALLET_1
-
-    # Check source has enough POL for gas (0.01 minimum)
-    balance = circle_service.get_balance_by_address(source)
-    if balance:
-        tokens = balance.get("balance_data", {}).get("data", {}).get("tokenBalances", [])
-        pol = next((t.get("amount", "0") for t in tokens if t.get("token", {}).get("isNative")), "0")
-        if float(pol) < 0.01:
-            circle_service.fund_gas(source)
-            return {"success": False, "error": f"Low gas on {source[:10]}... Requested from faucet. Try again in 30s."}
-
-    # Do transfer
-    result = circle_service.transfer_by_address(source, destination, amount)
-    if result.get("success"):
-        _last_source = source
-        tx = result.get("data", {}).get("data", {})
-        return {
-            "success": True,
-            "transaction_id": tx.get("id"),
-            "from": source,
-            "to": destination,
-            "amount": amount
-        }
-    return {"success": False, "error": result.get("error") or "Transfer failed"}

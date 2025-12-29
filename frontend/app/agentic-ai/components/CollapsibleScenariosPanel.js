@@ -39,12 +39,13 @@ export default function CollapsibleScenariosPanel({
       border: '1px solid #E7EAEE',
       borderRadius: '12px',
       overflow: 'hidden',
-      transition: 'all 0.3s ease'
+      transition: 'all 0.3s ease',
+      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)'
     }}>
       {/* Header - Always Visible */}
       <div
         style={{
-          padding: '16px 20px',
+          padding: '16px 24px',
           background: '#F9FBFA',
           borderBottom: isExpanded ? '1px solid #E7EAEE' : 'none',
           cursor: 'pointer',
@@ -63,9 +64,7 @@ export default function CollapsibleScenariosPanel({
       >
         <div style={{ flex: 1 }}>
           {isExpanded ? (
-            <Body weight="medium" style={{ fontSize: '16px' }}>
-              Payment Scenarios
-            </Body>
+            <H2>Payment Scenarios</H2>
           ) : (
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <Icon glyph="Checkmark" fill="#00A35C" />
@@ -117,20 +116,33 @@ export default function CollapsibleScenariosPanel({
             isStreaming={isStreaming}
           />
 
-          {/* Simulate Button */}
+          {/* Action Buttons */}
           {selectedScenario && (
             <div style={{
               display: 'flex',
               justifyContent: 'flex-end',
+              alignItems: 'center',
+              gap: '12px',
               marginTop: '16px',
               paddingTop: '16px',
               borderTop: '1px solid #E7EAEE'
             }}>
               <Button
+                variant="default"
+                onClick={onReset}
+                disabled={isStreaming}
+              >
+                Reset
+              </Button>
+              <Button
                 variant="primary"
                 onClick={onSimulate}
                 disabled={isStreaming}
                 leftGlyph={<Icon glyph="Play" />}
+                style={{
+                  boxShadow: '0 4px 12px rgba(0, 163, 92, 0.3)',
+                  transition: 'all 0.2s ease'
+                }}
               >
                 {isStreaming ? 'Processing...' : 'Simulate Transaction'}
               </Button>

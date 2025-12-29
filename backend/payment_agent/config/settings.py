@@ -26,6 +26,11 @@ class Settings(BaseSettings):
     agent_max_retries: int = Field(default=3, description="Max retries for agent actions")
     tool_timeout_seconds: int = Field(default=30, description="Timeout for tool calls")
 
+    # Atlas Search Configuration
+    atlas_search_enabled: bool = Field(default=True, description="Enable Atlas Search fuzzy matching")
+    fuzzy_search_min_score: float = Field(default=0.5, description="Minimum score for fuzzy search results")
+    atlas_search_max_edits: int = Field(default=2, description="Max edit distance for fuzzy matching (1-2)")
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

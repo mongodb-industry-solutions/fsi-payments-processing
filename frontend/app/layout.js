@@ -41,7 +41,7 @@ function Navigation() {
             <svg className="nav-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
               <path d="M3 3h4v4H3V3zm6 0h4v4H9V3zM3 9h4v4H3V9zm6 0h4v4H9V9z" stroke="currentColor" strokeWidth="1.5" fill="none"/>
             </svg>
-            <span>Config Builder</span>
+            <span>Config Studio</span>
           </Link>
         </div>
 

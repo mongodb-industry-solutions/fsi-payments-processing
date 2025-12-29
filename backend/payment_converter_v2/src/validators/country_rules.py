@@ -59,6 +59,14 @@ def validate_country_rules(
     # if target_country == "CH" or currency == "CHF":
     #     validate_switzerland_rules(...)
 
+    # Universal validation: Name verification
+    # Only applies to countries WITHOUT dedicated rules (skip JP, IN which have their own)
+    countries_with_dedicated_rules = {"JP", "IN"}
+    currencies_with_dedicated_rules = {"JPY", "INR"}
+
+    if target_country not in countries_with_dedicated_rules and currency not in currencies_with_dedicated_rules:
+        validate_name_verification_rules(canonical_json, conversion_id, source_format, target_format, conversion_run_id, detailed_processing)
+
 
 def validate_japan_rules(
     canonical_json: Dict[str, Any],
@@ -211,6 +219,62 @@ def validate_india_rules(
         )
 
 
+def validate_name_verification_rules(
+    canonical_json: Dict[str, Any],
+    conversion_id: str,
+    source_format: str,
+    target_format: str,
+    conversion_run_id: str = None,
+    detailed_processing: Dict[str, Any] = None
+) -> None:
+    """
+    Validate that creditor names are legal entity names, not trading names.
+
+    Trading names (informal/abbreviated names like "HSBC", "IBM", "Acme")
+    should be resolved to their full legal names for compliance.
+
+    Detection heuristic: Names lacking legal suffixes (Ltd, Inc, Corp, etc.)
+    are likely trading names that need verification.
+
+    Args:
+        canonical_json: Payment data
+        conversion_id: Conversion ID
+        source_format: Source format
+        target_format: Target format
+        conversion_run_id: Optional unique ID for this conversion run
+        detailed_processing: Detailed processing data from hop1 (for frontend display)
+
+    Raises:
+        CountryValidationException: If creditor name appears to be a trading name
+    """
+
+    creditor_name = canonical_json.get("creditor_name", "")
+
+    if creditor_name and _looks_like_trading_name(creditor_name):
+        raise CountryValidationException(
+            task_type="name_verification",
+            field_name="creditor_name",
+            original_value=creditor_name,
+            reason=(
+                f"Creditor name '{creditor_name}' appears to be a trading name "
+                "(missing legal suffix like Ltd, Inc, Corp). "
+                "Verification against registered entities required."
+            ),
+            payment_data=canonical_json,
+            conversion_context={
+                "source_format": source_format,
+                "target_format": target_format,
+                "conversion_id": conversion_id,
+                "conversion_run_id": conversion_run_id,
+                "detailed_processing": detailed_processing or {},
+                "additional_context": {
+                    "validation_rule": "name_verification",
+                    "detection_method": "missing_legal_suffix"
+                }
+            }
+        )
+
+
 # Helper functions
 
 def _contains_western_text(text: str) -> bool:
@@ -272,3 +336,48 @@ def _infer_country_from_currency(currency: str) -> str:
         "EUR": "EU"  # Generic
     }
     return currency_map.get(currency.upper(), "")
+
+
+def _looks_like_trading_name(name: str) -> bool:
+    """
+    Check if a name appears to be a trading/informal name rather than legal name.
+
+    Trading names typically lack legal suffixes like Ltd, Inc, Corp, etc.
+    Examples:
+        "HSBC" → True (trading name, should be "HSBC Holdings plc")
+        "IBM" → True (trading name, should be "International Business Machines Corporation")
+        "Acme Corporation Limited" → False (has legal suffix)
+
+    Args:
+        name: Company name to check
+
+    Returns:
+        True if name appears to be a trading name (missing legal suffix)
+    """
+    legal_suffixes = [
+        # English
+        'limited', 'ltd', 'ltd.',
+        'incorporated', 'inc', 'inc.',
+        'corporation', 'corp', 'corp.',
+        'company', 'co', 'co.',
+        'plc', 'p.l.c.',
+        'llc', 'l.l.c.',
+        'llp', 'l.l.p.',
+        # German
+        'ag', 'gmbh', 'kg',
+        # French
+        'sa', 's.a.', 'sarl',
+        # Dutch
+        'bv', 'b.v.', 'nv', 'n.v.',
+        # Other
+        'pty', 'pte', 'sdn bhd'
+    ]
+
+    name_lower = name.lower().strip()
+
+    # Check if name ends with any legal suffix
+    for suffix in legal_suffixes:
+        if name_lower.endswith(suffix) or name_lower.endswith(' ' + suffix):
+            return False
+
+    return True

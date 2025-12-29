@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Banner from '@leafygreen-ui/banner';
 import CollapsibleScenariosPanel from './components/CollapsibleScenariosPanel';
 import GeographicMapPanel from './components/GeographicMapPanel';
@@ -24,6 +24,8 @@ function isAgentRelatedEvent(event) {
     'tool_call',          // Tool invocation (IFSC lookup, transliteration)
     'tool_result',        // Tool results
     'agent_resolution',   // Proposed solution
+    'review_approved',    // Human approved change
+    'review_rejected',    // Human rejected change
     'agent_execution',    // Field update
     'agent_complete',     // Agent finished
     'error'               // Errors
@@ -35,6 +37,7 @@ function isAgentRelatedEvent(event) {
 /**
  * Filter events to show only conversion hop activities
  * For non-agentic scenarios (like card payments), show the conversion flow instead.
+ * Also includes crypto settlement events for blockchain scenarios.
  */
 function isConversionHopEvent(event) {
   const hopEventTypes = [
@@ -44,7 +47,16 @@ function isConversionHopEvent(event) {
     'hop2_start',      // Second hop begins
     'hop2_complete',   // Second hop completes
     'complete',        // Conversion finished
-    'error'            // Errors
+    'error',           // Errors
+    // Crypto/blockchain settlement events
+    'crypto_start',           // Blockchain settlement starting
+    'crypto_wallet_extract',  // Extracting wallet addresses
+    'crypto_balance_check',   // Verifying sender balance
+    'crypto_tx_build',        // Building transaction
+    'crypto_tx_sign',         // Signing transaction
+    'crypto_tx_submit',       // Submitting to network
+    'crypto_tx_confirm',      // Transaction confirmed
+    'crypto_complete'         // Blockchain settlement complete
   ];
 
   return hopEventTypes.includes(event.type);
@@ -64,6 +76,10 @@ export default function AgenticAIPage() {
   const [hop1Details, setHop1Details] = useState(null);
   const [hop2Details, setHop2Details] = useState(null);
   const [conversionRunId, setConversionRunId] = useState(null);
+
+  // Cache for scenario results - persists results when switching between scenarios
+  // Using ref to avoid stale closure issues with async state updates
+  const scenarioResultsCache = useRef({});
 
   // Human-in-the-loop review state
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
@@ -122,6 +138,7 @@ export default function AgenticAIPage() {
     setHop1Details(null);
     setHop2Details(null);
     setConversionRunId(null);
+    scenarioResultsCache.current = {}; // Clear all cached results
     setIsPanelExpanded(true); // Re-expand panel on reset
     // Reset review state
     setIsReviewModalOpen(false);
@@ -131,15 +148,48 @@ export default function AgenticAIPage() {
   };
 
   const handleSelectScenario = (scenarioId) => {
+    // Save current scenario results to cache before switching
+    if (selectedScenario && (events.length > 0 || output)) {
+      scenarioResultsCache.current[selectedScenario] = {
+        events,
+        output,
+        stats,
+        totalTime,
+        error,
+        hop1Details,
+        hop2Details,
+        conversionRunId,
+        expandedEvents: Array.from(expandedEvents)
+      };
+    }
+
+    // Switch to new scenario
     setSelectedScenario(scenarioId);
-    setEvents([]);
-    setOutput('');
-    setStats(null);
-    setTotalTime(0);
-    setError(null);
-    setHop1Details(null);
-    setHop2Details(null);
-    setConversionRunId(null);
+
+    // Restore cached results for new scenario (if any)
+    const cached = scenarioResultsCache.current[scenarioId];
+    if (cached) {
+      setEvents(cached.events || []);
+      setOutput(cached.output || '');
+      setStats(cached.stats || null);
+      setTotalTime(cached.totalTime || 0);
+      setError(cached.error || null);
+      setHop1Details(cached.hop1Details || null);
+      setHop2Details(cached.hop2Details || null);
+      setConversionRunId(cached.conversionRunId || null);
+      setExpandedEvents(new Set(cached.expandedEvents || []));
+    } else {
+      // No cached results - start fresh
+      setEvents([]);
+      setOutput('');
+      setStats(null);
+      setTotalTime(0);
+      setError(null);
+      setHop1Details(null);
+      setHop2Details(null);
+      setConversionRunId(null);
+      setExpandedEvents(new Set());
+    }
   };
 
   const handleTogglePanel = () => {
@@ -312,6 +362,18 @@ export default function AgenticAIPage() {
           success: true
         });
 
+        // Update hop1 details from resume response (these were stored when validation failed)
+        if (result.hop1_details) {
+          console.log('📦 Captured hop1 detailed processing from resume:', result.hop1_details);
+          setHop1Details(result.hop1_details);
+          // Emit hop1_complete event for visualization
+          addEvent({
+            type: 'hop1_complete',
+            message: 'Hop 1 conversion complete (from resume)',
+            detailed_processing: result.hop1_details
+          });
+        }
+
         // Add hop 2 events if conversion continued
         if (result.output) {
           addEvent({
@@ -403,7 +465,7 @@ export default function AgenticAIPage() {
   };
 
   return (
-    <div style={{ padding: '32px', maxWidth: '2000px', margin: '0 auto' }}>
+    <div style={{ padding: '32px', maxWidth: '1600px', margin: '0 auto' }}>
       {/* Error Banner */}
       {error && (
         <Banner variant="danger" style={{ marginBottom: '24px' }}>
