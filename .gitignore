@@ -16,7 +16,7 @@ backend/converter_service/schemas/
 backend/converter_service/scripts
 backend/converter_service/tests
 backend/plans
-
+content/
 frontend/plan
 
 .*-mcp
