@@ -322,6 +322,7 @@ export default function AgenticAIPage() {
     if (!reviewThreadId) return;
 
     setIsSubmittingReview(true);
+    setIsReviewModalOpen(false);  // Close modal immediately for snappier UX
     addEvent({
       type: 'review_approved',
       message: options.modified_value
@@ -409,7 +410,7 @@ export default function AgenticAIPage() {
         }
       }
 
-      setIsReviewModalOpen(false);
+      // Modal already closed at start for snappy UX
     } catch (err) {
       console.error('Error resuming workflow:', err);
       setError(`Failed to resume: ${err.message}`);

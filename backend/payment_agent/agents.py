@@ -44,7 +44,7 @@ def create_llm(temperature: float = None, model_id: str = None) -> ChatBedrock:
         ChatBedrock instance configured for the agent
     """
     return ChatBedrock(
-        model_id=model_id or "us.anthropic.claude-3-5-sonnet-20241022-v2:0",
+        model_id=model_id or "anthropic.claude-3-haiku-20240307-v1:0",
         region_name=settings.aws_region,
         model_kwargs={
             "temperature": temperature if temperature is not None else settings.agent_temperature,
