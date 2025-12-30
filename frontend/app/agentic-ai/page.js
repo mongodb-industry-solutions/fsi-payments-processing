@@ -166,6 +166,9 @@ export default function AgenticAIPage() {
     // Switch to new scenario
     setSelectedScenario(scenarioId);
 
+    // Auto-collapse panel after selection
+    setIsPanelExpanded(false);
+
     // Restore cached results for new scenario (if any)
     const cached = scenarioResultsCache.current[scenarioId];
     if (cached) {
@@ -465,7 +468,7 @@ export default function AgenticAIPage() {
   };
 
   return (
-    <div style={{ padding: '32px', maxWidth: '1600px', margin: '0 auto' }}>
+    <div style={{ padding: 'var(--space-xl, 32px)', maxWidth: 'var(--container-lg, 1920px)', margin: '0 auto' }}>
       {/* Error Banner */}
       {error && (
         <Banner variant="danger" style={{ marginBottom: '24px' }}>
@@ -488,8 +491,8 @@ export default function AgenticAIPage() {
       {/* Two-Column Layout: Map + Agent Panel */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: '3fr 2fr',
-        gap: '24px'
+        gridTemplateColumns: 'minmax(400px, 3fr) minmax(320px, 2fr)',
+        gap: 'var(--space-xl, 24px)'
       }}>
         {/* Left: Geographic Map Visualization */}
         <GeographicMapPanel

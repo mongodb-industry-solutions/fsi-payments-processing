@@ -610,8 +610,8 @@ export default function ConfigBuilderPage() {
     <div className="config-builder-page">
       <style jsx>{`
         .config-builder-page {
-          padding: 24px;
-          max-width: 1600px;
+          padding: var(--space-xl, 24px);
+          max-width: var(--container-lg, 1920px);
           margin: 0 auto;
         }
         .main-layout {
@@ -623,9 +623,9 @@ export default function ConfigBuilderPage() {
           min-width: 0;
         }
         .section-title {
-          font-size: 16px;
+          font-size: var(--font-md, 16px);
           font-weight: 600;
-          margin-bottom: 16px;
+          margin-bottom: var(--space-lg, 16px);
           display: flex;
           align-items: center;
           gap: 8px;
@@ -732,16 +732,16 @@ export default function ConfigBuilderPage() {
           gap: 6px;
           padding: 6px 12px;
           font-size: 12px;
-          color: var(--blue-dark2);
-          background: var(--blue-light3);
-          border: 1px solid var(--blue-light2);
+          color: var(--green-dark2);
+          background: var(--green-light3);
+          border: 1px solid var(--green-light2);
           border-radius: 6px;
           cursor: pointer;
           margin-bottom: 16px;
           transition: all 0.2s ease;
         }
         .schema-toggle:hover {
-          background: var(--blue-light2);
+          background: var(--green-light2);
         }
         .schema-toggle svg {
           transition: transform 0.2s ease;
@@ -750,8 +750,8 @@ export default function ConfigBuilderPage() {
           transform: rotate(180deg);
         }
         .schema-info {
-          background: var(--blue-light3);
-          border: 1px solid var(--blue-light2);
+          background: var(--green-light3);
+          border: 1px solid var(--green-light2);
           border-radius: 8px;
           padding: 12px 16px;
           margin-bottom: 16px;
@@ -872,18 +872,19 @@ export default function ConfigBuilderPage() {
         }
         .schema-cards {
           display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 16px;
-          margin-bottom: 24px;
+          grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+          gap: var(--space-md, 12px);
+          margin-bottom: 16px;
         }
         .schema-card {
           background: white;
           border: 1px solid var(--gray-light2);
           border-radius: 8px;
-          padding: 16px;
+          padding: 14px;
           display: flex;
           flex-direction: column;
-          height: 320px;
+          min-height: 240px;
+          max-height: 360px;
           min-width: 0;
           width: 100%;
         }
@@ -898,8 +899,8 @@ export default function ConfigBuilderPage() {
         .schema-card-number {
           width: 24px;
           height: 24px;
-          background: var(--blue-light3);
-          color: var(--blue-dark2);
+          background: var(--green-light3);
+          color: var(--green-dark2);
           border-radius: 50%;
           display: flex;
           align-items: center;
@@ -909,25 +910,25 @@ export default function ConfigBuilderPage() {
           flex-shrink: 0;
         }
         .schema-card-title {
-          font-size: 14px;
+          font-size: var(--font-base, 14px);
           font-weight: 600;
           color: var(--black);
         }
         .schema-card-desc {
-          font-size: 12px;
+          font-size: var(--font-sm, 13px);
           color: var(--gray-dark1);
-          margin-bottom: 12px;
+          margin-bottom: var(--space-md, 12px);
           line-height: 1.5;
           flex-shrink: 0;
-          height: 36px;
+          min-height: 36px;
           overflow: hidden;
         }
         .schema-card-code {
           background: var(--gray-light3);
           border-radius: 6px;
-          padding: 10px;
+          padding: var(--space-sm, 10px);
           font-family: monospace;
-          font-size: 11px;
+          font-size: var(--font-xs, 12px);
           overflow: auto;
           flex: 1;
           min-height: 0;
@@ -1001,30 +1002,31 @@ export default function ConfigBuilderPage() {
           color: var(--green-dark2);
         }
         .tabs-container {
-          margin-bottom: 24px;
+          margin-bottom: 0;
         }
         .page-header {
-          margin-bottom: 24px;
-          padding-bottom: 20px;
-          border-bottom: 1px solid var(--gray-light2);
+          margin-bottom: var(--space-lg, 16px);
+          padding-bottom: 0;
+          border-bottom: none;
         }
         .page-title {
-          font-size: 24px;
+          font-size: var(--font-xl, 24px);
           font-weight: 600;
           color: var(--black);
-          margin: 0 0 8px 0;
+          margin: 0 0 4px 0;
         }
         .page-subtitle {
-          font-size: 14px;
+          font-size: var(--font-base, 14px);
           color: var(--gray-dark1);
           margin: 0;
+          line-height: 1.5;
         }
         .schema-selector-card {
           background: var(--gray-light3);
           border: 1px solid var(--gray-light2);
           border-radius: 8px;
-          padding: 16px 20px;
-          margin-bottom: 24px;
+          padding: 12px 16px;
+          margin-bottom: 16px;
           display: flex;
           align-items: center;
           gap: 16px;
@@ -1036,47 +1038,47 @@ export default function ConfigBuilderPage() {
           white-space: nowrap;
         }
         .schema-intro {
-          background: linear-gradient(135deg, #E1F7FF 0%, #F9FBFA 100%);
-          border: 1px solid var(--blue-light2);
+          background: linear-gradient(135deg, #E3FCF7 0%, #F9FBFA 100%);
+          border: 1px solid var(--green-light2);
           border-radius: 8px;
-          padding: 16px 20px;
-          margin-bottom: 24px;
+          padding: 12px 16px;
+          margin-bottom: 16px;
         }
         .schema-intro-text {
-          font-size: 13px;
+          font-size: var(--font-sm, 13px);
           color: var(--gray-dark2);
-          line-height: 1.6;
+          line-height: 1.5;
           margin: 0;
         }
         /* Build Config Form Styles */
         .build-step {
-          background: var(--gray-light3);
+          background: white;
           border: 1px solid var(--gray-light2);
           border-radius: 8px;
-          padding: 16px;
-          margin-bottom: 16px;
+          padding: 16px 20px;
+          margin-bottom: 12px;
         }
         .build-step-header {
           display: flex;
           align-items: center;
           gap: 10px;
-          margin-bottom: 12px;
+          margin-bottom: 10px;
         }
         .build-step-number {
-          width: 24px;
-          height: 24px;
+          width: 22px;
+          height: 22px;
           background: var(--green-light3);
           color: var(--green-dark2);
           border-radius: 50%;
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 12px;
+          font-size: 11px;
           font-weight: 600;
           flex-shrink: 0;
         }
         .build-step-title {
-          font-size: 14px;
+          font-size: var(--font-base, 14px);
           font-weight: 600;
           color: var(--black);
         }
@@ -1084,7 +1086,7 @@ export default function ConfigBuilderPage() {
           background: white;
           border: 1px solid var(--gray-light2);
           border-radius: 8px;
-          padding: 20px;
+          padding: 16px;
         }
       `}</style>
 

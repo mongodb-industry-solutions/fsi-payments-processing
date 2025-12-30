@@ -66,15 +66,30 @@ export default function CollapsibleScenariosPanel({
           {isExpanded ? (
             <H2>Payment Scenarios</H2>
           ) : (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <Icon glyph="Checkmark" fill="#00A35C" />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <div style={{
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
+                backgroundColor: '#E3FCF7',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <Icon glyph="Checkmark" fill="#00A35C" />
+              </div>
               <div>
-                <Body style={{ fontSize: '12px', color: '#889397' }}>
-                  Payment Scenarios
+                <Body style={{ fontSize: '11px', color: '#889397', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  Selected Scenario
                 </Body>
-                <Body weight="medium" style={{ fontSize: '14px' }}>
-                  {selectedScenarioData?.title || 'No scenario selected'}
-                </Body>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
+                  <Body weight="medium" style={{ fontSize: '15px', color: '#1C2D38' }}>
+                    {selectedScenarioData?.sourceCountry?.code || '??'} → {selectedScenarioData?.targetCountry?.code || '??'}
+                  </Body>
+                  <Body style={{ fontSize: '13px', color: '#5C6C75' }}>
+                    {selectedScenarioData?.description?.substring(0, 50)}{selectedScenarioData?.description?.length > 50 ? '...' : ''}
+                  </Body>
+                </div>
               </div>
             </div>
           )}
@@ -82,17 +97,34 @@ export default function CollapsibleScenariosPanel({
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           {!isExpanded && selectedScenario && (
-            <Button
-              variant="danger"
-              size="small"
-              onClick={(e) => {
-                e.stopPropagation();
-                onReset();
-              }}
-              disabled={isStreaming}
-            >
-              Reset
-            </Button>
+            <>
+              <Button
+                variant="default"
+                size="small"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onReset();
+                }}
+                disabled={isStreaming}
+              >
+                Reset
+              </Button>
+              <Button
+                variant="primary"
+                size="small"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSimulate();
+                }}
+                disabled={isStreaming}
+                leftGlyph={<Icon glyph="Play" />}
+                style={{
+                  boxShadow: '0 2px 8px rgba(0, 163, 92, 0.25)'
+                }}
+              >
+                {isStreaming ? 'Processing...' : 'Simulate'}
+              </Button>
+            </>
           )}
           <Icon
             glyph={isExpanded ? 'ChevronUp' : 'ChevronDown'}

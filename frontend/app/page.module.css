@@ -1,7 +1,7 @@
 .container {
-  max-width: 1200px;
+  max-width: min(1400px, 95vw);
   margin: 0 auto;
-  padding: 1.5rem;
+  padding: clamp(1rem, 3vw, 2.5rem);
   height: 100vh;
   display: flex;
   flex-direction: column;
@@ -18,15 +18,16 @@
 }
 
 .title {
-  font-size: 2.5rem;
+  font-size: clamp(1.75rem, 1.5rem + 2vw, 3rem);
   color: #00684A;
   margin-bottom: 0.5rem;
 }
 
 .subtitle {
-  font-size: 1.1rem;
+  font-size: clamp(1rem, 0.9rem + 0.4vw, 1.25rem);
   color: var(--mongodb-gray-dark);
   margin-bottom: 1rem;
+  line-height: 1.5;
 }
 
 .badges {
@@ -42,13 +43,13 @@
 
 .features {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 1.25rem;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: clamp(1rem, 2vw, 1.5rem);
   margin-bottom: 0;
 }
 
 .featureCard {
-  padding: 1.25rem;
+  padding: clamp(1rem, 2vw, 1.5rem);
   cursor: default;
   border: 1px solid #e0e0e0;
   display: flex;
@@ -62,13 +63,13 @@
   color: var(--mongodb-green-dark2);
   margin-bottom: 0.5rem;
   margin-top: 0;
-  font-size: 1.1rem;
+  font-size: clamp(1rem, 0.9rem + 0.3vw, 1.25rem);
 }
 
 .featureCard p {
   flex-grow: 1;
-  font-size: 0.85rem;
-  line-height: 1.4;
+  font-size: clamp(0.875rem, 0.8rem + 0.2vw, 1rem);
+  line-height: 1.6;
   margin-bottom: 0.5rem;
 }
 
@@ -94,13 +95,13 @@
 }
 
 .metricValue {
-  font-size: 1.1rem;
+  font-size: clamp(1rem, 0.9rem + 0.3vw, 1.25rem);
   font-weight: bold;
   color: var(--mongodb-green-base);
 }
 
 .metricLabel {
-  font-size: 0.75rem;
+  font-size: clamp(0.7rem, 0.65rem + 0.15vw, 0.8rem);
   color: var(--mongodb-gray-dark);
   text-transform: uppercase;
   letter-spacing: 0.5px;

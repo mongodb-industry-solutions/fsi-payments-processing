@@ -24,9 +24,9 @@ export default function ScenarioSelector({
         className="scenario-grid"
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(4, 1fr)',
-          gap: '12px',
-          maxHeight: '220px',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+          gap: 'var(--space-md, 16px)',
+          maxHeight: '280px',
           overflowY: 'auto',
           scrollbarWidth: 'thin',
           scrollbarColor: 'rgba(0, 0, 0, 0.2) transparent',
@@ -41,7 +41,7 @@ export default function ScenarioSelector({
             as="div"
             onClick={() => onSelectScenario(scenario.id)}
             style={{
-              padding: '16px',
+              padding: 'var(--space-lg, 18px)',
               border: isSelected ? '2px solid #00A35C' : '1px solid #E7EAEE',
               transition: 'all 0.2s ease',
               cursor: 'pointer',
@@ -80,11 +80,11 @@ export default function ScenarioSelector({
                 alignItems: 'center',
                 gap: '8px'
               }}>
-                <Body style={{ fontSize: '14px', fontWeight: '700', color: '#1C2D38' }}>
+                <Body style={{ fontSize: 'var(--font-base, 15px)', fontWeight: '700', color: '#1C2D38' }}>
                   {scenario.sourceCountry.code}
                 </Body>
                 <Icon glyph="ArrowRight" size="small" fill="#5C6C75" />
-                <Body style={{ fontSize: '14px', fontWeight: '700', color: '#1C2D38' }}>
+                <Body style={{ fontSize: 'var(--font-base, 15px)', fontWeight: '700', color: '#1C2D38' }}>
                   {scenario.targetCountry.code}
                 </Body>
               </div>
@@ -107,10 +107,10 @@ export default function ScenarioSelector({
 
             {/* Description */}
             <Body style={{
-              fontSize: '12px',
+              fontSize: 'var(--font-sm, 13px)',
               color: '#4A5568',
-              marginBottom: '8px',
-              lineHeight: '1.4',
+              marginBottom: '10px',
+              lineHeight: '1.5',
               display: '-webkit-box',
               WebkitLineClamp: 2,
               WebkitBoxOrient: 'vertical',
@@ -126,11 +126,11 @@ export default function ScenarioSelector({
               gap: '8px',
               flexWrap: 'wrap'
             }}>
-              <Badge variant={scenario.badgeVariant} style={{ fontSize: '10px' }}>
+              <Badge variant={scenario.badgeVariant} style={{ fontSize: 'var(--font-xs, 11px)' }}>
                 {scenario.badge}
               </Badge>
               {scenario.isAgentic && (
-                <Badge variant="purple" style={{ fontSize: '10px' }}>
+                <Badge variant="purple" style={{ fontSize: 'var(--font-xs, 11px)' }}>
                   AGENTIC
                 </Badge>
               )}

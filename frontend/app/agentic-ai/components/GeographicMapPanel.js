@@ -848,8 +848,8 @@ export default function GeographicMapPanel({
       style={{
         padding: '0',
         height: 'calc(100vh - 280px)',
-        minHeight: '500px',
-        maxHeight: '900px',
+        minHeight: '420px',
+        maxHeight: '850px',
         display: 'flex',
         flexDirection: 'column',
         background: '#F9FBFA',
