@@ -1003,17 +1003,28 @@ export default function ConfigBuilderPage() {
         }
         .tabs-container {
           margin-bottom: 0;
+          background: white;
+          border: 1px solid var(--gray-light2);
+          border-radius: 12px;
+          padding: 20px 24px;
+        }
+        .page-header-wrapper {
+          background: linear-gradient(135deg, #F9FBFA 0%, #FFFFFF 100%);
+          border: 1px solid var(--gray-light2);
+          border-radius: 12px;
+          padding: 20px 24px;
+          margin-bottom: 20px;
         }
         .page-header {
-          margin-bottom: var(--space-lg, 16px);
+          margin-bottom: 0;
           padding-bottom: 0;
           border-bottom: none;
         }
         .page-title {
-          font-size: var(--font-xl, 24px);
-          font-weight: 600;
-          color: var(--black);
-          margin: 0 0 4px 0;
+          font-size: clamp(1.5rem, 1.25rem + 0.5vw, 1.75rem);
+          font-weight: 700;
+          color: var(--green-dark2);
+          margin: 0 0 6px 0;
         }
         .page-subtitle {
           font-size: var(--font-base, 14px);
@@ -1038,15 +1049,16 @@ export default function ConfigBuilderPage() {
           white-space: nowrap;
         }
         .schema-intro {
-          background: linear-gradient(135deg, #E3FCF7 0%, #F9FBFA 100%);
-          border: 1px solid var(--green-light2);
-          border-radius: 8px;
-          padding: 12px 16px;
+          background: var(--gray-light3);
+          border: none;
+          border-radius: 6px;
+          padding: 10px 14px;
           margin-bottom: 16px;
+          margin-top: 8px;
         }
         .schema-intro-text {
-          font-size: var(--font-sm, 13px);
-          color: var(--gray-dark2);
+          font-size: var(--font-xs, 12px);
+          color: var(--gray-dark1);
           line-height: 1.5;
           margin: 0;
         }
@@ -1091,9 +1103,11 @@ export default function ConfigBuilderPage() {
       `}</style>
 
       {/* Page Header */}
-      <div className="page-header">
-        <h1 className="page-title">Config Studio</h1>
-        <p className="page-subtitle">Explore existing configs or generate new ones via pattern matching + LLM suggestions</p>
+      <div className="page-header-wrapper">
+        <div className="page-header">
+          <h1 className="page-title">Config Studio</h1>
+          <p className="page-subtitle">Explore existing configs or generate new ones via pattern matching + LLM suggestions</p>
+        </div>
       </div>
 
       {error && (
