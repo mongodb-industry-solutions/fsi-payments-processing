@@ -49,9 +49,6 @@ DEUTSCHE BANK AG
   }
 };
 
-// API base URL
-const API_BASE = process.env.NEXT_PUBLIC_CONVERTER_URL || 'http://localhost:8001';
-
 // Format explanations for dynamic display
 const FORMAT_INFO = {
   MT103: {
@@ -518,7 +515,7 @@ export default function ConfigBuilderPage() {
   const loadConfigs = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_BASE}/api/v1/configs`);
+      const response = await fetch('/api/configs');
       if (!response.ok) throw new Error('Failed to load configs');
       const data = await response.json();
       setConfigs(data.configs || []);
@@ -532,7 +529,7 @@ export default function ConfigBuilderPage() {
 
   const loadFormatSpecs = async () => {
     try {
-      const response = await fetch(`${API_BASE}/api/v1/format-specifications`);
+      const response = await fetch('/api/format-specifications');
       if (response.ok) {
         const data = await response.json();
         setFormatSpecs(data.specifications || []);
@@ -558,7 +555,7 @@ export default function ConfigBuilderPage() {
       setSuccessMessage(null);
       setGeneratedConfig(null);
 
-      const response = await fetch(`${API_BASE}/api/v1/auto-configure`, {
+      const response = await fetch('/api/auto-configure', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -590,7 +587,7 @@ export default function ConfigBuilderPage() {
       setGenerateError(null);
 
       const response = await fetch(
-        `${API_BASE}/api/v1/auto-configure/${generatedConfig.configuration_id}/approve`,
+        `/api/auto-configure/${generatedConfig.configuration_id}/approve`,
         { method: 'POST' }
       );
 
