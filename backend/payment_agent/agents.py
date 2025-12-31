@@ -18,6 +18,7 @@ Key Concepts:
 
 import logging
 import json
+import re
 from typing import Dict, Any
 from langchain_aws import ChatBedrock
 from langgraph.prebuilt import create_react_agent
@@ -63,110 +64,102 @@ def create_supervisor_agent():
     Create the Supervisor Agent.
 
     The Supervisor Agent is responsible for:
-    1. Analyzing the incoming payment issue (task_type)
-    2. Understanding the payment context and field that needs attention
-    3. Deciding which specialized agent should handle the task
+    1. Analyzing the incoming payment PROBLEM (not predefined task types)
+    2. Understanding the payment context and what needs to be resolved
+    3. Deciding which specialized agent should handle the problem
     4. Routing to either Resolution Agent or Execution Agent
 
     The supervisor uses LLM reasoning to make routing decisions based on:
-    - task_type: What kind of problem needs solving
+    - problem: Rich description of the issue for autonomous analysis
     - payment_data: Current payment information
     - field_name: Which field needs attention
     - conversion_context: Metadata about the payment conversion
 
     Routing Logic (via LLM reasoning):
-    - Resolution Agent: For tasks that need to DETERMINE a correct value
-      Examples: transliteration, IFSC lookup, data enrichment
-    - Execution Agent: For tasks that need to APPLY a known value
-      Examples: direct updates, applying pre-determined corrections
+    - Resolution Agent: For problems that require FINDING/DETERMINING a value
+    - Execution Agent: For problems that require APPLYING a known value
 
     The supervisor does NOT have tools - it only routes based on reasoning.
     """
 
-    # System prompt that defines the supervisor's role and decision-making
+    # System prompt for autonomous problem analysis
     system_prompt = """You are a Supervisor Agent for a payment processing system.
 
-Your role is to analyze payment issues and route them to the appropriate specialized agent.
+Your role is to analyze payment PROBLEMS and route them to the appropriate specialized agent.
 
 AVAILABLE AGENTS:
-1. Resolution Agent - Use when you need to DETERMINE the correct value for a field
-   - Tasks: company name lookup, transliteration, IFSC code lookup, data enrichment
-   - Has tools (in priority order):
-     * lookup_company_katakana: Fast DB lookup for known company Katakana names (exact match)
-     * lookup_ifsc: Look up IFSC codes for Indian banks (exact match)
-     * atlas_search: Fuzzy search with typo tolerance (fallback if exact lookup fails)
-     * transliterate_text: AI-based transliteration (last resort)
-   - Use for: "japan_transliteration", "india_ifsc", similar research tasks
 
-2. Execution Agent - Use when you need to APPLY a known value to the database
-   - Tasks: updating fields, applying corrections
-   - Has tools: update_payment_field
-   - Use for: direct updates after Resolution Agent has determined the value
+1. Resolution Agent - Route here when the problem requires FINDING or DETERMINING a value
+   The Resolution Agent has these tools available:
+   - lookup_company_katakana: Find Japanese katakana names for companies
+   - lookup_ifsc: Look up IFSC codes for Indian banks
+   - atlas_search: Fuzzy search across entity databases
+   - transliterate_text: AI-powered text transliteration
+   - verify_legal_entity: Verify company names against registries
 
-TASK TYPES YOU'LL SEE:
-- "japan_transliteration": Need Japanese katakana for company/person names → Route to RESOLUTION
-  (Resolution Agent will first try lookup_company_katakana, then fallback to transliterate_text)
-- "india_ifsc": Need to look up IFSC code for Indian bank → Route to RESOLUTION
-- "name_verification": Need to match trading/informal name to official legal name → Route to RESOLUTION
-  (Resolution Agent will use atlas_search on registered_entities collection)
-- "direct_update": Need to apply a known value → Route to EXECUTION
+2. Execution Agent - Route here when a value is ALREADY KNOWN and just needs to be applied
+   The Execution Agent has these tools:
+   - update_payment_field: Update a field in the payment record
 
 DECISION PROCESS:
-1. Read the task_type, payment_data, and field_name from the state
-2. Understand what needs to be done
-3. Determine if we need to FIND a value (Resolution) or APPLY a value (Execution)
-4. Make your decision and explain your reasoning
+1. Read the PROBLEM description carefully
+2. Understand what type of resolution is needed
+3. Ask yourself: "Do we need to FIND something, or APPLY something?"
+   - If we need to FIND/LOOKUP/DETERMINE/TRANSLATE/VERIFY → RESOLUTION
+   - If we already have the value and just need to UPDATE → EXECUTION
+4. Make your decision based on the problem nature, NOT keywords
 
-IMPORTANT:
-- Use your reasoning ability - do NOT use hardcoded if/else logic
-- Consider the context and nature of the task
-- Explain your decision clearly
-- Your response should indicate which agent to route to: "ROUTE_TO_RESOLUTION" or "ROUTE_TO_EXECUTION"
+EXAMPLES OF REASONING:
+- "Name contains Western characters, needs Japanese script" → Need to FIND the Japanese version → RESOLUTION
+- "IFSC code is missing for Indian bank" → Need to LOOK UP the code → RESOLUTION
+- "Trading name needs verification against legal registry" → Need to VERIFY/FIND legal name → RESOLUTION
+- "Apply the corrected value X to field Y" → Value is known, just UPDATE → EXECUTION
 
 When you've made your decision, respond with:
 DECISION: ROUTE_TO_[RESOLUTION|EXECUTION]
-REASONING: [Your explanation of why you chose this agent]
+REASONING: [Brief explanation of why this routing makes sense for the problem]
 """
 
-    # Create LLM for supervisor (using Sonnet for better reasoning)
+    # Create LLM for supervisor
     llm = create_llm(temperature=0.1)
 
-    # Supervisor doesn't need tools - it just routes
-    # Create a simple callable that uses the LLM to make routing decisions
     def supervisor_node(state: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Supervisor node that analyzes the task and decides routing.
+        Supervisor node that analyzes the problem and decides routing.
 
         Args:
-            state: Current AgentState with payment_data, task_type, etc.
+            state: Current AgentState with problem, payment_data, etc.
 
         Returns:
             Updated state with routing decision
         """
-        logger.info(f"Supervisor analyzing task: {state.get('task_type')}")
-
-        # Extract key information from state
-        task_type = state.get("task_type", "unknown")
+        # Extract problem (new) or fall back to task_type (legacy)
+        problem = state.get("problem", "")
+        task_type = state.get("task_type", "")  # Legacy support
         field_name = state.get("field_name", "unknown")
+        original_value = state.get("original_value", "")
         payment_data = state.get("payment_data", {})
         conversion_context = state.get("conversion_context", {})
 
+        logger.info(f"Supervisor analyzing problem for field: {field_name}")
+
         # Build context message for the LLM
         context_message = f"""
-PAYMENT ISSUE TO ANALYZE:
-- Task Type: {task_type}
-- Field to Address: {field_name}
-- Current Value: {payment_data.get(field_name, 'N/A')}
-- Payment Reference: {payment_data.get('transaction_ref', 'N/A')}
-- Source Format: {conversion_context.get('source_format', 'N/A')}
-- Target Format: {conversion_context.get('target_format', 'N/A')}
+PROBLEM TO ANALYZE:
+{problem if problem else f"Task type: {task_type}"}
 
-PAYMENT DETAILS:
+FIELD INFORMATION:
+- Field Name: {field_name}
+- Current Value: {original_value}
+
+PAYMENT CONTEXT:
 - Debtor: {payment_data.get('debtor_name', 'N/A')}
 - Creditor: {payment_data.get('creditor_name', 'N/A')}
 - Amount: {payment_data.get('amount', 'N/A')} {payment_data.get('currency', '')}
+- Source Format: {conversion_context.get('source_format', 'N/A')}
+- Target Format: {conversion_context.get('target_format', 'N/A')}
 
-Based on this information, which agent should handle this task?
+Analyze this problem and decide which agent should handle it.
 """
 
         # Invoke LLM to make routing decision
@@ -187,7 +180,7 @@ Based on this information, which agent should handle this task?
             elif "ROUTE_TO_EXECUTION" in decision_text:
                 next_agent = "execution"
             else:
-                # Default to resolution for research tasks
+                # Default to resolution for problems that need investigation
                 logger.warning(f"Unclear decision, defaulting to resolution: {decision_text}")
                 next_agent = "resolution"
 
@@ -195,15 +188,14 @@ Based on this information, which agent should handle this task?
             return {
                 "messages": [
                     HumanMessage(
-                        content=f"Supervisor routed task '{task_type}' to {next_agent} agent. Reasoning: {decision_text}"
+                        content=f"Supervisor analyzed problem and routed to {next_agent} agent. Reasoning: {decision_text}"
                     )
                 ],
-                "next_agent": next_agent  # This will be used by the graph for routing
+                "next_agent": next_agent
             }
 
         except Exception as e:
             logger.error(f"Error in supervisor routing: {e}")
-            # Default to resolution on error
             return {
                 "messages": [
                     HumanMessage(content=f"Supervisor error: {e}. Defaulting to resolution agent.")
@@ -224,95 +216,70 @@ def create_resolution_agent():
     Create the Resolution Agent using create_react_agent.
 
     The Resolution Agent is responsible for:
-    1. Analyzing payment issues that need research or data enrichment
-    2. Using tools to DETERMINE the correct value for a field
-    3. Returning a proposed solution with confidence
+    1. Analyzing payment PROBLEMS autonomously
+    2. Deciding which tools might help solve the problem
+    3. Using tools to DETERMINE the correct value for a field
+    4. Returning a proposed solution with confidence
 
-    Available Tools:
-    - transliterate_text: Convert names to Japanese katakana
-    - lookup_ifsc: Look up IFSC codes for Indian banks
-
-    The agent uses the ReAct pattern:
-    1. Reason about the problem
-    2. Decide which tool(s) to use
-    3. Act by calling tools
-    4. Observe tool results
-    5. Repeat until solution is found
+    The agent reasons about the problem and discovers appropriate tools
+    rather than following predefined task_type mappings.
 
     Returns:
-        ReAct agent that can resolve payment issues
+        ReAct agent that can resolve payment issues autonomously
     """
     from tools import transliterate_text, lookup_company_katakana, lookup_ifsc, atlas_search
 
-    # System prompt that defines the Resolution Agent's role
+    # System prompt for autonomous problem solving
     system_prompt = """You are a Resolution Agent for a payment processing system.
 
-Your role is to analyze payment issues and DETERMINE the correct values using your tools.
+Your role is to analyze payment PROBLEMS and DETERMINE correct values using your tools.
 
-AVAILABLE TOOLS (use in this STRICT priority order):
+AVAILABLE TOOLS:
 
-FOR JAPAN TRANSLITERATION (company/person names to Katakana):
-1. lookup_company_katakana - TRY FIRST (exact DB match)
-   - Fast (~5ms), confidence: 1.0
-   - Uses official registered names from database
-   - If found=False, proceed to step 2
+1. lookup_company_katakana(company_name: str)
+   - Looks up Japanese katakana name for a company in the database
+   - Returns: name_katakana, name_hiragana, confidence
+   - Fast exact match from official records
 
-2. atlas_search - TRY SECOND (fuzzy matching)
-   - Use: atlas_search("bank_details", query, ["name_english"])
-   - Handles typos: "DENSOO" → "DENSO CORPORATION"
-   - Handles variations: "Toyota Motor" → "TOYOTA MOTOR CORPORATION"
-   - Fast (~20ms), confidence: 0.7-0.95
-   - If found=False, proceed to step 3
+2. lookup_ifsc(bank_name: str, branch: str = None, city: str = None)
+   - Looks up IFSC code for Indian banks
+   - Returns: ifsc, bank, branch, city, confidence
 
-3. transliterate_text - LAST RESORT (AI generation)
-   - Use when DB lookups fail
-   - Slower (~1-2s), confidence: 0.9
-   - Katakana is standard for foreign names/companies
+3. atlas_search(collection: str, query: str, search_fields: list)
+   - Fuzzy search across databases with typo tolerance
+   - Collections: "bank_details", "ifsc_codes", "registered_entities"
+   - Returns: found, top_result, search_score
 
-FOR INDIA IFSC (bank branch codes):
-1. lookup_ifsc - TRY FIRST (exact DB match)
-   - Fast, confidence: 1.0
-   - If found=False, proceed to step 2
+4. transliterate_text(text: str, target_script: str)
+   - AI-powered transliteration to different scripts
+   - target_script options: "katakana", "hiragana", "latin"
 
-2. atlas_search - TRY SECOND (fuzzy matching)
-   - Use: atlas_search("ifsc_codes", query, ["bank", "branch", "city"])
-   - Handles partial matches: "HDFC Connaught Delhi" → finds HDFC0000001
-   - Fast (~20ms), confidence: 0.7-0.95
+YOUR AUTONOMOUS PROCESS:
+1. READ the problem description carefully
+2. UNDERSTAND what needs to be resolved
+3. BEFORE CALLING ANY TOOL: Output a brief explanation of WHY you're choosing this specific tool
+   Example: "I need to find the Japanese katakana name for this company. I'll use lookup_company_katakana first since it provides official registered names."
+4. USE the tool to find the correct value
+5. ANALYZE all results and choose the BEST one for the problem
 
-FOR NAME VERIFICATION (match trading/informal name to legal name):
-1. atlas_search - USE DIRECTLY (fuzzy matching on registered entities)
-   - Use: atlas_search("registered_entities", query, ["legal_name", "trading_names"])
-   - Matches trading names: "Acme Co." → "Acme Corporation Limited"
-   - Matches abbreviations: "IBM" → "International Business Machines Corporation"
-   - Handles typos: "Volkswagon" → "Volkswagen Aktiengesellschaft"
-   - Fast (~20ms), confidence: 0.7-0.95
-   - Returns legal_name from top_result
+CRITICAL: Always explain your reasoning BEFORE calling a tool. This helps with audit trails.
 
-YOUR PROCESS:
-1. Understand the task from the payment context
-2. Identify what value needs to be determined
-3. Follow the STRICT tool priority order above
-4. If exact lookup fails, try fuzzy search before AI
-5. Analyze tool results and provide solution with confidence
+IMPORTANT: After using tools, you must provide your final answer in this exact format:
 
-IMPORTANT GUIDELINES:
-- ALWAYS follow the tool priority order - exact → fuzzy → AI
-- Don't skip to AI if fuzzy search might work
-- Check match_type in results: "exact" (confidence: 1.0), "fuzzy" (0.7-0.95), "ai" (0.9)
-- Provide confidence scores based on actual tool results
-- Be thorough but efficient
+FINAL_VALUE: <the exact value to use>
+CONFIDENCE: <0.0 to 1.0>
+SOURCE: <which tool provided this value>
 
-When you've determined the solution, summarize:
-- What field needs to be updated
-- What the new value should be
-- Match type used (exact/fuzzy/ai)
-- Your confidence level (0-1)
+Example:
+FINAL_VALUE: トウキョウ モーターズ
+CONFIDENCE: 0.9
+SOURCE: transliterate_text
 """
 
     # Create LLM for Resolution Agent
     llm = create_llm(temperature=0.1)
 
-    # Create tools list (priority: exact lookup → fuzzy search → AI fallback)
+    # Create tools list
     tools = [lookup_company_katakana, lookup_ifsc, atlas_search, transliterate_text]
 
     # Create the ReAct agent with tools
@@ -322,30 +289,32 @@ When you've determined the solution, summarize:
         prompt=system_prompt
     )
 
-    # Wrap the agent in a node function that handles state properly
     def resolution_node(state: Dict[str, Any]) -> Dict[str, Any]:
         """
         Resolution Agent node that determines correct values using tools.
 
         Args:
-            state: Current AgentState with payment_data, task_type, field_name
+            state: Current AgentState with problem, payment_data, field_name
 
         Returns:
             Updated state with solution
         """
-        logger.info(f"Resolution Agent processing task: {state.get('task_type')}")
-
-        # Extract information from state
-        task_type = state.get("task_type", "unknown")
+        # Extract problem (new) or fall back to task_type (legacy)
+        problem = state.get("problem", "")
+        task_type = state.get("task_type", "")  # Legacy support
         field_name = state.get("field_name", "unknown")
         payment_data = state.get("payment_data", {})
         original_value = state.get("original_value", "")
 
+        logger.info(f"Resolution Agent analyzing problem for field: {field_name}")
+
         # Build context message for the agent
         context_message = f"""
-TASK: {task_type}
+PROBLEM TO SOLVE:
+{problem if problem else f"Task: {task_type}"}
+
 FIELD TO RESOLVE: {field_name}
-CURRENT VALUE: {original_value or payment_data.get(field_name, 'N/A')}
+CURRENT VALUE: {original_value}
 
 PAYMENT CONTEXT:
 - Transaction Reference: {payment_data.get('transaction_ref', 'N/A')}
@@ -354,8 +323,7 @@ PAYMENT CONTEXT:
 - Amount: {payment_data.get('amount', 'N/A')} {payment_data.get('currency', '')}
 - Creditor Bank: {payment_data.get('creditor_bank', 'N/A')}
 
-Your task is to determine the correct value for the '{field_name}' field.
-Use your tools to research and find the accurate information.
+Analyze this problem and use your tools to find the correct value for '{field_name}'.
 """
 
         try:
@@ -398,74 +366,42 @@ Use your tools to research and find the accurate information.
                     except Exception as e:
                         logger.error(f"Error extracting tool result: {e}")
 
-            # Populate proposed_value based on task_type and tool results
+            # Parse agent's final decision from its response
+            # The agent autonomously decides which tool result to use
             proposed_value = ""
-            match_type = "unknown"
+            confidence = 0.5
+            source = "unknown"
 
-            if task_type == "japan_transliteration":
-                # Priority 1: Check lookup_company_katakana (exact DB match)
-                if "lookup_company_katakana" in tool_result_values:
-                    lookup_result = tool_result_values["lookup_company_katakana"]
-                    if lookup_result.get("found") and lookup_result.get("name_katakana"):
-                        proposed_value = lookup_result["name_katakana"]
-                        match_type = "exact"
-                        logger.info(f"Extracted Katakana from exact DB lookup: {proposed_value}")
+            if final_message and final_message.content:
+                response_text = final_message.content
 
-                # Priority 2: Check atlas_search (fuzzy match)
-                if not proposed_value and "atlas_search" in tool_result_values:
-                    fuzzy_result = tool_result_values["atlas_search"]
-                    if fuzzy_result.get("found") and fuzzy_result.get("top_result"):
-                        top = fuzzy_result["top_result"]
-                        proposed_value = top.get("name_katakana", "")
-                        match_type = "fuzzy"
-                        logger.info(f"Extracted Katakana from fuzzy search: {proposed_value} (score: {fuzzy_result.get('search_score')})")
+                # Parse FINAL_VALUE from agent's response
+                value_match = re.search(r'FINAL_VALUE:\s*(.+?)(?:\n|$)', response_text)
+                conf_match = re.search(r'CONFIDENCE:\s*([\d.]+)', response_text)
+                source_match = re.search(r'SOURCE:\s*(\w+)', response_text)
 
-                # Priority 3: Fallback to transliterate_text (AI-based)
-                if not proposed_value and "transliterate_text" in tool_result_values:
-                    proposed_value = tool_result_values["transliterate_text"].get("transliterated", "")
-                    match_type = "ai"
-                    logger.info(f"Extracted Katakana from AI transliteration: {proposed_value}")
+                if value_match:
+                    proposed_value = value_match.group(1).strip()
+                    logger.info(f"Agent chose value: {proposed_value}")
 
-            elif task_type == "india_ifsc":
-                # Priority 1: Check lookup_ifsc (exact match)
-                if "lookup_ifsc" in tool_result_values:
-                    lookup_result = tool_result_values["lookup_ifsc"]
-                    if lookup_result.get("found"):
-                        proposed_value = lookup_result.get("ifsc", "")
-                        match_type = "exact"
-                        logger.info(f"Extracted IFSC from exact lookup: {proposed_value}")
+                if conf_match:
+                    try:
+                        confidence = float(conf_match.group(1))
+                    except ValueError:
+                        confidence = 0.5
 
-                # Priority 2: Check atlas_search (fuzzy match)
-                if not proposed_value and "atlas_search" in tool_result_values:
-                    fuzzy_result = tool_result_values["atlas_search"]
-                    if fuzzy_result.get("found") and fuzzy_result.get("top_result"):
-                        top = fuzzy_result["top_result"]
-                        proposed_value = top.get("ifsc", "")
-                        match_type = "fuzzy"
-                        logger.info(f"Extracted IFSC from fuzzy search: {proposed_value} (score: {fuzzy_result.get('search_score')})")
-
-            elif task_type == "name_verification":
-                # Check atlas_search on registered_entities (fuzzy match)
-                if "atlas_search" in tool_result_values:
-                    fuzzy_result = tool_result_values["atlas_search"]
-                    if fuzzy_result.get("found") and fuzzy_result.get("top_result"):
-                        top = fuzzy_result["top_result"]
-                        proposed_value = top.get("legal_name", "")
-                        match_type = "fuzzy"
-                        logger.info(f"Extracted legal_name from entity search: {proposed_value} (score: {fuzzy_result.get('search_score')})")
+                if source_match:
+                    source = source_match.group(1)
+                    logger.info(f"Agent source: {source}, confidence: {confidence}")
 
             if not proposed_value:
-                logger.warning(f"No proposed_value extracted for task_type '{task_type}' - tool results: {list(tool_result_values.keys())}")
+                logger.warning(f"No proposed_value found in agent response - tool results: {list(tool_result_values.keys())}")
 
-            # Determine confidence based on match_type
-            confidence_map = {"exact": 1.0, "fuzzy": 0.85, "ai": 0.9, "unknown": 0.5}
-            confidence = confidence_map.get(match_type, 0.5)
-
-            # Parse the agent's response to extract solution
+            # Build solution from agent's autonomous decision
             solution = {
                 "field_name": field_name,
-                "proposed_value": proposed_value,  # NOW POPULATED from tool results
-                "match_type": match_type,  # exact, fuzzy, or ai
+                "proposed_value": proposed_value,
+                "source": source,  # Which tool the agent chose
                 "reasoning": final_message.content if final_message else "No response from agent",
                 "confidence": confidence,
                 "tool_results": tool_results

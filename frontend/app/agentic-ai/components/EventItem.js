@@ -96,14 +96,19 @@ function formatEventMessage(event) {
                           event.country === 'IN' ? 'India' : event.country || 'Country';
       return `${countryName} validation failed: ${fieldLabel} requires conversion`;
     case 'agent_start':
-      return `Agent started: ${event.task_type || 'task'}`;
+      // Derive task description from problem
+      const taskDesc = event.problem ?
+        (event.problem.toLowerCase().includes('katakana') ? 'transliteration' :
+         event.problem.toLowerCase().includes('ifsc') ? 'IFSC lookup' : 'field correction')
+        : 'task';
+      return `Agent started: ${taskDesc}`;
     case 'agent_supervisor':
       // Extract just the decision part for the summary
       if (event.reasoning) {
         const decisionMatch = event.reasoning.match(/DECISION:\s*(\S+)/i);
         if (decisionMatch) {
           const decision = decisionMatch[1].replace('ROUTE_TO_', '').toLowerCase();
-          return `Supervisor routed task '${event.task_type || 'unknown'}' to ${decision} agent`;
+          return `Supervisor routed to ${decision} agent`;
         }
       }
       return `Supervisor routing: ${event.next_agent || 'evaluating'}`;
@@ -310,9 +315,9 @@ function renderEventDetails(event) {
               NEXT STEP
             </Body>
             <Body style={{ fontSize: '12px', color: '#5C6C75', lineHeight: '1.5' }}>
-              {event.task_type === 'japan_transliteration'
+              {event.problem?.toLowerCase().includes('katakana') || event.problem?.toLowerCase().includes('japanese')
                 ? 'Transaction Agent will transliterate the name to Japanese Katakana script using official transliteration rules.'
-                : event.task_type === 'india_ifsc'
+                : event.problem?.toLowerCase().includes('ifsc') || event.problem?.toLowerCase().includes('india')
                 ? 'Transaction Agent will look up the correct IFSC code from India\'s banking database using the bank name and branch information.'
                 : 'Transaction Agent will resolve this validation issue automatically.'}
             </Body>
@@ -352,6 +357,16 @@ function renderEventDetails(event) {
           borderRadius: '6px',
           fontSize: '12px'
         }}>
+          {event.reasoning && (
+            <div style={{ marginBottom: '12px' }}>
+              <Body weight="bold" style={{ fontSize: '12px', color: '#0B61A4', marginBottom: '6px' }}>
+                AGENT REASONING
+              </Body>
+              <Body style={{ fontSize: '12px', color: '#5C6C75', lineHeight: '1.5' }}>
+                {event.reasoning}
+              </Body>
+            </div>
+          )}
           <Body weight="medium" style={{ fontSize: '12px' }}>Arguments:</Body>
           <pre style={{
             marginTop: '4px',

@@ -304,8 +304,8 @@ async def convert_multi_hop(request: MultiHopConversionRequest) -> ConversionRes
         except CountryValidationException as e:
             # Country rule violated - call payment agent to fix
             logger.warning(
-                f"Country validation failed: {e.reason} "
-                f"(task_type={e.task_type}, field={e.field_name})"
+                f"Country validation failed: {e.problem[:100]} "
+                f"(field={e.field_name})"
             )
 
             # Call payment agent with streaming
@@ -313,7 +313,7 @@ async def convert_multi_hop(request: MultiHopConversionRequest) -> ConversionRes
             final_state = {}
 
             async for event in agent_client.process_payment_stream(
-                task_type=e.task_type,
+                problem=e.problem,
                 field_name=e.field_name,
                 original_value=e.original_value,
                 payment_data=e.payment_data,
@@ -348,7 +348,7 @@ async def convert_multi_hop(request: MultiHopConversionRequest) -> ConversionRes
 
             agent_result = {
                 "success": final_state.get("result", {}).get("success", False),
-                "task_type": e.task_type,
+                "problem": e.problem,
                 "field_name": e.field_name,
                 "solution": final_state.get("solution", {}),
                 "result": final_state.get("result", {}),
@@ -370,7 +370,7 @@ async def convert_multi_hop(request: MultiHopConversionRequest) -> ConversionRes
 
             # Store correction metadata
             agent_correction = {
-                "task_type": e.task_type,
+                "problem": e.problem,
                 "field_name": e.field_name,
                 "old_value": agent_result['result']['old_value'],
                 "new_value": agent_result['result']['new_value'],
@@ -508,19 +508,19 @@ async def convert_multi_hop_stream(request: MultiHopConversionRequest):
 
             except CountryValidationException as e:
                 # Country validation failed - emit event with full context for frontend
-                yield f"data: {json.dumps({'type': 'validation_failed', 'country': e.conversion_context.get('additional_context', {}).get('country'), 'field': e.field_name, 'task_type': e.task_type, 'reason': e.reason, 'original_value': e.original_value})}\n\n"
+                yield f"data: {json.dumps({'type': 'validation_failed', 'country': e.conversion_context.get('additional_context', {}).get('country'), 'field': e.field_name, 'problem': e.problem, 'original_value': e.original_value})}\n\n"
 
                 # Stream agent events with human-in-the-loop support
-                yield f"data: {json.dumps({'type': 'agent_start', 'task_type': e.task_type, 'field': e.field_name})}\n\n"
+                yield f"data: {json.dumps({'type': 'agent_start', 'problem': e.problem[:100] + '...' if len(e.problem) > 100 else e.problem, 'field': e.field_name})}\n\n"
 
-                # Capture task_type for use in nested events
-                current_task_type = e.task_type
+                # Capture problem for use in nested events
+                current_problem = e.problem
 
                 final_state = {}
                 review_required = False
 
                 async for event in agent_client.process_payment_stream_with_review(
-                    task_type=e.task_type,
+                    problem=e.problem,
                     field_name=e.field_name,
                     original_value=e.original_value,
                     payment_data=e.payment_data,
@@ -540,7 +540,7 @@ async def convert_multi_hop_stream(request: MultiHopConversionRequest):
                             last_message = messages[-1]
                             reasoning = last_message.get("content", "")
 
-                        yield f"data: {json.dumps({'type': 'agent_supervisor', 'status': 'routing', 'reasoning': reasoning, 'next_agent': next_agent, 'task_type': current_task_type, 'details': {'messages_count': len(messages)}})}\n\n"
+                        yield f"data: {json.dumps({'type': 'agent_supervisor', 'status': 'routing', 'reasoning': reasoning, 'next_agent': next_agent, 'problem': current_problem[:100] + '...' if len(current_problem) > 100 else current_problem, 'details': {'messages_count': len(messages)}})}\n\n"
 
                     elif "resolution" in event:
                         resolution_state = event["resolution"]
@@ -548,15 +548,29 @@ async def convert_multi_hop_stream(request: MultiHopConversionRequest):
 
                         # Extract tool calls and results from messages
                         messages = resolution_state.get("messages", [])
-                        for msg in messages:
+                        logger.info(f"Resolution messages count: {len(messages)}")
+                        for idx, msg in enumerate(messages):
                             msg_type = msg.get("type", "")
+                            logger.info(f"Message {idx}: type={msg_type}, content_len={len(str(msg.get('content', '')))}, has_tool_calls={'tool_calls' in msg}")
 
-                            # Emit tool call events
+                            # Emit tool call events with agent's reasoning
                             if "tool_calls" in msg and msg.get("tool_calls"):
+                                # Extract reasoning from AIMessage content (why the agent chose this tool)
+                                agent_reasoning = msg.get("content", "")
+                                logger.info(f"Tool call message content: {agent_reasoning[:300] if agent_reasoning else 'EMPTY'}")
+
+                                # If content is empty, look backwards for reasoning in previous AI messages
+                                if not agent_reasoning:
+                                    for prev_idx in range(idx - 1, -1, -1):
+                                        prev_msg = messages[prev_idx]
+                                        if prev_msg.get("type") == "ai" and prev_msg.get("content"):
+                                            agent_reasoning = prev_msg.get("content", "")
+                                            break
+
                                 for tool_call in msg["tool_calls"]:
                                     tool_name = tool_call.get("name", "unknown")
                                     tool_args = tool_call.get("args", {})
-                                    yield f"data: {json.dumps({'type': 'tool_call', 'tool': tool_name, 'args': tool_args, 'details': tool_args})}\n\n"
+                                    yield f"data: {json.dumps({'type': 'tool_call', 'tool': tool_name, 'args': tool_args, 'reasoning': agent_reasoning, 'details': tool_args})}\n\n"
 
                             # Emit tool result events
                             if msg_type == "tool":
@@ -602,7 +616,7 @@ async def convert_multi_hop_stream(request: MultiHopConversionRequest):
                             "target_format": request.target_format,
                             "original_message": request.message,
                             "validation_exception": {
-                                "task_type": e.task_type,
+                                "problem": e.problem,
                                 "field_name": e.field_name,
                                 "original_value": e.original_value,
                                 "conversion_context": e.conversion_context
@@ -619,7 +633,7 @@ async def convert_multi_hop_stream(request: MultiHopConversionRequest):
 
                     elif event.get("type") == "complete":
                         agent_result = final_state.get("result", {})
-                        yield f"data: {json.dumps({'type': 'agent_complete', 'new_value': agent_result.get('new_value'), 'field': e.field_name, 'task_type': current_task_type, 'success': agent_result.get('success', True)})}\n\n"
+                        yield f"data: {json.dumps({'type': 'agent_complete', 'new_value': agent_result.get('new_value'), 'field': e.field_name, 'success': agent_result.get('success', True)})}\n\n"
 
                     elif event.get("type") == "error":
                         yield f"data: {json.dumps({'type': 'error', 'message': event.get('message')})}\n\n"
@@ -627,7 +641,7 @@ async def convert_multi_hop_stream(request: MultiHopConversionRequest):
 
                 # Store correction metadata
                 agent_correction = {
-                    "task_type": e.task_type,
+                    "problem": e.problem,
                     "field_name": e.field_name,
                     "old_value": final_state.get("result", {}).get("old_value", ""),
                     "new_value": final_state.get("result", {}).get("new_value", ""),

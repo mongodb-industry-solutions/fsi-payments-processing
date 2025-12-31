@@ -53,7 +53,7 @@ def human_review_node(state: Dict[str, Any]) -> Dict[str, Any]:
     field_name = solution.get("field_name", state.get("field_name", "unknown"))
     proposed_value = solution.get("proposed_value", "")
     confidence = solution.get("confidence", 0)
-    task_type = state.get("task_type", "unknown")
+    problem = state.get("problem", "")
     original_value = state.get("original_value", "")
 
     logger.info(f"Human review requested for {field_name}: {original_value} → {proposed_value}")
@@ -62,7 +62,7 @@ def human_review_node(state: Dict[str, Any]) -> Dict[str, Any]:
     # This returns control to the caller with review data
     review_decision = interrupt({
         "type": "review_required",
-        "task_type": task_type,
+        "problem": problem,  # Rich problem description for autonomous display
         "field": field_name,
         "original_value": original_value,
         "proposed_value": proposed_value,

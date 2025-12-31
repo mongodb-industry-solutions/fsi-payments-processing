@@ -14,6 +14,9 @@ class PaymentAgentClient:
 
     Handles communication with the payment_agent API to request
     automatic correction of country validation violations.
+
+    The client passes rich problem descriptions for autonomous agent analysis
+    rather than predefined task types.
     """
 
     def __init__(self, agent_url: str, timeout: int = 30):
@@ -30,7 +33,7 @@ class PaymentAgentClient:
 
     async def process_payment(
         self,
-        task_type: str,
+        problem: str,
         field_name: str,
         original_value: str,
         payment_data: Dict[str, Any],
@@ -40,7 +43,7 @@ class PaymentAgentClient:
         Call payment_agent to process a payment correction.
 
         Args:
-            task_type: Type of correction (e.g., "japan_transliteration")
+            problem: Rich description of the problem for agent to analyze
             field_name: Field to correct
             original_value: Current value
             payment_data: Full canonical JSON
@@ -56,7 +59,7 @@ class PaymentAgentClient:
         endpoint = f"{self.agent_url}/api/v1/payment-agent/process"
 
         payload = {
-            "task_type": task_type,
+            "problem": problem,
             "field_name": field_name,
             "original_value": original_value,
             "payment_data": payment_data,
@@ -64,7 +67,7 @@ class PaymentAgentClient:
         }
 
         logger.info(
-            f"Calling payment_agent: task_type={task_type}, "
+            f"Calling payment_agent: problem={problem[:50]}..., "
             f"field={field_name}, url={endpoint}"
         )
 
@@ -87,7 +90,7 @@ class PaymentAgentClient:
 
     async def process_payment_stream(
         self,
-        task_type: str,
+        problem: str,
         field_name: str,
         original_value: str,
         payment_data: Dict[str, Any],
@@ -100,7 +103,7 @@ class PaymentAgentClient:
         endpoint, yielding parsed events as they arrive in real-time.
 
         Args:
-            task_type: Type of correction (e.g., "japan_transliteration")
+            problem: Rich description of the problem for agent to analyze
             field_name: Field to correct
             original_value: Current value
             payment_data: Full canonical JSON
@@ -119,7 +122,7 @@ class PaymentAgentClient:
         endpoint = f"{self.agent_url}/api/v1/payment-agent/process-stream"
 
         payload = {
-            "task_type": task_type,
+            "problem": problem,
             "field_name": field_name,
             "original_value": original_value,
             "payment_data": payment_data,
@@ -127,7 +130,7 @@ class PaymentAgentClient:
         }
 
         logger.info(
-            f"Streaming from payment_agent: task_type={task_type}, "
+            f"Streaming from payment_agent: problem={problem[:50]}..., "
             f"field={field_name}, url={endpoint}"
         )
 
@@ -165,7 +168,7 @@ class PaymentAgentClient:
 
     async def process_payment_stream_with_review(
         self,
-        task_type: str,
+        problem: str,
         field_name: str,
         original_value: str,
         payment_data: Dict[str, Any],
@@ -178,7 +181,7 @@ class PaymentAgentClient:
         node and emits a 'review_required' event before execution.
 
         Args:
-            task_type: Type of correction (e.g., "japan_transliteration")
+            problem: Rich description of the problem for agent to analyze
             field_name: Field to correct
             original_value: Current value
             payment_data: Full canonical JSON
@@ -195,7 +198,7 @@ class PaymentAgentClient:
         endpoint = f"{self.agent_url}/api/v1/payment-agent/process-stream-with-review"
 
         payload = {
-            "task_type": task_type,
+            "problem": problem,
             "field_name": field_name,
             "original_value": original_value,
             "payment_data": payment_data,
@@ -203,7 +206,7 @@ class PaymentAgentClient:
         }
 
         logger.info(
-            f"Streaming with review from payment_agent: task_type={task_type}, "
+            f"Streaming with review from payment_agent: problem={problem[:50]}..., "
             f"field={field_name}, url={endpoint}"
         )
 

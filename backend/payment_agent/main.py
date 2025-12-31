@@ -63,10 +63,13 @@ class ConversionContext(BaseModel):
 class ProcessPaymentRequest(BaseModel):
     """Request model for processing a payment through the agent system."""
 
-    task_type: str = Field(
+    problem: str = Field(
         ...,
-        description="Type of task to perform",
-        examples=["japan_transliteration", "india_ifsc", "swiss_iban_validation"]
+        description="Rich description of the problem for autonomous agent analysis",
+        examples=[
+            "The creditor name contains Western/Latin characters but Japanese payment regulations require katakana script",
+            "India requires valid IFSC code for domestic transfers but provided bank identifier doesn't match IFSC format"
+        ]
     )
 
     field_name: str = Field(
@@ -115,7 +118,7 @@ class ProcessPaymentResponse(BaseModel):
     """Response model for payment processing."""
 
     success: bool = Field(..., description="Overall processing success")
-    task_type: str = Field(..., description="Task type that was processed")
+    problem: str = Field(..., description="Problem that was analyzed and solved")
     field_name: str = Field(..., description="Field that was processed")
 
     supervisor_decision: Optional[str] = Field(
@@ -223,14 +226,15 @@ async def process_payment(request: ProcessPaymentRequest) -> ProcessPaymentRespo
     start_time = datetime.utcnow()
 
     try:
-        logger.info(f"Processing payment: task_type={request.task_type}, field={request.field_name}")
+        logger.info(f"Processing payment: problem={request.problem[:50]}..., field={request.field_name}")
 
         # Get the compiled workflow
         workflow = get_workflow()
 
         # Construct initial state
         initial_state = {
-            "task_type": request.task_type,
+            "problem": request.problem,
+            "task_type": "autonomous",  # Legacy support
             "field_name": request.field_name,
             "original_value": request.original_value,
             "payment_data": request.payment_data,
@@ -294,7 +298,7 @@ async def process_payment(request: ProcessPaymentRequest) -> ProcessPaymentRespo
         # Build response
         response = ProcessPaymentResponse(
             success=True,
-            task_type=request.task_type,
+            problem=request.problem,
             field_name=request.field_name,
             supervisor_decision=final_state.get("next_agent"),
             solution=solution,
@@ -386,7 +390,7 @@ async def process_payment_stream(request: ProcessPaymentRequest):
                     return str(obj)
 
         try:
-            logger.info(f"Starting streaming workflow for task: {request.task_type}")
+            logger.info(f"Starting streaming workflow for problem: {request.problem[:50]}...")
 
             # Get workflow and construct initial state
             workflow = get_workflow()
@@ -396,7 +400,8 @@ async def process_payment_stream(request: ProcessPaymentRequest):
             config = {"configurable": {"thread_id": thread_id}}
 
             initial_state = {
-                "task_type": request.task_type,
+                "problem": request.problem,
+                "task_type": "autonomous",  # Legacy support
                 "field_name": request.field_name,
                 "original_value": request.original_value,
                 "payment_data": request.payment_data,
@@ -439,7 +444,7 @@ async def process_payment_stream(request: ProcessPaymentRequest):
                 yield f"data: {event_data}\n\n"
 
             # Send completion event
-            logger.info(f"Workflow completed for task: {request.task_type}")
+            logger.info(f"Workflow completed for field: {request.field_name}")
             completion_event = json.dumps({"type": "complete", "success": True})
             yield f"data: {completion_event}\n\n"
 
@@ -590,7 +595,7 @@ async def process_payment_stream_with_review(request: ProcessPaymentRequest):
                     return str(obj)
 
         try:
-            logger.info(f"Starting streaming workflow with review for task: {request.task_type}, thread: {thread_id}")
+            logger.info(f"Starting streaming workflow with review, problem: {request.problem[:50]}..., thread: {thread_id}")
 
             # Get workflow
             workflow = get_workflow()
@@ -600,7 +605,8 @@ async def process_payment_stream_with_review(request: ProcessPaymentRequest):
 
             # Construct initial state
             initial_state = {
-                "task_type": request.task_type,
+                "problem": request.problem,
+                "task_type": "autonomous",  # Legacy support
                 "field_name": request.field_name,
                 "original_value": request.original_value,
                 "payment_data": request.payment_data,
@@ -665,7 +671,7 @@ async def process_payment_stream_with_review(request: ProcessPaymentRequest):
                 yield f"data: {event_data}\n\n"
 
             # Workflow completed without interrupt (shouldn't happen with human review enabled)
-            logger.info(f"Workflow completed for task: {request.task_type}")
+            logger.info(f"Workflow completed for field: {request.field_name}")
             completion_event = json.dumps({"type": "complete", "success": True})
             yield f"data: {completion_event}\n\n"
 

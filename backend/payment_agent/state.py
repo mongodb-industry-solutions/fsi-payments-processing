@@ -28,7 +28,8 @@ class AgentState(TypedDict):
     State Fields:
     - messages: Conversation history between agents (accumulates via operator.add)
     - payment_data: Flat canonical JSON from payment_converter_v2 (~40 fields)
-    - task_type: Type of task to perform (e.g., "japan_transliteration", "india_ifsc")
+    - problem: Rich description of the issue for autonomous agent analysis
+    - task_type: (Legacy) Type of task - prefer using problem instead
     - field_name: Name of the field to modify in payment_data
     - original_value: Original field value before modification (for audit)
     - conversion_context: Metadata from converter (source, target, etc.)
@@ -48,7 +49,11 @@ class AgentState(TypedDict):
     # - remittance_info, charge_bearer, etc.
     payment_data: Dict[str, Any]
 
-    # Task identification
+    # Problem description for autonomous agent analysis
+    # Rich text describing what needs to be resolved
+    problem: Optional[str]
+
+    # Task identification (legacy - prefer using problem for autonomous agents)
     task_type: str  # "japan_transliteration", "india_ifsc", etc.
 
     # Field to be modified

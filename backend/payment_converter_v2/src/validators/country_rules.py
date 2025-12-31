@@ -1,12 +1,12 @@
 """
 Country-specific business rule validators.
 
-Each country has specific requirements for payment processing:
-- Japan: Names must be in katakana/hiragana
-- India: IFSC codes required and must be valid format
-- Switzerland: IBANs must follow specific formats (future)
+Each country has specific requirements for payment processing.
+When a rule is violated, we raise a CountryValidationException with
+a rich problem description that agents can analyze autonomously.
 
-Add new countries by creating a new validate_<country>_rules() function.
+The agent decides which tools to use based on the problem - we don't
+prescribe specific task types or tool selections.
 """
 
 import re
@@ -26,7 +26,7 @@ def validate_country_rules(
     Validate country-specific business rules.
 
     Raises CountryValidationException if any rules are violated.
-    The exception contains all information needed to call payment_agent.
+    The exception contains a problem description for agents to analyze.
 
     Args:
         canonical_json: The canonical JSON payment data
@@ -55,10 +55,6 @@ def validate_country_rules(
     if target_country == "IN" or currency == "INR":
         validate_india_rules(canonical_json, conversion_id, source_format, target_format, conversion_run_id, detailed_processing)
 
-    # Add more countries here:
-    # if target_country == "CH" or currency == "CHF":
-    #     validate_switzerland_rules(...)
-
     # Universal validation: Name verification
     # Only applies to countries WITHOUT dedicated rules (skip JP, IN which have their own)
     countries_with_dedicated_rules = {"JP", "IN"}
@@ -81,61 +77,34 @@ def validate_japan_rules(
 
     Requirements:
     - Creditor name must be in katakana/hiragana (Japanese characters)
-    - Debtor name should be in katakana if Japanese entity
-
-    Args:
-        canonical_json: Payment data
-        conversion_id: Conversion ID
-        source_format: Source format
-        target_format: Target format
-        conversion_run_id: Optional unique ID for this conversion run
-        detailed_processing: Detailed processing data from hop1 (for frontend display)
-
-    Raises:
-        CountryValidationException: If Japanese name requirements not met
     """
 
     creditor_name = canonical_json.get("creditor_name", "")
-    debtor_name = canonical_json.get("debtor_name", "")
 
     # Check if creditor name contains Western characters
     if creditor_name and _contains_western_text(creditor_name):
         raise CountryValidationException(
-            task_type="japan_transliteration",
+            problem=(
+                f"The creditor name '{creditor_name}' contains Western/Latin characters. "
+                f"Japanese payment regulations require beneficiary names to be written in "
+                f"Japanese script (katakana for foreign company names, or hiragana/kanji for "
+                f"Japanese entities). The payment cannot proceed until the name is converted "
+                f"to the appropriate Japanese script format."
+            ),
             field_name="creditor_name",
             original_value=creditor_name,
-            reason=(
-                "Japanese payments require beneficiary names in katakana/hiragana. "
-                f"Found Western characters: '{creditor_name}'"
-            ),
             payment_data=canonical_json,
             conversion_context={
                 "source_format": source_format,
                 "target_format": target_format,
                 "conversion_id": conversion_id,
-                "conversion_run_id": conversion_run_id,  # Include for MongoDB lookup
-                "detailed_processing": detailed_processing or {},  # Include for frontend display
+                "conversion_run_id": conversion_run_id,
+                "detailed_processing": detailed_processing or {},
                 "additional_context": {
                     "country": "JP",
                     "currency": canonical_json.get("currency", "JPY"),
                     "validation_rule": "japanese_name_format"
                 }
-            }
-        )
-
-    # Optionally validate debtor name too
-    if debtor_name and _is_japanese_entity(canonical_json) and _contains_western_text(debtor_name):
-        raise CountryValidationException(
-            task_type="japan_transliteration",
-            field_name="debtor_name",
-            original_value=debtor_name,
-            reason="Japanese entity names should be in katakana",
-            payment_data=canonical_json,
-            conversion_context={
-                "source_format": source_format,
-                "target_format": target_format,
-                "conversion_id": conversion_id,
-                "detailed_processing": detailed_processing or {}
             }
         )
 
@@ -154,17 +123,6 @@ def validate_india_rules(
     Requirements:
     - Creditor agent BIC must contain valid IFSC code (11 characters)
     - Format: XXXX0YYYYYY (4 alpha, 1 zero, 6 alphanumeric)
-
-    Args:
-        canonical_json: Payment data
-        conversion_id: Conversion ID
-        source_format: Source format
-        target_format: Target format
-        conversion_run_id: Optional unique ID for this conversion run
-        detailed_processing: Detailed processing data from hop1 (for frontend display)
-
-    Raises:
-        CountryValidationException: If IFSC code missing or invalid
     """
 
     creditor_agent_bic = canonical_json.get("creditor_agent_bic", "")
@@ -173,17 +131,22 @@ def validate_india_rules(
     # Check if IFSC code is missing
     if not creditor_agent_bic:
         raise CountryValidationException(
-            task_type="india_ifsc",
+            problem=(
+                f"Indian payment regulations require an IFSC (Indian Financial System Code) "
+                f"to identify the beneficiary's bank branch. The current payment is missing "
+                f"this code in the creditor_agent_bic field. The bank information available "
+                f"is: '{creditor_bank}'. An IFSC code needs to be looked up or determined "
+                f"based on the bank name, branch, and location information."
+            ),
             field_name="creditor_agent_bic",
             original_value="",
-            reason="Indian payments require IFSC code in creditor_agent_bic field",
             payment_data=canonical_json,
             conversion_context={
                 "source_format": source_format,
                 "target_format": target_format,
                 "conversion_id": conversion_id,
                 "conversion_run_id": conversion_run_id,
-                "detailed_processing": detailed_processing or {},  # Include for frontend display
+                "detailed_processing": detailed_processing or {},
                 "additional_context": {
                     "country": "IN",
                     "currency": canonical_json.get("currency", "INR"),
@@ -196,20 +159,21 @@ def validate_india_rules(
     # Check if IFSC code is invalid format
     if not _is_valid_ifsc_format(creditor_agent_bic):
         raise CountryValidationException(
-            task_type="india_ifsc",
+            problem=(
+                f"The IFSC code '{creditor_agent_bic}' has an invalid format. "
+                f"Valid IFSC codes are 11 characters: 4 letters (bank code) + '0' + "
+                f"6 alphanumeric (branch code). Example: HDFC0001234. "
+                f"The correct IFSC code needs to be determined for the bank: '{creditor_bank}'."
+            ),
             field_name="creditor_agent_bic",
             original_value=creditor_agent_bic,
-            reason=(
-                f"Invalid IFSC code format: '{creditor_agent_bic}'. "
-                "Expected 11 characters: XXXX0YYYYYY"
-            ),
             payment_data=canonical_json,
             conversion_context={
                 "source_format": source_format,
                 "target_format": target_format,
                 "conversion_id": conversion_id,
                 "conversion_run_id": conversion_run_id,
-                "detailed_processing": detailed_processing or {},  # Include for frontend display
+                "detailed_processing": detailed_processing or {},
                 "additional_context": {
                     "country": "IN",
                     "creditor_bank": creditor_bank,
@@ -232,34 +196,22 @@ def validate_name_verification_rules(
 
     Trading names (informal/abbreviated names like "HSBC", "IBM", "Acme")
     should be resolved to their full legal names for compliance.
-
-    Detection heuristic: Names lacking legal suffixes (Ltd, Inc, Corp, etc.)
-    are likely trading names that need verification.
-
-    Args:
-        canonical_json: Payment data
-        conversion_id: Conversion ID
-        source_format: Source format
-        target_format: Target format
-        conversion_run_id: Optional unique ID for this conversion run
-        detailed_processing: Detailed processing data from hop1 (for frontend display)
-
-    Raises:
-        CountryValidationException: If creditor name appears to be a trading name
     """
 
     creditor_name = canonical_json.get("creditor_name", "")
 
     if creditor_name and _looks_like_trading_name(creditor_name):
         raise CountryValidationException(
-            task_type="name_verification",
+            problem=(
+                f"The creditor name '{creditor_name}' appears to be a trading name or "
+                f"abbreviation rather than the full legal entity name. For compliance and "
+                f"sanctions screening purposes, payments should use the official registered "
+                f"legal name (e.g., 'HSBC' should be 'HSBC Holdings plc', 'IBM' should be "
+                f"'International Business Machines Corporation'). The correct legal name "
+                f"needs to be verified against registered entity databases."
+            ),
             field_name="creditor_name",
             original_value=creditor_name,
-            reason=(
-                f"Creditor name '{creditor_name}' appears to be a trading name "
-                "(missing legal suffix like Ltd, Inc, Corp). "
-                "Verification against registered entities required."
-            ),
             payment_data=canonical_json,
             conversion_context={
                 "source_format": source_format,
@@ -285,21 +237,6 @@ def _contains_western_text(text: str) -> bool:
     Japanese text should only contain katakana, hiragana, kanji, and symbols.
     """
     return bool(re.search(r'[a-zA-Z]', text))
-
-
-def _is_japanese_entity(canonical_json: Dict[str, Any]) -> bool:
-    """
-    Determine if debtor is a Japanese entity.
-
-    Indicators: debtor_country=JP, debtor_account starts with JP, etc.
-    """
-    debtor_country = canonical_json.get("debtor_country", "")
-    debtor_account = canonical_json.get("debtor_account", "")
-
-    return (
-        debtor_country == "JP" or
-        debtor_account.startswith("JP")
-    )
 
 
 def _is_valid_ifsc_format(code: str) -> bool:

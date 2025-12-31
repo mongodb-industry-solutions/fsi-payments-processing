@@ -34,7 +34,7 @@ export default function HumanReviewModal({
   // Handle null reviewData (modal renders before data arrives)
   const safeReviewData = reviewData || {};
   const {
-    task_type = '',
+    problem = '',
     field = '',
     original_value = '',
     proposed_value = '',
@@ -42,12 +42,22 @@ export default function HumanReviewModal({
     reasoning = ''
   } = safeReviewData;
 
-  // Format task type for display
-  const taskLabel = task_type === 'japan_transliteration'
-    ? 'Japanese Transliteration'
-    : task_type === 'india_ifsc'
-    ? 'IFSC Code Lookup'
-    : task_type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  // Derive task label from problem description
+  const getTaskLabel = (problemText) => {
+    if (!problemText) return 'Field Correction';
+    const lowerProblem = problemText.toLowerCase();
+    if (lowerProblem.includes('katakana') || lowerProblem.includes('japanese')) {
+      return 'Japanese Transliteration';
+    }
+    if (lowerProblem.includes('ifsc') || lowerProblem.includes('india')) {
+      return 'IFSC Code Lookup';
+    }
+    if (lowerProblem.includes('legal name') || lowerProblem.includes('verification')) {
+      return 'Name Verification';
+    }
+    return 'Field Correction';
+  };
+  const taskLabel = getTaskLabel(problem);
 
   // Format field name for display
   const fieldLabel = field === 'creditor_name'
