@@ -81,13 +81,13 @@ function formatEventMessage(event) {
     case 'start':
       return `Conversion started (ID: ${event.conversion_run_id?.slice(0, 8) || 'N/A'})`;
     case 'hop1_start':
-      return `Hop 1: ${event.source || 'Source'} → ${event.target || 'Target'}`;
+      return `Stage 1: Converting ${event.source || 'Source'} → ${event.target || 'Target'}`;
     case 'hop1_complete':
-      return `Hop 1 complete (${event.time?.toFixed(2) || '0'}s) - ${event.detailed_processing?.extraction?.total_fields || 0} fields extracted`;
+      return `Stage 1 complete (${event.time?.toFixed(2) || '0'}s) — ${event.detailed_processing?.extraction?.total_fields || 0} fields extracted`;
     case 'hop2_start':
-      return `Hop 2: ${event.source || 'Source'} → ${event.target || 'Target'}`;
+      return `Stage 2: Converting ${event.source || 'Source'} → ${event.target || 'Target'}`;
     case 'hop2_complete':
-      return `Hop 2 complete (${event.time?.toFixed(2) || '0'}s) - ${event.detailed_processing?.extraction?.total_fields || 0} fields mapped`;
+      return `Stage 2 complete (${event.time?.toFixed(2) || '0'}s) — ${event.detailed_processing?.extraction?.total_fields || 0} fields mapped`;
     case 'validation_failed':
       // Show a brief but informative summary
       const fieldLabel = event.field === 'creditor_name' ? 'beneficiary name' :

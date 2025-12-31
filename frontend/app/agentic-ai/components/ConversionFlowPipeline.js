@@ -57,7 +57,7 @@ export default function ConversionFlowPipeline({
     {
       id: 'A',
       type: 'conversion',
-      label: 'Hop 1',
+      label: 'Stage 1',
       sublabel: `${sourceFormat} → JSON`,
       color: '#0B61A4',
       data: {
@@ -81,7 +81,7 @@ export default function ConversionFlowPipeline({
     {
       id: 'B',
       type: 'conversion',
-      label: 'Hop 2',
+      label: 'Stage 2',
       sublabel: `JSON → ${targetFormat}`,
       color: '#0B61A4',
       data: {

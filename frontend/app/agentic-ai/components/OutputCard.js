@@ -234,37 +234,6 @@ export default function OutputCard({ output, stats, totalTime, targetFormat }) {
             </SyntaxHighlighter>
           </div>
 
-          {/* Stats Detail */}
-          {stats && (
-            <div style={{
-              marginTop: '12px',
-              padding: '12px',
-              background: 'white',
-              borderRadius: '6px',
-              border: '1px solid #E7EAEE'
-            }}>
-              <Body weight="medium" style={{ fontSize: '12px', marginBottom: '8px' }}>
-                Processing Statistics:
-              </Body>
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr 1fr',
-                gap: '8px',
-                fontSize: '12px'
-              }}>
-                {Object.entries(stats).map(([key, value]) => (
-                  <div key={key} style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <Body style={{ fontSize: '12px', color: '#5C6C75' }}>
-                      {key.replace(/_/g, ' ')}:
-                    </Body>
-                    <Body weight="medium" style={{ fontSize: '12px' }}>
-                      {typeof value === 'number' ? value : String(value)}
-                    </Body>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       )}
     </div>

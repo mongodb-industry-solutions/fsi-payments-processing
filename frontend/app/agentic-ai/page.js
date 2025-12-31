@@ -373,12 +373,12 @@ export default function AgenticAIPage() {
           // Emit hop1_complete event for visualization
           addEvent({
             type: 'hop1_complete',
-            message: 'Hop 1 conversion complete (from resume)',
+            message: 'Stage 1 conversion complete (resumed)',
             detailed_processing: result.hop1_details
           });
         }
 
-        // Add hop 2 events if conversion continued
+        // Add stage 2 events if conversion continued
         if (result.output) {
           addEvent({
             type: 'hop2_start',
@@ -386,7 +386,7 @@ export default function AgenticAIPage() {
           });
           addEvent({
             type: 'hop2_complete',
-            message: 'Hop 2 conversion complete',
+            message: 'Stage 2 conversion complete',
             detailed_processing: result.hop2_details
           });
 
