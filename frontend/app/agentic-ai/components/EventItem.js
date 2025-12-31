@@ -515,6 +515,9 @@ function renderEventDetails(event) {
         f.source_field?.includes('wallet')
       );
       const hasCryptoFields = cryptoFields.length > 0;
+      const hasRulesFields = rulesLane.total_fields > 0;
+      const hasAiFields = aiLane.total_fields > 0 && aiLane.fields;
+      const hasAnyContent = hasCryptoFields || hasRulesFields || hasAiFields;
 
       return (
         <div style={{
@@ -524,6 +527,28 @@ function renderEventDetails(event) {
           borderRadius: '6px',
           fontSize: '12px'
         }}>
+          {/* Rules Lane Summary */}
+          {hasRulesFields && !hasCryptoFields && (
+            <div style={{ marginBottom: hasAiFields ? '12px' : '0' }}>
+              <Body weight="bold" style={{ fontSize: '12px', color: '#00A35C', marginBottom: '8px' }}>
+                RULES LANE
+              </Body>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'auto 1fr',
+                gap: '4px 12px',
+                background: 'white',
+                padding: '10px',
+                borderRadius: '4px'
+              }}>
+                <Body style={{ fontSize: '11px', color: '#889397' }}>Fields mapped:</Body>
+                <Body style={{ fontSize: '11px', color: '#1F2937' }}>{rulesLane.total_fields}</Body>
+                <Body style={{ fontSize: '11px', color: '#889397' }}>Processing:</Body>
+                <Body style={{ fontSize: '11px', color: '#1F2937' }}>Deterministic regex extraction</Body>
+              </div>
+            </div>
+          )}
+
           {/* Crypto Fields Section - Show first if present */}
           {hasCryptoFields && (
             <div style={{
@@ -560,7 +585,7 @@ function renderEventDetails(event) {
           )}
 
           {/* AI Lane Details (if any) */}
-          {aiLane.total_fields > 0 && aiLane.fields && (
+          {hasAiFields && (
             <div style={{ marginBottom: '12px' }}>
               <Body weight="bold" style={{ fontSize: '12px', color: '#0B61A4', marginBottom: '8px' }}>
                 AI EXTRACTION
@@ -593,6 +618,13 @@ function renderEventDetails(event) {
                 </div>
               ))}
             </div>
+          )}
+
+          {/* Fallback when no detailed content */}
+          {!hasAnyContent && (
+            <Body style={{ fontSize: '11px', color: '#889397', fontStyle: 'italic' }}>
+              All fields processed via rules lane (deterministic mapping)
+            </Body>
           )}
 
         </div>
