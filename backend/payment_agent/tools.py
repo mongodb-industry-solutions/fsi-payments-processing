@@ -12,19 +12,18 @@ Key Points:
 - Return structured data (dicts) for easy processing
 
 Resolution Agent Tools:
-- lookup_company_katakana: Look up pre-translated Katakana names (fast DB lookup) - TRY FIRST
-- lookup_ifsc: Look up IFSC code for Indian banks - TRY FIRST
-- atlas_search: Generic fuzzy search using MongoDB Atlas Search - FALLBACK for typos/variations
-- transliterate_text: Convert text to Japanese script (AI fallback) - LAST RESORT
+- atlas_search: MongoDB Atlas Search for lookups (exact or fuzzy)
+  - Use fuzzy=False for exact lookups (confidence: 1.0)
+  - Use fuzzy=True for typo-tolerant search (confidence: 0.7-0.95)
+- transliterate_text: Convert text to Japanese script using AI (confidence: 0.9)
 
 Tool Priority:
-1. Exact lookup (lookup_company_katakana, lookup_ifsc) → confidence: 1.0, ~5ms
-2. Fuzzy search (atlas_search) → confidence: 0.7-0.95, ~20ms
-3. AI generation (transliterate_text) → confidence: 0.9, ~1-2s
+1. Exact lookup: atlas_search(..., fuzzy=False) → confidence: 1.0, ~20ms
+2. Fuzzy search: atlas_search(..., fuzzy=True) → confidence: 0.7-0.95, ~20ms
+3. AI generation: transliterate_text → confidence: 0.9, ~1-2s
 
 Execution Agent Tools:
 - update_payment_field: Update a field in payment document
-- validate_payment: Validate payment data after changes
 """
 
 import logging
@@ -132,206 +131,6 @@ Respond with ONLY the transliterated text in {target_script}, nothing else."""
 
 
 @tool
-def lookup_company_katakana(company_name: str) -> Dict[str, Any]:
-    """
-    Look up pre-translated Katakana name for a company from database.
-
-    Use this tool when processing payments to Japan that require company names
-    in Katakana script. This tool searches a database of known companies with
-    their official Katakana translations.
-
-    This is FASTER and MORE ACCURATE than AI transliteration for known companies
-    because it uses official registered names from the database. Always try this
-    tool FIRST before using transliterate_text as a fallback.
-
-    The database contains major Japanese companies and common international companies
-    that frequently do business with Japan.
-
-    Args:
-        company_name: English company name (e.g., "DENSO CORPORATION", "SONY CORPORATION")
-
-    Returns:
-        dict: {
-            "found": bool,              # True if company found in database
-            "name_english": str,        # Original English name
-            "name_katakana": str,       # Official Katakana translation
-            "name_hiragana": str,       # Optional Hiragana version
-            "bank_name": str,           # Associated bank (if known)
-            "swift_code": str,          # Bank SWIFT code (if known)
-            "city": str,                # City location
-            "country": str,             # ISO 2-letter country code
-            "confidence": float         # 1.0 if found, 0.0 if not found
-        }
-
-    Example:
-        >>> lookup_company_katakana("DENSO CORPORATION")
-        {
-            "found": True,
-            "name_english": "DENSO CORPORATION",
-            "name_katakana": "デンソー",
-            "bank_name": "Bank of Tokyo-Mitsubishi UFJ",
-            "confidence": 1.0
-        }
-
-    Important: If this tool returns found=False, you should fallback to using
-    the transliterate_text tool to generate the Katakana name using AI.
-    """
-    from services.mongodb_service import get_mongodb_service
-
-    logger.info(f"Looking up Katakana name for company: {company_name}")
-
-    try:
-        mongo = get_mongodb_service()
-        collection = mongo.get_collection("bank_details")
-
-        # Case-insensitive exact match on company name
-        result = collection.find_one({
-            "name_english": {"$regex": f"^{company_name}$", "$options": "i"}
-        })
-
-        if result:
-            logger.info(f"Found company in database: {result.get('name_katakana')}")
-            return {
-                "found": True,
-                "name_english": result.get("name_english"),
-                "name_katakana": result.get("name_katakana"),
-                "name_hiragana": result.get("name_hiragana"),
-                "bank_name": result.get("bank_name"),
-                "swift_code": result.get("swift_code"),
-                "city": result.get("city"),
-                "country": result.get("country"),
-                "confidence": 1.0
-            }
-        else:
-            logger.warning(f"Company not found in database: {company_name}")
-            return {
-                "found": False,
-                "name_english": company_name,
-                "name_katakana": None,
-                "name_hiragana": None,
-                "bank_name": None,
-                "swift_code": None,
-                "city": None,
-                "country": None,
-                "confidence": 0.0,
-                "error": "Company not found in database - use transliterate_text as fallback"
-            }
-
-    except Exception as e:
-        logger.error(f"Error looking up company Katakana name: {e}")
-        return {
-            "found": False,
-            "name_english": company_name,
-            "confidence": 0.0,
-            "error": str(e)
-        }
-
-
-@tool
-def lookup_ifsc(bank_name: str, branch: str, city: str) -> Dict[str, Any]:
-    """
-    Look up IFSC code for an Indian bank branch from database.
-
-    Use this tool when processing payments to India that need an IFSC (Indian Financial
-    System Code). IFSC codes are mandatory for NEFT, RTGS, and IMPS transfers in India.
-
-    This tool searches the MongoDB database for exact IFSC codes based on bank name,
-    branch, and city. It performs case-insensitive matching.
-
-    IFSC Code Format: XXXX0YYYYYY
-    - First 4 characters: Bank code (e.g., "HDFC", "ICIC", "SBIN")
-    - 5th character: Always "0" (reserved)
-    - Last 6 characters: Branch code
-
-    Common Indian Banks:
-    - HDFC Bank: HDFC0XXXXXX
-    - ICICI Bank: ICIC0XXXXXX
-    - State Bank of India: SBIN0XXXXXX
-    - Axis Bank: UTIB0XXXXXX
-    - Punjab National Bank: PUNB0XXXXXX
-
-    Args:
-        bank_name: Name of the bank (e.g., "HDFC Bank", "State Bank of India")
-        branch: Branch name (e.g., "Connaught Place", "Anna Nagar")
-        city: City where branch is located (e.g., "New Delhi", "Chennai")
-
-    Returns:
-        dict: {
-            "ifsc": str,              # The IFSC code (11 characters) or empty if not found
-            "bank_name": str,         # Standardized bank name from database
-            "branch": str,            # Branch name
-            "city": str,              # City
-            "confidence": float,      # 1.0 if found, 0.0 if not found
-            "found": bool            # True if found in database, False otherwise
-        }
-
-    Example:
-        >>> lookup_ifsc("HDFC Bank", "Connaught Place", "New Delhi")
-        {
-            "ifsc": "HDFC0000123",
-            "bank_name": "HDFC Bank",
-            "branch": "Connaught Place",
-            "city": "New Delhi",
-            "confidence": 1.0,
-            "found": True
-        }
-    """
-    from services.mongodb_service import get_mongodb_service
-
-    logger.info(f"Looking up IFSC for: {bank_name}, {branch}, {city}")
-
-    try:
-        mongo = get_mongodb_service()
-        collection = mongo.get_collection("ifsc_codes")
-
-        # Search for matching IFSC code
-        # Case-insensitive search on bank name, branch, and city
-        query = {
-            "$and": [
-                {"bank": {"$regex": bank_name, "$options": "i"}},
-                {"branch": {"$regex": branch, "$options": "i"}},
-                {"city": {"$regex": city, "$options": "i"}}
-            ]
-        }
-
-        result = collection.find_one(query)
-
-        if result:
-            logger.info(f"Found IFSC in database: {result.get('ifsc')}")
-            return {
-                "ifsc": result.get("ifsc"),
-                "bank_name": result.get("bank"),
-                "branch": result.get("branch"),
-                "city": result.get("city"),
-                "confidence": 1.0,
-                "found": True
-            }
-        else:
-            logger.warning(f"IFSC not found in database for: {bank_name}, {branch}, {city}")
-            return {
-                "ifsc": "",
-                "bank_name": bank_name,
-                "branch": branch,
-                "city": city,
-                "confidence": 0.0,
-                "found": False,
-                "error": "IFSC code not found in database"
-            }
-
-    except Exception as e:
-        logger.error(f"Error looking up IFSC: {e}")
-        return {
-            "ifsc": "",
-            "bank_name": bank_name,
-            "branch": branch,
-            "city": city,
-            "confidence": 0.0,
-            "found": False,
-            "error": str(e)
-        }
-
-
-@tool
 def atlas_search(
     collection: str,
     query: str,
@@ -341,14 +140,16 @@ def atlas_search(
     limit: int = 3
 ) -> Dict[str, Any]:
     """
-    Search any MongoDB collection using Atlas Search with optional fuzzy matching.
+    Search MongoDB collections using Atlas Search for exact or fuzzy matching.
 
-    Use this tool when exact lookup fails and you need typo-tolerant search. Atlas Search
-    provides fuzzy matching that can find results even with misspellings or variations
-    in the query text.
+    This is the PRIMARY lookup tool for finding data in the database. It supports:
+    - Exact matching (fuzzy=False): For precise lookups, returns confidence 1.0
+    - Fuzzy matching (fuzzy=True): For typo-tolerant search, returns confidence 0.7-0.95
 
-    This is a FALLBACK tool - always try exact lookup tools first (lookup_company_katakana,
-    lookup_ifsc), then use this if they don't find a match.
+    Strategy:
+    1. First try with fuzzy=False for exact match (confidence 1.0)
+    2. If not found, retry with fuzzy=True for typo tolerance (confidence 0.7-0.95)
+    3. If still not found, use transliterate_text for AI generation
 
     Supported Collections:
     - "bank_details": Company names, Katakana translations, bank info
@@ -488,8 +289,13 @@ def atlas_search(
         if results and results[0].get("score", 0) > min_score:
             top = results[0]
             score = top.get("score", 0)
-            # Map score to confidence: 0.5 score → 0.7 confidence, higher scores → up to 0.95
-            confidence = min(0.95, 0.7 + (score - 0.5) * 0.5)
+            # Confidence scoring:
+            # - Exact match (fuzzy=False) with high score: 1.0
+            # - Fuzzy match: 0.7-0.95 based on score
+            if not fuzzy and score > 0.9:
+                confidence = 1.0
+            else:
+                confidence = min(0.95, 0.7 + (score - 0.5) * 0.5)
 
             logger.info(f"Atlas Search found {len(results)} results, top score: {score:.2f}")
 

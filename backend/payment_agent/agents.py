@@ -91,11 +91,8 @@ AVAILABLE AGENTS:
 
 1. Resolution Agent - Route here when the problem requires FINDING or DETERMINING a value
    The Resolution Agent has these tools available:
-   - lookup_company_katakana: Find Japanese katakana names for companies
-   - lookup_ifsc: Look up IFSC codes for Indian banks
-   - atlas_search: Fuzzy search across entity databases
-   - transliterate_text: AI-powered text transliteration
-   - verify_legal_entity: Verify company names against registries
+   - atlas_search: Search MongoDB for exact or fuzzy matches (companies, IFSC codes, entities)
+   - transliterate_text: AI-powered text transliteration to Japanese
 
 2. Execution Agent - Route here when a value is ALREADY KNOWN and just needs to be applied
    The Execution Agent has these tools:
@@ -227,7 +224,7 @@ def create_resolution_agent():
     Returns:
         ReAct agent that can resolve payment issues autonomously
     """
-    from tools import transliterate_text, lookup_company_katakana, lookup_ifsc, atlas_search
+    from tools import transliterate_text, atlas_search
 
     # System prompt for autonomous problem solving
     system_prompt = """You are a Resolution Agent for a payment processing system.
@@ -236,31 +233,27 @@ Your role is to analyze payment PROBLEMS and DETERMINE correct values using your
 
 AVAILABLE TOOLS:
 
-1. lookup_company_katakana(company_name: str)
-   - Looks up Japanese katakana name for a company in the database
-   - Returns: name_katakana, name_hiragana, confidence
-   - Fast exact match from official records
-
-2. lookup_ifsc(bank_name: str, branch: str = None, city: str = None)
-   - Looks up IFSC code for Indian banks
-   - Returns: ifsc, bank, branch, city, confidence
-
-3. atlas_search(collection: str, query: str, search_fields: list)
-   - Fuzzy search across databases with typo tolerance
+1. atlas_search(collection: str, query: str, search_fields: list, fuzzy: bool = True)
+   - PRIMARY lookup tool for all database searches
    - Collections: "bank_details", "ifsc_codes", "registered_entities"
-   - Returns: found, top_result, search_score
+   - Use fuzzy=False for exact matching (confidence: 1.0)
+   - Use fuzzy=True for typo-tolerant search (confidence: 0.7-0.95)
+   - Returns: found, top_result, confidence
 
-4. transliterate_text(text: str, target_script: str)
-   - AI-powered transliteration to different scripts
-   - target_script options: "katakana", "hiragana", "latin"
+2. transliterate_text(text: str, target_script: str)
+   - AI-powered transliteration to Japanese scripts
+   - target_script options: "katakana", "hiragana"
+   - Use when atlas_search doesn't find a pre-translated name
 
 YOUR AUTONOMOUS PROCESS:
 1. READ the problem description carefully
 2. UNDERSTAND what needs to be resolved
 3. BEFORE CALLING ANY TOOL: Output a brief explanation of WHY you're choosing this specific tool
-   Example: "I need to find the Japanese katakana name for this company. I'll use lookup_company_katakana first since it provides official registered names."
-4. USE the tool to find the correct value
-5. ANALYZE all results and choose the BEST one for the problem
+4. STRATEGY for lookups:
+   - First try atlas_search with fuzzy=False for exact match
+   - If not found, try atlas_search with fuzzy=True for typo tolerance
+   - If still not found, use transliterate_text for AI generation
+5. ANALYZE results and choose the BEST one for the problem
 
 CRITICAL: Always explain your reasoning BEFORE calling a tool. This helps with audit trails.
 
@@ -280,7 +273,7 @@ SOURCE: transliterate_text
     llm = create_llm(temperature=0.1)
 
     # Create tools list
-    tools = [lookup_company_katakana, lookup_ifsc, atlas_search, transliterate_text]
+    tools = [atlas_search, transliterate_text]
 
     # Create the ReAct agent with tools
     agent = create_react_agent(
