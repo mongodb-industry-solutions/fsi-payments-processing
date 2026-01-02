@@ -319,6 +319,62 @@ CLOUD INFRASTRUCTURE DEVELOPMENT
 </Document>`
   },
 
+  purpose_code: {
+    id: 'purpose_code',
+    title: 'Canada → Singapore Tech Services',
+    description: 'Shopify Inc pays Grab Holdings for API integration - S$3.2M SGD',
+    badge: 'PURPOSE CODE',
+    badgeVariant: 'purple',
+    isAgentic: true,
+    info: {
+      problem: 'ISO 20022 requires standardized purpose codes (e.g., SALA, SUPP, SCVE), but the source MT103 only contains free-text: "Platform API integration and cloud infrastructure services".',
+      solution: 'Transaction Agent uses semantic vector search to classify the payment description into the correct ISO 20022 purpose code: SCVE (Services).',
+      whyAgent: 'Purpose code classification requires understanding payment intent from unstructured text - keyword matching fails when wording varies.'
+    },
+    sourceCountry: {
+      name: 'Canada',
+      code: 'CA',
+      flag: '🇨🇦',
+      bank: 'RBC Royal Bank',
+      city: 'Ottawa',
+      coords: [-75.6972, 45.4215]
+    },
+    targetCountry: {
+      name: 'Singapore',
+      code: 'SG',
+      flag: '🇸🇬',
+      bank: 'DBS Bank',
+      city: 'Singapore',
+      coords: [103.8198, 1.3521]
+    },
+    sourceFormat: 'MT103',
+    targetFormat: 'pacs.008',
+    nodes: 3,
+    steps: 2,
+    formats: 'MT103, ISO20022',
+    message: `{1:F01ROABORYCXXX0000000000}{2:I103DBSSSGSGXXXXN}{4:
+:20:SHOP-GRAB-2025-Q1-001
+:23B:CRED
+:32A:250120SGD3200000,00
+:50K:/CA1234567890123456
+SHOPIFY INC
+150 ELGIN STREET
+OTTAWA ON K2P 1L4
+CANADA
+:52A:ROABORYCXXX
+:57A:DBSSSGSG
+:59:/SG1234567890123456
+GRAB HOLDINGS LIMITED
+3 MEDIA CLOSE
+SINGAPORE 138498
+:70:PLATFORM API INTEGRATION SERVICES
+CLOUD INFRASTRUCTURE AND PAYMENT GATEWAY
+Q1 2025 TECHNICAL PARTNERSHIP MILESTONE
+CONTRACT SHOP-GRAB-2024-API-001
+:71A:SHA
+-}`
+  },
+
   name_mismatch: {
     id: 'name_mismatch',
     title: 'USA → UK Banking Services',

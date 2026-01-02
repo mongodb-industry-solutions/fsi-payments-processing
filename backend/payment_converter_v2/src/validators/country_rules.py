@@ -63,6 +63,11 @@ def validate_country_rules(
     if target_country not in countries_with_dedicated_rules and currency not in currencies_with_dedicated_rules:
         validate_name_verification_rules(canonical_json, conversion_id, source_format, target_format, conversion_run_id, detailed_processing)
 
+    # Purpose code classification
+    # Runs for all conversions to canonical JSON - checks if purpose code is needed
+    # Only triggers if remittance info exists but purpose code is missing
+    validate_purpose_code_rules(canonical_json, conversion_id, source_format, target_format, conversion_run_id, detailed_processing)
+
 
 def validate_japan_rules(
     canonical_json: Dict[str, Any],
@@ -222,6 +227,91 @@ def validate_name_verification_rules(
                 "additional_context": {
                     "validation_rule": "name_verification",
                     "detection_method": "missing_legal_suffix"
+                }
+            }
+        )
+
+
+def validate_purpose_code_rules(
+    canonical_json: Dict[str, Any],
+    conversion_id: str,
+    source_format: str,
+    target_format: str,
+    conversion_run_id: str = None,
+    detailed_processing: Dict[str, Any] = None
+) -> None:
+    """
+    Validate that payments have a purpose code for ISO 20022 conversion.
+
+    ISO 20022 (pacs.008, pacs.009) requires standardized purpose codes
+    like SALA (salary), SUPP (supplier), SCVE (services), etc.
+    When remittance info exists but purpose code is missing, we need to
+    classify the payment description into the appropriate code.
+    """
+
+    # Check for ISO 20022 purpose code (standardized 4-letter code like SALA, SUPP, SCVE)
+    # Note: payment_purpose from AI lane is free-text extraction, NOT a standardized code
+    purpose_code = (
+        canonical_json.get("category_purpose", "") or
+        canonical_json.get("purpose_code", "")
+    )
+
+    # Extract remittance text from multiple possible sources
+    remittance_text = ""
+
+    # Source 1: Top-level fields from AI lane (payment_purpose, invoice_number, details)
+    ai_parts = []
+    if canonical_json.get("payment_purpose"):
+        ai_parts.append(str(canonical_json["payment_purpose"]))
+    if canonical_json.get("invoice_number"):
+        ai_parts.append(str(canonical_json["invoice_number"]))
+    if canonical_json.get("details"):
+        ai_parts.append(str(canonical_json["details"]))
+    if ai_parts:
+        remittance_text = " ".join(ai_parts)
+
+    # Source 2: remittance_info field (could be dict, string, or list)
+    if not remittance_text:
+        remittance_info = canonical_json.get("remittance_info", "")
+        if isinstance(remittance_info, dict):
+            parts = []
+            if remittance_info.get("payment_purpose"):
+                parts.append(str(remittance_info["payment_purpose"]))
+            if remittance_info.get("invoice_number"):
+                parts.append(str(remittance_info["invoice_number"]))
+            if remittance_info.get("details"):
+                parts.append(str(remittance_info["details"]))
+            remittance_text = " ".join(parts)
+        elif isinstance(remittance_info, str):
+            remittance_text = remittance_info
+        elif isinstance(remittance_info, list):
+            remittance_text = " ".join(str(item) for item in remittance_info)
+
+    # Only trigger if: remittance info exists AND purpose code is missing
+    if remittance_text and not purpose_code:
+        # Truncate for display but keep full text for matching
+        display_text = remittance_text[:100] + "..." if len(remittance_text) > 100 else remittance_text
+        raise CountryValidationException(
+            problem=(
+                f"ISO 20022 format requires a standardized purpose code (e.g., SALA for salary, "
+                f"SUPP for supplier payment, SCVE for services). The current payment has "
+                f"remittance information: '{display_text}' but no purpose code. "
+                f"The payment description needs to be classified into the appropriate "
+                f"ISO 20022 purpose code using semantic matching against the purpose code registry."
+            ),
+            field_name="category_purpose",
+            original_value="",
+            payment_data=canonical_json,
+            conversion_context={
+                "source_format": source_format,
+                "target_format": target_format,
+                "conversion_id": conversion_id,
+                "conversion_run_id": conversion_run_id,
+                "detailed_processing": detailed_processing or {},
+                "additional_context": {
+                    "validation_rule": "purpose_code_classification",
+                    "remittance_info": remittance_text,
+                    "search_collection": "purpose_codes"
                 }
             }
         )

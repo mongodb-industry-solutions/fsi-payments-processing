@@ -15,7 +15,8 @@ dependencies = [
     "pymongo>=4.5.0",
     "boto3>=1.34.0",
     "python-dotenv>=1.0.0",
-    "httpx>=0.26.0"
+    "httpx>=0.26.0",
+    "voyageai>=0.3.0"
 ]
 
 [build-system]

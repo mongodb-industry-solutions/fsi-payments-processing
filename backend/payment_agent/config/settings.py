@@ -31,6 +31,13 @@ class Settings(BaseSettings):
     fuzzy_search_min_score: float = Field(default=0.5, description="Minimum score for fuzzy search results")
     atlas_search_max_edits: int = Field(default=2, description="Max edit distance for fuzzy matching (1-2)")
 
+    # Vector Search Configuration
+    vector_search_enabled: bool = Field(default=True, description="Enable Atlas Vector Search")
+    voyage_api_key: str = Field(default="", description="Voyage AI API key for embeddings")
+    embedding_model: str = Field(default="voyage-3", description="Voyage AI embedding model")
+    embedding_dimensions: int = Field(default=1024, description="Embedding vector dimensions")
+    vector_search_min_score: float = Field(default=0.5, description="Minimum similarity score for vector search")
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

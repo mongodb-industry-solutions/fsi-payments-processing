@@ -92,6 +92,7 @@ AVAILABLE AGENTS:
 1. Resolution Agent - Route here when the problem requires FINDING or DETERMINING a value
    The Resolution Agent has these tools available:
    - atlas_search: Search MongoDB for exact or fuzzy matches (companies, IFSC codes, entities)
+   - vector_search: Semantic search for classifying text into categories (e.g., purpose codes)
    - transliterate_text: AI-powered text transliteration to Japanese
 
 2. Execution Agent - Route here when a value is ALREADY KNOWN and just needs to be applied
@@ -224,7 +225,7 @@ def create_resolution_agent():
     Returns:
         ReAct agent that can resolve payment issues autonomously
     """
-    from tools import transliterate_text, atlas_search
+    from tools import transliterate_text, atlas_search, vector_search
 
     # System prompt for autonomous problem solving
     system_prompt = """You are a Resolution Agent for a payment processing system.
@@ -234,25 +235,38 @@ Your role is to analyze payment PROBLEMS and DETERMINE correct values using your
 AVAILABLE TOOLS:
 
 1. atlas_search(collection: str, query: str, search_fields: list, fuzzy: bool = True)
-   - PRIMARY lookup tool for all database searches
+   - PRIMARY lookup tool for keyword-based database searches
    - Collections: "bank_details", "ifsc_codes", "registered_entities"
    - Use fuzzy=False for exact matching (confidence: 1.0)
    - Use fuzzy=True for typo-tolerant search (confidence: 0.7-0.95)
    - Returns: found, top_result, confidence
 
-2. transliterate_text(text: str, target_script: str)
+2. vector_search(collection: str, query: str, index_name: str = None)
+   - SEMANTIC search for any collection with embeddings
+   - Works with ANY collection that has a vector index (default: {collection}_vector)
+   - Use when you need to match by MEANING, not keywords
+   - Example: "paying employee wages" in purpose_codes → SALA (Salary Payment)
+   - Returns: found, top_result, similarity_score, confidence (0.65-0.95)
+
+3. transliterate_text(text: str, target_script: str)
    - AI-powered transliteration to Japanese scripts
    - target_script options: "katakana", "hiragana"
    - Use when atlas_search doesn't find a pre-translated name
+
+WHEN TO USE WHICH TOOL:
+- atlas_search: Query contains specific keywords to match (company names, IFSC codes)
+- vector_search: Query is a free-text description to classify into categories
+- transliterate_text: Need to convert Western text to Japanese script
 
 YOUR AUTONOMOUS PROCESS:
 1. READ the problem description carefully
 2. UNDERSTAND what needs to be resolved
 3. BEFORE CALLING ANY TOOL: Output a brief explanation of WHY you're choosing this specific tool
 4. STRATEGY for lookups:
-   - First try atlas_search with fuzzy=False for exact match
+   - For classifications (purpose codes): Use vector_search first
+   - For exact data (names, codes): Try atlas_search with fuzzy=False first
    - If not found, try atlas_search with fuzzy=True for typo tolerance
-   - If still not found, use transliterate_text for AI generation
+   - For Japanese script: Use transliterate_text
 5. ANALYZE results and choose the BEST one for the problem
 
 CRITICAL: Always explain your reasoning BEFORE calling a tool. This helps with audit trails.
@@ -273,7 +287,7 @@ SOURCE: transliterate_text
     llm = create_llm(temperature=0.1)
 
     # Create tools list
-    tools = [atlas_search, transliterate_text]
+    tools = [atlas_search, vector_search, transliterate_text]
 
     # Create the ReAct agent with tools
     agent = create_react_agent(

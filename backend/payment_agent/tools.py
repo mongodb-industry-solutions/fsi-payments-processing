@@ -15,12 +15,16 @@ Resolution Agent Tools:
 - atlas_search: MongoDB Atlas Search for lookups (exact or fuzzy)
   - Use fuzzy=False for exact lookups (confidence: 1.0)
   - Use fuzzy=True for typo-tolerant search (confidence: 0.7-0.95)
+- vector_search: MongoDB Atlas Vector Search for semantic similarity
+  - Works with ANY collection that has embeddings + vector index
+  - Use for matching by meaning, not keywords (confidence: 0.65-0.95)
 - transliterate_text: Convert text to Japanese script using AI (confidence: 0.9)
 
 Tool Priority:
 1. Exact lookup: atlas_search(..., fuzzy=False) → confidence: 1.0, ~20ms
 2. Fuzzy search: atlas_search(..., fuzzy=True) → confidence: 0.7-0.95, ~20ms
-3. AI generation: transliterate_text → confidence: 0.9, ~1-2s
+3. Semantic search: vector_search(...) → confidence: 0.65-0.95, ~50ms
+4. AI generation: transliterate_text → confidence: 0.9, ~1-2s
 
 Execution Agent Tools:
 - update_payment_field: Update a field in payment document
@@ -327,6 +331,190 @@ def atlas_search(
             "search_score": 0,
             "confidence": 0,
             "match_type": "fuzzy",
+            "error": str(e)
+        }
+
+
+@tool
+def vector_search(
+    collection: str,
+    query: str,
+    index_name: str = None,
+    embedding_field: str = "embedding",
+    return_fields: list = None,
+    filter: dict = None,
+    limit: int = 3
+) -> Dict[str, Any]:
+    """
+    Search any MongoDB collection using Atlas Vector Search for semantic similarity.
+
+    Use this tool for semantic/conceptual matching when exact or fuzzy text search
+    won't work. Vector search finds semantically similar items even when the words
+    are completely different (e.g., "monthly wages" matches "Salary Payment").
+
+    This is a GENERALIZED tool - works with ANY collection that has:
+    1. An embedding field (default: "embedding")
+    2. A vector search index in MongoDB Atlas
+
+    Best for:
+    - Classifying free-text into categories
+    - Finding semantically similar documents
+    - Matching concepts rather than exact keywords
+    - Any scenario where meaning matters more than wording
+
+    When to use vs atlas_search:
+    - atlas_search: Query contains specific keywords to match literally
+    - vector_search: Query is natural language that needs conceptual matching
+
+    Args:
+        collection: Any MongoDB collection with embeddings (e.g., "purpose_codes", "products", "faqs")
+        query: Free-text description to match semantically
+        index_name: Vector search index name (default: "{collection}_vector")
+        embedding_field: Field containing embeddings (default: "embedding")
+        return_fields: Fields to return (optional, returns all non-embedding fields if not specified)
+        filter: Optional filter criteria (e.g., {"category": "Payroll"})
+        limit: Max results to return (default: 3)
+
+    Returns:
+        dict: {
+            "found": bool,           # True if results found above threshold
+            "results": list,         # All matching documents with scores
+            "top_result": dict,      # Best match (highest similarity)
+            "similarity_score": float, # Cosine similarity (0-1)
+            "confidence": float,     # Mapped confidence (0.65-0.95)
+            "match_type": "semantic" # Always "semantic" for vector search
+        }
+
+    Examples:
+        # Classify payment description
+        >>> vector_search("purpose_codes", "paying monthly salaries to staff")
+        {"found": True, "top_result": {"code": "SALA", "name": "Salary Payment"}, ...}
+
+        # Search product catalog
+        >>> vector_search("products", "comfortable running shoes for marathon")
+        {"found": True, "top_result": {"sku": "RUN-001", "name": "Marathon Pro"}, ...}
+
+        # Search with custom index name
+        >>> vector_search("documents", "contract termination clause", index_name="docs_semantic_idx")
+        {"found": True, "top_result": {"title": "Service Agreement", ...}, ...}
+
+        # Search with filter
+        >>> vector_search("articles", "machine learning basics", filter={"category": "AI"})
+        {"found": True, "top_result": {"title": "Introduction to ML", ...}, ...}
+    """
+    from services.mongodb_service import get_mongodb_service
+    from services.embedding_service import get_embedding_service
+    from config.settings import settings
+
+    logger.info(f"Vector Search: collection={collection}, query='{query[:50]}...'")
+
+    # Check if vector search is enabled
+    if not settings.vector_search_enabled:
+        logger.info("Vector Search is disabled in settings")
+        return {
+            "found": False,
+            "results": [],
+            "top_result": None,
+            "similarity_score": 0,
+            "confidence": 0,
+            "match_type": "semantic",
+            "error": "Vector Search is disabled"
+        }
+
+    # Use provided index_name or derive from collection name
+    vector_index_name = index_name or f"{collection}_vector"
+
+    try:
+        # Generate query embedding
+        embedding_service = get_embedding_service()
+        query_embedding = embedding_service.embed_text(query)
+
+        logger.debug(f"Generated query embedding: {len(query_embedding)} dimensions")
+
+        # Build vector search pipeline
+        mongo = get_mongodb_service()
+        coll = mongo.get_collection(collection)
+
+        logger.info(f"Using vector index: {vector_index_name}")
+
+        # Vector search stage
+        vector_search_stage = {
+            "$vectorSearch": {
+                "index": vector_index_name,
+                "path": embedding_field,
+                "queryVector": query_embedding,
+                "numCandidates": limit * 10,  # Search more candidates for better results
+                "limit": limit
+            }
+        }
+
+        # Add filter if provided
+        if filter:
+            vector_search_stage["$vectorSearch"]["filter"] = filter
+
+        # Build projection
+        projection = {
+            "score": {"$meta": "vectorSearchScore"},
+            "_id": 0,
+            "embedding": 0,  # Don't return large embedding arrays
+            "embedding_text": 0
+        }
+        if return_fields:
+            # Reset projection and only include specified fields + score
+            projection = {"score": {"$meta": "vectorSearchScore"}, "_id": 0}
+            for field in return_fields:
+                projection[field] = 1
+
+        pipeline = [
+            vector_search_stage,
+            {"$project": projection}
+        ]
+
+        logger.debug(f"Vector Search pipeline: {pipeline}")
+
+        results = list(coll.aggregate(pipeline))
+
+        min_score = settings.vector_search_min_score
+        if results and results[0].get("score", 0) > min_score:
+            top = results[0]
+            score = top.get("score", 0)
+
+            # Confidence mapping for vector search:
+            # - Score 0.9+ → confidence 0.95
+            # - Score 0.7-0.9 → confidence 0.75-0.95
+            # - Score 0.5-0.7 → confidence 0.65-0.75
+            confidence = min(0.95, 0.65 + (score - 0.5) * 0.75)
+
+            logger.info(f"Vector Search found {len(results)} results, top score: {score:.3f}, confidence: {confidence:.2f}")
+
+            return {
+                "found": True,
+                "results": results,
+                "top_result": top,
+                "similarity_score": round(score, 3),
+                "confidence": round(confidence, 2),
+                "match_type": "semantic"
+            }
+
+        logger.info(f"Vector Search: no results above threshold ({min_score}) for query '{query[:30]}...'")
+        return {
+            "found": False,
+            "results": results,
+            "top_result": None,
+            "similarity_score": 0,
+            "confidence": 0,
+            "match_type": "semantic"
+        }
+
+    except Exception as e:
+        logger.error(f"Vector Search error: {e}")
+        return {
+            "found": False,
+            "results": [],
+            "top_result": None,
+            "similarity_score": 0,
+            "confidence": 0,
+            "match_type": "semantic",
             "error": str(e)
         }
 

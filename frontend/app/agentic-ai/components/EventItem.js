@@ -91,7 +91,12 @@ function formatEventMessage(event) {
     case 'validation_failed':
       // Show a brief but informative summary
       const fieldLabel = event.field === 'creditor_name' ? 'beneficiary name' :
-                         event.field === 'creditor_agent_bic' ? 'bank code' : event.field || 'field';
+                         event.field === 'creditor_agent_bic' ? 'bank code' :
+                         event.field === 'category_purpose' ? 'purpose code' : event.field || 'field';
+      // Handle both country-specific and universal rules
+      if (!event.country && event.field === 'category_purpose') {
+        return `ISO 20022 validation: ${fieldLabel} classification required`;
+      }
       const countryName = event.country === 'JP' ? 'Japan' :
                           event.country === 'IN' ? 'India' : event.country || 'Country';
       return `${countryName} validation failed: ${fieldLabel} requires conversion`;
@@ -99,7 +104,8 @@ function formatEventMessage(event) {
       // Derive task description from problem
       const taskDesc = event.problem ?
         (event.problem.toLowerCase().includes('katakana') ? 'transliteration' :
-         event.problem.toLowerCase().includes('ifsc') ? 'IFSC lookup' : 'field correction')
+         event.problem.toLowerCase().includes('ifsc') ? 'IFSC lookup' :
+         event.problem.toLowerCase().includes('purpose code') ? 'purpose code classification' : 'field correction')
         : 'task';
       return `Agent started: ${taskDesc}`;
     case 'agent_supervisor':
@@ -286,7 +292,7 @@ function renderEventDetails(event) {
               PROBLEM DETECTED
             </Body>
             <Body style={{ fontSize: '12px', color: '#5C6C75', lineHeight: '1.5' }}>
-              {event.reason || 'Country-specific validation rule violated'}
+              {event.problem || event.reason || 'Country-specific validation rule violated'}
             </Body>
           </div>
 
@@ -319,6 +325,8 @@ function renderEventDetails(event) {
                 ? 'Transaction Agent will transliterate the name to Japanese Katakana script using official transliteration rules.'
                 : event.problem?.toLowerCase().includes('ifsc') || event.problem?.toLowerCase().includes('india')
                 ? 'Transaction Agent will look up the correct IFSC code from India\'s banking database using the bank name and branch information.'
+                : event.problem?.toLowerCase().includes('purpose code') || event.field === 'category_purpose'
+                ? 'Transaction Agent will classify the payment description into the appropriate ISO 20022 purpose code using semantic vector search.'
                 : 'Transaction Agent will resolve this validation issue automatically.'}
             </Body>
           </div>
