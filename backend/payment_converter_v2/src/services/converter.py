@@ -59,7 +59,8 @@ class Converter:
         message: str,
         request_id: Optional[str] = None,
         original_source_message: Optional[str] = None,
-        conversion_run_id: Optional[str] = None
+        conversion_run_id: Optional[str] = None,
+        use_ai: bool = True
     ) -> Dict[str, Any]:
         """
         Convert a payment message from source to target format.
@@ -75,6 +76,7 @@ class Converter:
             request_id: Optional request ID for tracking
             original_source_message: Original source message for cache lookup (multi-hop)
             conversion_run_id: Optional unique ID for this conversion run (enables independence)
+            use_ai: If True, use AI lane for unstructured fields. If False, use regex patterns.
 
         Returns:
             Dictionary containing:
@@ -115,8 +117,9 @@ class Converter:
             
             # Step 3: Transform fields through RULES and AI lanes
             internal_fields, ai_fields = self._transform_fields(
-                extracted_fields, 
-                config['map']
+                extracted_fields,
+                config['map'],
+                use_ai=use_ai
             )
             
             # Step 4: Process AI fields
@@ -270,21 +273,24 @@ class Converter:
     def _transform_fields(
         self,
         extracted_fields: Dict[str, Any],
-        mappings: List[Dict]
+        mappings: List[Dict],
+        use_ai: bool = True
     ) -> tuple:
         """
         Transform fields through RULES and AI lanes.
-        
+
         Args:
             extracted_fields: Extracted source fields
             mappings: Mapping configurations
-            
+            use_ai: If True, use AI lane. If False, use regex patterns for unstructured fields.
+
         Returns:
             Tuple of (internal_fields, ai_fields)
         """
         internal_fields, ai_fields = self.transformer.transform(
             extracted_fields,
-            mappings
+            mappings,
+            use_ai=use_ai
         )
         
         logger.debug(
@@ -295,48 +301,54 @@ class Converter:
         return internal_fields, ai_fields
     
     async def _process_ai_fields(
-        self, 
+        self,
         ai_fields: List[Dict]
     ) -> Dict[str, Dict[str, Any]]:
         """
         Process fields through AI lane.
-        
+
         Args:
             ai_fields: List of fields requiring AI processing
-            
+
         Returns:
             Dictionary of target_field -> {confidence, data}
+            Note: When target is a list (e.g., ["payment_purpose", "invoice_number"]),
+            it's stored as a tuple key for hashability.
         """
         ai_results = {}
-        
+
         for ai_field in ai_fields:
             target = ai_field['target']
             value = ai_field['value']
             field_type = ai_field['field_type']
             prompt = ai_field.get('prompt', '')
-            
+
+            # Convert list to tuple for use as dictionary key (lists aren't hashable)
+            target_key = tuple(target) if isinstance(target, list) else target
+
             try:
                 result = await self.ai_lane_service.extract_field(
                     input_text=value,
                     prompt=prompt if prompt else "",
                     field_type=field_type
                 )
-                
-                ai_results[target] = result
-                
+
+                ai_results[target_key] = result
+
                 logger.debug(
                     f"AI processed {target}: confidence {result['confidence']:.2f}"
                 )
-                
+
             except Exception as e:
                 logger.error(f"AI processing failed for {target}: {e}")
-                # Use fallback
-                ai_results[target] = {
+                # Use fallback - create data dict with first target if list
+                fallback_key = target[0] if isinstance(target, list) else target
+                ai_results[target_key] = {
                     'confidence': 0.3,
-                    'data': {target: value},  # Raw value as fallback
+                    'data': {fallback_key: value},  # Raw value as fallback
                     'error': str(e)
                 }
-        
+
         return ai_results
     
     def _merge_results(
@@ -362,19 +374,23 @@ class Converter:
             confidence_scores[field] = 1.0
         
         # Merge AI results
-        for target, result in ai_results.items():
+        for target_key, result in ai_results.items():
             data = result.get('data', {})
             confidence = result.get('confidence', 0.0)
-            
+
             # If data has the target field, use it
             if isinstance(data, dict):
                 for key, value in data.items():
                     final_fields[key] = value
                     confidence_scores[key] = confidence
             else:
-                # Simple value
-                final_fields[target] = data
-                confidence_scores[target] = confidence
+                # Simple value - target_key might be tuple, use first element
+                if isinstance(target_key, tuple):
+                    final_fields[target_key[0]] = data
+                    confidence_scores[target_key[0]] = confidence
+                else:
+                    final_fields[target_key] = data
+                    confidence_scores[target_key] = confidence
         
         logger.debug(f"Merged results: {len(final_fields)} total fields")
         return final_fields, confidence_scores
@@ -528,8 +544,9 @@ class Converter:
             input_text = ai_field['value']
             field_type = ai_field['field_type']
 
-            # Get AI result
-            ai_result = ai_results.get(target, {})
+            # Get AI result - convert list to tuple for lookup (ai_results uses tuple keys)
+            target_key = tuple(target) if isinstance(target, list) else target
+            ai_result = ai_results.get(target_key, {})
             confidence = ai_result.get('confidence', 0.0)
             ai_response = ai_result.get('data', {})
 

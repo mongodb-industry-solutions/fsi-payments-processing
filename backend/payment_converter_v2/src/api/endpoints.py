@@ -79,13 +79,18 @@ class ConversionRequest(BaseModel):
     """Request model for conversion endpoint"""
     conversion_id: str = Field(..., description="Conversion ID (e.g., MT103_to_pacs.008)")
     message: str = Field(..., description="Source message to convert")
-    
+    use_ai: bool = Field(
+        default=True,
+        description="Use AI lane for unstructured fields (false = rules/regex only)"
+    )
+
     model_config = {
         "json_schema_extra": {
             "examples": [
                 {
                     "conversion_id": "MT103_to_pacs.008",
-                    "message": "{1:F01BANK...}{4:\n:20:REF123\n:23B:CRED\n...}"
+                    "message": "{1:F01BANK...}{4:\n:20:REF123\n:23B:CRED\n...}",
+                    "use_ai": True
                 }
             ]
         }
@@ -98,10 +103,14 @@ class MultiHopConversionRequest(BaseModel):
     target_format: str = Field(..., description="Target format (e.g., pacs.008)")
     message: str = Field(..., description="Source message to convert")
     use_json_bridge: bool = Field(
-        default=True, 
+        default=True,
         description="Use canonical JSON as intermediate format"
     )
-    
+    use_ai: bool = Field(
+        default=True,
+        description="Use AI lane for unstructured fields (false = rules/regex only)"
+    )
+
     model_config = {
         "json_schema_extra": {
             "examples": [
@@ -109,7 +118,8 @@ class MultiHopConversionRequest(BaseModel):
                     "source_format": "MT103",
                     "target_format": "pacs.008",
                     "message": "{1:F01BANK...}{4:\n:20:REF123\n:23B:CRED\n...}",
-                    "use_json_bridge": True
+                    "use_json_bridge": True,
+                    "use_ai": True
                 }
             ]
         }
@@ -228,7 +238,8 @@ async def convert_message(request: ConversionRequest) -> ConversionResponse:
         result = await converter.convert(
             source_format=source_format,
             target_format=target_format,
-            message=request.message
+            message=request.message,
+            use_ai=request.use_ai
         )
         
         # Extract lane distribution from processing_stats
@@ -296,7 +307,8 @@ async def convert_multi_hop(request: MultiHopConversionRequest) -> ConversionRes
                 source_format=request.source_format,
                 target_format="JSON",
                 message=request.message,
-                conversion_run_id=conversion_run_id
+                conversion_run_id=conversion_run_id,
+                use_ai=request.use_ai
             )
 
             logger.info("Hop 1 complete, JSON saved to MongoDB")
@@ -416,7 +428,8 @@ async def convert_multi_hop(request: MultiHopConversionRequest) -> ConversionRes
             target_format=request.target_format,
             message=hop1_result['converted_message'],
             original_source_message=request.message,  # For cache lookup
-            conversion_run_id=conversion_run_id  # Use same run_id to retrieve correct JSON
+            conversion_run_id=conversion_run_id,  # Use same run_id to retrieve correct JSON
+            use_ai=request.use_ai
         )
         
         logger.info("Hop 2 complete using cached JSON")
@@ -500,7 +513,8 @@ async def convert_multi_hop_stream(request: MultiHopConversionRequest):
                     source_format=request.source_format,
                     target_format="JSON",
                     message=request.message,
-                    conversion_run_id=conversion_run_id
+                    conversion_run_id=conversion_run_id,
+                    use_ai=request.use_ai
                 )
 
                 hop1_time = time.time() - hop1_start
@@ -615,6 +629,7 @@ async def convert_multi_hop_stream(request: MultiHopConversionRequest):
                             "source_format": request.source_format,
                             "target_format": request.target_format,
                             "original_message": request.message,
+                            "use_ai": request.use_ai,  # Preserve AI toggle setting for hop 2
                             "validation_exception": {
                                 "problem": e.problem,
                                 "field_name": e.field_name,
@@ -748,7 +763,8 @@ async def convert_multi_hop_stream(request: MultiHopConversionRequest):
                     target_format=request.target_format,
                     message=hop1_result['converted_message'],
                     original_source_message=request.message,
-                    conversion_run_id=conversion_run_id
+                    conversion_run_id=conversion_run_id,
+                    use_ai=request.use_ai
                 )
 
                 hop2_time = time.time() - hop2_start
@@ -896,6 +912,7 @@ async def resume_agent_workflow(request: ResumeAgentRequest):
         conversion_run_id = pending.get("conversion_run_id")
         target_format = pending.get("target_format")
         original_message = pending.get("original_message")
+        use_ai = pending.get("use_ai", True)  # Retrieve AI toggle setting
         start_time = pending.get("start_time", time.time())
         hop1_details = pending.get("hop1_details", {})  # Retrieve stored hop1 processing details
 
@@ -937,7 +954,8 @@ async def resume_agent_workflow(request: ResumeAgentRequest):
             target_format=target_format,
             message=cached_json['json_data'],
             original_source_message=original_message,
-            conversion_run_id=conversion_run_id
+            conversion_run_id=conversion_run_id,
+            use_ai=use_ai
         )
 
         # Calculate total time

@@ -87,6 +87,9 @@ export default function AgenticAIPage() {
   const [reviewThreadId, setReviewThreadId] = useState(null);
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
 
+  // AI/Rules mode toggle - controls whether to use LLM or regex for unstructured fields
+  const [useAI, setUseAI] = useState(true);
+
   const scenarios = getAllScenarios();
 
   // Filter events based on scenario type:
@@ -223,7 +226,8 @@ export default function AgenticAIPage() {
         body: JSON.stringify({
           source_format: scenario.sourceFormat,
           target_format: scenario.targetFormat,
-          message: scenario.message
+          message: scenario.message,
+          use_ai: useAI
         })
       });
 
@@ -487,6 +491,8 @@ export default function AgenticAIPage() {
         onSimulate={handleSimulate}
         onReset={handleReset}
         isStreaming={isStreaming}
+        useAI={useAI}
+        onToggleAI={setUseAI}
       />
 
       {/* Two-Column Layout: Map + Agent Panel */}

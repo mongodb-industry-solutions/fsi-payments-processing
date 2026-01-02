@@ -16,6 +16,7 @@ ALLOWED_MAP_FIELDS = {
     "from": str,          # Source field
     "to": (str, list),    # Target field(s) - can be string or list
     "ai": str,            # Optional: AI field type (triggers AI lane)
+    "patterns": dict,     # Optional: Regex patterns for rules-based extraction (alternative to AI)
     "split": list,        # Optional: Split indices for composite fields
     "multiline": bool,    # Optional: Multiline extraction flag
     "dateFormat": str,    # Optional: Date conversion format

@@ -19,6 +19,8 @@ import ScenarioSelector from './ScenarioSelector';
  * @param {Function} props.onSimulate - Callback when simulate button is clicked
  * @param {Function} props.onReset - Callback when reset button is clicked
  * @param {boolean} props.isStreaming - Whether conversion is in progress
+ * @param {boolean} props.useAI - Whether to use AI lane for unstructured fields
+ * @param {Function} props.onToggleAI - Callback to toggle AI mode
  */
 export default function CollapsibleScenariosPanel({
   isExpanded,
@@ -28,7 +30,9 @@ export default function CollapsibleScenariosPanel({
   onSelectScenario,
   onSimulate,
   onReset,
-  isStreaming
+  isStreaming,
+  useAI = true,
+  onToggleAI
 }) {
   const selectedScenarioData = scenarios.find(s => s.id === selectedScenario);
 
@@ -152,32 +156,87 @@ export default function CollapsibleScenariosPanel({
           {selectedScenario && (
             <div style={{
               display: 'flex',
-              justifyContent: 'flex-end',
+              justifyContent: 'space-between',
               alignItems: 'center',
-              gap: '12px',
               marginTop: '16px',
               paddingTop: '16px',
               borderTop: '1px solid #E7EAEE'
             }}>
-              <Button
-                variant="default"
-                onClick={onReset}
-                disabled={isStreaming}
-              >
-                Reset
-              </Button>
-              <Button
-                variant="primary"
-                onClick={onSimulate}
-                disabled={isStreaming}
-                leftGlyph={<Icon glyph="Play" />}
-                style={{
-                  boxShadow: '0 4px 12px rgba(0, 163, 92, 0.3)',
-                  transition: 'all 0.2s ease'
-                }}
-              >
-                {isStreaming ? 'Processing...' : 'Simulate Transaction'}
-              </Button>
+              {/* AI/Rules Mode Toggle */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}>
+                <span style={{
+                  fontSize: '13px',
+                  color: '#5C6C75',
+                  fontWeight: 500
+                }}>
+                  Processing:
+                </span>
+                <button
+                  onClick={() => onToggleAI && onToggleAI(!useAI)}
+                  disabled={isStreaming}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '6px 12px',
+                    borderRadius: '16px',
+                    border: 'none',
+                    cursor: isStreaming ? 'not-allowed' : 'pointer',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    transition: 'all 0.2s ease',
+                    background: useAI ? '#00684A' : '#E8EDEB',
+                    color: useAI ? 'white' : '#1C2D38',
+                    opacity: isStreaming ? 0.6 : 1
+                  }}
+                >
+                  {useAI ? (
+                    <>
+                      <span style={{ fontSize: '14px' }}>🤖</span>
+                      AI Mode
+                    </>
+                  ) : (
+                    <>
+                      <span style={{ fontSize: '14px' }}>⚡</span>
+                      Rules Mode
+                    </>
+                  )}
+                </button>
+                <span style={{
+                  fontSize: '11px',
+                  color: '#889397',
+                  maxWidth: '180px'
+                }}>
+                  {useAI ? 'LLM parses unstructured fields' : 'Regex patterns extract fields'}
+                </span>
+              </div>
+
+              {/* Action Buttons */}
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <Button
+                  variant="default"
+                  onClick={onReset}
+                  disabled={isStreaming}
+                >
+                  Reset
+                </Button>
+                <Button
+                  variant="primary"
+                  onClick={onSimulate}
+                  disabled={isStreaming}
+                  leftGlyph={<Icon glyph="Play" />}
+                  style={{
+                    boxShadow: '0 4px 12px rgba(0, 163, 92, 0.3)',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  {isStreaming ? 'Processing...' : 'Simulate Transaction'}
+                </Button>
+              </div>
             </div>
           )}
         </div>

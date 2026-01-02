@@ -235,52 +235,46 @@ Your role is to analyze payment PROBLEMS and DETERMINE correct values using your
 AVAILABLE TOOLS:
 
 1. atlas_search(collection: str, query: str, search_fields: list, fuzzy: bool = True)
-   - PRIMARY lookup tool for keyword-based database searches
-   - Collections: "bank_details", "ifsc_codes", "registered_entities"
-   - Use fuzzy=False for exact matching (confidence: 1.0)
-   - Use fuzzy=True for typo-tolerant search (confidence: 0.7-0.95)
-   - Returns: found, top_result, confidence
+   - KEYWORD-BASED database lookup
+   - Collections: "bank_details" (has name_english, name_katakana), "ifsc_codes", "registered_entities"
+   - fuzzy=False: exact match (confidence: 1.0)
+   - fuzzy=True: typo-tolerant (confidence: 0.7-0.95)
+   - Returns: found (bool), top_result (dict), confidence
 
 2. vector_search(collection: str, query: str, index_name: str = None)
-   - SEMANTIC search for any collection with embeddings
-   - Works with ANY collection that has a vector index (default: {collection}_vector)
-   - Use when you need to match by MEANING, not keywords
-   - Example: "paying employee wages" in purpose_codes → SALA (Salary Payment)
-   - Returns: found, top_result, similarity_score, confidence (0.65-0.95)
+   - SEMANTIC database lookup - matches by meaning, not exact keywords
+   - Use for conceptual matching (e.g., "paying wages" → "Salary Payment")
+   - Returns: found (bool), top_result, similarity_score, confidence
 
 3. transliterate_text(text: str, target_script: str)
-   - AI-powered transliteration to Japanese scripts
-   - target_script options: "katakana", "hiragana"
-   - Use when atlas_search doesn't find a pre-translated name
+   - AI GENERATION - creates new text via LLM (slower, use as last resort)
+   - target_script: "katakana" or "hiragana"
+   - Returns: transliterated text
 
-WHEN TO USE WHICH TOOL:
-- atlas_search: Query contains specific keywords to match (company names, IFSC codes)
-- vector_search: Query is a free-text description to classify into categories
-- transliterate_text: Need to convert Western text to Japanese script
+UNIVERSAL PRINCIPLE - DATABASE FIRST, AI GENERATION LAST:
+Both atlas_search and vector_search query EXISTING data in the database.
+Only transliterate_text GENERATES new data via AI - use it only when database has no match.
 
-YOUR AUTONOMOUS PROCESS:
-1. READ the problem description carefully
-2. UNDERSTAND what needs to be resolved
-3. BEFORE CALLING ANY TOOL: Output a brief explanation of WHY you're choosing this specific tool
-4. STRATEGY for lookups:
-   - For classifications (purpose codes): Use vector_search first
-   - For exact data (names, codes): Try atlas_search with fuzzy=False first
-   - If not found, try atlas_search with fuzzy=True for typo tolerance
-   - For Japanese script: Use transliterate_text
-5. ANALYZE results and choose the BEST one for the problem
+YOUR PROCESS:
+1. UNDERSTAND the problem - what value do I need?
+2. SEARCH DATABASE FIRST:
+   - Use atlas_search or vector_search (whichever fits the query type)
+   - If found=True → USE that result, you're DONE
+   - If found=False → proceed to step 3
+3. ONLY IF DATABASE RETURNS found=False:
+   - Use transliterate_text to generate via AI
+4. STOP after finding a valid result - don't call additional tools unnecessarily
 
-CRITICAL: Always explain your reasoning BEFORE calling a tool. This helps with audit trails.
+CRITICAL RULES:
+- Call ONE tool, wait for result, then decide next action
+- If database search returns found=True, DO NOT call transliterate_text
+- Explain your reasoning before each tool call
 
-IMPORTANT: After using tools, you must provide your final answer in this exact format:
+After finding your answer, respond with:
 
 FINAL_VALUE: <the exact value to use>
 CONFIDENCE: <0.0 to 1.0>
 SOURCE: <which tool provided this value>
-
-Example:
-FINAL_VALUE: トウキョウ モーターズ
-CONFIDENCE: 0.9
-SOURCE: transliterate_text
 """
 
     # Create LLM for Resolution Agent
@@ -401,8 +395,50 @@ Analyze this problem and use your tools to find the correct value for '{field_na
                     source = source_match.group(1)
                     logger.info(f"Agent source: {source}, confidence: {confidence}")
 
+            # Fallback: extract from tool results if FINAL_VALUE not parsed
+            if not proposed_value and tool_result_values:
+                logger.info(f"FINAL_VALUE not in response, extracting from tool results: {list(tool_result_values.keys())}")
+
+                # Check atlas_search first (database result has priority)
+                if "atlas_search" in tool_result_values:
+                    result = tool_result_values["atlas_search"]
+                    if result.get("found") and result.get("top_result"):
+                        top = result["top_result"]
+                        # Try common fields for the value
+                        proposed_value = (
+                            top.get("name_katakana") or
+                            top.get("ifsc") or
+                            top.get("legal_name") or
+                            top.get("name_english") or
+                            ""
+                        )
+                        if proposed_value:
+                            confidence = result.get("confidence", 0.9)
+                            source = "atlas_search"
+                            logger.info(f"Extracted from atlas_search: '{proposed_value}'")
+
+                # Then check transliterate_text (AI fallback)
+                if not proposed_value and "transliterate_text" in tool_result_values:
+                    result = tool_result_values["transliterate_text"]
+                    proposed_value = result.get("transliterated", "")
+                    if proposed_value:
+                        confidence = result.get("confidence", 0.9)
+                        source = "transliterate_text"
+                        logger.info(f"Extracted from transliterate_text: '{proposed_value}'")
+
+                # Check vector_search
+                if not proposed_value and "vector_search" in tool_result_values:
+                    result = tool_result_values["vector_search"]
+                    if result.get("found") and result.get("top_result"):
+                        top = result["top_result"]
+                        proposed_value = top.get("code") or top.get("name") or ""
+                        if proposed_value:
+                            confidence = result.get("confidence", 0.8)
+                            source = "vector_search"
+                            logger.info(f"Extracted from vector_search: '{proposed_value}'")
+
             if not proposed_value:
-                logger.warning(f"No proposed_value found in agent response - tool results: {list(tool_result_values.keys())}")
+                logger.warning(f"No proposed_value found in response or tool results")
 
             # Build solution from agent's autonomous decision
             solution = {
