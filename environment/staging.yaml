@@ -35,6 +35,26 @@ sidecarContainers:
           secretKeyRef:
             name: fsi-payments
             key: VOYAGE_API_KEY
+      - name: SOLANA_RPC_ENDPOINT
+        valueFrom:
+          secretKeyRef:
+            name: fsi-payments
+            key: SOLANA_RPC_ENDPOINT
+      - name: SOLANA_PRIVATE_KEY
+        valueFrom:
+          secretKeyRef:
+            name: fsi-payments
+            key: SOLANA_PRIVATE_KEY
+      - name: SOLANA_PRIVATE_KEY_2
+        valueFrom:
+          secretKeyRef:
+            name: fsi-payments
+            key: SOLANA_PRIVATE_KEY_2
+      - name: SOLANA_NETWORK
+        valueFrom:
+          secretKeyRef:
+            name: fsi-payments
+            key: SOLANA_NETWORK
 
   # Payment Agent (port 8002)
   - name: agent
