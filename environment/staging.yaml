@@ -30,6 +30,11 @@ sidecarContainers:
           secretKeyRef:
             name: fsi-payments
             key: DATABASE_NAME
+      - name: VOYAGE_API_KEY
+        valueFrom:
+          secretKeyRef:
+            name: fsi-payments
+            key: VOYAGE_API_KEY
 
   # Payment Agent (port 8002)
   - name: agent
@@ -43,8 +48,8 @@ sidecarContainers:
           secretKeyRef:
             name: fsi-payments
             key: MONGODB_URI
-      - name: DATABASE_NAME
+      - name: VOYAGE_API_KEY
         valueFrom:
           secretKeyRef:
             name: fsi-payments
-            key: DATABASE_NAME
+            key: VOYAGE_API_KEY

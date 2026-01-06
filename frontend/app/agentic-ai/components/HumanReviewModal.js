@@ -255,7 +255,7 @@ export default function HumanReviewModal({
                 fontSize: '12px',
                 color: '#5C6C75',
                 lineHeight: '1.5',
-                maxHeight: '100px',
+                maxHeight: '180px',
                 overflow: 'auto'
               }}>
                 {reasoning}

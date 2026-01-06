@@ -247,7 +247,15 @@ def validate_purpose_code_rules(
     like SALA (salary), SUPP (supplier), SCVE (services), etc.
     When remittance info exists but purpose code is missing, we need to
     classify the payment description into the appropriate code.
+
+    Skip validation for crypto settlement messages - they use blockchain
+    settlement instead of traditional purpose codes.
     """
+
+    # Skip validation for crypto settlement messages
+    # These have crypto markers and use blockchain settlement flow
+    if canonical_json.get("crypto_blockchain") or canonical_json.get("crypto_receiver_wallet"):
+        return
 
     # Check for ISO 20022 purpose code (standardized 4-letter code like SALA, SUPP, SCVE)
     # Note: payment_purpose from AI lane is free-text extraction, NOT a standardized code
