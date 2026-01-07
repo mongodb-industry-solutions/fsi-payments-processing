@@ -226,8 +226,9 @@ function ErrorCard({ event, x, y, isActive }) {
 /**
  * AnimatedPaymentJourney Component
  * Visualizes payment traveling along the route with error handling
+ * @param {boolean} logsRenderComplete - Signal from transaction logs panel that output has rendered
  */
-function AnimatedPaymentJourney({ from, to, events, isStreaming, onFirstLegComplete }) {
+function AnimatedPaymentJourney({ from, to, events, isStreaming, onFirstLegComplete, logsRenderComplete }) {
   const { projection } = useMapContext();
 
   // Configuration constants
@@ -242,8 +243,9 @@ function AnimatedPaymentJourney({ from, to, events, isStreaming, onFirstLegCompl
   });
 
   // Calculate journey state based on events
+  // IMPORTANT: logsRenderComplete ensures we don't complete until transaction logs have rendered
   React.useEffect(() => {
-    console.log('🔄 Journey State Update - Events:', events.length, 'isStreaming:', isStreaming);
+    console.log('🔄 Journey State Update - Events:', events.length, 'isStreaming:', isStreaming, 'logsRenderComplete:', logsRenderComplete);
 
     if (!isStreaming && events.length === 0) {
       setJourneyState({ progress: 0, status: 'idle', errorPosition: null });
@@ -270,7 +272,8 @@ function AnimatedPaymentJourney({ from, to, events, isStreaming, onFirstLegCompl
       hasAgentComplete,
       isComplete,
       hasCryptoEvents,
-      firstLegComplete
+      firstLegComplete,
+      logsRenderComplete
     });
 
     if (firstLegComplete && hasCryptoEvents) {
@@ -282,8 +285,16 @@ function AnimatedPaymentJourney({ from, to, events, isStreaming, onFirstLegCompl
         errorPauseEndTime: null,
         resolvedTimestamp: null
       }));
-    } else if (isComplete) {
+    } else if (isComplete && logsRenderComplete) {
+      // Only complete when BOTH: complete event received AND transaction logs have rendered
       setJourneyState({ progress: 100, status: 'complete', errorPosition: null, errorPauseEndTime: null, resolvedTimestamp: null });
+    } else if (isComplete && !logsRenderComplete) {
+      // Complete event received but logs still rendering - stay at high progress, await logs
+      setJourneyState(prev => ({
+        ...prev,
+        status: 'awaiting_logs',
+        progress: Math.max(prev.progress, 95) // Stay at 95%+ while waiting
+      }));
     } else if (hasAgentComplete && !isComplete) {
       // Agent resolved, continuing journey - clear pause to allow animation
       setJourneyState(prev => ({
@@ -322,11 +333,11 @@ function AnimatedPaymentJourney({ from, to, events, isStreaming, onFirstLegCompl
         progress: Math.min(prev.progress + 2, 95) // Cap at 95% until complete
       }));
     }
-  }, [events, isStreaming, ERROR_PAUSE_DURATION_MS]);
+  }, [events, isStreaming, logsRenderComplete, ERROR_PAUSE_DURATION_MS]);
 
-  // Animate progress when traveling, resolved, or completing first leg
+  // Animate progress when traveling, resolved, awaiting_logs, or completing first leg
   React.useEffect(() => {
-    if (journeyState.status === 'traveling' || journeyState.status === 'resolved' || journeyState.status === 'completing_first_leg') {
+    if (journeyState.status === 'traveling' || journeyState.status === 'resolved' || journeyState.status === 'completing_first_leg' || journeyState.status === 'awaiting_logs') {
       const interval = setInterval(() => {
         setJourneyState(prev => {
           // Check if error pause is still active
@@ -340,6 +351,15 @@ function AnimatedPaymentJourney({ from, to, events, isStreaming, onFirstLegCompl
               return { ...prev, progress: 100, status: 'complete' };
             }
             return { ...prev, progress: Math.min(prev.progress + 2, 100) }; // Faster for crypto scenarios
+          }
+
+          // For awaiting_logs, hold at 95-99% until logs render complete
+          if (prev.status === 'awaiting_logs') {
+            // Slowly creep towards 99% but never hit 100 until logsRenderComplete
+            if (prev.progress >= 99) {
+              return prev; // Hold at 99% max while waiting
+            }
+            return { ...prev, progress: Math.min(prev.progress + 0.5, 99) }; // Slow crawl
           }
 
           if (prev.progress >= 95 && journeyState.status === 'traveling') {
@@ -791,6 +811,7 @@ function AnimatedPaymentJourneySecondLeg({ from, to, events, isStreaming }) {
  * @param {number} props.totalTime - Total processing time
  * @param {Object} props.hop1Details - Detailed processing for Hop 1
  * @param {Object} props.hop2Details - Detailed processing for Hop 2
+ * @param {boolean} props.logsRenderComplete - Signal that transaction logs have finished rendering
  */
 export default function GeographicMapPanel({
   isActive,
@@ -802,7 +823,8 @@ export default function GeographicMapPanel({
   totalTime = 0,
   hop1Details = null,
   hop2Details = null,
-  conversionRunId = null
+  conversionRunId = null,
+  logsRenderComplete = false
 }) {
   const [hoveredCountry, setHoveredCountry] = useState(null);
   const [selectedTabIndex, setSelectedTabIndex] = useState(0);
@@ -815,11 +837,12 @@ export default function GeographicMapPanel({
     setIsMounted(true);
   }, []);
 
-  // Track journey completion based on events
+  // Track journey completion based on events AND logs render complete
+  // This ensures the checkmark and green color only appear after logs have rendered
   React.useEffect(() => {
     const hasCompleteEvent = events.some(e => e.type === 'complete');
-    setIsJourneyComplete(hasCompleteEvent);
-  }, [events]);
+    setIsJourneyComplete(hasCompleteEvent && logsRenderComplete);
+  }, [events, logsRenderComplete]);
 
   // Reset states when scenario changes or streaming starts fresh
   React.useEffect(() => {
@@ -1003,6 +1026,7 @@ export default function GeographicMapPanel({
                   events={events}
                   isStreaming={isStreaming}
                   onFirstLegComplete={() => setFirstLegAnimationComplete(true)}
+                  logsRenderComplete={logsRenderComplete}
                 />
               </>
             )}

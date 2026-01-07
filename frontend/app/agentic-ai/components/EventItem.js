@@ -87,7 +87,7 @@ function formatEventMessage(event) {
     case 'hop2_start':
       return `Stage 2: Converting ${event.source || 'Source'} → ${event.target || 'Target'}`;
     case 'hop2_complete':
-      return `Stage 2 complete (${event.time?.toFixed(2) || '0'}s) — ${event.detailed_processing?.extraction?.total_fields || 0} fields mapped`;
+      return `Stage 2 complete (${event.time?.toFixed(2) || '0'}s) — ${event.detailed_processing?.rules_lane?.total_fields || 0} fields mapped`;
     case 'validation_failed':
       // Show a brief but informative summary
       const fieldLabel = event.field === 'creditor_name' ? 'beneficiary name' :
@@ -515,13 +515,19 @@ function renderEventDetails(event) {
       const rulesLane = dp.rules_lane || {};
       const aiLane = dp.ai_lane || {};
 
-      // Extract crypto fields if present
+      // Extract crypto fields if present AND have actual values (not N/A or empty)
       const allFields = rulesLane.fields || [];
-      const cryptoFields = allFields.filter(f =>
-        f.source_field?.includes('crypto') ||
-        f.target_field?.includes('crypto') ||
-        f.source_field?.includes('wallet')
-      );
+      const cryptoFields = allFields.filter(f => {
+        const isCryptoField = f.source_field?.includes('crypto') ||
+          f.target_field?.includes('crypto') ||
+          f.source_field?.includes('wallet');
+        // Only include if field has an actual value (not N/A, empty, null, undefined)
+        const hasValue = f.input_value &&
+          f.input_value !== 'N/A' &&
+          f.input_value !== '' &&
+          f.input_value !== null;
+        return isCryptoField && hasValue;
+      });
       const hasCryptoFields = cryptoFields.length > 0;
       const hasRulesFields = rulesLane.total_fields > 0;
       const hasAiFields = aiLane.total_fields > 0 && aiLane.fields;

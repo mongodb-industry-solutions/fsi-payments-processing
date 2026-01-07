@@ -30,6 +30,7 @@ function getAgentStatus(isStreaming, events, output) {
  * @param {boolean} props.isStreaming - Whether conversion is in progress
  * @param {Set} props.expandedEvents - Set of expanded event IDs
  * @param {Function} props.onToggleEvent - Callback to toggle event expansion
+ * @param {Function} props.onOutputRendered - Callback when output card has rendered (for animation sync)
  */
 export default function TransactionAgentPanel({
   events,
@@ -39,10 +40,23 @@ export default function TransactionAgentPanel({
   targetFormat,
   isStreaming,
   expandedEvents,
-  onToggleEvent
+  onToggleEvent,
+  onOutputRendered
 }) {
   const status = getAgentStatus(isStreaming, events, output);
   const hasActivity = events.length > 0 || output;
+
+  // Notify parent when output card has rendered (for journey animation sync)
+  // Use a small delay to ensure the DOM has updated and the output card is visible
+  React.useEffect(() => {
+    if (output && onOutputRendered) {
+      // Small delay to ensure the output card has mounted and rendered
+      const timer = setTimeout(() => {
+        onOutputRendered();
+      }, 150); // 150ms allows React to complete rendering
+      return () => clearTimeout(timer);
+    }
+  }, [output, onOutputRendered]);
 
   return (
     <Card

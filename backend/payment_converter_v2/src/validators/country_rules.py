@@ -248,13 +248,21 @@ def validate_purpose_code_rules(
     When remittance info exists but purpose code is missing, we need to
     classify the payment description into the appropriate code.
 
-    Skip validation for crypto settlement messages - they use blockchain
-    settlement instead of traditional purpose codes.
+    Skip validation for:
+    - Crypto settlement messages (use blockchain settlement)
+    - ISO 20022 source formats (sender already had opportunity to include purpose code)
     """
 
     # Skip validation for crypto settlement messages
     # These have crypto markers and use blockchain settlement flow
     if canonical_json.get("crypto_blockchain") or canonical_json.get("crypto_receiver_wallet"):
+        return
+
+    # Skip validation when source is already ISO 20022 format
+    # If the sender chose not to include a purpose code, that's intentional
+    # This prevents false triggers on pacs.008 → pacs.008 internal conversions
+    iso20022_formats = {"pacs.008", "pacs.009", "pacs.004", "camt.053", "camt.054", "cain.001"}
+    if source_format in iso20022_formats:
         return
 
     # Check for ISO 20022 purpose code (standardized 4-letter code like SALA, SUPP, SCVE)

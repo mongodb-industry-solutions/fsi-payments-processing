@@ -90,6 +90,10 @@ export default function AgenticAIPage() {
   // AI/Rules mode toggle - controls whether to use LLM or regex for unstructured fields
   const [useAI, setUseAI] = useState(true);
 
+  // Animation sync state - signals when transaction logs have finished rendering
+  // This ensures the journey animation completes in sync with the logs panel
+  const [logsRenderComplete, setLogsRenderComplete] = useState(false);
+
   const scenarios = getAllScenarios();
 
   // Filter events based on scenario type:
@@ -148,6 +152,8 @@ export default function AgenticAIPage() {
     setReviewData(null);
     setReviewThreadId(null);
     setIsSubmittingReview(false);
+    // Reset animation sync state
+    setLogsRenderComplete(false);
   };
 
   const handleSelectScenario = (scenarioId) => {
@@ -216,6 +222,7 @@ export default function AgenticAIPage() {
     setHop1Details(null);
     setHop2Details(null);
     setConversionRunId(null);
+    setLogsRenderComplete(false); // Reset animation sync
 
     try {
       const response = await fetch('/api/convert/multi-hop/stream', {
@@ -513,6 +520,7 @@ export default function AgenticAIPage() {
           hop1Details={hop1Details}
           hop2Details={hop2Details}
           conversionRunId={conversionRunId}
+          logsRenderComplete={logsRenderComplete}
         />
 
         {/* Right: Transaction Agent Panel */}
@@ -525,6 +533,7 @@ export default function AgenticAIPage() {
           isStreaming={isStreaming}
           expandedEvents={expandedEvents}
           onToggleEvent={toggleEventExpansion}
+          onOutputRendered={() => setLogsRenderComplete(true)}
         />
       </div>
 
