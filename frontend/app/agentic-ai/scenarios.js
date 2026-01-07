@@ -120,7 +120,7 @@ CLOUD INFRASTRUCTURE DEVELOPMENT
     badgeVariant: 'yellow',
     isAgentic: false,  // No country validation - shows conversion hop events instead
     info: {
-      process: 'Cross-border card authorization converted from legacy ISO 8583 format to modern ISO 20022 cain.001 for interbank clearing.',
+      process: 'Cross-border card authorization converted from legacy ISO 8583 (POS terminal format) to modern ISO 20022 cain.001 for card network processing between acquirer and issuer.',
       aiExtraction: 'AI parses unstructured merchant field "SIM LIM SQUARE ELECTRONICS    SINGAPORE     SGP" into structured name, city, and country fields.',
       multiHop: 'Multi-hop conversion: ISO8583 → Canonical JSON → cain.001 XML, enabling format bridging through a universal intermediate.'
     },

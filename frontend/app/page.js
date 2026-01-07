@@ -19,7 +19,7 @@ export default function Home() {
     <div className={styles.container}>
       <div className={styles.hero}>
         <H1 className={styles.title}>
-          Agentic Payment Converter
+          Agentic Payments Engine
         </H1>
         <Subtitle className={styles.subtitle}>
           Document-driven. Intelligent learning. Universal compatibility.
@@ -86,7 +86,7 @@ export default function Home() {
           </Body>
           <div className={styles.metric}>
             <span className={styles.metricValue}>∞</span>
-            <span className={styles.metricLabel}>Format Pairs</span>
+            <span className={styles.metricLabel}>Infinitely Extensible</span>
           </div>
           <div className={styles.badgeWrapper}>
             <Badge variant="purple">Multi-Hop Routing</Badge>
