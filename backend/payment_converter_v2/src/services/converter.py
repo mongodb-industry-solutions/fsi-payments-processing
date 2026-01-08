@@ -516,6 +516,10 @@ class Converter:
             transform_type = mapping.get('transform', 'direct_copy')
             input_value = extracted_fields.get(source_field, '')
 
+            # Only include fields that were actually extracted from the message
+            if not input_value:
+                continue
+
             # Find output values in internal_fields
             output_value = {}
             for target in targets:
@@ -527,7 +531,7 @@ class Converter:
                 'target_field': targets,
                 'transform_type': transform_type,
                 'transform_config': mapping.get('transform_config', {}),
-                'input_value': str(input_value)[:100] if input_value else '',
+                'input_value': str(input_value)[:100],
                 'output_value': output_value,
                 'confidence': 1.0
             })
