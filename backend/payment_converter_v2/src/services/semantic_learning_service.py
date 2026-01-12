@@ -7,6 +7,7 @@ Builds combined field-to-mapping lookup from ALL existing configurations.
 Supports multiple message formats:
 - SWIFT MT: Fields like :20:, :32A:, :50K:
 - ISO8583: Pipe-delimited fields (demo format)
+- ISO 20022 (MX): XML messages like pacs.008, pacs.009, camt.053
 """
 
 import re
@@ -21,7 +22,7 @@ class SemanticLearningService:
     Auto-generates conversion configs by learning from ALL existing configs.
     No separate patterns collection - learns at runtime from stored configs.
 
-    Supports SWIFT MT and ISO8583 message formats.
+    Supports SWIFT MT, ISO8583, and ISO 20022 (MX) message formats.
     """
 
     # SWIFT MT field pattern: :20:, :32A:, :50K:, etc.
@@ -36,6 +37,11 @@ class SemanticLearningService:
         "stan", "local_time", "local_date", "rrn", "terminal_id", "merchant_id",
         "merchant_info", "currency_code"
     ]
+
+    # ISO 20022 XML detection patterns
+    ISO20022_NAMESPACE_PATTERN = r'xmlns[^>]*iso:std:iso:20022'
+    ISO20022_DOCTYPE_PATTERN = r'<Document[^>]*>'
+    ISO20022_MESSAGE_PATTERN = r'<(FIToFICstmrCdtTrf|FICdtTrf|BkToCstmrStmt|PmtRtr|CardTx)'
 
     def __init__(self, mongodb_service, llm_field_mapper=None):
         """
@@ -179,11 +185,24 @@ class SemanticLearningService:
             message: Raw message string
 
         Returns:
-            Format identifier: "SWIFT", "ISO8583", or "UNKNOWN"
+            Format identifier: "SWIFT", "ISO8583", "ISO20022", or "UNKNOWN"
         """
         # ISO8583 demo format: starts with 0200| or 0100| etc.
         if re.match(r'^0[12]\d{2}\|', message):
             return "ISO8583"
+
+        # ISO 20022 (MX) XML format - check BEFORE SWIFT because XML can contain :XX: in data
+        # (e.g., timestamps like 10:30:00Z contain :30: which matches SWIFT pattern)
+        if (re.search(self.ISO20022_DOCTYPE_PATTERN, message) or
+            re.search(self.ISO20022_NAMESPACE_PATTERN, message) or
+            re.search(self.ISO20022_MESSAGE_PATTERN, message)):
+            return "ISO20022"
+
+        # Generic XML detection - check before SWIFT
+        if message.strip().startswith('<?xml') or (
+            message.strip().startswith('<') and '</Document>' in message
+        ):
+            return "ISO20022"
 
         # SWIFT MT format: has block structure {1:...}{2:...} or field tags :XX:
         if re.search(r'\{[1-4]:', message) or re.search(r':\d{2}[A-Z]?:', message):
@@ -198,6 +217,7 @@ class SemanticLearningService:
         Supports:
         - SWIFT MT: :20:, :32A:, :50K: format
         - ISO8583: Pipe-delimited demo format
+        - ISO20022: XML with patterns from existing configs
 
         Args:
             message: Raw message string
@@ -212,6 +232,8 @@ class SemanticLearningService:
             return self._extract_iso8583_fields(message)
         elif msg_format == "SWIFT":
             return self._extract_swift_fields(message)
+        elif msg_format == "ISO20022":
+            return self._extract_iso20022_fields(message)
         else:
             # Try SWIFT as default fallback
             logger.warning("Unknown format, attempting SWIFT extraction")
@@ -255,6 +277,73 @@ class SemanticLearningService:
                 if value:  # Skip empty values
                     fields[field_name] = value.strip()
 
+        return fields
+
+    def _extract_iso20022_fields(self, message: str) -> Dict[str, str]:
+        """
+        Extract ISO 20022 (MX) fields from XML message.
+
+        Two-phase extraction (similar to SWIFT which extracts ALL :XX: fields):
+        1. Extract using learned patterns from _field_lookup (field_id as key)
+        2. Extract ALL leaf elements from XML (tag name as key for unknown discovery)
+
+        Args:
+            message: ISO 20022 XML message
+
+        Returns:
+            Dictionary of field_id -> value (e.g., {"message_id": "MSG001", "RtrId": "RTN001"})
+        """
+        fields = {}
+        extracted_values = set()  # Track values already extracted to avoid duplicates
+
+        # Phase 1: Apply learned patterns from existing configs
+        if self._field_lookup:
+            for field_id, info in self._field_lookup.items():
+                pattern = info.get("extract_pattern")
+                if not pattern:
+                    continue
+
+                # Only use XML patterns (they start with '<' or contain XML tags)
+                if not (pattern.startswith('<') or '<' in pattern):
+                    continue
+
+                try:
+                    match = re.search(pattern, message, re.DOTALL)
+                    if match:
+                        value = match.group(1).strip()
+                        if value:
+                            fields[field_id] = value
+                            extracted_values.add(value)  # Track extracted value
+                            logger.debug(f"Extracted {field_id}: {value[:50]}...")
+                except re.error as e:
+                    logger.warning(f"Invalid regex pattern for {field_id}: {e}")
+                    continue
+
+        # Phase 2: Extract ALL leaf elements (like SWIFT extracts all :XX: fields)
+        # This discovers fields that don't have patterns yet
+        leaf_pattern = r'<(\w+)>([^<]+)</\1>'
+        for match in re.finditer(leaf_pattern, message):
+            tag_name = match.group(1)
+            value = match.group(2).strip()
+
+            # Skip if already extracted by a learned pattern (same tag or same value)
+            if tag_name in fields:
+                continue
+
+            # Skip if this value was already extracted by a Phase 1 pattern
+            # This avoids duplicates like MsgId when message_id already has the value
+            if value in extracted_values:
+                continue
+
+            # Skip empty values
+            if not value:
+                continue
+
+            # Use tag name as field_id (will be unknown if not in _field_lookup)
+            fields[tag_name] = value
+            extracted_values.add(value)
+
+        logger.info(f"Extracted {len(fields)} ISO20022 fields")
         return fields
 
     def _match_fields(

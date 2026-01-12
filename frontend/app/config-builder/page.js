@@ -46,6 +46,46 @@ DEUTSCHE BANK AG
     label: 'ISO8583 0210 (Card Response)',
     format: 'ISO8583',
     message: `0210|8000000000000000|4539123456789012|000000|000000025000|1205143052|123456|143052|1205|ABCD12345678|TERM0001|MERCHANT12345678|ACME STORE 123 MAIN ST SINGAPORE SG|702`
+  },
+  'pacs.004': {
+    label: 'pacs.004 (Payment Return)',
+    format: 'ISO20022',
+    message: `<?xml version="1.0" encoding="UTF-8"?>
+<Document xmlns="urn:iso:std:iso:20022:tech:xsd:pacs.004.001.09">
+    <PmtRtr>
+        <GrpHdr>
+            <MsgId>RETURN-2024-001</MsgId>
+            <CreDtTm>2024-12-15T10:30:00Z</CreDtTm>
+            <NbOfTxs>1</NbOfTxs>
+            <SttlmMtd>CLRG</SttlmMtd>
+        </GrpHdr>
+        <TxInf>
+            <RtrId>RTN2024001</RtrId>
+            <OrgnlGrpInf>
+                <OrgnlMsgId>ORIG-MSG-2024-001</OrgnlMsgId>
+                <OrgnlMsgNmId>pacs.008.001.08</OrgnlMsgNmId>
+            </OrgnlGrpInf>
+            <RtrdIntrBkSttlmAmt Ccy="EUR">5000.00</RtrdIntrBkSttlmAmt>
+            <IntrBkSttlmDt>2024-12-16</IntrBkSttlmDt>
+            <RtrRsnInf>
+                <Rsn>
+                    <Cd>AC04</Cd>
+                </Rsn>
+            </RtrRsnInf>
+            <InstgAgt>
+                <FinInstnId>
+                    <BICFI>DEUTDEFFXXX</BICFI>
+                </FinInstnId>
+            </InstgAgt>
+            <InstdAgt>
+                <FinInstnId>
+                    <BICFI>CHABORLAXXX</BICFI>
+                </FinInstnId>
+            </InstdAgt>
+            <ChrgBr>SHAR</ChrgBr>
+        </TxInf>
+    </PmtRtr>
+</Document>`
   }
 };
 
@@ -101,6 +141,19 @@ const FORMAT_INFO = {
       { field: 'InstgAgt', desc: 'Instructing Agent' },
       { field: 'InstdAgt', desc: 'Instructed Agent' },
       { field: 'Cdtr', desc: 'Creditor Institution' }
+    ]
+  },
+  'pacs.004': {
+    name: 'pacs.004',
+    type: 'ISO 20022',
+    description: 'PaymentReturn - ISO 20022 message for returning payments (e.g., account closed, insufficient funds).',
+    keyFields: [
+      { field: 'MsgId', desc: 'Message Identification' },
+      { field: 'RtrId', desc: 'Return Identification' },
+      { field: 'OrgnlMsgId', desc: 'Original Message ID' },
+      { field: 'OrgnlEndToEndId', desc: 'Original End-to-End ID' },
+      { field: 'RtrdIntrBkSttlmAmt', desc: 'Returned Amount' },
+      { field: 'RtrRsnInf/Cd', desc: 'Return Reason Code (AC04, AM04, etc.)' }
     ]
   },
   JSON: {

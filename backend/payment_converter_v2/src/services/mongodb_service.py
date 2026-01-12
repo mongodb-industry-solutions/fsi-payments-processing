@@ -194,7 +194,8 @@ class MongoDBService:
         Build field-to-mapping lookup using MongoDB aggregation pipeline.
 
         Processes all configs at database level instead of Python iteration.
-        First config wins for duplicate field_ids (sorted by _id).
+        Prioritizes *_to_JSON configs (source format extractors) over JSON_to_* configs.
+        This ensures XML/SWIFT/ISO8583 patterns are preferred for learning.
 
         Returns:
             Dictionary mapping field_id to lookup info:
@@ -228,19 +229,35 @@ class MongoDBService:
                     }
                 }},
 
-                # Stage 4: Project intermediate structure
+                # Stage 4: Project with priority for sorting
+                # Priority 0: *_to_JSON configs (source format extractors - preferred)
+                # Priority 1: JSON_to_* configs (target builders)
+                # Priority 2: Other configs
                 {"$project": {
                     "_id": 0,
                     "field_id": "$map.from",
                     "mapping": "$map",
                     "source_config": "$_id",
-                    "extract_pattern": {"$arrayElemAt": ["$matched_extract.v", 0]}
+                    "extract_pattern": {"$arrayElemAt": ["$matched_extract.v", 0]},
+                    "priority": {
+                        "$cond": {
+                            "if": {"$regexMatch": {"input": "$_id", "regex": "_to_JSON$"}},
+                            "then": 0,
+                            "else": {
+                                "$cond": {
+                                    "if": {"$regexMatch": {"input": "$_id", "regex": "^JSON_to_"}},
+                                    "then": 2,
+                                    "else": 1
+                                }
+                            }
+                        }
+                    }
                 }},
 
-                # Stage 5: Sort for deterministic "first wins" ordering
-                {"$sort": {"source_config": 1}},
+                # Stage 5: Sort by priority first, then by config ID
+                {"$sort": {"priority": 1, "source_config": 1}},
 
-                # Stage 6: Group by field_id, first config wins
+                # Stage 6: Group by field_id, first config wins (now priority-sorted)
                 {"$group": {
                     "_id": "$field_id",
                     "mapping": {"$first": "$mapping"},
