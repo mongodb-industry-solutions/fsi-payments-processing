@@ -20,7 +20,7 @@ class AILaneService:
     def __init__(
         self,
         bedrock_service: BedrockService = None,
-        model_haiku: str = "anthropic.claude-haiku-4-5-20251001-v1:0",
+        model_haiku: str = "us.anthropic.claude-haiku-4-5-20251001-v1:0",
         model_sonnet: str = "anthropic.claude-3-5-sonnet-20240620-v1:0"
     ):
         """
@@ -328,7 +328,7 @@ _ai_lane_instance = None
 
 
 def get_ai_lane_service(
-    model_haiku: str = "anthropic.claude-3-haiku-20240307-v1:0",
+    model_haiku: str = "us.anthropic.claude-haiku-4-5-20251001-v1:0",
     model_sonnet: str = "anthropic.claude-3-5-sonnet-20240620-v1:0"
 ) -> AILaneService:
     """

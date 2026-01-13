@@ -53,7 +53,7 @@ class BedrockService:
         prompt: str,
         max_tokens: int = 1000,
         temperature: float = 0.1,
-        model_id: str = "anthropic.claude-3-haiku-20240307-v1:0"
+        model_id: str = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
     ) -> Dict[str, Any]:
         """
         Invoke Claude model for text generation

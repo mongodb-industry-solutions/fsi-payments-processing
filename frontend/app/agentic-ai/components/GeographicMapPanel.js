@@ -13,6 +13,7 @@ import {
   useMapContext
 } from 'react-simple-maps';
 import ConversionFlowPipeline from './ConversionFlowPipeline';
+import StoryOverlay from './StoryOverlay';
 
 // World map topology URL (low resolution for performance)
 const geoUrl = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
@@ -953,6 +954,7 @@ export default function GeographicMapPanel({
               </div>
             ) : (
           /* Interactive World Map */
+          <>
           <ComposableMap
             projection="geoMercator"
             projectionConfig={{
@@ -1213,6 +1215,18 @@ export default function GeographicMapPanel({
               </>
             )}
           </ComposableMap>
+          {/* Story overlay - appears over the map */}
+          {scenario?.story && (
+            <StoryOverlay
+              story={scenario.story}
+              isActive={isActive}
+              isStreaming={isStreaming}
+              events={events}
+              sourceCoords={scenario.sourceCountry?.coords}
+              targetCoords={scenario.targetCountry?.coords}
+            />
+          )}
+          </>
             )}
           </>
         ) : (

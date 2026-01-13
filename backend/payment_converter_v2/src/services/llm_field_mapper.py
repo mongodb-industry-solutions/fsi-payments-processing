@@ -20,7 +20,7 @@ class LLMFieldMapper:
     """
 
     # Claude model for field mapping suggestions
-    MODEL_ID = "anthropic.claude-3-haiku-20240307-v1:0"
+    MODEL_ID = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
 
     def __init__(self, mongodb_service, bedrock_service):
         """

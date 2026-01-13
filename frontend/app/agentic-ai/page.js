@@ -81,6 +81,12 @@ export default function AgenticAIPage() {
   // Using ref to avoid stale closure issues with async state updates
   const scenarioResultsCache = useRef({});
 
+  // Event display throttling for non-agentic scenarios
+  // Queue events and release them at a controlled rate for better UX
+  const eventQueueRef = useRef([]);
+  const throttleTimerRef = useRef(null);
+  const EVENT_DISPLAY_DELAY = 700; // ms between events for non-agentic scenarios
+
   // Human-in-the-loop review state
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [reviewData, setReviewData] = useState(null);
@@ -114,12 +120,56 @@ export default function AgenticAIPage() {
     console.log('🔄 hop2Details state changed:', hop2Details);
   }, [hop2Details]);
 
+  // Cleanup throttle timer on unmount
+  useEffect(() => {
+    return () => {
+      if (throttleTimerRef.current) {
+        clearTimeout(throttleTimerRef.current);
+      }
+    };
+  }, []);
+
+  // Helper function to process the event queue with throttling
+  const processEventQueue = () => {
+    if (eventQueueRef.current.length === 0) {
+      throttleTimerRef.current = null;
+      return;
+    }
+
+    const nextEvent = eventQueueRef.current.shift();
+    setEvents(prev => [...prev, nextEvent]);
+
+    // Schedule next event
+    if (eventQueueRef.current.length > 0) {
+      throttleTimerRef.current = setTimeout(processEventQueue, EVENT_DISPLAY_DELAY);
+    } else {
+      throttleTimerRef.current = null;
+    }
+  };
+
   // Helper Functions
   const addEvent = (eventData) => {
     const timestamp = new Date().toISOString();
     const id = `event-${Date.now()}-${Math.random()}`;
+    const enrichedEvent = { ...eventData, timestamp, id };
     console.log('✅ Event Added:', eventData.type, eventData);
-    setEvents(prev => [...prev, { ...eventData, timestamp, id }]);
+
+    // Check if this is a non-agentic scenario (needs throttling)
+    const scenario = getScenario(selectedScenario);
+    const isNonAgentic = scenario?.isAgentic === false;
+
+    if (isNonAgentic && isConversionHopEvent(eventData)) {
+      // Queue the event for throttled display
+      eventQueueRef.current.push(enrichedEvent);
+
+      // Start processing if not already running
+      if (!throttleTimerRef.current) {
+        processEventQueue();
+      }
+    } else {
+      // Agentic scenarios - add immediately (agent processing provides natural delays)
+      setEvents(prev => [...prev, enrichedEvent]);
+    }
   };
 
   const toggleEventExpansion = (eventId) => {
@@ -154,6 +204,12 @@ export default function AgenticAIPage() {
     setIsSubmittingReview(false);
     // Reset animation sync state
     setLogsRenderComplete(false);
+    // Clear event queue and throttle timer
+    eventQueueRef.current = [];
+    if (throttleTimerRef.current) {
+      clearTimeout(throttleTimerRef.current);
+      throttleTimerRef.current = null;
+    }
   };
 
   const handleSelectScenario = (scenarioId) => {
@@ -223,6 +279,12 @@ export default function AgenticAIPage() {
     setHop2Details(null);
     setConversionRunId(null);
     setLogsRenderComplete(false); // Reset animation sync
+    // Clear event queue for fresh simulation
+    eventQueueRef.current = [];
+    if (throttleTimerRef.current) {
+      clearTimeout(throttleTimerRef.current);
+      throttleTimerRef.current = null;
+    }
 
     try {
       const response = await fetch('/api/convert/multi-hop/stream', {

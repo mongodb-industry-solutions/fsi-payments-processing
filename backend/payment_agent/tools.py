@@ -108,7 +108,7 @@ Respond with ONLY the transliterated text in {target_script}, nothing else."""
             prompt=prompt,
             max_tokens=200,
             temperature=0.0,  # Deterministic for consistency
-            model_id="anthropic.claude-3-haiku-20240307-v1:0"
+            model_id="us.anthropic.claude-haiku-4-5-20251001-v1:0"
         )
 
         transliterated = response["text"].strip()

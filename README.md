@@ -66,7 +66,7 @@ Before you begin, ensure you have met the following requirements:
 
    # AWS Bedrock Configuration (optional for basic functionality)
    AWS_REGION=us-east-1
-   BEDROCK_MODEL_ID=anthropic.claude-3-haiku-20240307-v1:0
+   BEDROCK_MODEL_ID=us.anthropic.claude-haiku-4-5-20251001-v1:0
 
    # Feature Flags (optional)
    ENABLE_DEMO_MODE=true

@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     # AI Configuration
     ai_confidence_threshold: float = Field(default=0.8, description="AI confidence threshold for human review")
     ai_model_haiku: str = Field(
-        default="anthropic.claude-3-haiku-20240307-v1:0",
+        default="us.anthropic.claude-haiku-4-5-20251001-v1:0",
         description="Haiku model ID for simple AI tasks"
     )
     ai_model_sonnet: str = Field(

@@ -45,7 +45,7 @@ def create_llm(temperature: float = None, model_id: str = None) -> ChatBedrock:
         ChatBedrock instance configured for the agent
     """
     return ChatBedrock(
-        model_id=model_id or "anthropic.claude-3-haiku-20240307-v1:0",
+        model_id=model_id or "us.anthropic.claude-haiku-4-5-20251001-v1:0",
         region_name=settings.aws_region,
         model_kwargs={
             "temperature": temperature if temperature is not None else settings.agent_temperature,
@@ -376,13 +376,14 @@ Analyze this problem and use your tools to find the correct value for '{field_na
             if final_message and final_message.content:
                 response_text = final_message.content
 
-                # Parse FINAL_VALUE from agent's response
-                value_match = re.search(r'FINAL_VALUE:\s*(.+?)(?:\n|$)', response_text)
-                conf_match = re.search(r'CONFIDENCE:\s*([\d.]+)', response_text)
-                source_match = re.search(r'SOURCE:\s*(\w+)', response_text)
+                # Parse FINAL_VALUE from agent's response (handle markdown formatting like **FINAL_VALUE:**)
+                value_match = re.search(r'\*{0,2}FINAL_VALUE:?\*{0,2}:?\s*\*{0,2}(.+?)\*{0,2}(?:\n|$)', response_text)
+                conf_match = re.search(r'\*{0,2}CONFIDENCE:?\*{0,2}:?\s*\*{0,2}([\d.]+)', response_text)
+                source_match = re.search(r'\*{0,2}SOURCE:?\*{0,2}:?\s*\*{0,2}(\w+)', response_text)
 
                 if value_match:
-                    proposed_value = value_match.group(1).strip()
+                    # Strip markdown formatting (**, *, etc.) from the value
+                    proposed_value = re.sub(r'\*+', '', value_match.group(1)).strip()
                     logger.info(f"Agent chose value: {proposed_value}")
 
                 if conf_match:
@@ -440,12 +441,21 @@ Analyze this problem and use your tools to find the correct value for '{field_na
             if not proposed_value:
                 logger.warning(f"No proposed_value found in response or tool results")
 
+            # Clean up markdown formatting from reasoning for frontend display
+            reasoning_text = final_message.content if final_message else "No response from agent"
+            # Remove ** markdown bold markers
+            reasoning_text = re.sub(r'\*\*', '', reasoning_text)
+            # Remove * markdown italic markers (but preserve bullet points)
+            reasoning_text = re.sub(r'(?<!\n)\*(?!\s)', '', reasoning_text)
+            # Remove ## markdown heading markers
+            reasoning_text = re.sub(r'^#{1,6}\s*', '', reasoning_text, flags=re.MULTILINE)
+
             # Build solution from agent's autonomous decision
             solution = {
                 "field_name": field_name,
                 "proposed_value": proposed_value,
                 "source": source,  # Which tool the agent chose
-                "reasoning": final_message.content if final_message else "No response from agent",
+                "reasoning": reasoning_text,
                 "confidence": confidence,
                 "tool_results": tool_results
             }
@@ -614,6 +624,12 @@ Extract the new value from the solution and use update_payment_field to apply it
 
             logger.info(f"Execution Agent completed: {final_message.content if final_message else 'No response'}")
 
+            # Clean up markdown formatting from reasoning for frontend display
+            reasoning_text = final_message.content if final_message else "No response from agent"
+            reasoning_text = re.sub(r'\*\*', '', reasoning_text)
+            reasoning_text = re.sub(r'(?<!\n)\*(?!\s)', '', reasoning_text)
+            reasoning_text = re.sub(r'^#{1,6}\s*', '', reasoning_text, flags=re.MULTILINE)
+
             # Parse the agent's response to extract execution result
             result = {
                 "field_name": field_name,
@@ -622,7 +638,7 @@ Extract the new value from the solution and use update_payment_field to apply it
                 "old_value": "",
                 "new_value": "",
                 "timestamp": "",
-                "reasoning": final_message.content if final_message else "No response from agent"
+                "reasoning": reasoning_text
             }
 
             # Extract tool results to check if update succeeded

@@ -16,6 +16,77 @@ export const SCENARIOS = {
       solution: 'Transaction Agent detects this requirement and automatically transliterates the name to Katakana using Japan\'s official transliteration rules.',
       whyAgent: 'Rule-based conversion can\'t handle name transliteration - requires country-specific knowledge.'
     },
+    // Story steps that appear during the payment journey
+    // position: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'bottom-center'
+    story: [
+      {
+        trigger: 'start',
+        position: 'bottom-left',
+        icon: 'bank',
+        title: 'Cross-Border Payment Request',
+        description: 'Deutsche Bank receives wire transfer request: ¥45M from Volkswagen AG to Denso Corporation, Japan.',
+        color: '#00A35C',
+        delay: 0
+      },
+      {
+        trigger: 'hop1_start',
+        position: 'bottom-left',
+        icon: 'document',
+        title: 'SWIFT Message Processing',
+        description: 'Bank gateway parses MT103 message and initiates ISO 20022 conversion for Japanese clearing.',
+        highlight: 'MT103 → pacs.008',
+        color: '#0B61A4',
+        delay: 0
+      },
+      {
+        trigger: 'validation_failed',
+        position: 'bottom-left',
+        icon: 'problem',
+        title: 'Compliance Check Failed',
+        description: 'BOJ (Bank of Japan) requires beneficiary names in Katakana script. Latin characters rejected.',
+        highlight: 'DENSO CORPORATION ✗',
+        color: '#CD4246',
+        delay: 0
+      },
+      {
+        trigger: 'agent_start',
+        position: 'bottom-left',
+        icon: 'agent',
+        title: 'Transaction Agent Engaged',
+        description: 'Routing to AI agent for automatic remediation. Human escalation avoided.',
+        color: '#FFC010',
+        delay: 0
+      },
+      {
+        trigger: 'tool_call',
+        position: 'bottom-left',
+        icon: 'translate',
+        title: 'Katakana Transliteration',
+        description: 'Agent applies Japan Ministry of Justice romanization standards.',
+        highlight: 'DENSO → デンソー',
+        color: '#7C3AED',
+        delay: 0
+      },
+      {
+        trigger: 'agent_complete',
+        position: 'bottom-left',
+        icon: 'check',
+        title: 'Remediation Complete',
+        description: 'Beneficiary name converted. Payment resubmitted to clearing queue.',
+        highlight: 'デンソー コーポレーション',
+        color: '#00A35C',
+        delay: 0
+      },
+      {
+        trigger: 'complete',
+        position: 'bottom-left',
+        icon: 'japan',
+        title: 'Payment Settled',
+        description: '¥45,000,000 credited to Denso Corporation via BOJ-NET. STP achieved.',
+        color: '#00A35C',
+        delay: 0
+      }
+    ],
     sourceCountry: {
       name: 'Germany',
       code: 'DE',
@@ -72,6 +143,75 @@ PRECISION SENSORS AND ECU MODULES
       solution: 'Transaction Agent looks up the correct IFSC code from India\'s official database using bank name, branch, and location, then validates and inserts it.',
       whyAgent: 'IFSC lookup requires external database access and validation - beyond simple field mapping.'
     },
+    story: [
+      {
+        trigger: 'start',
+        position: 'bottom-left',
+        icon: 'bank',
+        title: 'Cross-Border Payment Request',
+        description: 'JPMorgan Chase receives wire transfer: ₹15M from Google LLC to Infosys Limited, India.',
+        color: '#00A35C',
+        delay: 0
+      },
+      {
+        trigger: 'hop1_start',
+        position: 'bottom-left',
+        icon: 'document',
+        title: 'SWIFT Message Processing',
+        description: 'Bank gateway parses MT103 and initiates ISO 20022 conversion for Indian clearing.',
+        highlight: 'MT103 → pacs.008',
+        color: '#0B61A4',
+        delay: 0
+      },
+      {
+        trigger: 'validation_failed',
+        position: 'bottom-left',
+        icon: 'problem',
+        title: 'Compliance Check Failed',
+        description: 'RBI requires IFSC code for beneficiary bank. Only descriptive text found.',
+        highlight: 'HDFC Bank, Fort Branch ✗',
+        color: '#CD4246',
+        delay: 0
+      },
+      {
+        trigger: 'agent_start',
+        position: 'bottom-left',
+        icon: 'agent',
+        title: 'Transaction Agent Engaged',
+        description: 'Routing to AI agent for IFSC code resolution. Manual lookup avoided.',
+        color: '#FFC010',
+        delay: 0
+      },
+      {
+        trigger: 'tool_call',
+        position: 'bottom-left',
+        icon: 'search',
+        title: 'IFSC Database Lookup',
+        description: 'Agent queries RBI directory using bank name, branch, and location.',
+        highlight: 'HDFC + Fort + Mumbai',
+        color: '#7C3AED',
+        delay: 0
+      },
+      {
+        trigger: 'agent_complete',
+        position: 'bottom-left',
+        icon: 'check',
+        title: 'IFSC Code Resolved',
+        description: 'Bank identified and validated. IFSC code inserted into payment.',
+        highlight: 'HDFC0000261',
+        color: '#00A35C',
+        delay: 0
+      },
+      {
+        trigger: 'complete',
+        position: 'bottom-left',
+        icon: 'india',
+        title: 'Payment Settled',
+        description: '₹15,000,000 credited to Infosys Limited via NEFT/RTGS. STP achieved.',
+        color: '#00A35C',
+        delay: 0
+      }
+    ],
     sourceCountry: {
       name: 'United States',
       code: 'US',
@@ -124,6 +264,68 @@ CLOUD INFRASTRUCTURE DEVELOPMENT
       aiExtraction: 'AI parses unstructured merchant field "SIM LIM SQUARE ELECTRONICS    SINGAPORE     SGP" into structured name, city, and country fields.',
       multiHop: 'Multi-hop conversion: ISO8583 → Canonical JSON → cain.001 XML, enabling format bridging through a universal intermediate.'
     },
+    story: [
+      {
+        trigger: 'start',
+        position: 'bottom-left',
+        icon: 'card',
+        title: 'POS Terminal Transaction',
+        description: 'UK cardholder taps Visa at Sim Lim Square electronics shop. S$2,500 purchase initiated.',
+        highlight: '4659-01XX-XXXX-6789',
+        color: '#00A35C',
+        delay: 0
+      },
+      {
+        trigger: 'hop1_start',
+        position: 'bottom-left',
+        icon: 'document',
+        title: 'ISO 8583 Authorization',
+        description: 'Acquirer bank receives 0200 message from POS terminal. Legacy format requires conversion.',
+        highlight: 'ISO8583_0200 → JSON',
+        color: '#0B61A4',
+        delay: 0
+      },
+      {
+        trigger: 'hop1_complete',
+        position: 'bottom-left',
+        icon: 'agent',
+        title: 'AI Merchant Extraction',
+        description: 'Unstructured merchant field parsed into structured data: name, city, country.',
+        highlight: 'SIM LIM SQUARE ELECTRONICS',
+        color: '#7C3AED',
+        delay: 0
+      },
+      {
+        trigger: 'hop2_start',
+        position: 'bottom-left',
+        icon: 'document',
+        title: 'ISO 20022 Construction',
+        description: 'Building cain.001 card authorization for Visa network inter-bank routing.',
+        highlight: 'JSON → cain.001',
+        color: '#0B61A4',
+        delay: 0
+      },
+      {
+        trigger: 'hop2_complete',
+        position: 'bottom-left',
+        icon: 'check',
+        title: 'Authorization Request Ready',
+        description: 'Card network message formatted per ISO 20022 cain.001 specification.',
+        highlight: 'AccptrAuthstnReq XML',
+        color: '#00A35C',
+        delay: 0
+      },
+      {
+        trigger: 'complete',
+        position: 'bottom-left',
+        icon: 'singapore',
+        title: 'Authorization Approved',
+        description: 'S$2,500 purchase authorized. Response routed back to Singapore acquirer in 340ms.',
+        highlight: 'APPROVED',
+        color: '#00A35C',
+        delay: 0
+      }
+    ],
     sourceCountry: {
       name: 'United Kingdom',
       code: 'GB',
@@ -160,6 +362,67 @@ CLOUD INFRASTRUCTURE DEVELOPMENT
       hop1: 'pacs.008 → JSON: Incoming ISO 20022 message converted to canonical JSON for internal routing and legacy system compatibility.',
       hop2: 'JSON → pacs.008: After internal processing, canonical JSON converted back to ISO 20022 for cross-border settlement.'
     },
+    story: [
+      {
+        trigger: 'start',
+        position: 'bottom-left',
+        icon: 'bank',
+        title: 'Incoming SWIFT Message',
+        description: 'Barclays receives pacs.008 from correspondent: BP PLC → BHP Group, A$8.5M.',
+        highlight: 'SWIFT gpi inbound',
+        color: '#00A35C',
+        delay: 0
+      },
+      {
+        trigger: 'hop1_start',
+        position: 'bottom-left',
+        icon: 'document',
+        title: 'ISO 20022 Parsing',
+        description: 'Extracting payment data from XML. Converting to internal canonical format.',
+        highlight: 'pacs.008 → JSON',
+        color: '#0B61A4',
+        delay: 0
+      },
+      {
+        trigger: 'hop1_complete',
+        position: 'bottom-left',
+        icon: 'transform',
+        title: 'Internal Routing Format',
+        description: 'Payment normalized for legacy core banking, AML screening, and sanctions check.',
+        highlight: 'Canonical JSON',
+        color: '#00A35C',
+        delay: 0
+      },
+      {
+        trigger: 'hop2_start',
+        position: 'bottom-left',
+        icon: 'document',
+        title: 'Outbound Message Build',
+        description: 'Internal processing complete. Reconstructing ISO 20022 for SWIFT transmission.',
+        highlight: 'JSON → pacs.008',
+        color: '#0B61A4',
+        delay: 0
+      },
+      {
+        trigger: 'hop2_complete',
+        position: 'bottom-left',
+        icon: 'check',
+        title: 'Message Validated',
+        description: 'pacs.008 schema validated. UETR assigned for gpi tracking.',
+        highlight: 'UETR: 8a5...f2c',
+        color: '#00A35C',
+        delay: 0
+      },
+      {
+        trigger: 'complete',
+        position: 'bottom-left',
+        icon: 'australia',
+        title: 'Cross-Border Settlement',
+        description: 'A$8,500,000 credited to BHP Group Limited via RITS (Australia RTGS). STP achieved.',
+        color: '#00A35C',
+        delay: 0
+      }
+    ],
     sourceCountry: {
       name: 'United Kingdom',
       code: 'GB',
@@ -253,6 +516,116 @@ CLOUD INFRASTRUCTURE DEVELOPMENT
       hop1: 'pacs.008 → JSON: Extract payment details and wallet addresses from RmtInf/Ustrd fields.',
       hop2: 'JSON → Solana: Execute blockchain transfer with real transaction hash and explorer link.'
     },
+    story: [
+      {
+        trigger: 'start',
+        position: 'bottom-left',
+        icon: 'bank',
+        title: 'Cross-Border Payment Request',
+        description: 'Mumbai Fintech initiates $50K wire to US partner with crypto settlement for Mexico.',
+        color: '#00A35C',
+        delay: 0
+      },
+      {
+        trigger: 'hop1_start',
+        position: 'bottom-left',
+        icon: 'document',
+        title: 'ISO 20022 Processing',
+        description: 'Bank gateway parses pacs.008, extracting crypto instructions from RmtInf fields.',
+        highlight: 'pacs.008 → JSON',
+        color: '#0B61A4',
+        delay: 0
+      },
+      {
+        trigger: 'hop1_complete',
+        position: 'bottom-left',
+        icon: 'transform',
+        title: 'Canonical JSON Generated',
+        description: 'Payment normalized with Solana wallet address and settlement instructions.',
+        highlight: 'crypto_receiver_wallet',
+        color: '#00A35C',
+        delay: 0
+      },
+      {
+        trigger: 'crypto_start',
+        position: 'bottom-left',
+        icon: 'chain',
+        title: 'Blockchain Bridge Activated',
+        description: 'Switching from traditional rails to Solana blockchain for last-mile settlement.',
+        highlight: 'JSON → Solana',
+        color: '#9945FF',
+        delay: 0
+      },
+      {
+        trigger: 'crypto_wallet_extract',
+        position: 'bottom-left',
+        icon: 'wallet',
+        title: 'Wallet Address Validated',
+        description: 'Destination wallet confirmed as valid Solana public key (Base58).',
+        highlight: 'EJ4K...TtK',
+        color: '#9945FF',
+        delay: 0
+      },
+      {
+        trigger: 'crypto_tx_build',
+        position: 'bottom-left',
+        icon: 'document',
+        title: 'Transaction Constructed',
+        description: 'SystemProgram.transfer instruction built with MessageV0.',
+        highlight: '0.001 SOL',
+        color: '#9945FF',
+        delay: 0
+      },
+      {
+        trigger: 'crypto_tx_sign',
+        position: 'bottom-left',
+        icon: 'sign',
+        title: 'Cryptographic Signing',
+        description: 'Service wallet signs transaction with Ed25519 algorithm.',
+        highlight: '64-byte signature',
+        color: '#9945FF',
+        delay: 0
+      },
+      {
+        trigger: 'crypto_tx_submit',
+        position: 'bottom-left',
+        icon: 'broadcast',
+        title: 'Broadcasting to Solana',
+        description: 'Transaction submitted to devnet RPC for validator processing.',
+        highlight: 'sendRawTransaction',
+        color: '#9945FF',
+        delay: 0
+      },
+      {
+        trigger: 'crypto_tx_confirm',
+        position: 'bottom-left',
+        icon: 'check',
+        title: 'Validators Confirmed',
+        description: 'Block consensus reached. Transaction included in recent block.',
+        highlight: '~400ms',
+        color: '#14F195',
+        delay: 0
+      },
+      {
+        trigger: 'crypto_complete',
+        position: 'bottom-left',
+        icon: 'money',
+        title: 'On-Chain Settlement',
+        description: 'Transfer finalized on immutable blockchain ledger.',
+        highlight: 'Explorer link',
+        color: '#14F195',
+        delay: 0
+      },
+      {
+        trigger: 'complete',
+        position: 'bottom-left',
+        icon: 'mexico',
+        title: 'Payment Delivered',
+        description: '$50,000 settled to Mexico via hybrid ISO 20022 + Solana rail.',
+        color: '#00A35C',
+        delay: 0
+      }
+    ],
     sourceCountry: {
       name: 'India',
       code: 'IN',
@@ -331,6 +704,75 @@ CLOUD INFRASTRUCTURE DEVELOPMENT
       solution: 'Transaction Agent uses semantic vector search to classify the payment description into the correct ISO 20022 purpose code: SCVE (Services).',
       whyAgent: 'Purpose code classification requires understanding payment intent from unstructured text - keyword matching fails when wording varies.'
     },
+    story: [
+      {
+        trigger: 'start',
+        position: 'bottom-left',
+        icon: 'bank',
+        title: 'Cross-Border Payment Request',
+        description: 'RBC Royal Bank receives wire transfer: S$3.2M from Shopify Inc to Grab Holdings, Singapore.',
+        color: '#00A35C',
+        delay: 0
+      },
+      {
+        trigger: 'hop1_start',
+        position: 'bottom-left',
+        icon: 'document',
+        title: 'SWIFT Message Processing',
+        description: 'Bank gateway parses MT103 and initiates ISO 20022 conversion for MAS clearing.',
+        highlight: 'MT103 → pacs.008',
+        color: '#0B61A4',
+        delay: 0
+      },
+      {
+        trigger: 'validation_failed',
+        position: 'bottom-left',
+        icon: 'problem',
+        title: 'Compliance Check Failed',
+        description: 'ISO 20022 requires standardized purpose code. Only free-text description found.',
+        highlight: '"API integration services" ✗',
+        color: '#CD4246',
+        delay: 0
+      },
+      {
+        trigger: 'agent_start',
+        position: 'bottom-left',
+        icon: 'agent',
+        title: 'Transaction Agent Engaged',
+        description: 'Routing to AI agent for purpose code classification. Manual review avoided.',
+        color: '#FFC010',
+        delay: 0
+      },
+      {
+        trigger: 'tool_call',
+        position: 'bottom-left',
+        icon: 'brain',
+        title: 'Semantic Classification',
+        description: 'Agent analyzes payment description using vector similarity search.',
+        highlight: '"cloud infrastructure" → ?',
+        color: '#7C3AED',
+        delay: 0
+      },
+      {
+        trigger: 'agent_complete',
+        position: 'bottom-left',
+        icon: 'check',
+        title: 'Purpose Code Resolved',
+        description: 'Payment classified as technical services. ISO code inserted.',
+        highlight: 'SCVE (Services)',
+        color: '#00A35C',
+        delay: 0
+      },
+      {
+        trigger: 'complete',
+        position: 'bottom-left',
+        icon: 'singapore',
+        title: 'Payment Settled',
+        description: 'S$3,200,000 credited to Grab Holdings via FAST/MEPS+. STP achieved.',
+        color: '#00A35C',
+        delay: 0
+      }
+    ],
     sourceCountry: {
       name: 'Canada',
       code: 'CA',
@@ -387,6 +829,75 @@ CONTRACT SHOP-GRAB-2024-API-001
       solution: 'Transaction Agent searches the KYC registry to find "HSBC Holdings plc" as the official legal name matching the trading name "HSBC".',
       whyAgent: 'Name verification requires fuzzy matching against KYC registry - trading names, abbreviations, and typos need intelligent resolution.'
     },
+    story: [
+      {
+        trigger: 'start',
+        position: 'bottom-left',
+        icon: 'bank',
+        title: 'Cross-Border Payment Request',
+        description: 'Goldman Sachs initiates wire transfer: £5M to HSBC for global custody services.',
+        color: '#00A35C',
+        delay: 0
+      },
+      {
+        trigger: 'hop1_start',
+        position: 'bottom-left',
+        icon: 'document',
+        title: 'SWIFT Message Processing',
+        description: 'Bank gateway parses MT103 and initiates ISO 20022 conversion for CHAPS clearing.',
+        highlight: 'MT103 → pacs.008',
+        color: '#0B61A4',
+        delay: 0
+      },
+      {
+        trigger: 'validation_failed',
+        position: 'bottom-left',
+        icon: 'problem',
+        title: 'Sanctions Screening Failed',
+        description: 'Creditor name "HSBC" not found in registered legal entities. Requires exact match.',
+        highlight: '"HSBC" ✗ (trading name)',
+        color: '#CD4246',
+        delay: 0
+      },
+      {
+        trigger: 'agent_start',
+        position: 'bottom-left',
+        icon: 'agent',
+        title: 'Transaction Agent Engaged',
+        description: 'Routing to AI agent for legal name resolution. Manual compliance review avoided.',
+        color: '#FFC010',
+        delay: 0
+      },
+      {
+        trigger: 'tool_call',
+        position: 'bottom-left',
+        icon: 'search',
+        title: 'KYC Registry Lookup',
+        description: 'Agent queries corporate registry using trading name and BIC code.',
+        highlight: 'HSBC + MIDLGB22',
+        color: '#7C3AED',
+        delay: 0
+      },
+      {
+        trigger: 'agent_complete',
+        position: 'bottom-left',
+        icon: 'shield',
+        title: 'Legal Name Verified',
+        description: 'Registered entity found. Creditor name updated for compliance.',
+        highlight: 'HSBC Holdings plc',
+        color: '#00A35C',
+        delay: 0
+      },
+      {
+        trigger: 'complete',
+        position: 'bottom-left',
+        icon: 'uk',
+        title: 'Payment Settled',
+        description: '£5,000,000 credited to HSBC Holdings plc via CHAPS. STP achieved.',
+        color: '#00A35C',
+        delay: 0
+      }
+    ],
     sourceCountry: {
       name: 'United States',
       code: 'US',
