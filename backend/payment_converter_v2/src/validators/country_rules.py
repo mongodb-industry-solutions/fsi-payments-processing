@@ -126,24 +126,24 @@ def validate_india_rules(
     Validate India-specific payment rules.
 
     Requirements:
-    - Creditor agent BIC must contain valid IFSC code (11 characters)
+    - Creditor BIC must contain valid IFSC code (11 characters)
     - Format: XXXX0YYYYYY (4 alpha, 1 zero, 6 alphanumeric)
     """
 
-    creditor_agent_bic = canonical_json.get("creditor_agent_bic", "")
+    creditor_bic = canonical_json.get("creditor_bic", "")
     creditor_bank = canonical_json.get("creditor_bank", "")
 
     # Check if IFSC code is missing
-    if not creditor_agent_bic:
+    if not creditor_bic:
         raise CountryValidationException(
             problem=(
                 f"Indian payment regulations require an IFSC (Indian Financial System Code) "
                 f"to identify the beneficiary's bank branch. The current payment is missing "
-                f"this code in the creditor_agent_bic field. The bank information available "
+                f"this code in the creditor_bic field. The bank information available "
                 f"is: '{creditor_bank}'. An IFSC code needs to be looked up or determined "
                 f"based on the bank name, branch, and location information."
             ),
-            field_name="creditor_agent_bic",
+            field_name="creditor_bic",
             original_value="",
             payment_data=canonical_json,
             conversion_context={
@@ -162,16 +162,16 @@ def validate_india_rules(
         )
 
     # Check if IFSC code is invalid format
-    if not _is_valid_ifsc_format(creditor_agent_bic):
+    if not _is_valid_ifsc_format(creditor_bic):
         raise CountryValidationException(
             problem=(
-                f"The IFSC code '{creditor_agent_bic}' has an invalid format. "
+                f"The IFSC code '{creditor_bic}' has an invalid format. "
                 f"Valid IFSC codes are 11 characters: 4 letters (bank code) + '0' + "
                 f"6 alphanumeric (branch code). Example: HDFC0001234. "
                 f"The correct IFSC code needs to be determined for the bank: '{creditor_bank}'."
             ),
-            field_name="creditor_agent_bic",
-            original_value=creditor_agent_bic,
+            field_name="creditor_bic",
+            original_value=creditor_bic,
             payment_data=canonical_json,
             conversion_context={
                 "source_format": source_format,

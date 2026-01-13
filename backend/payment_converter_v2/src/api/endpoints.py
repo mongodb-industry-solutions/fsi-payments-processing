@@ -638,7 +638,8 @@ async def convert_multi_hop_stream(request: MultiHopConversionRequest):
                             },
                             "hop1_start": hop1_start,
                             "start_time": start_time,
-                            "hop1_details": hop1_details  # Store for resume endpoint
+                            "hop1_details": hop1_details,  # Store for resume endpoint
+                            "proposed_value": event.get("proposed_value", "")  # Store for execution event
                         }
 
                         # Forward the review_required event to frontend
@@ -995,6 +996,210 @@ async def resume_agent_workflow(request: ResumeAgentRequest):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to resume agent workflow: {str(e)}"
         )
+
+
+@router.post("/agent/resume-stream", status_code=status.HTTP_200_OK)
+async def resume_agent_workflow_stream(request: ResumeAgentRequest):
+    """
+    Resume the payment agent workflow with streaming execution events.
+
+    This streaming version of /agent/resume provides real-time SSE events
+    for the execution phase, allowing the frontend to display execution progress.
+
+    Args:
+        request: Contains thread_id and human's approval decision
+
+    Returns:
+        StreamingResponse with execution events and final conversion result
+    """
+
+    async def event_generator():
+        """Generate SSE events from resumed workflow and hop 2."""
+        try:
+            logger.info(f"Streaming resume: thread_id={request.thread_id}, approved={request.decision.approved}")
+
+            # Get stored conversion context for this thread
+            pending = pending_conversions.get(request.thread_id, {})
+            if not pending:
+                error_event = json.dumps({
+                    "type": "error",
+                    "message": f"No pending conversion found for thread_id: {request.thread_id}"
+                })
+                yield f"data: {error_event}\n\n"
+                return
+
+            conversion_run_id = pending.get("conversion_run_id")
+            target_format = pending.get("target_format")
+            original_message = pending.get("original_message")
+            use_ai = pending.get("use_ai", True)
+            start_time = pending.get("start_time", time.time())
+            hop1_details = pending.get("hop1_details", {})
+
+            # If not approved, send rejection and return early
+            if not request.decision.approved:
+                logger.info("Human rejected - skipping execution and hop 2")
+                reject_event = json.dumps({
+                    "type": "review_rejected",
+                    "message": "Human rejected proposed change"
+                })
+                yield f"data: {reject_event}\n\n"
+
+                # Clean up
+                if request.thread_id in pending_conversions:
+                    del pending_conversions[request.thread_id]
+                return
+
+            # Send approval event
+            approve_event = json.dumps({
+                "type": "review_approved",
+                "message": "Human approved proposed change"
+            })
+            yield f"data: {approve_event}\n\n"
+
+            # Get field name and proposed value for execution event
+            validation_exception = pending.get("validation_exception", {})
+            field_name = validation_exception.get("field_name", "field")
+            proposed_value = pending.get("proposed_value", "")
+
+            # Send execution agent starting event
+            exec_start_event = json.dumps({
+                "type": "agent_execution_start",
+                "message": f"Execution agent applying '{proposed_value}' to {field_name}",
+                "field": field_name,
+                "approved_value": proposed_value
+            })
+            yield f"data: {exec_start_event}\n\n"
+
+            # Stream execution events from payment agent
+            final_state = {}
+            async for event in agent_client.resume_workflow_stream(
+                thread_id=request.thread_id,
+                approved=request.decision.approved,
+                modified_value=request.decision.modified_value
+            ):
+                # Handle execution events
+                if "execution" in event:
+                    execution_state = event["execution"]
+                    final_state.update(execution_state)
+
+                    result = execution_state.get("result", {})
+                    exec_event = json.dumps({
+                        "type": "agent_execution",
+                        "conversion_run_id": conversion_run_id,
+                        "status": "complete",
+                        "field": result.get("field_name", ""),
+                        "old_value": result.get("old_value", ""),
+                        "new_value": result.get("new_value", ""),
+                        "reasoning": result.get("reasoning", ""),
+                        "details": {
+                            "field_name": result.get("field_name"),
+                            "old_value": result.get("old_value"),
+                            "new_value": result.get("new_value"),
+                            "reasoning": result.get("reasoning"),
+                            "success": result.get("success")
+                        }
+                    })
+                    yield f"data: {exec_event}\n\n"
+
+                elif "human_review" in event:
+                    # Human review node completed (after approval)
+                    final_state.update(event["human_review"])
+
+                elif event.get("type") == "complete":
+                    # Agent workflow complete - now do hop 2
+                    logger.info("Agent execution complete, starting hop 2")
+
+                elif event.get("type") == "error":
+                    yield f"data: {json.dumps(event)}\n\n"
+                    return
+
+            # Continue with hop 2: JSON → target_format
+            hop2_start = time.time()
+            hop2_event = json.dumps({
+                "type": "hop2_start",
+                "source": "JSON",
+                "target": target_format
+            })
+            yield f"data: {hop2_event}\n\n"
+
+            # Retrieve corrected JSON from MongoDB
+            cached_json = await mongodb_service.get_canonical_json(
+                original_message,
+                conversion_run_id=conversion_run_id
+            )
+
+            if not cached_json or not cached_json.get('json_data'):
+                error_event = json.dumps({
+                    "type": "error",
+                    "message": "Failed to retrieve corrected JSON from MongoDB"
+                })
+                yield f"data: {error_event}\n\n"
+                return
+
+            # Run hop 2 conversion
+            hop2_result = await converter.convert(
+                source_format="JSON",
+                target_format=target_format,
+                message=cached_json['json_data'],
+                original_source_message=original_message,
+                conversion_run_id=conversion_run_id,
+                use_ai=use_ai
+            )
+
+            hop2_time = time.time() - hop2_start
+            hop2_complete_event = json.dumps({
+                "type": "hop2_complete",
+                "time": round(hop2_time, 2),
+                "detailed_processing": hop2_result.get("detailed_processing", {})
+            })
+            yield f"data: {hop2_complete_event}\n\n"
+
+            # Calculate total time
+            total_time = time.time() - start_time
+
+            # Send final complete event with full result
+            stats = hop2_result["processing_stats"]
+            lane_dist = stats.get("lane_distribution", {})
+
+            complete_event = json.dumps({
+                "type": "complete",
+                "success": True,
+                "conversion_run_id": conversion_run_id,
+                "output": hop2_result["converted_message"],
+                "processing_stats": {
+                    "rules_lane": lane_dist.get("RULES", 0),
+                    "ai_lane": lane_dist.get("AI", 0),
+                    "human_lane": lane_dist.get("HUMAN", 0)
+                },
+                "total_time": round(total_time, 2),
+                "hop1_details": hop1_details,
+                "hop2_details": hop2_result.get("detailed_processing", {})
+            })
+            yield f"data: {complete_event}\n\n"
+
+            # Clean up pending conversion
+            if request.thread_id in pending_conversions:
+                del pending_conversions[request.thread_id]
+
+            logger.info(f"Streaming resume complete: total_time={total_time:.2f}s")
+
+        except Exception as e:
+            logger.error(f"Error in streaming resume: {e}", exc_info=True)
+            error_event = json.dumps({
+                "type": "error",
+                "message": str(e)
+            })
+            yield f"data: {error_event}\n\n"
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        }
+    )
 
 
 @router.get("/health", response_model=HealthResponse, status_code=status.HTTP_200_OK)

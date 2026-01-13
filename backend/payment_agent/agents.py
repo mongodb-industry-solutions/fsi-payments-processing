@@ -449,6 +449,26 @@ Analyze this problem and use your tools to find the correct value for '{field_na
             reasoning_text = re.sub(r'(?<!\n)\*(?!\s)', '', reasoning_text)
             # Remove ## markdown heading markers
             reasoning_text = re.sub(r'^#{1,6}\s*', '', reasoning_text, flags=re.MULTILINE)
+            # Remove internal parsing markers (FINAL_VALUE, CONFIDENCE, SOURCE lines)
+            reasoning_text = re.sub(r'^FINAL_VALUE:.*$', '', reasoning_text, flags=re.MULTILINE)
+            reasoning_text = re.sub(r'^CONFIDENCE:.*$', '', reasoning_text, flags=re.MULTILINE)
+            reasoning_text = re.sub(r'^SOURCE:.*$', '', reasoning_text, flags=re.MULTILINE)
+            # Remove separator lines (---)
+            reasoning_text = re.sub(r'^-{2,}$', '', reasoning_text, flags=re.MULTILINE)
+            # Convert markdown tables to cleaner format
+            # Remove table header separator lines (|---|---|)
+            reasoning_text = re.sub(r'^\|[-:\s|]+\|$', '', reasoning_text, flags=re.MULTILINE)
+            # Convert table rows "| Key | Value |" to "- Key: Value"
+            def convert_table_row(match):
+                cells = [c.strip() for c in match.group(0).split('|') if c.strip()]
+                if len(cells) == 2:
+                    return f"- {cells[0]}: {cells[1]}"
+                elif len(cells) > 0:
+                    return f"- {' | '.join(cells)}"
+                return ''
+            reasoning_text = re.sub(r'^\|[^|]+\|[^|]*\|$', convert_table_row, reasoning_text, flags=re.MULTILINE)
+            # Clean up excessive blank lines
+            reasoning_text = re.sub(r'\n{3,}', '\n\n', reasoning_text).strip()
 
             # Build solution from agent's autonomous decision
             solution = {
@@ -626,9 +646,32 @@ Extract the new value from the solution and use update_payment_field to apply it
 
             # Clean up markdown formatting from reasoning for frontend display
             reasoning_text = final_message.content if final_message else "No response from agent"
+            # Remove ** markdown bold markers
             reasoning_text = re.sub(r'\*\*', '', reasoning_text)
+            # Remove * markdown italic markers (but preserve bullet points)
             reasoning_text = re.sub(r'(?<!\n)\*(?!\s)', '', reasoning_text)
+            # Remove ## markdown heading markers
             reasoning_text = re.sub(r'^#{1,6}\s*', '', reasoning_text, flags=re.MULTILINE)
+            # Remove internal parsing markers (FINAL_VALUE, CONFIDENCE, SOURCE lines)
+            reasoning_text = re.sub(r'^FINAL_VALUE:.*$', '', reasoning_text, flags=re.MULTILINE)
+            reasoning_text = re.sub(r'^CONFIDENCE:.*$', '', reasoning_text, flags=re.MULTILINE)
+            reasoning_text = re.sub(r'^SOURCE:.*$', '', reasoning_text, flags=re.MULTILINE)
+            # Remove separator lines (---)
+            reasoning_text = re.sub(r'^-{2,}$', '', reasoning_text, flags=re.MULTILINE)
+            # Convert markdown tables to cleaner format
+            # Remove table header separator lines (|---|---|)
+            reasoning_text = re.sub(r'^\|[-:\s|]+\|$', '', reasoning_text, flags=re.MULTILINE)
+            # Convert table rows "| Key | Value |" to "- Key: Value"
+            def convert_table_row(match):
+                cells = [c.strip() for c in match.group(0).split('|') if c.strip()]
+                if len(cells) == 2:
+                    return f"- {cells[0]}: {cells[1]}"
+                elif len(cells) > 0:
+                    return f"- {' | '.join(cells)}"
+                return ''
+            reasoning_text = re.sub(r'^\|[^|]+\|[^|]*\|$', convert_table_row, reasoning_text, flags=re.MULTILINE)
+            # Clean up excessive blank lines
+            reasoning_text = re.sub(r'\n{3,}', '\n\n', reasoning_text).strip()
 
             # Parse the agent's response to extract execution result
             result = {

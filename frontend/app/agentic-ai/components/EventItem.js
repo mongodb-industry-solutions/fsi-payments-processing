@@ -26,6 +26,7 @@ function getEventIcon(type) {
     'agent_resolution': 'Bulb',
     'review_approved': 'CheckmarkWithCircle',
     'review_rejected': 'X',
+    'agent_execution_start': 'Play',
     'agent_execution': 'Edit',
     'agent_complete': 'CheckmarkWithCircle',
     'complete': 'CheckmarkWithCircle',
@@ -91,7 +92,7 @@ function formatEventMessage(event) {
     case 'validation_failed':
       // Show a brief but informative summary
       const fieldLabel = event.field === 'creditor_name' ? 'beneficiary name' :
-                         event.field === 'creditor_agent_bic' ? 'bank code' :
+                         event.field === 'creditor_bic' ? 'bank code' :
                          event.field === 'category_purpose' ? 'purpose code' : event.field || 'field';
       // Handle both country-specific and universal rules
       if (!event.country && event.field === 'category_purpose') {
@@ -136,6 +137,8 @@ function formatEventMessage(event) {
       return event.message || 'Human approved proposed change';
     case 'review_rejected':
       return event.message || 'Human rejected proposed change';
+    case 'agent_execution_start':
+      return event.message || 'Execution agent starting...';
     case 'agent_execution':
       // Show "Added" for new fields, "Updated" for existing fields
       const isNewField = !event.old_value || event.old_value === '';
@@ -490,20 +493,60 @@ function renderEventDetails(event) {
           borderRadius: '6px',
           fontSize: '12px'
         }}>
-          <div style={{ marginBottom: '8px' }}>
-            <Body weight="medium" style={{ fontSize: '12px' }}>Field:</Body>
+          <div style={{ marginBottom: '12px' }}>
+            <Body weight="bold" style={{ fontSize: '12px', color: '#0B61A4', marginBottom: '4px' }}>
+              FIELD UPDATED
+            </Body>
             <Body style={{ fontSize: '12px', color: '#5C6C75' }}>{event.field || 'unknown'}</Body>
           </div>
           {event.old_value && (
-            <div style={{ marginBottom: '8px' }}>
-              <Body weight="medium" style={{ fontSize: '12px' }}>Old Value:</Body>
-              <Body style={{ fontSize: '12px', color: '#CD4246' }}>{event.old_value}</Body>
+            <div style={{ marginBottom: '12px' }}>
+              <Body weight="bold" style={{ fontSize: '12px', color: '#0B61A4', marginBottom: '4px' }}>
+                PREVIOUS VALUE
+              </Body>
+              <Body style={{ fontSize: '12px', color: '#CD4246', fontFamily: 'monospace' }}>{event.old_value}</Body>
             </div>
           )}
           {event.new_value && (
+            <div style={{ marginBottom: event.reasoning ? '12px' : '0' }}>
+              <Body weight="bold" style={{ fontSize: '12px', color: '#0B61A4', marginBottom: '4px' }}>
+                NEW VALUE
+              </Body>
+              <Body style={{ fontSize: '12px', color: '#00A35C', fontFamily: 'monospace' }}>{event.new_value}</Body>
+            </div>
+          )}
+          {event.reasoning && (
             <div>
-              <Body weight="medium" style={{ fontSize: '12px' }}>New Value:</Body>
-              <Body style={{ fontSize: '12px', color: '#00A35C' }}>{event.new_value}</Body>
+              <Body weight="bold" style={{ fontSize: '12px', color: '#0B61A4', marginBottom: '8px' }}>
+                EXECUTION REASONING
+              </Body>
+              <div style={{ paddingLeft: '8px' }}>
+                {(() => {
+                  const lines = event.reasoning.split('\n');
+                  return lines.map((line, idx) => {
+                    const trimmed = line.trim();
+                    if (!trimmed) return null;
+
+                    // Handle bullet points
+                    if (trimmed.startsWith('-') || trimmed.startsWith('•')) {
+                      const text = trimmed.replace(/^[-•]\s*/, '');
+                      return (
+                        <div key={idx} style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                          <Body style={{ fontSize: '12px', color: '#00A35C', minWidth: '8px' }}>•</Body>
+                          <Body style={{ fontSize: '12px', color: '#5C6C75', lineHeight: '1.5' }}>{text}</Body>
+                        </div>
+                      );
+                    }
+
+                    // Regular text
+                    return (
+                      <Body key={idx} style={{ fontSize: '12px', color: '#5C6C75', marginBottom: '8px', lineHeight: '1.5' }}>
+                        {trimmed}
+                      </Body>
+                    );
+                  });
+                })()}
+              </div>
             </div>
           )}
         </div>

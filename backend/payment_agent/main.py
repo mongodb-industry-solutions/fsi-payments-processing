@@ -538,6 +538,112 @@ async def resume_workflow(request: ResumeWorkflowRequest) -> ResumeWorkflowRespo
 
 
 @app.post(
+    "/api/v1/payment-agent/resume-stream",
+    summary="Resume Workflow with Streaming",
+    description="Resume a paused workflow after human review with real-time SSE events for the execution phase",
+    status_code=status.HTTP_200_OK
+)
+async def resume_workflow_stream(request: ResumeWorkflowRequest):
+    """
+    Resume a workflow that was paused for human review with streaming events.
+
+    This endpoint streams the execution agent events in real-time after resume,
+    allowing the frontend to show execution progress.
+
+    Args:
+        request: Contains thread_id and human's decision
+
+    Returns:
+        StreamingResponse with execution events
+    """
+
+    async def event_generator():
+        """Generate SSE events from resumed workflow."""
+
+        def make_serializable(obj):
+            """Convert non-serializable objects to serializable format."""
+            if isinstance(obj, Interrupt):
+                return make_serializable(obj.value)
+            elif hasattr(obj, 'value') and hasattr(obj, 'resumable'):
+                return make_serializable(obj.value)
+            elif hasattr(obj, 'model_dump'):
+                return obj.model_dump()
+            elif hasattr(obj, 'dict') and callable(obj.dict):
+                return obj.dict()
+            elif hasattr(obj, 'content') and hasattr(obj, '__class__'):
+                return {
+                    "type": obj.__class__.__name__,
+                    "content": obj.content
+                }
+            elif isinstance(obj, dict):
+                return {k: make_serializable(v) for k, v in obj.items()}
+            elif isinstance(obj, (list, tuple)):
+                return [make_serializable(item) for item in obj]
+            else:
+                try:
+                    json.dumps(obj)
+                    return obj
+                except (TypeError, ValueError):
+                    return str(obj)
+
+        try:
+            logger.info(f"Resuming workflow with streaming: thread_id={request.thread_id}, approved={request.decision.approved}")
+
+            # Get the workflow
+            workflow = get_workflow()
+
+            # Configure with thread_id for checkpointer
+            config = {"configurable": {"thread_id": request.thread_id}}
+
+            # Resume value from human's decision
+            resume_value = {
+                "approved": request.decision.approved,
+                "modified_value": request.decision.modified_value
+            }
+
+            # Stream the resumed workflow execution
+            async for chunk in workflow.astream(
+                Command(resume=resume_value), config, stream_mode="updates"
+            ):
+                logger.debug(f"Resume streaming chunk: {list(chunk.keys())}")
+
+                # Skip interrupt chunks (shouldn't happen on resume but just in case)
+                if "__interrupt__" in chunk:
+                    continue
+
+                # Convert to serializable format
+                serializable_chunk = make_serializable(chunk)
+
+                # Format as SSE
+                event_data = json.dumps(serializable_chunk)
+                yield f"data: {event_data}\n\n"
+
+            # Send completion event
+            logger.info(f"Resumed workflow completed for thread: {request.thread_id}")
+            completion_event = json.dumps({"type": "complete", "success": True})
+            yield f"data: {completion_event}\n\n"
+
+        except Exception as e:
+            logger.error(f"Streaming resume error: {e}", exc_info=True)
+            error_event = json.dumps({
+                "type": "error",
+                "message": str(e),
+                "error_type": type(e).__name__
+            })
+            yield f"data: {error_event}\n\n"
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        }
+    )
+
+
+@app.post(
     "/api/v1/payment-agent/process-stream-with-review",
     summary="Process Payment with Streaming and Human Review",
     description="Process a payment with real-time streaming that pauses for human review before execution",

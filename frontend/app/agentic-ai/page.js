@@ -26,6 +26,7 @@ function isAgentRelatedEvent(event) {
     'agent_resolution',   // Proposed solution
     'review_approved',    // Human approved change
     'review_rejected',    // Human rejected change
+    'agent_execution_start', // Execution agent starting
     'agent_execution',    // Field update
     'agent_complete',     // Agent finished
     'error'               // Errors
@@ -396,15 +397,10 @@ export default function AgenticAIPage() {
 
     setIsSubmittingReview(true);
     setIsReviewModalOpen(false);  // Close modal immediately for snappier UX
-    addEvent({
-      type: 'review_approved',
-      message: options.modified_value
-        ? `Human approved with modification: ${options.modified_value}`
-        : 'Human approved proposed change'
-    });
 
     try {
-      const response = await fetch('/api/agent/resume', {
+      // Use streaming resume endpoint to get real execution events
+      const response = await fetch('/api/agent/resume-stream', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -420,70 +416,64 @@ export default function AgenticAIPage() {
         throw new Error(`Resume failed: ${response.status}`);
       }
 
-      const result = await response.json();
-      console.log('✅ Resume result:', result);
+      // Process SSE stream
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
 
-      // Add execution result event with conversion_run_id for JSON diff visualization
-      if (result.success) {
-        addEvent({
-          type: 'agent_execution',
-          conversion_run_id: result.conversion_run_id,
-          field: result.result?.field_name,
-          old_value: result.result?.old_value,
-          new_value: result.result?.new_value,
-          reasoning: 'Executed after human approval'
-        });
-        addEvent({
-          type: 'agent_complete',
-          field: result.result?.field_name,
-          success: true
-        });
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
 
-        // Update hop1 details from resume response (these were stored when validation failed)
-        if (result.hop1_details) {
-          console.log('📦 Captured hop1 detailed processing from resume:', result.hop1_details);
-          setHop1Details(result.hop1_details);
-          // Emit hop1_complete event for visualization
-          addEvent({
-            type: 'hop1_complete',
-            message: 'Stage 1 conversion complete (resumed)',
-            detailed_processing: result.hop1_details
-          });
-        }
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
 
-        // Add stage 2 events if conversion continued
-        if (result.output) {
-          addEvent({
-            type: 'hop2_start',
-            message: 'JSON → Target format conversion'
-          });
-          addEvent({
-            type: 'hop2_complete',
-            message: 'Stage 2 conversion complete',
-            detailed_processing: result.hop2_details
-          });
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const event = JSON.parse(line.slice(6));
+              console.log('📡 Resume stream event:', event);
 
-          // Update hop2 details for visualization
-          if (result.hop2_details) {
-            setHop2Details(result.hop2_details);
+              // Add the event to the timeline
+              if (event.type) {
+                addEvent(event);
+              }
+
+              // Handle specific event types for state updates
+              if (event.type === 'hop1_complete' && event.detailed_processing) {
+                console.log('📦 Captured hop1 detailed processing from stream:', event.detailed_processing);
+                setHop1Details(event.detailed_processing);
+              }
+
+              if (event.type === 'hop2_complete' && event.detailed_processing) {
+                setHop2Details(event.detailed_processing);
+              }
+
+              if (event.type === 'complete') {
+                if (event.output) {
+                  setOutput(event.output);
+                }
+                if (event.processing_stats) {
+                  setStats(event.processing_stats);
+                }
+                if (event.total_time) {
+                  setTotalTime(event.total_time);
+                }
+              }
+
+              if (event.type === 'error') {
+                throw new Error(event.message || 'Unknown error');
+              }
+            } catch (parseErr) {
+              console.warn('Failed to parse SSE event:', line, parseErr);
+            }
           }
-
-          // Add complete event with final output
-          addEvent({
-            type: 'complete',
-            output: result.output,
-            processing_stats: result.processing_stats,
-            total_time: result.total_time
-          });
-
-          // Update state with final results
-          setOutput(result.output);
-          setStats(result.processing_stats);
-          setTotalTime(result.total_time);
         }
       }
 
-      // Modal already closed at start for snappy UX
+      console.log('✅ Resume streaming complete');
+
     } catch (err) {
       console.error('Error resuming workflow:', err);
       setError(`Failed to resume: ${err.message}`);
@@ -497,13 +487,10 @@ export default function AgenticAIPage() {
     if (!reviewThreadId) return;
 
     setIsSubmittingReview(true);
-    addEvent({
-      type: 'review_rejected',
-      message: 'Human rejected proposed change'
-    });
 
     try {
-      const response = await fetch('/api/agent/resume', {
+      // Use streaming resume endpoint for consistency
+      const response = await fetch('/api/agent/resume-stream', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -519,12 +506,35 @@ export default function AgenticAIPage() {
         throw new Error(`Resume failed: ${response.status}`);
       }
 
-      addEvent({
-        type: 'agent_complete',
-        field: reviewData?.field,
-        success: false,
-        message: 'Skipped - rejected by human reviewer'
-      });
+      // Process SSE stream (will get review_rejected event)
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const event = JSON.parse(line.slice(6));
+              console.log('📡 Reject stream event:', event);
+
+              // Add the event to the timeline
+              if (event.type) {
+                addEvent(event);
+              }
+            } catch (parseErr) {
+              console.warn('Failed to parse SSE event:', line, parseErr);
+            }
+          }
+        }
+      }
 
       setIsReviewModalOpen(false);
     } catch (err) {

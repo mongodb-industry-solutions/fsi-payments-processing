@@ -62,7 +62,7 @@ export default function HumanReviewModal({
   // Format field name for display
   const fieldLabel = field === 'creditor_name'
     ? 'Beneficiary Name'
-    : field === 'creditor_agent_bic'
+    : field === 'creditor_bic'
     ? 'Bank Code (IFSC)'
     : field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 

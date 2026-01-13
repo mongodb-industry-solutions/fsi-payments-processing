@@ -291,6 +291,74 @@ class PaymentAgentClient:
             logger.error(f"Resume workflow request failed: {e}")
             raise
 
+    async def resume_workflow_stream(
+        self,
+        thread_id: str,
+        approved: bool,
+        modified_value: Optional[str] = None
+    ) -> AsyncGenerator[Dict[str, Any], None]:
+        """
+        Resume a paused workflow with streaming execution events.
+
+        This method uses the streaming resume endpoint to get real-time
+        events from the execution agent phase.
+
+        Args:
+            thread_id: The thread ID returned from process_payment_stream_with_review
+            approved: Whether the human approved the change
+            modified_value: Optional modified value if human edited the proposed value
+
+        Yields:
+            Parsed SSE events including:
+            - Execution events: {"execution": {...}}
+            - Complete event: {"type": "complete", "success": true}
+            - Error event: {"type": "error", "message": "..."}
+
+        Raises:
+            httpx.HTTPError: If streaming request fails
+        """
+
+        endpoint = f"{self.agent_url}/api/v1/payment-agent/resume-stream"
+
+        payload = {
+            "thread_id": thread_id,
+            "decision": {
+                "approved": approved,
+                "modified_value": modified_value
+            }
+        }
+
+        logger.info(
+            f"Streaming resume workflow: thread_id={thread_id}, approved={approved}"
+        )
+
+        try:
+            async with self.client.stream("POST", endpoint, json=payload) as response:
+                response.raise_for_status()
+
+                async for line in response.aiter_lines():
+                    if line.startswith("data: "):
+                        try:
+                            event_data = json.loads(line[6:])
+
+                            # Log execution events
+                            if "execution" in event_data:
+                                logger.info("→ Execution agent completed")
+                            elif event_data.get("type") == "complete":
+                                logger.info("✓ Resume workflow completed")
+                            elif event_data.get("type") == "error":
+                                logger.error(f"✗ Resume error: {event_data.get('message')}")
+
+                            yield event_data
+
+                        except json.JSONDecodeError as e:
+                            logger.warning(f"Failed to parse SSE event: {line[:100]}... - {e}")
+                            continue
+
+        except httpx.HTTPError as e:
+            logger.error(f"Resume streaming request failed: {e}")
+            raise
+
     async def close(self):
         """Close the HTTP client"""
         await self.client.aclose()
