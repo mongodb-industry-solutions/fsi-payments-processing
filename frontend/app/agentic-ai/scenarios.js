@@ -21,7 +21,7 @@ export const SCENARIOS = {
     story: [
       {
         trigger: 'start',
-        position: 'bottom-left',
+        position: 'bottom-center',
         icon: 'bank',
         title: 'Cross-Border Payment Request',
         description: 'Deutsche Bank receives wire transfer request: ¥45M from Volkswagen AG to Denso Corporation, Japan.',
@@ -30,7 +30,7 @@ export const SCENARIOS = {
       },
       {
         trigger: 'hop1_start',
-        position: 'bottom-left',
+        position: 'bottom-center',
         icon: 'document',
         title: 'SWIFT Message Processing',
         description: 'Bank gateway parses MT103 message and initiates ISO 20022 conversion for Japanese clearing.',
@@ -40,7 +40,7 @@ export const SCENARIOS = {
       },
       {
         trigger: 'validation_failed',
-        position: 'bottom-left',
+        position: 'bottom-center',
         icon: 'problem',
         title: 'Compliance Check Failed',
         description: 'BOJ (Bank of Japan) requires beneficiary names in Katakana script. Latin characters rejected.',
@@ -50,7 +50,7 @@ export const SCENARIOS = {
       },
       {
         trigger: 'agent_start',
-        position: 'bottom-left',
+        position: 'bottom-center',
         icon: 'agent',
         title: 'Transaction Agent Engaged',
         description: 'Routing to AI agent for automatic remediation. Human escalation avoided.',
@@ -59,7 +59,7 @@ export const SCENARIOS = {
       },
       {
         trigger: 'tool_call',
-        position: 'bottom-left',
+        position: 'bottom-center',
         icon: 'translate',
         title: 'Katakana Transliteration',
         description: 'Agent applies Japan Ministry of Justice romanization standards.',
@@ -69,7 +69,7 @@ export const SCENARIOS = {
       },
       {
         trigger: 'agent_complete',
-        position: 'bottom-left',
+        position: 'bottom-center',
         icon: 'check',
         title: 'Remediation Complete',
         description: 'Beneficiary name converted. Payment resubmitted to clearing queue.',
@@ -79,7 +79,7 @@ export const SCENARIOS = {
       },
       {
         trigger: 'complete',
-        position: 'bottom-left',
+        position: 'bottom-center',
         icon: 'japan',
         title: 'Payment Settled',
         description: '¥45,000,000 credited to Denso Corporation via BOJ-NET. STP achieved.',
@@ -146,7 +146,7 @@ PRECISION SENSORS AND ECU MODULES
     story: [
       {
         trigger: 'start',
-        position: 'bottom-left',
+        position: 'bottom-center',
         icon: 'bank',
         title: 'Cross-Border Payment Request',
         description: 'JPMorgan Chase receives wire transfer: ₹15M from Google LLC to Infosys Limited, India.',
@@ -155,7 +155,7 @@ PRECISION SENSORS AND ECU MODULES
       },
       {
         trigger: 'hop1_start',
-        position: 'bottom-left',
+        position: 'bottom-center',
         icon: 'document',
         title: 'SWIFT Message Processing',
         description: 'Bank gateway parses MT103 and initiates ISO 20022 conversion for Indian clearing.',
@@ -165,7 +165,7 @@ PRECISION SENSORS AND ECU MODULES
       },
       {
         trigger: 'validation_failed',
-        position: 'bottom-left',
+        position: 'bottom-center',
         icon: 'problem',
         title: 'Compliance Check Failed',
         description: 'RBI requires IFSC code for beneficiary bank. Only descriptive text found.',
@@ -175,7 +175,7 @@ PRECISION SENSORS AND ECU MODULES
       },
       {
         trigger: 'agent_start',
-        position: 'bottom-left',
+        position: 'bottom-center',
         icon: 'agent',
         title: 'Transaction Agent Engaged',
         description: 'Routing to AI agent for IFSC code resolution. Manual lookup avoided.',
@@ -184,7 +184,7 @@ PRECISION SENSORS AND ECU MODULES
       },
       {
         trigger: 'tool_call',
-        position: 'bottom-left',
+        position: 'bottom-center',
         icon: 'search',
         title: 'IFSC Database Lookup',
         description: 'Agent queries RBI directory using bank name, branch, and location.',
@@ -194,7 +194,7 @@ PRECISION SENSORS AND ECU MODULES
       },
       {
         trigger: 'agent_complete',
-        position: 'bottom-left',
+        position: 'bottom-center',
         icon: 'check',
         title: 'IFSC Code Resolved',
         description: 'Bank identified and validated. IFSC code inserted into payment.',
@@ -204,7 +204,7 @@ PRECISION SENSORS AND ECU MODULES
       },
       {
         trigger: 'complete',
-        position: 'bottom-left',
+        position: 'bottom-center',
         icon: 'india',
         title: 'Payment Settled',
         description: '₹15,000,000 credited to Infosys Limited via NEFT/RTGS. STP achieved.',
@@ -267,7 +267,7 @@ CLOUD INFRASTRUCTURE DEVELOPMENT
     story: [
       {
         trigger: 'start',
-        position: 'bottom-left',
+        position: 'bottom-center',
         icon: 'card',
         title: 'POS Terminal Transaction',
         description: 'UK cardholder taps Visa at Sim Lim Square electronics shop. S$2,500 purchase initiated.',
@@ -277,7 +277,7 @@ CLOUD INFRASTRUCTURE DEVELOPMENT
       },
       {
         trigger: 'hop1_start',
-        position: 'bottom-left',
+        position: 'bottom-center',
         icon: 'document',
         title: 'ISO 8583 Authorization',
         description: 'Acquirer bank receives 0200 message from POS terminal. Legacy format requires conversion.',
@@ -287,7 +287,7 @@ CLOUD INFRASTRUCTURE DEVELOPMENT
       },
       {
         trigger: 'hop1_complete',
-        position: 'bottom-left',
+        position: 'bottom-center',
         icon: 'agent',
         title: 'AI Merchant Extraction',
         description: 'Unstructured merchant field parsed into structured data: name, city, country.',
@@ -297,7 +297,7 @@ CLOUD INFRASTRUCTURE DEVELOPMENT
       },
       {
         trigger: 'hop2_start',
-        position: 'bottom-left',
+        position: 'bottom-center',
         icon: 'document',
         title: 'ISO 20022 Construction',
         description: 'Building cain.001 card authorization for Visa network inter-bank routing.',
@@ -307,7 +307,7 @@ CLOUD INFRASTRUCTURE DEVELOPMENT
       },
       {
         trigger: 'hop2_complete',
-        position: 'bottom-left',
+        position: 'bottom-center',
         icon: 'check',
         title: 'Authorization Request Ready',
         description: 'Card network message formatted per ISO 20022 cain.001 specification.',
@@ -317,7 +317,7 @@ CLOUD INFRASTRUCTURE DEVELOPMENT
       },
       {
         trigger: 'complete',
-        position: 'bottom-left',
+        position: 'bottom-center',
         icon: 'singapore',
         title: 'Authorization Approved',
         description: 'S$2,500 purchase authorized. Response routed back to Singapore acquirer in 340ms.',
@@ -365,7 +365,7 @@ CLOUD INFRASTRUCTURE DEVELOPMENT
     story: [
       {
         trigger: 'start',
-        position: 'bottom-left',
+        position: 'bottom-center',
         icon: 'bank',
         title: 'Incoming SWIFT Message',
         description: 'Barclays receives pacs.008 from correspondent: BP PLC → BHP Group, A$8.5M.',
@@ -375,7 +375,7 @@ CLOUD INFRASTRUCTURE DEVELOPMENT
       },
       {
         trigger: 'hop1_start',
-        position: 'bottom-left',
+        position: 'bottom-center',
         icon: 'document',
         title: 'ISO 20022 Parsing',
         description: 'Extracting payment data from XML. Converting to internal canonical format.',
@@ -385,7 +385,7 @@ CLOUD INFRASTRUCTURE DEVELOPMENT
       },
       {
         trigger: 'hop1_complete',
-        position: 'bottom-left',
+        position: 'bottom-center',
         icon: 'transform',
         title: 'Internal Routing Format',
         description: 'Payment normalized for legacy core banking, AML screening, and sanctions check.',
@@ -395,7 +395,7 @@ CLOUD INFRASTRUCTURE DEVELOPMENT
       },
       {
         trigger: 'hop2_start',
-        position: 'bottom-left',
+        position: 'bottom-center',
         icon: 'document',
         title: 'Outbound Message Build',
         description: 'Internal processing complete. Reconstructing ISO 20022 for SWIFT transmission.',
@@ -405,7 +405,7 @@ CLOUD INFRASTRUCTURE DEVELOPMENT
       },
       {
         trigger: 'hop2_complete',
-        position: 'bottom-left',
+        position: 'bottom-center',
         icon: 'check',
         title: 'Message Validated',
         description: 'pacs.008 schema validated. UETR assigned for gpi tracking.',
@@ -415,7 +415,7 @@ CLOUD INFRASTRUCTURE DEVELOPMENT
       },
       {
         trigger: 'complete',
-        position: 'bottom-left',
+        position: 'bottom-center',
         icon: 'australia',
         title: 'Cross-Border Settlement',
         description: 'A$8,500,000 credited to BHP Group Limited via RITS (Australia RTGS). STP achieved.',
@@ -519,7 +519,7 @@ CLOUD INFRASTRUCTURE DEVELOPMENT
     story: [
       {
         trigger: 'start',
-        position: 'bottom-left',
+        position: 'bottom-center',
         icon: 'bank',
         title: 'Cross-Border Payment Request',
         description: 'Mumbai Fintech initiates $50K wire to US partner with crypto settlement for Mexico.',
@@ -528,7 +528,7 @@ CLOUD INFRASTRUCTURE DEVELOPMENT
       },
       {
         trigger: 'hop1_start',
-        position: 'bottom-left',
+        position: 'bottom-center',
         icon: 'document',
         title: 'ISO 20022 Processing',
         description: 'Bank gateway parses pacs.008, extracting crypto instructions from RmtInf fields.',
@@ -538,7 +538,7 @@ CLOUD INFRASTRUCTURE DEVELOPMENT
       },
       {
         trigger: 'hop1_complete',
-        position: 'bottom-left',
+        position: 'bottom-center',
         icon: 'transform',
         title: 'Canonical JSON Generated',
         description: 'Payment normalized with Solana wallet address and settlement instructions.',
@@ -548,7 +548,7 @@ CLOUD INFRASTRUCTURE DEVELOPMENT
       },
       {
         trigger: 'crypto_start',
-        position: 'bottom-left',
+        position: 'bottom-center',
         icon: 'chain',
         title: 'Blockchain Bridge Activated',
         description: 'Switching from traditional rails to Solana blockchain for last-mile settlement.',
@@ -558,7 +558,7 @@ CLOUD INFRASTRUCTURE DEVELOPMENT
       },
       {
         trigger: 'crypto_wallet_extract',
-        position: 'bottom-left',
+        position: 'bottom-center',
         icon: 'wallet',
         title: 'Wallet Address Validated',
         description: 'Destination wallet confirmed as valid Solana public key (Base58).',
@@ -568,7 +568,7 @@ CLOUD INFRASTRUCTURE DEVELOPMENT
       },
       {
         trigger: 'crypto_tx_build',
-        position: 'bottom-left',
+        position: 'bottom-center',
         icon: 'document',
         title: 'Transaction Constructed',
         description: 'SystemProgram.transfer instruction built with MessageV0.',
@@ -578,7 +578,7 @@ CLOUD INFRASTRUCTURE DEVELOPMENT
       },
       {
         trigger: 'crypto_tx_sign',
-        position: 'bottom-left',
+        position: 'bottom-center',
         icon: 'sign',
         title: 'Cryptographic Signing',
         description: 'Service wallet signs transaction with Ed25519 algorithm.',
@@ -588,7 +588,7 @@ CLOUD INFRASTRUCTURE DEVELOPMENT
       },
       {
         trigger: 'crypto_tx_submit',
-        position: 'bottom-left',
+        position: 'bottom-center',
         icon: 'broadcast',
         title: 'Broadcasting to Solana',
         description: 'Transaction submitted to devnet RPC for validator processing.',
@@ -598,7 +598,7 @@ CLOUD INFRASTRUCTURE DEVELOPMENT
       },
       {
         trigger: 'crypto_tx_confirm',
-        position: 'bottom-left',
+        position: 'bottom-center',
         icon: 'check',
         title: 'Validators Confirmed',
         description: 'Block consensus reached. Transaction included in recent block.',
@@ -608,7 +608,7 @@ CLOUD INFRASTRUCTURE DEVELOPMENT
       },
       {
         trigger: 'crypto_complete',
-        position: 'bottom-left',
+        position: 'bottom-center',
         icon: 'money',
         title: 'On-Chain Settlement',
         description: 'Transfer finalized on immutable blockchain ledger.',
@@ -618,7 +618,7 @@ CLOUD INFRASTRUCTURE DEVELOPMENT
       },
       {
         trigger: 'complete',
-        position: 'bottom-left',
+        position: 'bottom-center',
         icon: 'mexico',
         title: 'Payment Delivered',
         description: '$50,000 settled to Mexico via hybrid ISO 20022 + Solana rail.',
@@ -707,7 +707,7 @@ CLOUD INFRASTRUCTURE DEVELOPMENT
     story: [
       {
         trigger: 'start',
-        position: 'bottom-left',
+        position: 'bottom-center',
         icon: 'bank',
         title: 'Cross-Border Payment Request',
         description: 'RBC Royal Bank receives wire transfer: S$3.2M from Shopify Inc to Grab Holdings, Singapore.',
@@ -716,7 +716,7 @@ CLOUD INFRASTRUCTURE DEVELOPMENT
       },
       {
         trigger: 'hop1_start',
-        position: 'bottom-left',
+        position: 'bottom-center',
         icon: 'document',
         title: 'SWIFT Message Processing',
         description: 'Bank gateway parses MT103 and initiates ISO 20022 conversion for MAS clearing.',
@@ -726,7 +726,7 @@ CLOUD INFRASTRUCTURE DEVELOPMENT
       },
       {
         trigger: 'validation_failed',
-        position: 'bottom-left',
+        position: 'bottom-center',
         icon: 'problem',
         title: 'Compliance Check Failed',
         description: 'ISO 20022 requires standardized purpose code. Only free-text description found.',
@@ -736,7 +736,7 @@ CLOUD INFRASTRUCTURE DEVELOPMENT
       },
       {
         trigger: 'agent_start',
-        position: 'bottom-left',
+        position: 'bottom-center',
         icon: 'agent',
         title: 'Transaction Agent Engaged',
         description: 'Routing to AI agent for purpose code classification. Manual review avoided.',
@@ -745,7 +745,7 @@ CLOUD INFRASTRUCTURE DEVELOPMENT
       },
       {
         trigger: 'tool_call',
-        position: 'bottom-left',
+        position: 'bottom-center',
         icon: 'brain',
         title: 'Semantic Classification',
         description: 'Agent analyzes payment description using vector similarity search.',
@@ -755,7 +755,7 @@ CLOUD INFRASTRUCTURE DEVELOPMENT
       },
       {
         trigger: 'agent_complete',
-        position: 'bottom-left',
+        position: 'bottom-center',
         icon: 'check',
         title: 'Purpose Code Resolved',
         description: 'Payment classified as technical services. ISO code inserted.',
@@ -765,7 +765,7 @@ CLOUD INFRASTRUCTURE DEVELOPMENT
       },
       {
         trigger: 'complete',
-        position: 'bottom-left',
+        position: 'bottom-center',
         icon: 'singapore',
         title: 'Payment Settled',
         description: 'S$3,200,000 credited to Grab Holdings via FAST/MEPS+. STP achieved.',
@@ -832,7 +832,7 @@ CONTRACT SHOP-GRAB-2024-API-001
     story: [
       {
         trigger: 'start',
-        position: 'bottom-left',
+        position: 'bottom-center',
         icon: 'bank',
         title: 'Cross-Border Payment Request',
         description: 'Goldman Sachs initiates wire transfer: £5M to HSBC for global custody services.',
@@ -841,7 +841,7 @@ CONTRACT SHOP-GRAB-2024-API-001
       },
       {
         trigger: 'hop1_start',
-        position: 'bottom-left',
+        position: 'bottom-center',
         icon: 'document',
         title: 'SWIFT Message Processing',
         description: 'Bank gateway parses MT103 and initiates ISO 20022 conversion for CHAPS clearing.',
@@ -851,7 +851,7 @@ CONTRACT SHOP-GRAB-2024-API-001
       },
       {
         trigger: 'validation_failed',
-        position: 'bottom-left',
+        position: 'bottom-center',
         icon: 'problem',
         title: 'Sanctions Screening Failed',
         description: 'Creditor name "HSBC" not found in registered legal entities. Requires exact match.',
@@ -861,7 +861,7 @@ CONTRACT SHOP-GRAB-2024-API-001
       },
       {
         trigger: 'agent_start',
-        position: 'bottom-left',
+        position: 'bottom-center',
         icon: 'agent',
         title: 'Transaction Agent Engaged',
         description: 'Routing to AI agent for legal name resolution. Manual compliance review avoided.',
@@ -870,7 +870,7 @@ CONTRACT SHOP-GRAB-2024-API-001
       },
       {
         trigger: 'tool_call',
-        position: 'bottom-left',
+        position: 'bottom-center',
         icon: 'search',
         title: 'KYC Registry Lookup',
         description: 'Agent queries corporate registry using trading name and BIC code.',
@@ -880,7 +880,7 @@ CONTRACT SHOP-GRAB-2024-API-001
       },
       {
         trigger: 'agent_complete',
-        position: 'bottom-left',
+        position: 'bottom-center',
         icon: 'shield',
         title: 'Legal Name Verified',
         description: 'Registered entity found. Creditor name updated for compliance.',
@@ -890,7 +890,7 @@ CONTRACT SHOP-GRAB-2024-API-001
       },
       {
         trigger: 'complete',
-        position: 'bottom-left',
+        position: 'bottom-center',
         icon: 'uk',
         title: 'Payment Settled',
         description: '£5,000,000 credited to HSBC Holdings plc via CHAPS. STP achieved.',

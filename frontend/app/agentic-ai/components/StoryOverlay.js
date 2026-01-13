@@ -9,12 +9,13 @@ import React, { useState, useEffect, useRef } from 'react';
 function StoryCard({ step, position, totalSteps, currentIndex, onPrev, onNext, canGoPrev, canGoNext }) {
   if (!step) return null;
 
+  // Position styles with adequate spacing from edges (24px recommended)
   const positionStyles = {
-    'top-left': { top: '15px', left: '15px' },
-    'top-right': { top: '15px', right: '15px' },
-    'bottom-left': { bottom: '20px', left: '15px' },
-    'bottom-right': { bottom: '20px', right: '15px' },
-    'bottom-center': { bottom: '20px', left: '50%', transform: 'translateX(-50%)' }
+    'top-left': { top: '24px', left: '24px' },
+    'top-right': { top: '24px', right: '24px' },
+    'bottom-left': { bottom: '24px', left: '24px' },
+    'bottom-right': { bottom: '24px', right: '24px' },
+    'bottom-center': { bottom: '24px', left: '50%', transform: 'translateX(-50%)' }
   };
 
   const iconMap = {
@@ -61,173 +62,185 @@ function StoryCard({ step, position, totalSteps, currentIndex, onPrev, onNext, c
         position: 'absolute',
         ...positionStyles[position || 'bottom-center'],
         zIndex: 100,
-        maxWidth: '280px',
-        animation: isBottomCenter ? 'storyCardEnterCenter 0.4s ease-out forwards' : 'storyCardEnter 0.4s ease-out forwards'
+        // Optimal width: 280-320px for readability without being too wide
+        width: '300px',
+        maxWidth: 'calc(100% - 48px)',
+        // Professional animation: 200ms is snappy yet smooth
+        animation: isBottomCenter ? 'storyCardEnterCenter 0.2s ease-out forwards' : 'storyCardEnter 0.2s ease-out forwards'
       }}
     >
-      {/* Card container */}
+      {/* Card container with glassmorphism (frosted glass effect) */}
       <div
         style={{
-          background: 'rgba(255, 255, 255, 0.98)',
-          borderRadius: '8px',
-          boxShadow: '0 2px 12px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.04)',
-          overflow: 'hidden',
-          backdropFilter: 'blur(8px)'
+          background: 'rgba(255, 255, 255, 0.78)',
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
+          borderRadius: '16px',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06)',
+          border: '1px solid rgba(255, 255, 255, 0.4)',
+          overflow: 'hidden'
         }}
       >
-        {/* Colored accent bar at top */}
+        {/* Colored accent bar - 4px for visual prominence */}
         <div
           style={{
-            height: '3px',
+            height: '4px',
             background: step.color || '#00A35C',
           }}
         />
 
-        {/* Content */}
-        <div style={{ padding: '10px 12px' }}>
-          {/* Header row */}
+        {/* Content with adequate padding (16px horizontal, 14px vertical) */}
+        <div style={{ padding: '14px 16px' }}>
+          {/* Header row with proper alignment */}
           <div
             style={{
               display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              marginBottom: '6px'
+              alignItems: 'flex-start',
+              gap: '12px',
+              marginBottom: '8px'
             }}
           >
-            {/* Icon */}
+            {/* Icon container - 32px with frosted glass look */}
             <div
               style={{
-                width: '22px',
-                height: '22px',
-                borderRadius: '6px',
-                background: step.color ? `${step.color}15` : '#00A35C15',
+                width: '32px',
+                height: '32px',
+                borderRadius: '10px',
+                background: 'rgba(255, 255, 255, 0.6)',
+                border: `1px solid ${step.color ? `${step.color}30` : 'rgba(0, 163, 92, 0.2)'}`,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '12px',
+                fontSize: '16px',
                 flexShrink: 0
               }}
             >
               {iconMap[step.icon] || step.icon || '📋'}
             </div>
 
-            {/* Title */}
+            {/* Title - 14px semibold for hierarchy */}
             <div
               style={{
-                fontSize: '11px',
+                fontSize: '14px',
                 fontWeight: '600',
                 color: '#1C2D38',
-                lineHeight: '1.2',
-                flex: 1
+                lineHeight: '1.35',
+                flex: 1,
+                paddingTop: '4px'
               }}
             >
               {step.title}
             </div>
           </div>
 
-          {/* Description */}
+          {/* Description - 13px for optimal readability */}
           <div
             style={{
-              fontSize: '10px',
+              fontSize: '13px',
               color: '#5C6C75',
-              lineHeight: '1.4',
-              paddingLeft: '30px'
+              lineHeight: '1.5',
+              marginLeft: '44px'
             }}
           >
             {step.description}
           </div>
 
-          {/* Optional highlight box */}
+          {/* Optional highlight box with frosted glass styling */}
           {step.highlight && (
             <div
               style={{
-                marginTop: '6px',
-                marginLeft: '30px',
-                padding: '5px 8px',
-                background: step.color ? `${step.color}08` : '#00A35C08',
-                borderRadius: '4px',
-                borderLeft: `2px solid ${step.color || '#00A35C'}`,
-                fontSize: '10px',
+                marginTop: '10px',
+                marginLeft: '44px',
+                padding: '8px 12px',
+                background: 'rgba(255, 255, 255, 0.5)',
+                borderRadius: '8px',
+                borderLeft: `3px solid ${step.color || '#00A35C'}`,
+                fontSize: '12px',
                 color: '#1C2D38',
                 fontWeight: '500',
-                lineHeight: '1.3'
+                lineHeight: '1.4',
+                fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace'
               }}
             >
               {step.highlight}
             </div>
           )}
 
-          {/* Navigation footer */}
+          {/* Navigation footer with frosted glass separator */}
           <div
             style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              marginTop: '8px',
-              paddingTop: '8px',
-              borderTop: '1px solid #E7EAEE'
+              marginTop: '14px',
+              paddingTop: '12px',
+              borderTop: '1px solid rgba(255, 255, 255, 0.5)'
             }}
           >
-            {/* Previous button */}
+            {/* Previous button - 32px min touch target */}
             <button
               onClick={onPrev}
               disabled={!canGoPrev}
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '2px',
-                padding: '4px 6px',
+                justifyContent: 'center',
+                width: '32px',
+                height: '32px',
                 border: 'none',
-                background: canGoPrev ? '#F5F6F7' : 'transparent',
-                borderRadius: '4px',
+                background: canGoPrev ? 'rgba(255, 255, 255, 0.6)' : 'transparent',
+                borderRadius: '8px',
                 cursor: canGoPrev ? 'pointer' : 'default',
                 color: canGoPrev ? '#1C2D38' : '#C1C7CD',
-                fontSize: '10px',
-                fontWeight: '500',
-                transition: 'all 0.2s ease',
+                fontSize: '14px',
+                transition: 'all 0.15s ease',
                 pointerEvents: 'auto'
               }}
+              aria-label="Previous step"
             >
-              <span style={{ fontSize: '11px' }}>←</span>
+              ←
             </button>
 
-            {/* Step indicator dots */}
-            <div style={{ display: 'flex', gap: '3px', alignItems: 'center' }}>
+            {/* Step indicator - pill style for current, dots for others */}
+            <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
               {Array.from({ length: totalSteps }).map((_, i) => (
                 <div
                   key={i}
                   style={{
-                    width: i === currentIndex ? '10px' : '4px',
-                    height: '4px',
-                    borderRadius: '2px',
-                    background: i === currentIndex ? (step.color || '#00A35C') : (i < currentIndex ? '#00A35C' : '#E7EAEE'),
-                    transition: 'all 0.3s ease'
+                    width: i === currentIndex ? '16px' : '6px',
+                    height: '6px',
+                    borderRadius: '3px',
+                    background: i === currentIndex
+                      ? (step.color || '#00A35C')
+                      : (i < currentIndex ? `${step.color || '#00A35C'}60` : '#E0E2E5'),
+                    transition: 'all 0.2s ease'
                   }}
                 />
               ))}
             </div>
 
-            {/* Next button */}
+            {/* Next button - 32px min touch target */}
             <button
               onClick={onNext}
               disabled={!canGoNext}
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '2px',
-                padding: '4px 6px',
+                justifyContent: 'center',
+                width: '32px',
+                height: '32px',
                 border: 'none',
-                background: canGoNext ? '#F5F6F7' : 'transparent',
-                borderRadius: '4px',
+                background: canGoNext ? 'rgba(255, 255, 255, 0.6)' : 'transparent',
+                borderRadius: '8px',
                 cursor: canGoNext ? 'pointer' : 'default',
                 color: canGoNext ? '#1C2D38' : '#C1C7CD',
-                fontSize: '10px',
-                fontWeight: '500',
-                transition: 'all 0.2s ease',
+                fontSize: '14px',
+                transition: 'all 0.15s ease',
                 pointerEvents: 'auto'
               }}
+              aria-label="Next step"
             >
-              <span style={{ fontSize: '11px' }}>→</span>
+              →
             </button>
           </div>
         </div>
@@ -257,33 +270,39 @@ export default function StoryOverlay({
   const lastAdvanceTimeRef = useRef(Date.now()); // When current card was shown
   const pendingAdvanceRef = useRef(null); // Pending advance timer
 
-  // Reset when scenario changes
+  // Helper to reset all state
+  const resetState = () => {
+    setTriggeredSteps([]);
+    setCurrentViewIndex(0);
+    setAutoAdvance(true);
+    triggeredStepsRef.current = new Set();
+    lastAdvanceTimeRef.current = Date.now();
+    if (pendingAdvanceRef.current) {
+      clearTimeout(pendingAdvanceRef.current);
+      pendingAdvanceRef.current = null;
+    }
+  };
+
+  // Reset when scenario changes (story array reference changes)
+  const storyRef = useRef(story);
+  useEffect(() => {
+    if (story !== storyRef.current) {
+      storyRef.current = story;
+      resetState();
+    }
+  }, [story]);
+
+  // Reset when isActive becomes false
   useEffect(() => {
     if (!isActive) {
-      setTriggeredSteps([]);
-      setCurrentViewIndex(0);
-      setAutoAdvance(true);
-      triggeredStepsRef.current = new Set();
-      lastAdvanceTimeRef.current = Date.now();
-      if (pendingAdvanceRef.current) {
-        clearTimeout(pendingAdvanceRef.current);
-        pendingAdvanceRef.current = null;
-      }
+      resetState();
     }
   }, [isActive]);
 
   // Reset when streaming starts fresh
   useEffect(() => {
     if (isStreaming && events.length === 0) {
-      setTriggeredSteps([]);
-      setCurrentViewIndex(0);
-      setAutoAdvance(true);
-      triggeredStepsRef.current = new Set();
-      lastAdvanceTimeRef.current = Date.now();
-      if (pendingAdvanceRef.current) {
-        clearTimeout(pendingAdvanceRef.current);
-        pendingAdvanceRef.current = null;
-      }
+      resetState();
     }
   }, [isStreaming, events.length]);
 
@@ -475,21 +494,21 @@ export default function StoryOverlay({
         @keyframes storyCardEnter {
           0% {
             opacity: 0;
-            transform: translateY(-10px) scale(0.95);
+            transform: translateY(8px);
           }
           100% {
             opacity: 1;
-            transform: translateY(0) scale(1);
+            transform: translateY(0);
           }
         }
         @keyframes storyCardEnterCenter {
           0% {
             opacity: 0;
-            transform: translateX(-50%) translateY(10px) scale(0.95);
+            transform: translateX(-50%) translateY(8px);
           }
           100% {
             opacity: 1;
-            transform: translateX(-50%) translateY(0) scale(1);
+            transform: translateX(-50%) translateY(0);
           }
         }
       `}</style>
