@@ -225,171 +225,168 @@ function ErrorCard({ event, x, y, isActive }) {
 }
 
 /**
+ * EVENT-DRIVEN Progress Map
+ * Maps event types to progress percentages - SINGLE SOURCE OF TRUTH for animation sync
+ * Progress values are designed to match the event display rate from page.js
+ */
+const EVENT_PROGRESS_MAP = {
+  // Basic flow events
+  'start': 8,
+  'hop1_start': 25,
+  'hop1_complete': 50,
+  'hop2_start': 60,
+  'hop2_complete': 85,
+
+  // Crypto/blockchain events (spread across the journey)
+  'crypto_start': 55,
+  'crypto_wallet_extract': 60,
+  'crypto_balance_check': 65,
+  'crypto_tx_build': 70,
+  'crypto_tx_sign': 75,
+  'crypto_tx_submit': 82,
+  'crypto_tx_confirm': 90,
+  'crypto_complete': 95,
+
+  // Agent events (error resolution at midpoint)
+  'validation_failed': 50,
+  'agent_start': 52,
+  'agent_supervisor': 55,
+  'tool_call': 60,
+  'tool_result': 65,
+  'agent_resolution': 70,
+  'agent_complete': 80,
+
+  // Completion
+  'complete': 100
+};
+
+/**
+ * Calculate progress directly from events array
+ * Returns the highest progress value among all events
+ */
+function calculateProgressFromEvents(events) {
+  let maxProgress = 0;
+  for (const event of events) {
+    const progress = EVENT_PROGRESS_MAP[event.type] || 0;
+    if (progress > maxProgress) {
+      maxProgress = progress;
+    }
+  }
+  return maxProgress;
+}
+
+/**
  * AnimatedPaymentJourney Component
  * Visualizes payment traveling along the route with error handling
+ *
+ * KEY DESIGN: Progress is DIRECTLY derived from events array, not from independent timers.
+ * This ensures map animation stays perfectly synced with transaction logs and story cards.
+ * CSS transitions handle smooth interpolation between event-driven progress values.
+ *
  * @param {boolean} logsRenderComplete - Signal from transaction logs panel that output has rendered
  */
 function AnimatedPaymentJourney({ from, to, events, isStreaming, onFirstLegComplete, logsRenderComplete }) {
   const { projection } = useMapContext();
 
-  // Configuration constants
-  const ERROR_PAUSE_DURATION_MS = 3000; // 3 seconds pause on error
-
   const [journeyState, setJourneyState] = React.useState({
-    progress: 0, // 0-100
+    progress: 0, // 0-100 - DIRECTLY derived from events
     status: 'idle', // idle, traveling, error_awaiting_healing, agent_working, resolved, complete
     errorPosition: null,
-    errorPauseEndTime: null, // Timestamp when error pause should end
     resolvedTimestamp: null // When resolution happened (for fade-out timing)
   });
 
-  // Calculate journey state based on events
-  // IMPORTANT: logsRenderComplete ensures we don't complete until transaction logs have rendered
+  // Track previous status for first leg completion callback
+  const prevStatusRef = React.useRef(journeyState.status);
+
+  // Calculate journey state DIRECTLY from events - NO independent timer
+  // Progress is derived from event types, not incremented over time
   React.useEffect(() => {
     console.log('🔄 Journey State Update - Events:', events.length, 'isStreaming:', isStreaming, 'logsRenderComplete:', logsRenderComplete);
 
     if (!isStreaming && events.length === 0) {
-      setJourneyState({ progress: 0, status: 'idle', errorPosition: null });
+      setJourneyState({ progress: 0, status: 'idle', errorPosition: null, resolvedTimestamp: null });
       return;
     }
 
-    // Determine current state from events
-    const lastEvent = events[events.length - 1];
+    // Calculate progress DIRECTLY from events
+    const eventProgress = calculateProgressFromEvents(events);
+
+    // Determine current status from events
     const hasError = events.some(e => e.type === 'validation_failed');
     const hasAgentStart = events.some(e => e.type === 'agent_start');
     const hasAgentComplete = events.some(e => e.type === 'agent_complete');
-    // Check if complete event exists anywhere in events (not just last) for robustness
     const isComplete = events.some(e => e.type === 'complete');
 
     // Check for crypto scenario - if crypto events exist, first leg should complete on hop1_complete
     const hasCryptoEvents = events.some(e => e.type?.startsWith('crypto_'));
     const hasHop1Complete = events.some(e => e.type === 'hop1_complete');
-    const firstLegComplete = hasCryptoEvents ? hasHop1Complete : isComplete;
 
     console.log('📊 Event Analysis:', {
-      lastEventType: lastEvent?.type,
+      eventProgress,
       hasError,
       hasAgentStart,
       hasAgentComplete,
       isComplete,
       hasCryptoEvents,
-      firstLegComplete,
+      hasHop1Complete,
       logsRenderComplete
     });
 
-    if (firstLegComplete && hasCryptoEvents) {
-      // Crypto scenario: first leg should finish - transition to completing status to animate to end
-      setJourneyState(prev => ({
-        ...prev,
-        status: prev.status === 'complete' ? 'complete' : 'completing_first_leg',
-        errorPosition: null,
-        errorPauseEndTime: null,
-        resolvedTimestamp: null
-      }));
+    // Determine status and final progress based on event analysis
+    let newStatus = 'traveling';
+    let finalProgress = eventProgress;
+
+    if (hasHop1Complete && hasCryptoEvents) {
+      // Crypto scenario: first leg completes at hop1_complete
+      newStatus = 'complete';
+      finalProgress = 100;
     } else if (isComplete && logsRenderComplete) {
-      // Only complete when BOTH: complete event received AND transaction logs have rendered
-      setJourneyState({ progress: 100, status: 'complete', errorPosition: null, errorPauseEndTime: null, resolvedTimestamp: null });
+      // Both complete event and logs rendered - truly complete
+      newStatus = 'complete';
+      finalProgress = 100;
     } else if (isComplete && !logsRenderComplete) {
-      // Complete event received but logs still rendering - stay at high progress, await logs
-      setJourneyState(prev => ({
-        ...prev,
-        status: 'awaiting_logs',
-        progress: Math.max(prev.progress, 95) // Stay at 95%+ while waiting
-      }));
+      // Complete event received but waiting for logs - hold at high progress
+      newStatus = 'awaiting_logs';
+      finalProgress = Math.max(eventProgress, 95);
     } else if (hasAgentComplete && !isComplete) {
-      // Agent resolved, continuing journey - clear pause to allow animation
-      setJourneyState(prev => ({
-        ...prev,
-        status: 'resolved',
-        resolvedTimestamp: prev.resolvedTimestamp || Date.now(),
-        errorPauseEndTime: null // Clear pause so animation can continue
-      }));
+      // Agent resolved, continuing journey
+      newStatus = 'resolved';
     } else if (hasAgentStart && hasError) {
-      // Agent is working on an error - auto-resolution started
-      console.log('🔧 Agent working on error - Setting errorPosition at 50%');
-      setJourneyState(prev => ({
-        ...prev,
-        status: 'agent_working',
-        errorPosition: prev.errorPosition || 50,  // Preserve existing or set to 50
-        progress: prev.errorPosition || 50,
-        errorPauseEndTime: prev.errorPauseEndTime || (Date.now() + ERROR_PAUSE_DURATION_MS)
-      }));
+      // Agent working on error
+      newStatus = 'agent_working';
     } else if (hasError && !hasAgentStart) {
-      // Error occurred, show error badge while waiting for agent to start
-      console.log('🚨 ERROR DETECTED - Showing error badge');
-      setJourneyState({
-        progress: 50,
-        status: 'error_awaiting_healing',
-        errorPosition: 50,
-        errorPauseEndTime: null
-      });
+      // Error detected, waiting for agent
+      newStatus = 'error_awaiting_healing';
     } else if (hasAgentStart) {
-      // Agent is working on non-error issue
-      setJourneyState(prev => ({ ...prev, status: 'agent_working' }));
-    } else if (isStreaming) {
-      // Normal progress
-      setJourneyState(prev => ({
-        ...prev,
-        status: 'traveling',
-        progress: Math.min(prev.progress + 2, 95) // Cap at 95% until complete
-      }));
+      // Agent working (non-error case)
+      newStatus = 'agent_working';
+    } else if (isStreaming || events.length > 0) {
+      newStatus = 'traveling';
     }
-  }, [events, isStreaming, logsRenderComplete, ERROR_PAUSE_DURATION_MS]);
 
-  // Animate progress when traveling, resolved, awaiting_logs, or completing first leg
+    // Update state with event-derived progress
+    setJourneyState(prev => ({
+      progress: finalProgress,
+      status: newStatus,
+      errorPosition: hasError ? 50 : null,
+      resolvedTimestamp: newStatus === 'resolved' && !prev.resolvedTimestamp ? Date.now() : prev.resolvedTimestamp
+    }));
+
+  }, [events, isStreaming, logsRenderComplete]);
+
+  // Notify parent when blockchain settlement completes (for crypto scenarios)
+  // Second leg only shows after crypto_complete event (blockchain payment settled)
+  const prevCryptoCompleteRef = React.useRef(false);
   React.useEffect(() => {
-    if (journeyState.status === 'traveling' || journeyState.status === 'resolved' || journeyState.status === 'completing_first_leg' || journeyState.status === 'awaiting_logs') {
-      const interval = setInterval(() => {
-        setJourneyState(prev => {
-          // Check if error pause is still active
-          if (prev.errorPauseEndTime && Date.now() < prev.errorPauseEndTime) {
-            return prev; // Pause progress during error display
-          }
+    const hasCryptoComplete = events.some(e => e.type === 'crypto_complete');
 
-          // For completing_first_leg, animate to 100 at normal speed then mark complete
-          if (prev.status === 'completing_first_leg') {
-            if (prev.progress >= 100) {
-              return { ...prev, progress: 100, status: 'complete' };
-            }
-            return { ...prev, progress: Math.min(prev.progress + 2, 100) }; // Faster for crypto scenarios
-          }
-
-          // For awaiting_logs, hold at 95-99% until logs render complete
-          if (prev.status === 'awaiting_logs') {
-            // Slowly creep towards 99% but never hit 100 until logsRenderComplete
-            if (prev.progress >= 99) {
-              return prev; // Hold at 99% max while waiting
-            }
-            return { ...prev, progress: Math.min(prev.progress + 0.5, 99) }; // Slow crawl
-          }
-
-          if (prev.progress >= 95 && journeyState.status === 'traveling') {
-            return prev; // Wait for complete event
-          }
-          if (prev.status === 'resolved' && prev.progress >= 100) {
-            return prev; // Wait for complete event
-          }
-          return {
-            ...prev,
-            progress: Math.min(prev.progress + 2, journeyState.status === 'resolved' ? 100 : 95)
-          };
-        });
-      }, 100);
-      return () => clearInterval(interval);
-    }
-  }, [journeyState.status]);
-
-  // Notify parent when first leg animation completes (for crypto scenarios)
-  const prevStatusRef = React.useRef(journeyState.status);
-  React.useEffect(() => {
-    // Detect transition from completing_first_leg to complete
-    if (prevStatusRef.current === 'completing_first_leg' && journeyState.status === 'complete') {
-      if (onFirstLegComplete) {
-        onFirstLegComplete();
-      }
+    // For crypto scenarios, second leg starts only after blockchain settlement
+    if (hasCryptoComplete && !prevCryptoCompleteRef.current && onFirstLegComplete) {
+      onFirstLegComplete();
+      prevCryptoCompleteRef.current = true;
     }
     prevStatusRef.current = journeyState.status;
-  }, [journeyState.status, onFirstLegComplete]);
+  }, [journeyState.status, events, onFirstLegComplete]);
 
   // Clear error marker after resolution with delay (for smooth fade-out)
   React.useEffect(() => {
@@ -398,8 +395,7 @@ function AnimatedPaymentJourney({ from, to, events, isStreaming, onFirstLegCompl
       const timer = setTimeout(() => {
         setJourneyState(prev => ({
           ...prev,
-          errorPosition: null, // Clear error marker to hide success indicator
-          errorPauseEndTime: null
+          errorPosition: null // Clear error marker to hide success indicator
         }));
       }, RESOLUTION_DISPLAY_TIME);
       return () => clearTimeout(timer);
@@ -590,7 +586,7 @@ function AnimatedPaymentJourney({ from, to, events, isStreaming, onFirstLegCompl
               animation: journeyState.status === 'resolved'
                 ? 'successTravelPulse 1s infinite'
                 : 'travelPulse 1s infinite',
-              transition: 'stroke 0.5s ease'
+              transition: 'cx 0.4s ease-out, cy 0.4s ease-out, stroke 0.5s ease'
             }}
           />
           {/* Main marker */}
@@ -601,7 +597,7 @@ function AnimatedPaymentJourney({ from, to, events, isStreaming, onFirstLegCompl
             fill={getMarkerColor()}
             stroke="white"
             strokeWidth={2}
-            style={{ transition: 'fill 0.5s ease' }}
+            style={{ transition: 'cx 0.4s ease-out, cy 0.4s ease-out, fill 0.5s ease' }}
           />
           {/* Status pill - follows marker during travel */}
           {journeyState.status === 'traveling' && (
@@ -620,85 +616,80 @@ function AnimatedPaymentJourney({ from, to, events, isStreaming, onFirstLegCompl
 }
 
 /**
+ * SECOND LEG Progress Map for crypto scenarios
+ * Maps crypto events to progress percentages for the second leg (USA -> Mexico)
+ * Second leg starts ONLY after crypto_complete (blockchain settlement confirmed)
+ */
+const SECOND_LEG_PROGRESS_MAP = {
+  'crypto_complete': 20,    // Second leg starts after blockchain settlement
+  'complete': 100           // Full journey complete
+};
+
+/**
+ * Calculate second leg progress from events
+ */
+function calculateSecondLegProgress(events) {
+  let maxProgress = 0;
+  for (const event of events) {
+    const progress = SECOND_LEG_PROGRESS_MAP[event.type] || 0;
+    if (progress > maxProgress) {
+      maxProgress = progress;
+    }
+  }
+  return maxProgress;
+}
+
+/**
  * AnimatedPaymentJourneySecondLeg Component
- * Animates the second leg of multi-hop crypto scenarios (e.g., Brazil to Argentina)
- * Starts when crypto_transfer event fires and continues to crypto_complete
+ * Animates the second leg of multi-hop crypto scenarios (USA -> Mexico)
+ *
+ * KEY DESIGN: Progress is DIRECTLY derived from events array, not from independent timers.
+ * Second leg starts ONLY when crypto_complete event is received (blockchain settled).
  */
 function AnimatedPaymentJourneySecondLeg({ from, to, events, isStreaming }) {
   const { projection } = useMapContext();
 
   const [journeyState, setJourneyState] = React.useState({
     progress: 0,
-    status: 'idle', // idle, traveling, completing, complete
-    startTime: null,
-    completionRequested: false // Track if completion event was received
+    status: 'idle' // idle, traveling, complete
   });
 
-  // Determine when to start second leg based on crypto events
-  // Wait for crypto_tx_confirm (after blockchain confirmation) to give first leg time to complete
+  // Calculate journey state DIRECTLY from events - NO independent timer
   React.useEffect(() => {
-    const hasCryptoTxConfirm = events.some(e => e.type === 'crypto_tx_confirm');
     const hasCryptoComplete = events.some(e => e.type === 'crypto_complete');
     const hasComplete = events.some(e => e.type === 'complete');
 
-    if (hasComplete || hasCryptoComplete) {
-      // Mark that completion was requested - animation loop will handle the actual completion
-      setJourneyState(prev => {
-        if (prev.status === 'complete') return prev;
-        if (prev.status === 'completing') return prev;
-        // Mark completion requested and transition if progress is sufficient
-        if (prev.status === 'traveling' && prev.progress >= 50) {
-          return { ...prev, status: 'completing', completionRequested: true };
-        }
-        // If not far enough, just mark completion requested - animation will complete when ready
-        if (prev.status === 'traveling') {
-          return { ...prev, completionRequested: true };
-        }
-        // If still idle, start traveling with completion already requested
-        return { ...prev, status: 'traveling', startTime: Date.now(), completionRequested: true };
-      });
-    } else if (hasCryptoTxConfirm) {
-      // Start second leg after blockchain confirms - first leg should be done by now
-      setJourneyState(prev => ({
-        ...prev,
-        status: prev.status === 'idle' ? 'traveling' : prev.status,
-        startTime: prev.startTime || Date.now()
-      }));
-    } else if (!isStreaming && events.length === 0) {
-      setJourneyState({ progress: 0, status: 'idle', startTime: null });
+    if (!isStreaming && events.length === 0) {
+      setJourneyState({ progress: 0, status: 'idle' });
+      return;
     }
+
+    // Second leg only starts AFTER blockchain settlement (crypto_complete)
+    if (!hasCryptoComplete) {
+      return;
+    }
+
+    // Calculate progress directly from events
+    const eventProgress = calculateSecondLegProgress(events);
+
+    let newStatus = 'traveling';
+    let finalProgress = eventProgress;
+
+    if (hasComplete) {
+      newStatus = 'complete';
+      finalProgress = 100;
+    } else {
+      // Just started - blockchain settled, now moving to final destination
+      newStatus = 'traveling';
+      finalProgress = Math.max(eventProgress, 20);
+    }
+
+    setJourneyState({
+      progress: finalProgress,
+      status: newStatus
+    });
+
   }, [events, isStreaming]);
-
-  // Animate progress when traveling or completing
-  React.useEffect(() => {
-    if (journeyState.status === 'traveling' || journeyState.status === 'completing') {
-      const interval = setInterval(() => {
-        setJourneyState(prev => {
-          // For completing status, animate to 100 then mark complete
-          if (prev.status === 'completing') {
-            if (prev.progress >= 100) {
-              return { ...prev, progress: 100, status: 'complete' };
-            }
-            return { ...prev, progress: Math.min(prev.progress + 1, 100) };
-          }
-
-          // Check if completion was requested and we've traveled enough
-          if (prev.completionRequested && prev.progress >= 50) {
-            return { ...prev, status: 'completing' };
-          }
-
-          if (prev.progress >= 95) {
-            return prev; // Wait for complete event
-          }
-          return {
-            ...prev,
-            progress: Math.min(prev.progress + 1, 95) // Same speed as first leg
-          };
-        });
-      }, 100); // Same interval as first leg
-      return () => clearInterval(interval);
-    }
-  }, [journeyState.status]);
 
   // Adjust coordinates
   let [fromLng, fromLat] = from;
@@ -755,7 +746,8 @@ function AnimatedPaymentJourneySecondLeg({ from, to, events, isStreaming }) {
             strokeWidth={2}
             opacity={0.5}
             style={{
-              animation: 'travelPulse 1s infinite'
+              animation: 'travelPulse 1s infinite',
+              transition: 'cx 0.4s ease-out, cy 0.4s ease-out'
             }}
           />
           {/* Main marker */}
@@ -766,6 +758,7 @@ function AnimatedPaymentJourneySecondLeg({ from, to, events, isStreaming }) {
             fill="#7C3AED"
             stroke="white"
             strokeWidth={2}
+            style={{ transition: 'cx 0.4s ease-out, cy 0.4s ease-out' }}
           />
         </g>
       )}
@@ -830,6 +823,7 @@ export default function GeographicMapPanel({
   const [hoveredCountry, setHoveredCountry] = useState(null);
   const [selectedTabIndex, setSelectedTabIndex] = useState(0);
   const [firstLegAnimationComplete, setFirstLegAnimationComplete] = useState(false);
+  const [showFinalDestination, setShowFinalDestination] = useState(false); // Shows Mexico dot at hop1_complete
   const [isMounted, setIsMounted] = useState(false);
   const [isJourneyComplete, setIsJourneyComplete] = useState(false);
 
@@ -849,9 +843,20 @@ export default function GeographicMapPanel({
   React.useEffect(() => {
     if (!isStreaming && events.length === 0) {
       setFirstLegAnimationComplete(false);
+      setShowFinalDestination(false);
       setIsJourneyComplete(false);
     }
   }, [isStreaming, events.length]);
+
+  // Show final destination marker when payment reaches intermediate point (for crypto scenarios)
+  React.useEffect(() => {
+    const hasCryptoEvents = events.some(e => e.type?.startsWith('crypto_'));
+    const hasHop1Complete = events.some(e => e.type === 'hop1_complete');
+
+    if (hasCryptoEvents && hasHop1Complete && !showFinalDestination) {
+      setShowFinalDestination(true);
+    }
+  }, [events, showFinalDestination]);
 
   // Get country ISO codes for highlighting (simplified mapping)
   const getCountryISO = (countryName) => {
@@ -1129,90 +1134,92 @@ export default function GeographicMapPanel({
               </Marker>
             )}
 
-            {/* Third Hop Arc and Final Destination - appears when first leg animation completes */}
+            {/* Third Hop Arc - appears only after blockchain settlement (crypto_complete) */}
+            {/* Rendered BEFORE marker so marker appears on top */}
             {scenario?.finalCountry?.coords && scenario?.targetCountry?.coords &&
              firstLegAnimationComplete && (
-              <>
-                {/* Arc from intermediate to final destination */}
-                <CustomArcPath
-                  from={scenario.targetCountry.coords}
-                  to={scenario.finalCountry.coords}
-                  stroke="#7C3AED"
-                  strokeWidth={2.5}
-                  isStreaming={false}
-                />
-                {/* Final Destination Marker with pop animation */}
-                <Marker coordinates={scenario.finalCountry.coords}>
-                  {/* City Label */}
-                  <text
-                    textAnchor="middle"
-                    y={-20}
+              <CustomArcPath
+                from={scenario.targetCountry.coords}
+                to={scenario.finalCountry.coords}
+                stroke="#7C3AED"
+                strokeWidth={2.5}
+                isStreaming={false}
+              />
+            )}
+
+            {/* Final Destination Marker - appears when payment reaches intermediate (hop1_complete) */}
+            {/* Rendered AFTER arc so it appears on top */}
+            {scenario?.finalCountry?.coords && showFinalDestination && (
+              <Marker coordinates={scenario.finalCountry.coords}>
+                {/* City Label */}
+                <text
+                  textAnchor="middle"
+                  y={-20}
+                  style={{
+                    fontSize: '11px',
+                    fill: '#1C2D38',
+                    fontWeight: '600',
+                    pointerEvents: 'none',
+                    animation: 'fadeIn 0.5s ease-out forwards'
+                  }}
+                >
+                  {scenario.finalCountry.city}
+                </text>
+                {/* Animated entrance group */}
+                <g style={{ animation: 'popIn 0.5s ease-out forwards' }}>
+                  {/* Outer pulse ring */}
+                  <circle
+                    r={12}
+                    fill="none"
+                    stroke={isJourneyComplete ? '#00A35C' : (firstLegAnimationComplete ? '#7C3AED' : '#FFC010')}
+                    strokeWidth={2}
+                    opacity={0.4}
                     style={{
-                      fontSize: '11px',
-                      fill: '#1C2D38',
-                      fontWeight: '600',
-                      pointerEvents: 'none',
-                      animation: 'fadeIn 0.5s ease-out forwards'
+                      animation: isJourneyComplete
+                        ? 'successPulse 0.8s ease-out'
+                        : 'markerPulse 2s ease-out infinite 1s'
                     }}
-                  >
-                    {scenario.finalCountry.city}
-                  </text>
-                  {/* Animated entrance group */}
-                  <g style={{ animation: 'popIn 0.5s ease-out forwards' }}>
-                    {/* Outer pulse ring */}
-                    <circle
-                      r={12}
-                      fill="none"
-                      stroke={isJourneyComplete ? '#00A35C' : '#7C3AED'}
-                      strokeWidth={2}
-                      opacity={0.4}
-                      style={{
-                        animation: isJourneyComplete
-                          ? 'successPulse 0.8s ease-out'
-                          : 'markerPulse 2s ease-out infinite 1s'
-                      }}
-                    />
-                    {/* Main dot - Green when complete, Purple for crypto in progress */}
-                    <circle
-                      r={8}
-                      fill={isJourneyComplete ? '#00A35C' : '#7C3AED'}
-                      stroke="white"
-                      strokeWidth={2}
-                      style={{ transition: 'fill 0.3s ease' }}
-                    />
-                    {/* Checkmark when complete */}
-                    {isJourneyComplete && (
-                      <text
-                        textAnchor="middle"
-                        dominantBaseline="central"
-                        fontSize="10"
-                        fontWeight="bold"
-                        fill="white"
-                        style={{ pointerEvents: 'none' }}
-                      >
-                        ✓
-                      </text>
-                    )}
-                  </g>
-                  {/* Crypto Badge - below marker (hide when complete) */}
-                  {!isJourneyComplete && (
+                  />
+                  {/* Main dot - Green when complete, Purple when arc active, Yellow when waiting */}
+                  <circle
+                    r={8}
+                    fill={isJourneyComplete ? '#00A35C' : (firstLegAnimationComplete ? '#7C3AED' : '#FFC010')}
+                    stroke="white"
+                    strokeWidth={2}
+                    style={{ transition: 'fill 0.3s ease' }}
+                  />
+                  {/* Checkmark when complete */}
+                  {isJourneyComplete && (
                     <text
                       textAnchor="middle"
-                      y={22}
-                      style={{
-                        fontSize: '8px',
-                        fill: '#7C3AED',
-                        fontWeight: '700',
-                        pointerEvents: 'none',
-                        animation: 'fadeIn 0.5s ease-out 0.2s forwards',
-                        opacity: 0
-                      }}
+                      dominantBaseline="central"
+                      fontSize="10"
+                      fontWeight="bold"
+                      fill="white"
+                      style={{ pointerEvents: 'none' }}
                     >
-                      SOLANA
+                      ✓
                     </text>
                   )}
-                </Marker>
-              </>
+                </g>
+                {/* Crypto Badge - below marker (hide when complete) */}
+                {!isJourneyComplete && (
+                  <text
+                    textAnchor="middle"
+                    y={22}
+                    style={{
+                      fontSize: '8px',
+                      fill: firstLegAnimationComplete ? '#7C3AED' : '#FFC010',
+                      fontWeight: '700',
+                      pointerEvents: 'none',
+                      animation: 'fadeIn 0.5s ease-out 0.2s forwards',
+                      opacity: 0
+                    }}
+                  >
+                    {firstLegAnimationComplete ? 'SOLANA' : 'AWAITING'}
+                  </text>
+                )}
+              </Marker>
             )}
           </ComposableMap>
           {/* Story overlay - appears over the map */}

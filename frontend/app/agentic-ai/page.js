@@ -63,6 +63,24 @@ function isConversionHopEvent(event) {
   return hopEventTypes.includes(event.type);
 }
 
+/**
+ * Check if an event is crypto/blockchain related
+ * These events need longer delays for better demo pacing
+ */
+function isCryptoEvent(event) {
+  const cryptoEventTypes = [
+    'crypto_start',
+    'crypto_wallet_extract',
+    'crypto_balance_check',
+    'crypto_tx_build',
+    'crypto_tx_sign',
+    'crypto_tx_submit',
+    'crypto_tx_confirm',
+    'crypto_complete'
+  ];
+  return cryptoEventTypes.includes(event.type);
+}
+
 export default function AgenticAIPage() {
   // State Management
   const [isPanelExpanded, setIsPanelExpanded] = useState(true);
@@ -86,7 +104,9 @@ export default function AgenticAIPage() {
   // Queue events and release them at a controlled rate for better UX
   const eventQueueRef = useRef([]);
   const throttleTimerRef = useRef(null);
-  const EVENT_DISPLAY_DELAY = 700; // ms between events for non-agentic scenarios
+  const pendingOutputRef = useRef(null); // Store output until queue is empty
+  const EVENT_DISPLAY_DELAY = 400; // ms between events for non-agentic scenarios
+  const CRYPTO_EVENT_DELAY = 1000; // ms between events for crypto scenarios (~10s total, ensures 1s per card)
 
   // Human-in-the-loop review state
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
@@ -134,17 +154,32 @@ export default function AgenticAIPage() {
   const processEventQueue = () => {
     if (eventQueueRef.current.length === 0) {
       throttleTimerRef.current = null;
+      // Apply pending output when queue is empty (so output appears after all events)
+      if (pendingOutputRef.current) {
+        const { output: pendingOutput, stats: pendingStats, totalTime: pendingTotalTime } = pendingOutputRef.current;
+        if (pendingOutput) setOutput(pendingOutput);
+        if (pendingStats) setStats(pendingStats);
+        if (pendingTotalTime) setTotalTime(pendingTotalTime);
+        pendingOutputRef.current = null;
+      }
       return;
     }
 
     const nextEvent = eventQueueRef.current.shift();
     setEvents(prev => [...prev, nextEvent]);
 
-    // Schedule next event
+    // Schedule next event with appropriate delay
+    // Crypto scenarios and crypto events use longer delay for better demo pacing (~15s total)
     if (eventQueueRef.current.length > 0) {
-      throttleTimerRef.current = setTimeout(processEventQueue, EVENT_DISPLAY_DELAY);
+      const scenario = getScenario(selectedScenario);
+      const isCryptoScenario = scenario?.isCryptoSettlement === true;
+      const upcomingEvent = eventQueueRef.current[0];
+      const useCryptoDelay = isCryptoScenario || isCryptoEvent(nextEvent) || isCryptoEvent(upcomingEvent);
+      const delay = useCryptoDelay ? CRYPTO_EVENT_DELAY : EVENT_DISPLAY_DELAY;
+      throttleTimerRef.current = setTimeout(processEventQueue, delay);
     } else {
-      throttleTimerRef.current = null;
+      // Queue just became empty - schedule one more call to apply pending output
+      throttleTimerRef.current = setTimeout(processEventQueue, 100);
     }
   };
 
@@ -155,9 +190,13 @@ export default function AgenticAIPage() {
     const enrichedEvent = { ...eventData, timestamp, id };
     console.log('✅ Event Added:', eventData.type, eventData);
 
-    // Check if this is a non-agentic scenario (needs throttling)
+    // Check scenario properties for throttling decisions
     const scenario = getScenario(selectedScenario);
     const isNonAgentic = scenario?.isAgentic === false;
+    const isCryptoScenario = scenario?.isCryptoSettlement === true;
+
+    // Check if this event or scenario needs crypto-level delays
+    const useCryptoDelay = isCryptoScenario || isCryptoEvent(eventData);
 
     if (isNonAgentic && isConversionHopEvent(eventData)) {
       // Queue the event for throttled display
@@ -165,7 +204,12 @@ export default function AgenticAIPage() {
 
       // Start processing if not already running
       if (!throttleTimerRef.current) {
-        processEventQueue();
+        // Crypto scenarios use longer delays throughout for better demo pacing (~15s total)
+        if (useCryptoDelay) {
+          throttleTimerRef.current = setTimeout(processEventQueue, CRYPTO_EVENT_DELAY);
+        } else {
+          processEventQueue();
+        }
       }
     } else {
       // Agentic scenarios - add immediately (agent processing provides natural delays)
@@ -280,8 +324,9 @@ export default function AgenticAIPage() {
     setHop2Details(null);
     setConversionRunId(null);
     setLogsRenderComplete(false); // Reset animation sync
-    // Clear event queue for fresh simulation
+    // Clear event queue and pending output for fresh simulation
     eventQueueRef.current = [];
+    pendingOutputRef.current = null;
     if (throttleTimerRef.current) {
       clearTimeout(throttleTimerRef.current);
       throttleTimerRef.current = null;
@@ -359,9 +404,28 @@ export default function AgenticAIPage() {
 
               // Handle complete event
               if (eventData.type === 'complete') {
-                setOutput(eventData.data?.output || eventData.output || '');
-                setStats(eventData.data?.processing_stats || null);
-                setTotalTime(eventData.data?.total_time || 0);
+                const completeOutput = eventData.data?.output || eventData.output || '';
+                const completeStats = eventData.data?.processing_stats || null;
+                const completeTotalTime = eventData.data?.total_time || 0;
+
+                // For throttled scenarios, store output until queue empties
+                // This ensures the output card appears AFTER all events are displayed
+                const completeScenario = getScenario(selectedScenario);
+                const isThrottled = completeScenario?.isAgentic === false;
+
+                if (isThrottled && eventQueueRef.current.length > 0) {
+                  // Store for later - will be applied when queue empties
+                  pendingOutputRef.current = {
+                    output: completeOutput,
+                    stats: completeStats,
+                    totalTime: completeTotalTime
+                  };
+                } else {
+                  // Not throttled or queue already empty - set immediately
+                  setOutput(completeOutput);
+                  setStats(completeStats);
+                  setTotalTime(completeTotalTime);
+                }
               }
 
               // Handle error event

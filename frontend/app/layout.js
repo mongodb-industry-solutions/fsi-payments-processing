@@ -32,7 +32,7 @@ function Navigation() {
               <path d="M8 2L10 6L14 6.5L11 9.5L12 14L8 11.5L4 14L5 9.5L2 6.5L6 6L8 2Z" stroke="currentColor" strokeWidth="1.5" fill="none"/>
               <circle cx="8" cy="8" r="1.5" fill="currentColor"/>
             </svg>
-            <span>Smart Converter</span>
+            <span>Smart Processor</span>
           </Link>
           <Link
             href="/config-builder"

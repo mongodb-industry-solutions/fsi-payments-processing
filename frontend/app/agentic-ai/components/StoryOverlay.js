@@ -9,13 +9,13 @@ import React, { useState, useEffect, useRef } from 'react';
 function StoryCard({ step, position, totalSteps, currentIndex, onPrev, onNext, canGoPrev, canGoNext }) {
   if (!step) return null;
 
-  // Position styles with adequate spacing from edges (24px recommended)
+  // Position styles with compact spacing from edges
   const positionStyles = {
-    'top-left': { top: '24px', left: '24px' },
-    'top-right': { top: '24px', right: '24px' },
-    'bottom-left': { bottom: '24px', left: '24px' },
-    'bottom-right': { bottom: '24px', right: '24px' },
-    'bottom-center': { bottom: '24px', left: '50%', transform: 'translateX(-50%)' }
+    'top-left': { top: '16px', left: '16px' },
+    'top-right': { top: '16px', right: '16px' },
+    'bottom-left': { bottom: '16px', left: '16px' },
+    'bottom-right': { bottom: '16px', right: '16px' },
+    'bottom-center': { bottom: '16px', left: '50%', transform: 'translateX(-50%)' }
   };
 
   const iconMap = {
@@ -62,9 +62,9 @@ function StoryCard({ step, position, totalSteps, currentIndex, onPrev, onNext, c
         position: 'absolute',
         ...positionStyles[position || 'bottom-center'],
         zIndex: 100,
-        // Optimal width: 280-320px for readability without being too wide
-        width: '300px',
-        maxWidth: 'calc(100% - 48px)',
+        // Compact width that scales well at 100% zoom
+        width: 'min(260px, 22vw)',
+        maxWidth: 'calc(100% - 32px)',
         // Professional animation: 200ms is snappy yet smooth
         animation: isBottomCenter ? 'storyCardEnterCenter 0.2s ease-out forwards' : 'storyCardEnter 0.2s ease-out forwards'
       }}
@@ -72,74 +72,74 @@ function StoryCard({ step, position, totalSteps, currentIndex, onPrev, onNext, c
       {/* Card container with glassmorphism (frosted glass effect) */}
       <div
         style={{
-          background: 'rgba(255, 255, 255, 0.78)',
-          backdropFilter: 'blur(16px)',
-          WebkitBackdropFilter: 'blur(16px)',
-          borderRadius: '16px',
-          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06)',
-          border: '1px solid rgba(255, 255, 255, 0.4)',
+          background: 'rgba(255, 255, 255, 0.82)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          borderRadius: '12px',
+          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.10), 0 1px 4px rgba(0, 0, 0, 0.05)',
+          border: '1px solid rgba(255, 255, 255, 0.5)',
           overflow: 'hidden'
         }}
       >
-        {/* Colored accent bar - 4px for visual prominence */}
+        {/* Colored accent bar - 3px for visual prominence */}
         <div
           style={{
-            height: '4px',
+            height: '3px',
             background: step.color || '#00A35C',
           }}
         />
 
-        {/* Content with adequate padding (16px horizontal, 14px vertical) */}
-        <div style={{ padding: '14px 16px' }}>
+        {/* Content with compact padding */}
+        <div style={{ padding: '10px 12px' }}>
           {/* Header row with proper alignment */}
           <div
             style={{
               display: 'flex',
               alignItems: 'flex-start',
-              gap: '12px',
-              marginBottom: '8px'
+              gap: '8px',
+              marginBottom: '6px'
             }}
           >
-            {/* Icon container - 32px with frosted glass look */}
+            {/* Icon container - compact 26px */}
             <div
               style={{
-                width: '32px',
-                height: '32px',
-                borderRadius: '10px',
+                width: '26px',
+                height: '26px',
+                borderRadius: '7px',
                 background: 'rgba(255, 255, 255, 0.6)',
                 border: `1px solid ${step.color ? `${step.color}30` : 'rgba(0, 163, 92, 0.2)'}`,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '16px',
+                fontSize: '13px',
                 flexShrink: 0
               }}
             >
               {iconMap[step.icon] || step.icon || '📋'}
             </div>
 
-            {/* Title - 14px semibold for hierarchy */}
+            {/* Title - 12px semibold for hierarchy */}
             <div
               style={{
-                fontSize: '14px',
+                fontSize: '12px',
                 fontWeight: '600',
                 color: '#1C2D38',
-                lineHeight: '1.35',
+                lineHeight: '1.4',
                 flex: 1,
-                paddingTop: '4px'
+                paddingTop: '3px'
               }}
             >
               {step.title}
             </div>
           </div>
 
-          {/* Description - 13px for optimal readability */}
+          {/* Description - 11px compact */}
           <div
             style={{
-              fontSize: '13px',
+              fontSize: '11px',
               color: '#5C6C75',
-              lineHeight: '1.5',
-              marginLeft: '44px'
+              lineHeight: '1.45',
+              marginLeft: '34px'
             }}
           >
             {step.description}
@@ -149,16 +149,16 @@ function StoryCard({ step, position, totalSteps, currentIndex, onPrev, onNext, c
           {step.highlight && (
             <div
               style={{
-                marginTop: '10px',
-                marginLeft: '44px',
-                padding: '8px 12px',
+                marginTop: '8px',
+                marginLeft: '34px',
+                padding: '5px 8px',
                 background: 'rgba(255, 255, 255, 0.5)',
-                borderRadius: '8px',
-                borderLeft: `3px solid ${step.color || '#00A35C'}`,
-                fontSize: '12px',
+                borderRadius: '6px',
+                borderLeft: `2px solid ${step.color || '#00A35C'}`,
+                fontSize: '10px',
                 color: '#1C2D38',
                 fontWeight: '500',
-                lineHeight: '1.4',
+                lineHeight: '1.35',
                 fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace'
               }}
             >
@@ -172,12 +172,12 @@ function StoryCard({ step, position, totalSteps, currentIndex, onPrev, onNext, c
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              marginTop: '14px',
-              paddingTop: '12px',
+              marginTop: '10px',
+              paddingTop: '8px',
               borderTop: '1px solid rgba(255, 255, 255, 0.5)'
             }}
           >
-            {/* Previous button - 32px min touch target */}
+            {/* Previous button - compact 24px */}
             <button
               onClick={onPrev}
               disabled={!canGoPrev}
@@ -185,14 +185,14 @@ function StoryCard({ step, position, totalSteps, currentIndex, onPrev, onNext, c
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                width: '32px',
-                height: '32px',
+                width: '24px',
+                height: '24px',
                 border: 'none',
                 background: canGoPrev ? 'rgba(255, 255, 255, 0.6)' : 'transparent',
-                borderRadius: '8px',
+                borderRadius: '6px',
                 cursor: canGoPrev ? 'pointer' : 'default',
                 color: canGoPrev ? '#1C2D38' : '#C1C7CD',
-                fontSize: '14px',
+                fontSize: '11px',
                 transition: 'all 0.15s ease',
                 pointerEvents: 'auto'
               }}
@@ -202,14 +202,14 @@ function StoryCard({ step, position, totalSteps, currentIndex, onPrev, onNext, c
             </button>
 
             {/* Step indicator - pill style for current, dots for others */}
-            <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: '3px', alignItems: 'center' }}>
               {Array.from({ length: totalSteps }).map((_, i) => (
                 <div
                   key={i}
                   style={{
-                    width: i === currentIndex ? '16px' : '6px',
-                    height: '6px',
-                    borderRadius: '3px',
+                    width: i === currentIndex ? '12px' : '4px',
+                    height: '4px',
+                    borderRadius: '2px',
                     background: i === currentIndex
                       ? (step.color || '#00A35C')
                       : (i < currentIndex ? `${step.color || '#00A35C'}60` : '#E0E2E5'),
@@ -219,7 +219,7 @@ function StoryCard({ step, position, totalSteps, currentIndex, onPrev, onNext, c
               ))}
             </div>
 
-            {/* Next button - 32px min touch target */}
+            {/* Next button - compact 24px */}
             <button
               onClick={onNext}
               disabled={!canGoNext}
@@ -227,14 +227,14 @@ function StoryCard({ step, position, totalSteps, currentIndex, onPrev, onNext, c
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                width: '32px',
-                height: '32px',
+                width: '24px',
+                height: '24px',
                 border: 'none',
                 background: canGoNext ? 'rgba(255, 255, 255, 0.6)' : 'transparent',
-                borderRadius: '8px',
+                borderRadius: '6px',
                 cursor: canGoNext ? 'pointer' : 'default',
                 color: canGoNext ? '#1C2D38' : '#C1C7CD',
-                fontSize: '14px',
+                fontSize: '11px',
                 transition: 'all 0.15s ease',
                 pointerEvents: 'auto'
               }}
@@ -254,9 +254,11 @@ function StoryCard({ step, position, totalSteps, currentIndex, onPrev, onNext, c
  * Displays sequential story cards synced with transaction events
  * Cards persist and can be navigated with back/forward arrows
  * Position is calculated relative to country locations on the map
+ *
+ * KEY DESIGN: Story cards advance IMMEDIATELY when events arrive.
+ * Event timing is controlled by page.js event queue throttling (400ms/1000ms).
+ * No independent timing here - we trust the event queue for pacing.
  */
-const MIN_DISPLAY_TIME = 1500; // Minimum time (ms) each card stays visible
-
 export default function StoryOverlay({
   story = [],
   isActive = false,
@@ -267,8 +269,6 @@ export default function StoryOverlay({
   const [currentViewIndex, setCurrentViewIndex] = useState(0); // Which step user is viewing
   const [autoAdvance, setAutoAdvance] = useState(true); // Whether to auto-advance to new steps
   const triggeredStepsRef = useRef(new Set()); // Track which triggers have fired
-  const lastAdvanceTimeRef = useRef(Date.now()); // When current card was shown
-  const pendingAdvanceRef = useRef(null); // Pending advance timer
 
   // Helper to reset all state
   const resetState = () => {
@@ -276,11 +276,6 @@ export default function StoryOverlay({
     setCurrentViewIndex(0);
     setAutoAdvance(true);
     triggeredStepsRef.current = new Set();
-    lastAdvanceTimeRef.current = Date.now();
-    if (pendingAdvanceRef.current) {
-      clearTimeout(pendingAdvanceRef.current);
-      pendingAdvanceRef.current = null;
-    }
   };
 
   // Reset when scenario changes (story array reference changes)
@@ -306,59 +301,19 @@ export default function StoryOverlay({
     }
   }, [isStreaming, events.length]);
 
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (pendingAdvanceRef.current) {
-        clearTimeout(pendingAdvanceRef.current);
-      }
-    };
-  }, []);
-
-  // Handle auto-advance with minimum display time
-  const scheduleAdvance = (newStepsLength) => {
-    if (!autoAdvance) return;
-
-    const timeSinceLastAdvance = Date.now() - lastAdvanceTimeRef.current;
-    const targetIndex = newStepsLength - 1;
-
-    // Clear any pending advance
-    if (pendingAdvanceRef.current) {
-      clearTimeout(pendingAdvanceRef.current);
-      pendingAdvanceRef.current = null;
-    }
-
-    if (timeSinceLastAdvance >= MIN_DISPLAY_TIME) {
-      // Enough time has passed, advance immediately
-      setCurrentViewIndex(targetIndex);
-      lastAdvanceTimeRef.current = Date.now();
-    } else {
-      // Schedule advance after remaining time
-      const remainingTime = MIN_DISPLAY_TIME - timeSinceLastAdvance;
-      pendingAdvanceRef.current = setTimeout(() => {
-        setCurrentViewIndex(prev => {
-          // Only advance if we're still supposed to auto-advance
-          // and there are newer steps to show
-          if (autoAdvance) {
-            lastAdvanceTimeRef.current = Date.now();
-            return targetIndex;
-          }
-          return prev;
-        });
-        pendingAdvanceRef.current = null;
-      }, remainingTime);
-    }
-  };
-
   // Process events and trigger story steps
+  // NOTE: We process based on events array content, NOT isStreaming status.
+  // Events are throttled in page.js and continue arriving after SSE stream ends.
+  // The triggeredStepsRef prevents duplicates, so it's safe to run on every event change.
   useEffect(() => {
     if (!isActive || story.length === 0) return;
-
-    // Allow processing if streaming OR if we have a complete event (streaming just ended)
-    const hasCompleteEvent = events.some(e => e.type === 'complete');
-    if (!isStreaming && !hasCompleteEvent) return;
+    if (events.length === 0) return; // Nothing to process
 
     const eventTypes = new Set(events.map(e => e.type));
+
+    // Collect ALL new steps that should be triggered in this render cycle
+    // Using a single atomic setState prevents React batching issues
+    const newStepsToAdd = [];
 
     // Check each story step's trigger condition
     story.forEach((step, index) => {
@@ -398,7 +353,9 @@ export default function StoryOverlay({
           shouldTrigger = eventTypes.has('tool_call');
           break;
         case 'agent_complete':
-          shouldTrigger = eventTypes.has('agent_complete');
+          // Backend sends 'agent_complete' for auto-approved resolutions
+          // or 'agent_execution' for human-in-the-loop approved resolutions
+          shouldTrigger = eventTypes.has('agent_complete') || eventTypes.has('agent_execution');
           break;
         case 'crypto_start':
           shouldTrigger = eventTypes.has('crypto_start');
@@ -429,32 +386,32 @@ export default function StoryOverlay({
       }
 
       if (shouldTrigger) {
+        // Mark as triggered in ref (synchronous)
         triggeredStepsRef.current.add(triggerId);
-
-        const delay = step.delay || 0;
-
-        setTimeout(() => {
-          setTriggeredSteps(prev => {
-            const newSteps = [...prev, { ...step, index, triggerId }];
-            // Schedule auto-advance with minimum display time
-            scheduleAdvance(newSteps.length);
-            return newSteps;
-          });
-        }, delay);
+        // Collect for batch addition
+        newStepsToAdd.push({ ...step, index, triggerId });
       }
     });
-  }, [isActive, isStreaming, story, events, autoAdvance]);
 
-  // Navigation handlers
+    // Single atomic state update with ALL new steps
+    // This prevents React batching from dropping steps
+    if (newStepsToAdd.length > 0) {
+      setTriggeredSteps(prev => [...prev, ...newStepsToAdd]);
+    }
+  }, [isActive, story, events]);
+
+  // Auto-advance to latest step when new steps are added
+  // Separate useEffect avoids React batching issues with nested setState calls
+  useEffect(() => {
+    if (autoAdvance && triggeredSteps.length > 0) {
+      setCurrentViewIndex(triggeredSteps.length - 1);
+    }
+  }, [triggeredSteps.length, autoAdvance]);
+
+  // Navigation handlers - simplified, no timing logic needed
   const handlePrev = () => {
     setAutoAdvance(false); // User manually navigated, stop auto-advance
-    // Clear any pending auto-advance
-    if (pendingAdvanceRef.current) {
-      clearTimeout(pendingAdvanceRef.current);
-      pendingAdvanceRef.current = null;
-    }
     setCurrentViewIndex(prev => Math.max(0, prev - 1));
-    lastAdvanceTimeRef.current = Date.now();
   };
 
   const handleNext = () => {
@@ -464,7 +421,6 @@ export default function StoryOverlay({
       if (next === triggeredSteps.length - 1) {
         setAutoAdvance(true);
       }
-      lastAdvanceTimeRef.current = Date.now();
       return next;
     });
   };
