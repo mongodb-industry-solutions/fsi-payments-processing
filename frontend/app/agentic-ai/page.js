@@ -167,6 +167,8 @@ export default function AgenticAIPage() {
 
     const nextEvent = eventQueueRef.current.shift();
     setEvents(prev => [...prev, nextEvent]);
+    // Auto-expand new events
+    setExpandedEvents(prev => new Set([...prev, nextEvent.id]));
 
     // Schedule next event with appropriate delay
     // Crypto scenarios and crypto events use longer delay for better demo pacing (~15s total)
@@ -214,6 +216,8 @@ export default function AgenticAIPage() {
     } else {
       // Agentic scenarios - add immediately (agent processing provides natural delays)
       setEvents(prev => [...prev, enrichedEvent]);
+      // Auto-expand new events
+      setExpandedEvents(prev => new Set([...prev, enrichedEvent.id]));
     }
   };
 

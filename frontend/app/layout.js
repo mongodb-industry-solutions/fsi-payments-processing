@@ -29,8 +29,9 @@ function Navigation() {
             className={`nav-link ${pathname === '/agentic-ai' ? 'active' : ''}`}
           >
             <svg className="nav-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <path d="M8 2L10 6L14 6.5L11 9.5L12 14L8 11.5L4 14L5 9.5L2 6.5L6 6L8 2Z" stroke="currentColor" strokeWidth="1.5" fill="none"/>
-              <circle cx="8" cy="8" r="1.5" fill="currentColor"/>
+              <path d="M8 1L9 6L14 7L9 8L8 13L7 8L2 7L7 6L8 1Z" fill="currentColor"/>
+              <path d="M12 2L12.5 4L14.5 4.5L12.5 5L12 7L11.5 5L9.5 4.5L11.5 4L12 2Z" fill="currentColor" opacity="0.6"/>
+              <path d="M4 10L4.5 11.5L6 12L4.5 12.5L4 14L3.5 12.5L2 12L3.5 11.5L4 10Z" fill="currentColor" opacity="0.6"/>
             </svg>
             <span>Smart Processor</span>
           </Link>
