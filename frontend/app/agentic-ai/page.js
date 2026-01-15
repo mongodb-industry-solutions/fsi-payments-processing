@@ -528,6 +528,15 @@ export default function AgenticAIPage() {
                 if (event.total_time) {
                   setTotalTime(event.total_time);
                 }
+                // Extract hop details from complete event (sent by streaming resume)
+                if (event.hop1_details) {
+                  console.log('📦 Captured hop1_details from complete event:', event.hop1_details);
+                  setHop1Details(event.hop1_details);
+                }
+                if (event.hop2_details) {
+                  console.log('📦 Captured hop2_details from complete event:', event.hop2_details);
+                  setHop2Details(event.hop2_details);
+                }
               }
 
               if (event.type === 'error') {
