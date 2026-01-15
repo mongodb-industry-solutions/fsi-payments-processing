@@ -1,0 +1,75 @@
+# FSI Payments Processing - Production Environment
+# Single-pod sidecar deployment: Frontend (main) + Converter + Agent (sidecars)
+
+env:
+  NODE_ENV: production
+
+# AWS IRSA Service Account
+serviceAccount:
+  enabled: true
+  irsa:
+    accountId: "275662791714"
+    roleName: "kanopy-prod-cicd-irsa"
+
+# Sidecar containers configuration
+sidecarContainers:
+  # Payment Converter V2 (port 8001)
+  - name: converter
+    image: 795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-converter-prod:latest
+    ports:
+      - containerPort: 8001
+        name: converter
+    env:
+      - name: MONGODB_URI
+        valueFrom:
+          secretKeyRef:
+            name: fsi-payments
+            key: MONGODB_URI
+      - name: DATABASE_NAME
+        valueFrom:
+          secretKeyRef:
+            name: fsi-payments
+            key: DATABASE_NAME
+      - name: VOYAGE_API_KEY
+        valueFrom:
+          secretKeyRef:
+            name: fsi-payments
+            key: VOYAGE_API_KEY
+      - name: SOLANA_RPC_ENDPOINT
+        valueFrom:
+          secretKeyRef:
+            name: fsi-payments
+            key: SOLANA_RPC_ENDPOINT
+      - name: SOLANA_PRIVATE_KEY
+        valueFrom:
+          secretKeyRef:
+            name: fsi-payments
+            key: SOLANA_PRIVATE_KEY
+      - name: SOLANA_PRIVATE_KEY_2
+        valueFrom:
+          secretKeyRef:
+            name: fsi-payments
+            key: SOLANA_PRIVATE_KEY_2
+      - name: SOLANA_NETWORK
+        valueFrom:
+          secretKeyRef:
+            name: fsi-payments
+            key: SOLANA_NETWORK
+
+  # Payment Agent (port 8002)
+  - name: agent
+    image: 795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-agent-prod:latest
+    ports:
+      - containerPort: 8002
+        name: agent
+    env:
+      - name: MONGODB_URI
+        valueFrom:
+          secretKeyRef:
+            name: fsi-payments
+            key: MONGODB_URI
+      - name: VOYAGE_API_KEY
+        valueFrom:
+          secretKeyRef:
+            name: fsi-payments
+            key: VOYAGE_API_KEY
