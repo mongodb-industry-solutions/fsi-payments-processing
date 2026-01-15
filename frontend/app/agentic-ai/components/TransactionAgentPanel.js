@@ -1,12 +1,14 @@
 'use client';
 
-import React from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { H2, Body } from '@leafygreen-ui/typography';
 import Card from '@leafygreen-ui/card';
 import Badge from '@leafygreen-ui/badge';
 import Icon from '@leafygreen-ui/icon';
 import EventItem from './EventItem';
 import OutputCard from './OutputCard';
+
+const AUTO_SCROLL_DELAY = 3000; // 3 seconds per event
 
 /**
  * Get agent status based on events and streaming state
@@ -46,9 +48,91 @@ export default function TransactionAgentPanel({
   const status = getAgentStatus(isStreaming, events, output);
   const hasActivity = events.length > 0 || output;
 
+  // Auto-scroll refs and state
+  const scrollContainerRef = useRef(null);
+  const eventRefsMap = useRef(new Map()); // Map of event.id -> DOM element
+  const lastScrolledIndexRef = useRef(-1);
+  const scrollTimerRef = useRef(null);
+  const scrollQueueRef = useRef([]);
+  const isProcessingScrollRef = useRef(false);
+
+  // Process scroll queue - scrolls to next event after delay
+  const processScrollQueue = () => {
+    if (scrollQueueRef.current.length === 0) {
+      isProcessingScrollRef.current = false;
+      return;
+    }
+
+    isProcessingScrollRef.current = true;
+    const nextEventId = scrollQueueRef.current.shift();
+    const element = eventRefsMap.current.get(nextEventId);
+
+    if (element && scrollContainerRef.current) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    // Schedule next scroll after delay
+    scrollTimerRef.current = setTimeout(() => {
+      processScrollQueue();
+    }, AUTO_SCROLL_DELAY);
+  };
+
+  // Queue new events for auto-scroll
+  useEffect(() => {
+    if (events.length === 0) {
+      // Reset on clear
+      lastScrolledIndexRef.current = -1;
+      scrollQueueRef.current = [];
+      if (scrollTimerRef.current) {
+        clearTimeout(scrollTimerRef.current);
+        scrollTimerRef.current = null;
+      }
+      isProcessingScrollRef.current = false;
+      return;
+    }
+
+    // Find new events that haven't been queued yet
+    const newEvents = events.slice(lastScrolledIndexRef.current + 1);
+    if (newEvents.length > 0) {
+      // Add new event IDs to scroll queue
+      newEvents.forEach(event => {
+        scrollQueueRef.current.push(event.id);
+      });
+      lastScrolledIndexRef.current = events.length - 1;
+
+      // Start processing if not already
+      if (!isProcessingScrollRef.current) {
+        processScrollQueue();
+      }
+    }
+  }, [events]);
+
+  // Scroll to output when it appears
+  useEffect(() => {
+    if (output && scrollContainerRef.current) {
+      // Add a delay then scroll to bottom for output
+      const timer = setTimeout(() => {
+        scrollContainerRef.current.scrollTo({
+          top: scrollContainerRef.current.scrollHeight,
+          behavior: 'smooth'
+        });
+      }, AUTO_SCROLL_DELAY);
+      return () => clearTimeout(timer);
+    }
+  }, [output]);
+
+  // Cleanup timers on unmount
+  useEffect(() => {
+    return () => {
+      if (scrollTimerRef.current) {
+        clearTimeout(scrollTimerRef.current);
+      }
+    };
+  }, []);
+
   // Notify parent when output card has rendered (for journey animation sync)
   // Use a small delay to ensure the DOM has updated and the output card is visible
-  React.useEffect(() => {
+  useEffect(() => {
     if (output && onOutputRendered) {
       // Small delay to ensure the output card has mounted and rendered
       const timer = setTimeout(() => {
@@ -105,16 +189,18 @@ export default function TransactionAgentPanel({
       </div>
 
       {/* Content */}
-      <div style={{
-        flex: 1,
-        overflow: 'auto',
-        scrollbarWidth: 'thin',
-        scrollbarColor: 'rgba(0, 0, 0, 0.2) transparent',
-        display: 'flex',
-        alignItems: hasActivity ? 'flex-start' : 'center',
-        justifyContent: 'center'
-      }}
-      className="custom-scrollbar"
+      <div
+        ref={scrollContainerRef}
+        style={{
+          flex: 1,
+          overflow: 'auto',
+          scrollbarWidth: 'thin',
+          scrollbarColor: 'rgba(0, 0, 0, 0.2) transparent',
+          display: 'flex',
+          alignItems: hasActivity ? 'flex-start' : 'center',
+          justifyContent: 'center'
+        }}
+        className="custom-scrollbar"
       >
         {!hasActivity ? (
           // Empty State
@@ -147,12 +233,20 @@ export default function TransactionAgentPanel({
           // Events Stream
           <div style={{ width: '100%' }}>
             {events.map((event) => (
-              <EventItem
+              <div
                 key={event.id}
-                event={event}
-                isExpanded={expandedEvents.has(event.id)}
-                onToggleExpand={() => onToggleEvent(event.id)}
-              />
+                ref={(el) => {
+                  if (el) {
+                    eventRefsMap.current.set(event.id, el);
+                  }
+                }}
+              >
+                <EventItem
+                  event={event}
+                  isExpanded={expandedEvents.has(event.id)}
+                  onToggleExpand={() => onToggleEvent(event.id)}
+                />
+              </div>
             ))}
 
             {/* Output Card (appears at the end when complete) */}

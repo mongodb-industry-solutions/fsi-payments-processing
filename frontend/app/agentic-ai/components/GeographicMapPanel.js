@@ -260,6 +260,9 @@ const EVENT_PROGRESS_MAP = {
   'complete': 100
 };
 
+// Sync marker progress with card display - same 3-second delay
+const MARKER_PROGRESS_DELAY = 3000;
+
 /**
  * Calculate progress directly from events array
  * Returns the highest progress value among all events
@@ -279,9 +282,9 @@ function calculateProgressFromEvents(events) {
  * AnimatedPaymentJourney Component
  * Visualizes payment traveling along the route with error handling
  *
- * KEY DESIGN: Progress is DIRECTLY derived from events array, not from independent timers.
- * This ensures map animation stays perfectly synced with transaction logs and story cards.
- * CSS transitions handle smooth interpolation between event-driven progress values.
+ * KEY DESIGN: Progress is QUEUED to sync with story cards and transaction logs.
+ * Events arrive and get queued, then progress updates every 3 seconds to match
+ * the card display and log scroll timing. CSS transitions handle smooth animation.
  *
  * @param {boolean} logsRenderComplete - Signal from transaction logs panel that output has rendered
  */
@@ -289,26 +292,76 @@ function AnimatedPaymentJourney({ from, to, events, isStreaming, onFirstLegCompl
   const { projection } = useMapContext();
 
   const [journeyState, setJourneyState] = React.useState({
-    progress: 0, // 0-100 - DIRECTLY derived from events
+    progress: 0, // 0-100 - queued and released with delay
     status: 'idle', // idle, traveling, error_awaiting_healing, agent_working, resolved, complete
     errorPosition: null,
     resolvedTimestamp: null // When resolution happened (for fade-out timing)
   });
 
+  // Queue-based progress system - syncs with card display timing
+  const progressQueueRef = React.useRef([]); // Queue of {progress, status, errorPosition} objects
+  const isProcessingQueueRef = React.useRef(false);
+  const queueTimerRef = React.useRef(null);
+  const lastQueuedEventCountRef = React.useRef(0);
+
   // Track previous status for first leg completion callback
   const prevStatusRef = React.useRef(journeyState.status);
 
-  // Calculate journey state DIRECTLY from events - NO independent timer
-  // Progress is derived from event types, not incremented over time
-  React.useEffect(() => {
-    console.log('🔄 Journey State Update - Events:', events.length, 'isStreaming:', isStreaming, 'logsRenderComplete:', logsRenderComplete);
-
-    if (!isStreaming && events.length === 0) {
-      setJourneyState({ progress: 0, status: 'idle', errorPosition: null, resolvedTimestamp: null });
+  // Process progress queue - releases progress updates with delay
+  const processProgressQueue = React.useCallback(() => {
+    if (progressQueueRef.current.length === 0) {
+      isProcessingQueueRef.current = false;
       return;
     }
 
-    // Calculate progress DIRECTLY from events
+    isProcessingQueueRef.current = true;
+    const nextState = progressQueueRef.current.shift();
+
+    // Apply the queued progress update
+    setJourneyState(prev => ({
+      ...nextState,
+      resolvedTimestamp: nextState.status === 'resolved' && !prev.resolvedTimestamp ? Date.now() : prev.resolvedTimestamp
+    }));
+
+    // Schedule next progress update after delay
+    queueTimerRef.current = setTimeout(() => {
+      processProgressQueue();
+    }, MARKER_PROGRESS_DELAY);
+  }, []);
+
+  // Reset queue when streaming starts fresh
+  React.useEffect(() => {
+    if (!isStreaming && events.length === 0) {
+      progressQueueRef.current = [];
+      isProcessingQueueRef.current = false;
+      lastQueuedEventCountRef.current = 0;
+      if (queueTimerRef.current) {
+        clearTimeout(queueTimerRef.current);
+        queueTimerRef.current = null;
+      }
+      setJourneyState({ progress: 0, status: 'idle', errorPosition: null, resolvedTimestamp: null });
+    }
+  }, [isStreaming, events.length]);
+
+  // Cleanup timer on unmount
+  React.useEffect(() => {
+    return () => {
+      if (queueTimerRef.current) {
+        clearTimeout(queueTimerRef.current);
+      }
+    };
+  }, []);
+
+  // Queue progress updates when new events arrive
+  // Progress is calculated and queued, then released with delay to match card timing
+  React.useEffect(() => {
+    if (!isStreaming && events.length === 0) return;
+    if (events.length === 0) return;
+
+    // Only process new events
+    if (events.length <= lastQueuedEventCountRef.current) return;
+
+    // Calculate progress from ALL events (to get the target state)
     const eventProgress = calculateProgressFromEvents(events);
 
     // Determine current status from events
@@ -317,62 +370,65 @@ function AnimatedPaymentJourney({ from, to, events, isStreaming, onFirstLegCompl
     const hasAgentComplete = events.some(e => e.type === 'agent_complete');
     const isComplete = events.some(e => e.type === 'complete');
 
-    // Check for crypto scenario - if crypto events exist, first leg should complete on hop1_complete
+    // Check for crypto scenario
     const hasCryptoEvents = events.some(e => e.type?.startsWith('crypto_'));
     const hasHop1Complete = events.some(e => e.type === 'hop1_complete');
 
-    console.log('📊 Event Analysis:', {
+    console.log('📊 Queuing Progress Update:', {
+      eventCount: events.length,
       eventProgress,
       hasError,
-      hasAgentStart,
       hasAgentComplete,
       isComplete,
-      hasCryptoEvents,
-      hasHop1Complete,
       logsRenderComplete
     });
 
-    // Determine status and final progress based on event analysis
+    // Determine status and final progress
     let newStatus = 'traveling';
     let finalProgress = eventProgress;
 
     if (hasHop1Complete && hasCryptoEvents) {
-      // Crypto scenario: first leg completes at hop1_complete
       newStatus = 'complete';
       finalProgress = 100;
     } else if (isComplete && logsRenderComplete) {
-      // Both complete event and logs rendered - truly complete
       newStatus = 'complete';
       finalProgress = 100;
     } else if (isComplete && !logsRenderComplete) {
-      // Complete event received but waiting for logs - hold at high progress
       newStatus = 'awaiting_logs';
       finalProgress = Math.max(eventProgress, 95);
     } else if (hasAgentComplete && !isComplete) {
-      // Agent resolved, continuing journey
       newStatus = 'resolved';
     } else if (hasAgentStart && hasError) {
-      // Agent working on error
       newStatus = 'agent_working';
     } else if (hasError && !hasAgentStart) {
-      // Error detected, waiting for agent
       newStatus = 'error_awaiting_healing';
     } else if (hasAgentStart) {
-      // Agent working (non-error case)
       newStatus = 'agent_working';
     } else if (isStreaming || events.length > 0) {
       newStatus = 'traveling';
     }
 
-    // Update state with event-derived progress
-    setJourneyState(prev => ({
+    // Queue the progress update
+    // Clear error marker when journey resolves or completes
+    const shouldShowError = hasError &&
+      newStatus !== 'complete' &&
+      newStatus !== 'resolved' &&
+      newStatus !== 'awaiting_logs';
+
+    progressQueueRef.current.push({
       progress: finalProgress,
       status: newStatus,
-      errorPosition: hasError ? 50 : null,
-      resolvedTimestamp: newStatus === 'resolved' && !prev.resolvedTimestamp ? Date.now() : prev.resolvedTimestamp
-    }));
+      errorPosition: shouldShowError ? 50 : null
+    });
 
-  }, [events, isStreaming, logsRenderComplete]);
+    lastQueuedEventCountRef.current = events.length;
+
+    // Start processing queue if not already running
+    if (!isProcessingQueueRef.current) {
+      processProgressQueue();
+    }
+
+  }, [events, isStreaming, logsRenderComplete, processProgressQueue]);
 
   // Notify parent when blockchain settlement completes (for crypto scenarios)
   // Second leg only shows after crypto_complete event (blockchain payment settled)
@@ -643,7 +699,7 @@ function calculateSecondLegProgress(events) {
  * AnimatedPaymentJourneySecondLeg Component
  * Animates the second leg of multi-hop crypto scenarios (USA -> Mexico)
  *
- * KEY DESIGN: Progress is DIRECTLY derived from events array, not from independent timers.
+ * KEY DESIGN: Progress is QUEUED to sync with story cards and transaction logs.
  * Second leg starts ONLY when crypto_complete event is received (blockchain settled).
  */
 function AnimatedPaymentJourneySecondLeg({ from, to, events, isStreaming }) {
@@ -654,22 +710,65 @@ function AnimatedPaymentJourneySecondLeg({ from, to, events, isStreaming }) {
     status: 'idle' // idle, traveling, complete
   });
 
-  // Calculate journey state DIRECTLY from events - NO independent timer
+  // Queue-based progress system
+  const progressQueueRef = React.useRef([]);
+  const isProcessingQueueRef = React.useRef(false);
+  const queueTimerRef = React.useRef(null);
+  const lastQueuedEventCountRef = React.useRef(0);
+
+  // Process progress queue
+  const processProgressQueue = React.useCallback(() => {
+    if (progressQueueRef.current.length === 0) {
+      isProcessingQueueRef.current = false;
+      return;
+    }
+
+    isProcessingQueueRef.current = true;
+    const nextState = progressQueueRef.current.shift();
+    setJourneyState(nextState);
+
+    queueTimerRef.current = setTimeout(() => {
+      processProgressQueue();
+    }, MARKER_PROGRESS_DELAY);
+  }, []);
+
+  // Reset queue when streaming resets
+  React.useEffect(() => {
+    if (!isStreaming && events.length === 0) {
+      progressQueueRef.current = [];
+      isProcessingQueueRef.current = false;
+      lastQueuedEventCountRef.current = 0;
+      if (queueTimerRef.current) {
+        clearTimeout(queueTimerRef.current);
+        queueTimerRef.current = null;
+      }
+      setJourneyState({ progress: 0, status: 'idle' });
+    }
+  }, [isStreaming, events.length]);
+
+  // Cleanup timer
+  React.useEffect(() => {
+    return () => {
+      if (queueTimerRef.current) {
+        clearTimeout(queueTimerRef.current);
+      }
+    };
+  }, []);
+
+  // Queue progress updates when new events arrive
   React.useEffect(() => {
     const hasCryptoComplete = events.some(e => e.type === 'crypto_complete');
     const hasComplete = events.some(e => e.type === 'complete');
 
-    if (!isStreaming && events.length === 0) {
-      setJourneyState({ progress: 0, status: 'idle' });
-      return;
-    }
+    if (!isStreaming && events.length === 0) return;
+    if (events.length <= lastQueuedEventCountRef.current) return;
 
-    // Second leg only starts AFTER blockchain settlement (crypto_complete)
+    // Second leg only starts AFTER blockchain settlement
     if (!hasCryptoComplete) {
+      lastQueuedEventCountRef.current = events.length;
       return;
     }
 
-    // Calculate progress directly from events
     const eventProgress = calculateSecondLegProgress(events);
 
     let newStatus = 'traveling';
@@ -679,17 +778,22 @@ function AnimatedPaymentJourneySecondLeg({ from, to, events, isStreaming }) {
       newStatus = 'complete';
       finalProgress = 100;
     } else {
-      // Just started - blockchain settled, now moving to final destination
       newStatus = 'traveling';
       finalProgress = Math.max(eventProgress, 20);
     }
 
-    setJourneyState({
+    progressQueueRef.current.push({
       progress: finalProgress,
       status: newStatus
     });
 
-  }, [events, isStreaming]);
+    lastQueuedEventCountRef.current = events.length;
+
+    if (!isProcessingQueueRef.current) {
+      processProgressQueue();
+    }
+
+  }, [events, isStreaming, processProgressQueue]);
 
   // Adjust coordinates
   let [fromLng, fromLat] = from;
