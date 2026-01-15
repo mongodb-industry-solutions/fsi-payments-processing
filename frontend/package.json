@@ -39,5 +39,9 @@
     "react-dom": "^19.1.1",
     "react-simple-maps": "^3.0.0",
     "react-syntax-highlighter": "^15.6.6"
+  },
+  "overrides": {
+    "d3-color": "^3.1.0",
+    "prismjs": "^1.30.0"
   }
 }
