@@ -18,7 +18,7 @@ function Navigation() {
             <path d="M12 22C12 22 11.5 20 11.5 17C11.5 14 12 12 12 12C12 12 12.5 14 12.5 17C12.5 20 12 22 12 22Z" fill="currentColor" opacity="0.5"/>
           </svg>
           <div className="nav-logo-text">
-            <span className="logo-primary">Agentic Payments Engine</span>
+            <span className="logo-primary">Agentic Payments Platform</span>
             <span className="logo-secondary">Powered by MongoDB</span>
           </div>
         </Link>
@@ -66,6 +66,10 @@ function Navigation() {
 export default function RootLayout({ children }) {
   return (
     <html lang="en" className={GeistSans.className}>
+      <head>
+        <title>Agentic Payments Platform</title>
+        <link rel="icon" href="/leaf-icon.svg" type="image/svg+xml" />
+      </head>
       <body>
         <LeafyGreenProvider>
           <Navigation />
