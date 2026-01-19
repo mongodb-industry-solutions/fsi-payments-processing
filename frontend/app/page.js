@@ -6,6 +6,7 @@ import Button from "@leafygreen-ui/button";
 import Icon from "@leafygreen-ui/icon";
 import { H1, H2, Subtitle, Body } from "@leafygreen-ui/typography";
 import Badge from "@leafygreen-ui/badge";
+import PaymentFlowIcon from "../components/PaymentFlowIcon";
 import styles from "./page.module.css";
 
 export default function Home() {
@@ -17,10 +18,14 @@ export default function Home() {
 
   return (
     <div className={styles.container}>
+      <div className={styles.contentWrapper}>
       <div className={styles.hero}>
-        <H1 className={styles.title}>
-          Agentic Payments Platform
-        </H1>
+        <div className={styles.titleRow}>
+          <PaymentFlowIcon size={56} className={styles.titleIcon} />
+          <H1 className={styles.title}>
+            Agentic Payments Platform
+          </H1>
+        </div>
         <Subtitle className={styles.subtitle}>
           Document-driven. Intelligent learning. Universal compatibility.
         </Subtitle>
@@ -92,6 +97,7 @@ export default function Home() {
             <Badge variant="purple">Multi-Hop Routing</Badge>
           </div>
         </Card>
+      </div>
       </div>
     </div>
   );
