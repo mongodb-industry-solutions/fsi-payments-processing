@@ -161,6 +161,9 @@
   border: 1px solid var(--gray-light2);
   border-radius: 8px;
   padding: var(--spacing-4);
+  min-height: 600px;
+  max-height: 750px;
+  overflow-y: auto;
 }
 
 .formatDetailsHeader {
@@ -1052,5 +1055,147 @@
 
   .archParagraph {
     font-size: 0.9rem;
+  }
+}
+
+/* Why MongoDB Tab - Compact */
+.mongoDbLayout {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+.mongoDbIntro {
+  background: var(--white);
+  border: 1px solid var(--gray-light2);
+  border-radius: 8px;
+  padding: var(--spacing-3);
+}
+
+.featuresGridCompact {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--spacing-3);
+}
+
+.featureCardCompact {
+  background: var(--white);
+  border: 1px solid var(--gray-light2);
+  border-radius: 8px;
+  padding: var(--spacing-3);
+}
+
+.featureTitle {
+  color: var(--green-dark2) !important;
+  margin: 0 0 var(--spacing-2);
+  font-size: 0.9rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+}
+
+.featureTitle svg {
+  color: var(--green-dark1);
+}
+
+.featureDescCompact {
+  color: var(--gray-dark2) !important;
+  line-height: 1.5;
+  margin: 0;
+  font-size: 0.8rem;
+}
+
+/* AI Integration Compact */
+.aiIntegrationCompact {
+  background: var(--white);
+  border: 1px solid var(--gray-light2);
+  border-radius: 8px;
+  padding: var(--spacing-3);
+}
+
+.aiToolsCompact {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--spacing-2);
+  margin-top: var(--spacing-3);
+}
+
+.aiToolsCompact span {
+  font-size: 0.85rem;
+  color: var(--gray-dark2);
+  line-height: 1.5;
+}
+
+.aiToolsCompact strong {
+  color: var(--green-dark2);
+}
+
+/* Pain Points Compact */
+.painPointsCompact {
+  background: var(--white);
+  border: 1px solid var(--gray-light2);
+  border-radius: 8px;
+  padding: var(--spacing-3);
+}
+
+.painPointsList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  margin-top: var(--spacing-3);
+}
+
+.painPointRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-3);
+  padding: var(--spacing-2);
+  background: var(--gray-light3);
+  border-radius: 6px;
+}
+
+.painPointRow p {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--gray-dark2) !important;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+}
+
+.painPointRow p:first-child svg {
+  color: var(--red-base);
+}
+
+.painPointRow p:last-child svg {
+  color: var(--green-dark1);
+}
+
+/* Responsive for Why MongoDB Tab */
+@media (max-width: 1200px) {
+  .featuresGridCompact {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 900px) {
+  .featuresGridCompact {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .aiToolsCompact {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .featuresGridCompact {
+    grid-template-columns: 1fr;
+  }
+
+  .painPointRow {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-1);
   }
 }

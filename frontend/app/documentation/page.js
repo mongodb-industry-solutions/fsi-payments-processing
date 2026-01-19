@@ -12,6 +12,7 @@ export default function Documentation() {
   const [showDiagramModal, setShowDiagramModal] = useState(false);
   const [showTranslationModal, setShowTranslationModal] = useState(false);
   const [showAgentModal, setShowAgentModal] = useState(false);
+  const [showConfigBuilderModal, setShowConfigBuilderModal] = useState(false);
   const [selectedFormat, setSelectedFormat] = useState(0);
 
   useEffect(() => {
@@ -216,12 +217,12 @@ Third-party Gateway (JSON wrapper):
             className={styles.tabs}
             id="documentation-tabs"
           >
-          <Tab name="Payment Formats" default>
+          <Tab name="Challenges" default>
             <div className={styles.tabContent}>
               <div className={styles.formatsLayout}>
                 <div className={styles.formatsLeftPanel}>
                   <div className={styles.formatsIntro}>
-                    <H3 className={styles.introSectionTitle}>Why This Matters</H3>
+                    <H3 className={styles.introSectionTitle}>The Problem</H3>
                     <H3 className={styles.introTitle}>The Tower of Babel Problem</H3>
                     <Body className={styles.introParagraph}>
                       Payment processors handle legacy card messages (ISO 8583), modern standards (ISO 20022), regional systems (Zengin, UPI), and crypto rails—simultaneously. Each speaks a different dialect: SWIFT MT uses fixed tags, ISO 8583 packs binary bitmaps, ISO 20022 nests verbose XML.
@@ -419,10 +420,24 @@ Third-party Gateway (JSON wrapper):
                     </Body>
                   </div>
 
-                  <div className={styles.architectureTextSection}>
+                  <div className={styles.agentSection}>
                     <H3 className={styles.archSectionTitle}>Config Builder</H3>
-                    <Body className={styles.archParagraph}>
-                      Adding a new payment format typically takes weeks of development. The Config Builder shortens this to minutes. Provide a sample message, and MongoDB aggregation pipelines extract field patterns from existing configurations while LLM inference suggests mappings for unknown fields. Low-confidence suggestions are flagged for human review. Once approved, the new format is immediately available—no restart required.
+                    <div
+                      className={styles.agentDiagramContainer}
+                      onClick={() => setShowConfigBuilderModal(true)}
+                    >
+                      <img
+                        src="/config-builder.png"
+                        alt="Config Builder Architecture"
+                        className={styles.agentDiagramImage}
+                      />
+                      <div className={styles.zoomOverlay}>
+                        <Icon glyph="MagnifyingGlass" size="large" />
+                        <span>Click to enlarge</span>
+                      </div>
+                    </div>
+                    <Body className={styles.agentExplanation}>
+                      When you provide a sample message, the system runs a <strong>MongoDB aggregation pipeline</strong> across all existing configs to build a field lookup. It auto-detects the format (SWIFT, ISO8583, ISO20022), extracts fields, and matches them against <strong>learned patterns</strong>. For unknown fields, an <strong>LLM suggests mappings</strong>—constrained by the target format specification. Users approve configs before they're permanent. What took months now takes minutes.
                     </Body>
                   </div>
                 </div>
@@ -481,6 +496,110 @@ Third-party Gateway (JSON wrapper):
                   </div>
                 </div>
               )}
+
+              {showConfigBuilderModal && (
+                <div className={styles.diagramModal} onClick={() => setShowConfigBuilderModal(false)}>
+                  <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+                    <button
+                      className={styles.modalClose}
+                      onClick={() => setShowConfigBuilderModal(false)}
+                    >
+                      <Icon glyph="X" size="large" />
+                    </button>
+                    <img
+                      src="/config-builder.png"
+                      alt="Config Builder Architecture"
+                      className={styles.modalImage}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          </Tab>
+
+          <Tab name="Why MongoDB?">
+            <div className={styles.tabContent}>
+              <div className={styles.mongoDbLayout}>
+                <div className={styles.mongoDbIntro}>
+                  <H3 className={styles.introSectionTitle}>The Unified Data Platform</H3>
+                  <Body className={styles.introParagraph}>
+                    MongoDB Atlas serves as the <strong>operational data layer</strong> for the entire platform—format configuration, transaction processing, agent decisions, and audit trails in one system.
+                  </Body>
+                </div>
+
+                <div className={styles.featuresGridCompact}>
+                  <div className={styles.featureCardCompact}>
+                    <H3 className={styles.featureTitle}><Icon glyph="Apps" size="small" /> Document Model</H3>
+                    <Body className={styles.featureDescCompact}>
+                      Flexible schema stores canonical JSON, metadata, and audit trail in a single document. No migrations when formats evolve.
+                    </Body>
+                  </div>
+
+                  <div className={styles.featureCardCompact}>
+                    <H3 className={styles.featureTitle}><Icon glyph="MagnifyingGlass" size="small" /> Atlas Search</H3>
+                    <Body className={styles.featureDescCompact}>
+                      Typo-tolerant lookups (2 edit distance) for IFSC codes, bank names. "HDFC Connaught" → "HDFC Bank Connaught Place".
+                    </Body>
+                  </div>
+
+                  <div className={styles.featureCardCompact}>
+                    <H3 className={styles.featureTitle}><Icon glyph="Sparkle" size="small" /> Vector Search</H3>
+                    <Body className={styles.featureDescCompact}>
+                      Semantic matching for payment classification. "paying wages" → purpose code SALA by meaning, not keywords.
+                    </Body>
+                  </div>
+
+                  <div className={styles.featureCardCompact}>
+                    <H3 className={styles.featureTitle}><Icon glyph="CurlyBraces" size="small" /> Aggregation</H3>
+                    <Body className={styles.featureDescCompact}>
+                      Config Builder uses $objectToArray + $unwind to extract mappings from 50+ configs in &lt;100ms.
+                    </Body>
+                  </div>
+
+                  <div className={styles.featureCardCompact}>
+                    <H3 className={styles.featureTitle}><Icon glyph="Shield" size="small" /> Atomicity</H3>
+                    <Body className={styles.featureDescCompact}>
+                      Agent repairs update fields + audit trail in one atomic operation. No partial writes.
+                    </Body>
+                  </div>
+                </div>
+
+                <div className={styles.aiIntegrationCompact}>
+                  <H3 className={styles.introSectionTitle}>AI Framework Integration</H3>
+                  <div className={styles.aiToolsCompact}>
+                    <span><strong>LangGraph</strong> — multi-agent workflow with interrupt() for human review</span>
+                    <span><strong>AWS Bedrock</strong> — Claude for unstructured field extraction</span>
+                    <span><strong>LangChain</strong> — @tool decorators expose MongoDB as agent capabilities</span>
+                    <span><strong>Voyage AI</strong> — embeddings stored directly in Atlas</span>
+                  </div>
+                </div>
+
+                <div className={styles.painPointsCompact}>
+                  <H3 className={styles.introSectionTitle}>Before → After</H3>
+                  <div className={styles.painPointsList}>
+                    <div className={styles.painPointRow}>
+                      <Body><Icon glyph="X" size="small" /> Rigid ETL breaks on new fields</Body>
+                      <Body><Icon glyph="Checkmark" size="small" /> Document model accepts changes</Body>
+                    </div>
+                    <div className={styles.painPointRow}>
+                      <Body><Icon glyph="X" size="small" /> Data truncation in legacy systems</Body>
+                      <Body><Icon glyph="Checkmark" size="small" /> JSON captures full message depth</Body>
+                    </div>
+                    <div className={styles.painPointRow}>
+                      <Body><Icon glyph="X" size="small" /> Separate search, vector, cache infra</Body>
+                      <Body><Icon glyph="Checkmark" size="small" /> All-in-one Atlas platform</Body>
+                    </div>
+                    <div className={styles.painPointRow}>
+                      <Body><Icon glyph="X" size="small" /> Manual review takes days</Body>
+                      <Body><Icon glyph="Checkmark" size="small" /> Agents resolve in seconds</Body>
+                    </div>
+                    <div className={styles.painPointRow}>
+                      <Body><Icon glyph="X" size="small" /> New formats take months</Body>
+                      <Body><Icon glyph="Checkmark" size="small" /> Faster format onboarding</Body>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </Tab>
         </Tabs>
