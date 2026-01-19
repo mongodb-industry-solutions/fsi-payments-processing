@@ -91,21 +91,21 @@ steps:
         - "ingress.hosts[0]=fsi-payments-processing.industrysolutions.staging.corp.mongodb.com"
         # Service mesh
         - "mesh.enabled=true"
-        # Frontend resources
-        - "resources.limits.cpu=1000m"
-        - "resources.limits.memory=1024Mi"
-        - "resources.requests.cpu=250m"
-        - "resources.requests.memory=512Mi"
-        # Converter sidecar resources
+        # Frontend resources (reduced based on observed usage)
+        - "resources.limits.cpu=500m"
+        - "resources.limits.memory=512Mi"
+        - "resources.requests.cpu=100m"
+        - "resources.requests.memory=256Mi"
+        # Converter sidecar resources (reduced based on observed usage)
         - "sidecarContainers[0].resources.limits.cpu=500m"
         - "sidecarContainers[0].resources.limits.memory=512Mi"
         - "sidecarContainers[0].resources.requests.cpu=100m"
-        - "sidecarContainers[0].resources.requests.memory=256m"
-        # Agent sidecar resources
-        - "sidecarContainers[1].resources.limits.cpu=500m"
-        - "sidecarContainers[1].resources.limits.memory=512Mi"
-        - "sidecarContainers[1].resources.requests.cpu=100m"
-        - "sidecarContainers[1].resources.requests.memory=256Mi"
+        - "sidecarContainers[0].resources.requests.memory=256Mi"
+        # Agent sidecar resources (reduced based on observed usage)
+        - "sidecarContainers[1].resources.limits.cpu=250m"
+        - "sidecarContainers[1].resources.limits.memory=256Mi"
+        - "sidecarContainers[1].resources.requests.cpu=50m"
+        - "sidecarContainers[1].resources.requests.memory=128Mi"
       api_server: https://api.staging.corp.mongodb.com
       kubernetes_token:
         from_secret: staging_kubernetes_token
@@ -210,21 +210,21 @@ steps:
         - "ingress.hosts[0]=fsi-payments-processing.industrysolutions.prod.corp.mongodb.com"
         # Service mesh
         - "mesh.enabled=true"
-        # Frontend resources
-        - "resources.limits.cpu=1000m"
-        - "resources.limits.memory=1536Mi"
-        - "resources.requests.cpu=500m"
-        - "resources.requests.memory=768Mi"
-        # Converter sidecar resources
-        - "sidecarContainers[0].resources.limits.cpu=1000m"
-        - "sidecarContainers[0].resources.limits.memory=1536Mi"
-        - "sidecarContainers[0].resources.requests.cpu=500m"
-        - "sidecarContainers[0].resources.requests.memory=768Mi"
-        # Agent sidecar resources
-        - "sidecarContainers[1].resources.limits.cpu=500m"
-        - "sidecarContainers[1].resources.limits.memory=512Mi"
-        - "sidecarContainers[1].resources.requests.cpu=100m"
-        - "sidecarContainers[1].resources.requests.memory=256Mi"
+        # Frontend resources (reduced based on observed usage)
+        - "resources.limits.cpu=500m"
+        - "resources.limits.memory=512Mi"
+        - "resources.requests.cpu=100m"
+        - "resources.requests.memory=256Mi"
+        # Converter sidecar resources (reduced based on observed usage)
+        - "sidecarContainers[0].resources.limits.cpu=500m"
+        - "sidecarContainers[0].resources.limits.memory=512Mi"
+        - "sidecarContainers[0].resources.requests.cpu=100m"
+        - "sidecarContainers[0].resources.requests.memory=256Mi"
+        # Agent sidecar resources (reduced based on observed usage)
+        - "sidecarContainers[1].resources.limits.cpu=250m"
+        - "sidecarContainers[1].resources.limits.memory=256Mi"
+        - "sidecarContainers[1].resources.requests.cpu=50m"
+        - "sidecarContainers[1].resources.requests.memory=128Mi"
       api_server: https://api.prod.corp.mongodb.com
       kubernetes_token:
         from_secret: prod_kubernetes_token

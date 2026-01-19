@@ -3,26 +3,20 @@
 import { useState, useEffect } from 'react';
 import styles from './documentation.module.css';
 import { Tab, Tabs } from '@leafygreen-ui/tabs';
-import { H2, H3, Body, Link } from '@leafygreen-ui/typography';
-import Card from '@leafygreen-ui/card';
+import { H3, Body } from '@leafygreen-ui/typography';
 import Badge from '@leafygreen-ui/badge';
 import Icon from '@leafygreen-ui/icon';
-import Banner from '@leafygreen-ui/banner';
 
 export default function Documentation() {
   const [mounted, setMounted] = useState(false);
-  const [expandedFormats, setExpandedFormats] = useState({});
+  const [showDiagramModal, setShowDiagramModal] = useState(false);
+  const [showTranslationModal, setShowTranslationModal] = useState(false);
+  const [showAgentModal, setShowAgentModal] = useState(false);
+  const [selectedFormat, setSelectedFormat] = useState(0);
 
   useEffect(() => {
     setMounted(true);
   }, []);
-
-  const toggleFormat = (index) => {
-    setExpandedFormats(prev => ({
-      ...prev,
-      [index]: !prev[index]
-    }));
-  };
 
   const paymentFormats = [
     {
@@ -210,66 +204,9 @@ Third-party Gateway (JSON wrapper):
     }
   ];
 
-  const flowSteps = [
-    {
-      number: '1',
-      title: 'Initiation (Customer → Sending Bank)',
-      description: 'The company\'s ERP sends a payment instruction as ISO 20022 pain.001 (or a bank API / legacy MT101).',
-      example: 'Message says: "Pay €10,000 to Supplier GmbH."',
-      icon: 'Laptop'
-    },
-    {
-      number: '2',
-      title: 'Clearing Hop (Sending Bank → Network → Receiving Bank)',
-      description: 'The sending bank chooses the cross-border rail (usually SWIFT).',
-      example: 'Interbank format depends on corridor readiness: MT103 or ISO 20022 pacs.008 (CBPR+ migration).',
-      icon: 'University'
-    },
-    {
-      number: '3',
-      title: 'Settlement (Banks settle funds)',
-      description: 'Funds are settled across the banks\' accounts (via their correspondents/RTGS as applicable).',
-      example: 'Outcome: Supplier\'s account in Germany is credited.',
-      icon: 'Checkmark'
-    },
-    {
-      number: '4',
-      title: 'Status & Reporting (Back to Customer)',
-      description: 'Banks exchange pacs.002 (status) and produce camt.053 (statement).',
-      example: 'The sending bank translates status for the ERP channel as pain.002 ("accepted/posted/exception").',
-      icon: 'InviteUser'
-    }
-  ];
-
-  const sources = [
-    { text: 'SWIFT CBPR+ timeline and ISO 20022 overview', url: 'https://www.swift.com/standards/iso-20022/iso-20022-faqs/implementation' },
-    { text: 'ISO 20022 payment families (pain/pacs/camt)', url: 'https://www.swift.com/standards/iso-20022/iso-20022-financial-institutions-focus-payments-instructions' },
-    { text: 'European Payments Council Implementation Guidelines', url: 'https://www.europeanpaymentscouncil.eu/document-library/implementation-guidelines' },
-    { text: 'Nacha Operating Rules & file structure guide', url: 'https://www.nacha.org/' },
-    { text: 'The Clearing House RTP Implementation Guide', url: 'https://www.theclearinghouse.org/payment-systems/rtp' },
-    { text: 'Federal Reserve FedNow Service', url: 'https://www.frbservices.org/financial-services/fednow' },
-    { text: 'Bank of England CHAPS ISO 20022 migration', url: 'https://www.bankofengland.co.uk/payment-and-settlement/chaps' },
-    { text: 'Eurosystem TARGET Services', url: 'https://www.ecb.europa.eu/paym/target/target2/html/index.en.html' },
-    { text: 'Pay.UK New Payments Architecture', url: 'https://www.payuk.org.uk/' },
-    { text: 'NPCI UPI documentation', url: 'https://www.npci.org.in/what-we-do/upi/product-overview' }
-  ];
 
   return (
     <div className={styles.container}>
-      <div className={styles.header}>
-        <div className={styles.headerContent}>
-          <div className={styles.headerIcon}>
-            <Icon glyph="CreditCard" size="xlarge" />
-          </div>
-          <div className={styles.headerText}>
-            <H2 className={styles.title}>Payment Format Reference</H2>
-            <Body className={styles.subtitle}>
-              Comprehensive guide to payment message formats and transaction flows
-            </Body>
-          </div>
-        </div>
-      </div>
-
       <div className={styles.content}>
         {!mounted ? (
           <div className={styles.loading}>Loading documentation...</div>
@@ -281,105 +218,269 @@ Third-party Gateway (JSON wrapper):
           >
           <Tab name="Payment Formats" default>
             <div className={styles.tabContent}>
-              <Banner variant="info" className={styles.banner}>
-                This cheatsheet covers the most common payment message formats used in global payment systems.
-              </Banner>
-
-              <div className={styles.formatsGrid}>
-                {paymentFormats.map((format, index) => (
-                  <Card key={index} className={styles.formatCard}>
-                    <div className={styles.formatHeader}>
-                      <H3 className={styles.formatName}>{format.name}</H3>
-                      <Badge variant={format.badgeVariant}>{format.badge}</Badge>
-                    </div>
-                    <Body className={styles.formatDescription}>
-                      {format.description}
+              <div className={styles.formatsLayout}>
+                <div className={styles.formatsLeftPanel}>
+                  <div className={styles.formatsIntro}>
+                    <H3 className={styles.introSectionTitle}>Why This Matters</H3>
+                    <H3 className={styles.introTitle}>The Tower of Babel Problem</H3>
+                    <Body className={styles.introParagraph}>
+                      Payment processors handle legacy card messages (ISO 8583), modern standards (ISO 20022), regional systems (Zengin, UPI), and crypto rails—simultaneously. Each speaks a different dialect: SWIFT MT uses fixed tags, ISO 8583 packs binary bitmaps, ISO 20022 nests verbose XML.
                     </Body>
-                    <Body className={styles.formatDetail}>
-                      {format.detail}
-                    </Body>
-                    <div className={styles.formatFooter}>
-                      <Icon glyph="Building" size="small" className={styles.footerIcon} />
-                      <Body className={styles.whereUsed}>{format.whereUsed}</Body>
-                    </div>
 
-                    {format.example && (
-                      <>
+                    <H3 className={styles.introTitle}>Why It Breaks</H3>
+                    <Body className={styles.introParagraph}>
+                      Rigid ETL pipelines break when fields change. SWIFT identified <strong>"data truncation" risks</strong> where legacy systems strip ISO 20022 data. Payments stall on missing codes (India's IFSC), wrong scripts (Japan's Katakana), or ambiguous names—queuing for manual review.
+                    </Body>
+
+                    <H3 className={styles.introTitle}>The Multi-Rail Reality</H3>
+                    <Body className={styles.introParagraph}>
+                      Card networks run ISO 8583. SWIFT's 11,000+ members migrate to ISO 20022 by Nov 2025. Instant rails demand real-time processing. Each evolved independently—payment hubs maintain dozens of adapters, each a failure point.
+                    </Body>
+                  </div>
+
+                  <div className={styles.formatsSelector}>
+                    <Body className={styles.selectorLabel}>
+                      <Icon glyph="ChevronRight" size="small" /> Select a format to view details
+                    </Body>
+                    <div className={styles.formatsList}>
+                      {paymentFormats.map((format, index) => (
                         <button
-                          className={styles.expandButton}
-                          onClick={() => toggleFormat(index)}
+                          key={index}
+                          className={`${styles.formatListItem} ${selectedFormat === index ? styles.formatListItemActive : ''}`}
+                          onClick={() => setSelectedFormat(index)}
                         >
-                          <Icon glyph={expandedFormats[index] ? "ChevronUp" : "ChevronDown"} size="small" />
-                          <Body>{expandedFormats[index] ? "Hide Example" : "View Example Message"}</Body>
+                          <span className={styles.formatListName}>{format.name}</span>
+                          <Badge variant={format.badgeVariant} className={styles.formatListBadge}>{format.badge}</Badge>
                         </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
 
-                        {expandedFormats[index] && (
-                          <div className={styles.exampleSection}>
-                            <div className={styles.exampleHeader}>
-                              <Icon glyph="Code" size="small" />
-                              <Body><strong>Example Message:</strong></Body>
-                            </div>
-                            <pre className={styles.exampleCode}>
-                              {format.example}
-                            </pre>
-                            <div className={styles.explanationSection}>
-                              <Icon glyph="InfoWithCircle" size="small" />
-                              <Body className={styles.explanationText}>{format.explanation}</Body>
-                            </div>
-                          </div>
-                        )}
-                      </>
-                    )}
-                  </Card>
-                ))}
+                <div className={styles.formatDetails}>
+                  <div className={styles.formatDetailsHeader}>
+                    <H3 className={styles.formatDetailsName}>{paymentFormats[selectedFormat].name}</H3>
+                    <Badge variant={paymentFormats[selectedFormat].badgeVariant}>
+                      {paymentFormats[selectedFormat].badge}
+                    </Badge>
+                  </div>
+
+                  <Body className={styles.formatDetailsDesc}>
+                    {paymentFormats[selectedFormat].description}
+                  </Body>
+
+                  <div className={styles.formatDetailsInfo}>
+                    <Body className={styles.formatDetailText}>
+                      {paymentFormats[selectedFormat].detail}
+                    </Body>
+                  </div>
+
+                  <div className={styles.formatDetailsFooter}>
+                    <Icon glyph="Building" size="small" />
+                    <Body>{paymentFormats[selectedFormat].whereUsed}</Body>
+                  </div>
+
+                  {paymentFormats[selectedFormat].example && (
+                    <div className={styles.formatDetailsExample}>
+                      <div className={styles.exampleHeader}>
+                        <Icon glyph="Code" size="small" />
+                        <Body><strong>Example Message</strong></Body>
+                      </div>
+                      <pre className={styles.exampleCode}>
+                        {paymentFormats[selectedFormat].example}
+                      </pre>
+                      <div className={styles.explanationSection}>
+                        <Icon glyph="InfoWithCircle" size="small" />
+                        <Body className={styles.explanationText}>
+                          {paymentFormats[selectedFormat].explanation}
+                        </Body>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </Tab>
 
-          <Tab name="Transaction Flow">
+          <Tab name="Behind the Scenes">
             <div className={styles.tabContent}>
-              <Banner variant="success" className={styles.banner}>
-                <strong>Scenario:</strong> An Indian company pays a German supplier in EUR.
-              </Banner>
-
-              <H3 className={styles.sectionTitle}>Payment Journey</H3>
-
-              <div className={styles.flowSteps}>
-                {flowSteps.map((step, index) => (
-                  <Card key={index} className={styles.flowCard}>
-                    <div className={styles.flowHeader}>
-                      <div className={styles.stepNumber}>{step.number}</div>
-                      <div className={styles.flowHeaderContent}>
-                        <H3 className={styles.stepTitle}>{step.title}</H3>
+              <div className={styles.architectureLayout}>
+                <div className={styles.architectureTopRow}>
+                  <div className={styles.architectureDiagramSection}>
+                    <H3 className={styles.archSectionTitle}>Architecture Diagram</H3>
+                    <div
+                      className={styles.diagramContainer}
+                      onClick={() => setShowDiagramModal(true)}
+                    >
+                      <img
+                        src="/architecture-diagram.png"
+                        alt="Payment Processing Platform Architecture"
+                        className={styles.architectureImage}
+                      />
+                      <div className={styles.zoomOverlay}>
+                        <Icon glyph="MagnifyingGlass" size="large" />
+                        <span>Click to enlarge</span>
                       </div>
                     </div>
-                    <Body className={styles.stepDescription}>{step.description}</Body>
-                    <div className={styles.stepExample}>
-                      <Icon glyph="InfoWithCircle" size="small" />
-                      <Body className={styles.exampleText}>{step.example}</Body>
+                  </div>
+
+                  <div className={styles.translationSection}>
+                    <H3 className={styles.archSectionTitle}>Message Translation</H3>
+                    <Body className={styles.archParagraph}>
+                      Each conversion pair (e.g., MT103 → pacs.008) is defined by a <strong>configuration document</strong> in MongoDB. A config contains: regex patterns for the <strong>Parser</strong> to extract source fields, field <strong>Mappings</strong> that route data through Rules (deterministic transforms) or AI (for unstructured text like remittance info), and templates for the <strong>Builder</strong> to assemble the target format. Adding a new format means inserting a config document—no code changes.
+                    </Body>
+                    <div
+                      className={styles.translationDiagramContainer}
+                      onClick={() => setShowTranslationModal(true)}
+                    >
+                      <img
+                        src="/message-translation-diagram.png"
+                        alt="Message Translation Flow: Parser → Mapping → Rules/AI Lanes → Builder"
+                        className={styles.translationDiagramImage}
+                      />
+                      <div className={styles.zoomOverlay}>
+                        <Icon glyph="MagnifyingGlass" size="large" />
+                        <span>Click to enlarge</span>
+                      </div>
                     </div>
-                  </Card>
-                ))}
+                  </div>
+                </div>
+
+                <div className={styles.architectureMiddleRow}>
+                  <div className={styles.configSection}>
+                    <H3 className={styles.archSectionTitle}>Conversion Configuration</H3>
+                    <pre className={styles.configCode}>{`{
+  "_id": "MT103_to_pacs.008",
+  "extract": {
+    "20": ":20:([^\\\\n:]+)",
+    "32A": ":32A:([^\\\\n:]+)",
+    "50K": ":50K:([\\\\s\\\\S]*?)(?=:[0-9])"
+  },
+  "map": [
+    {"from": "20", "to": ["transaction_ref"]},
+    {"from": "32A", "to": ["value_date", "currency", "amount"], "split": [6, 9]},
+    {"from": "50K", "to": ["debtor_account", "debtor_name"], "multiline": true},
+    {"from": "70", "to": "remittance_info", "ai": "remittance"}
+  ],
+  "output": {
+    "transaction_ref": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.PmtId.InstrId",
+    "amount": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.IntrBkSttlmAmt.#text"
+  }
+}`}</pre>
+                    <Body className={styles.configExplanation}>
+                      Three sections define the conversion: <strong>extract</strong> pulls fields using regex, <strong>map</strong> transforms them (splitting composites, formatting dates, routing to AI), and <strong>output</strong> places values in the target format. New message formats are enabled via document inserts, removing translation logic from the deployment cycle.
+                    </Body>
+                  </div>
+
+                  <div className={styles.canonicalJsonSection}>
+                    <H3 className={styles.archSectionTitle}>Canonical JSON</H3>
+                    <pre className={styles.canonicalJsonCode}>{`{
+  "transaction_ref": "MED-CH-ZA-2024-001",
+  "amount": "180000.00",
+  "currency": "CHF",
+  "value_date": "2024-12-15",
+
+  "debtor_name": "SWISS PHARMA AG",
+  "debtor_account": "CH930076201162...",
+  "debtor_bank": "UBSWCHZH80A",
+
+  "creditor_name": "SA HEALTH SUPPLIES",
+  "creditor_account": "ZA12345678901...",
+  "creditor_bank": "ABSAZAJJXXX",
+
+  "remittance_info": "INVOICE MED-ZA-2024-5678",
+  "charge_bearer": "SHA"
+}`}</pre>
+                    <Body className={styles.canonicalJsonExplanation}>
+                      Every payment format maps to a single, flat JSON structure. MT103, ISO 8583, pacs.008, blockchain transactions—they all share the same field names for equivalent concepts. This universal bridge enables multi-hop routing (e.g., MT103 → JSON → pacs.009) and preserves ISO 20022's full data richness without truncation.
+                    </Body>
+                  </div>
+                </div>
+
+                <div className={styles.architectureBottomRow}>
+                  <div className={styles.agentSection}>
+                    <H3 className={styles.archSectionTitle}>Agentic Resolution</H3>
+                    <div
+                      className={styles.agentDiagramContainer}
+                      onClick={() => setShowAgentModal(true)}
+                    >
+                      <img
+                        src="/payment-resolution-ai-agent.png"
+                        alt="Payment Resolution AI Agent Architecture"
+                        className={styles.agentDiagramImage}
+                      />
+                      <div className={styles.zoomOverlay}>
+                        <Icon glyph="MagnifyingGlass" size="large" />
+                        <span>Click to enlarge</span>
+                      </div>
+                    </div>
+                    <Body className={styles.agentExplanation}>
+                      When a payment fails validation—missing IFSC code, unrecognized address format, ambiguous beneficiary name—the system doesn't just reject it. A <strong>Supervisory Orchestration Agent</strong> coordinates specialized workers: the <strong>Resolution Agent</strong> searches MongoDB using Atlas Search (fuzzy text), Vector Search (semantic similarity), or LLM inference to find corrections. The <strong>Execution Agent</strong> applies approved fixes and logs an audit trail.
+                    </Body>
+                  </div>
+
+                  <div className={styles.architectureTextSection}>
+                    <H3 className={styles.archSectionTitle}>Config Builder</H3>
+                    <Body className={styles.archParagraph}>
+                      Adding a new payment format typically takes weeks of development. The Config Builder shortens this to minutes. Provide a sample message, and MongoDB aggregation pipelines extract field patterns from existing configurations while LLM inference suggests mappings for unknown fields. Low-confidence suggestions are flagged for human review. Once approved, the new format is immediately available—no restart required.
+                    </Body>
+                  </div>
+                </div>
               </div>
 
-              <Card className={styles.flowSummaryCard}>
-                <H3 className={styles.summaryTitle}>Complete Flow</H3>
-                <div className={styles.flowDiagram}>
-                  <code className={styles.flowCode}>
-                    ERP (pain.001 or API) → Sending Bank → SWIFT (MT103 or pacs.008) →
-                    Receiving Bank (pacs.*) → pacs.002 / camt.053 → Bank → ERP (pain.002)
-                  </code>
+              {showDiagramModal && (
+                <div className={styles.diagramModal} onClick={() => setShowDiagramModal(false)}>
+                  <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+                    <button
+                      className={styles.modalClose}
+                      onClick={() => setShowDiagramModal(false)}
+                    >
+                      <Icon glyph="X" size="large" />
+                    </button>
+                    <img
+                      src="/architecture-diagram.png"
+                      alt="Payment Processing Platform Architecture"
+                      className={styles.modalImage}
+                    />
+                  </div>
                 </div>
-                <div className={styles.converterValue}>
-                  <Icon glyph="Megaphone" size="small" />
-                  <Body>
-                    <strong>Why your converter matters:</strong> Each arrow is a format mapping.
-                    Traditional stacks hard-code thousands of rules; your MongoDB config-driven
-                    converter loads mappings as data, so adding a corridor/rail becomes a
-                    configuration change—not a code project.
-                  </Body>
+              )}
+
+              {showTranslationModal && (
+                <div className={styles.diagramModal} onClick={() => setShowTranslationModal(false)}>
+                  <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+                    <button
+                      className={styles.modalClose}
+                      onClick={() => setShowTranslationModal(false)}
+                    >
+                      <Icon glyph="X" size="large" />
+                    </button>
+                    <img
+                      src="/message-translation-diagram.png"
+                      alt="Message Translation Flow: Parser → Mapping → Rules/AI Lanes → Builder"
+                      className={styles.modalImage}
+                    />
+                  </div>
                 </div>
-              </Card>
+              )}
+
+              {showAgentModal && (
+                <div className={styles.diagramModal} onClick={() => setShowAgentModal(false)}>
+                  <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+                    <button
+                      className={styles.modalClose}
+                      onClick={() => setShowAgentModal(false)}
+                    >
+                      <Icon glyph="X" size="large" />
+                    </button>
+                    <img
+                      src="/payment-resolution-ai-agent.png"
+                      alt="Payment Resolution AI Agent Architecture"
+                      className={styles.modalImage}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           </Tab>
         </Tabs>
