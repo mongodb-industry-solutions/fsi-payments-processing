@@ -539,6 +539,7 @@ export default function ConfigBuilderPage() {
   const [mounted, setMounted] = useState(false); // For hydration fix
   const [showPromptDetails, setShowPromptDetails] = useState(false); // For LLM prompt details
   const [formatSpecs, setFormatSpecs] = useState([]); // Target format specifications from MongoDB
+  const [sessionConfigId, setSessionConfigId] = useState(null); // Track config saved in this session
 
   // Fix hydration mismatch - only render Tabs after mount
   useEffect(() => {
@@ -548,10 +549,18 @@ export default function ConfigBuilderPage() {
   // Get selected config object for Schema Reference tab
   const schemaConfig = configs.find(c => c._id === schemaConfigId) || null;
 
+  // Filter configs: show permanent (no expires_at) + this session's config
+  const displayConfigs = configs.filter(c =>
+    !c.expires_at || c._id === sessionConfigId
+  );
+
   // Parse config ID to get source and target formats
+  // Handles session suffix: MT202_to_JSON_90df8718 → source: MT202, target: JSON
   const parseConfigId = (configId) => {
     if (!configId) return { source: null, target: null };
-    const parts = configId.split('_to_');
+    // Strip session suffix (8 hex chars at end) if present
+    const cleanId = configId.replace(/_[a-f0-9]{8}$/, '');
+    const parts = cleanId.split('_to_');
     return { source: parts[0], target: parts[1] };
   };
 
@@ -649,7 +658,13 @@ export default function ConfigBuilderPage() {
         throw new Error(errData.detail || 'Failed to approve config');
       }
 
-      setSuccessMessage(`Config "${generatedConfig.configuration_id}" saved to MongoDB!`);
+      const data = await response.json();
+      const uniqueConfigId = data.configuration_id; // Backend returns unique ID with suffix
+
+      setSessionConfigId(uniqueConfigId); // Track this session's config
+      setSchemaConfigId(uniqueConfigId); // Auto-select in Schema Reference dropdown
+      setActiveTab(0); // Switch to Schema Reference tab to show the saved config
+      setSuccessMessage(`Config "${uniqueConfigId}" saved! View it in Schema Reference tab.`);
       setGeneratedConfig(null);
       loadConfigs(); // Refresh list
     } catch (err) {
@@ -1201,9 +1216,11 @@ export default function ConfigBuilderPage() {
                     allowDeselect={false}
                     style={{ minWidth: '280px' }}
                   >
-                    {configs.map((config) => (
+                    {displayConfigs.map((config) => (
                       <Option key={config._id} value={config._id}>
-                        {config._id.replace('_to_', ' → ')}
+                        {config._id === sessionConfigId
+                          ? `⭐ ${config._id.replace('_to_', ' → ')} (Your Session)`
+                          : config._id.replace('_to_', ' → ')}
                       </Option>
                     ))}
                   </Select>
