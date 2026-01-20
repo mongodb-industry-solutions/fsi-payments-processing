@@ -170,7 +170,25 @@ class MongoDBService:
         except Exception as e:
             logger.error(f"Error deleting config {config_id}: {e}")
             raise
-    
+
+    async def ensure_configs_ttl_index(self) -> None:
+        """
+        Ensure TTL index exists on configs_collection for auto-expiring documents.
+
+        Only documents with an 'expires_at' field will be affected.
+        Documents without this field (existing configs) remain permanent.
+        """
+        try:
+            await self.configs_collection.create_index(
+                "expires_at",
+                expireAfterSeconds=0,  # Delete when expires_at timestamp is reached
+                sparse=True  # Only index documents that have expires_at field
+            )
+            logger.info("TTL index ensured on conversion_configs.expires_at")
+        except Exception as e:
+            # Index might already exist, that's fine
+            logger.debug(f"TTL index creation note: {e}")
+
     async def list_configs(self) -> List[Dict[str, Any]]:
         """
         List all available conversion configurations.

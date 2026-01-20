@@ -8,7 +8,8 @@ SIMPLIFIED_SCHEMA = {
     "_id": str,           # Required: {source}_to_{target}
     "extract": dict,      # Required: Field extraction patterns
     "map": list,          # Required: Field mappings (can be empty)
-    "output": dict        # Required: Output paths
+    "output": dict,       # Required: Output paths
+    "expires_at": object  # Optional: TTL timestamp for config-builder configs (auto-delete)
 }
 
 # Allowed fields in map entries

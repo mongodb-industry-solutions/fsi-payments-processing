@@ -4,6 +4,7 @@ from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from typing import Dict, List, Optional, Any
+from datetime import datetime, timedelta
 import logging
 import uuid
 import json
@@ -1434,10 +1435,12 @@ async def auto_configure(request: AutoConfigureRequest) -> AutoConfigureResponse
 @router.post("/auto-configure/{config_id}/approve", response_model=ApproveConfigResponse, status_code=status.HTTP_200_OK)
 async def approve_config(config_id: str) -> ApproveConfigResponse:
     """
-    Approve and save an auto-generated configuration permanently.
+    Approve and save an auto-generated configuration with 10-minute TTL.
 
-    Moves the config from temporary storage to the permanent conversion_configs collection.
-    The temporary copy is deleted after approval.
+    Moves the config from temporary storage to the conversion_configs collection.
+    Config-builder configs auto-delete after 10 minutes via MongoDB TTL index.
+    A unique session suffix is added to prevent ID conflicts between users.
+    Existing configs (populated via scripts) remain permanent as they lack expires_at field.
     """
     try:
         logger.info(f"Approving config: {config_id}")
@@ -1450,18 +1453,23 @@ async def approve_config(config_id: str) -> ApproveConfigResponse:
                 detail=f"Config not found or expired: {config_id}"
             )
 
-        # Check if config already exists in permanent storage
-        existing = await mongodb_service.get_config(config_id)
-        if existing:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail=f"Config {config_id} already exists in permanent storage"
-            )
-
         # Clean up temp markers before saving (e.g., _unknown)
         if "map" in temp_config:
             for mapping in temp_config["map"]:
                 mapping.pop("_unknown", None)
+
+        # Generate unique ID for config-builder saves (session-unique)
+        # Format: MT202_to_JSON_a1b2c3d4 (8-char suffix)
+        unique_suffix = uuid.uuid4().hex[:8]
+        unique_config_id = f"{config_id}_{unique_suffix}"
+        temp_config["_id"] = unique_config_id
+
+        # Add 10-minute TTL for config-builder configs only
+        # Existing configs (without expires_at) remain permanent
+        temp_config["expires_at"] = datetime.utcnow() + timedelta(minutes=10)
+
+        # Ensure TTL index exists (idempotent)
+        await mongodb_service.ensure_configs_ttl_index()
 
         # Insert into permanent storage
         await mongodb_service.insert_config(temp_config)
@@ -1469,11 +1477,11 @@ async def approve_config(config_id: str) -> ApproveConfigResponse:
         # Delete from temp storage
         await mongodb_service.delete_temp_config(config_id)
 
-        logger.info(f"Config {config_id} approved and saved permanently")
+        logger.info(f"Config {unique_config_id} approved and saved (expires in 10 min)")
 
         return ApproveConfigResponse(
             status="approved",
-            configuration_id=config_id
+            configuration_id=unique_config_id
         )
 
     except HTTPException:
