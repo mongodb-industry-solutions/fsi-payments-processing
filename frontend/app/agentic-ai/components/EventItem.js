@@ -31,6 +31,10 @@ function getEventIcon(type) {
     'agent_complete': 'CheckmarkWithCircle',
     'complete': 'CheckmarkWithCircle',
     'error': 'X',
+    // AI review events (human-in-the-loop for unstructured fields)
+    'ai_review_required': 'Person',
+    'ai_review_approved': 'CheckmarkWithCircle',
+    'ai_review_rejected': 'X',
     // Crypto/blockchain events
     'crypto_start': 'Cloud',
     'crypto_wallet_extract': 'Folder',
@@ -48,8 +52,9 @@ function getEventIcon(type) {
  * Get color for event type
  */
 function getEventColor(type) {
-  if (type.includes('complete') || type === 'review_approved') return '#00A35C';
-  if (type.includes('error') || type.includes('failed') || type === 'review_rejected') return '#CD4246';
+  if (type.includes('complete') || type === 'review_approved' || type === 'ai_review_approved') return '#00A35C';
+  if (type.includes('error') || type.includes('failed') || type === 'review_rejected' || type === 'ai_review_rejected') return '#CD4246';
+  if (type === 'ai_review_required') return '#F57C00';  // Orange for AI review needed
   if (type === 'agent_start') return '#7C3AED';  // Purple for agent activation
   if (type.includes('agent')) return '#0B61A4';
   if (type.includes('crypto')) return '#7C3AED';  // Purple for blockchain events
@@ -166,6 +171,14 @@ function formatEventMessage(event) {
       return `Transaction confirmed on Solana blockchain (${event.confirmation_time_ms || '?'}ms finality)`;
     case 'crypto_complete':
       return `Blockchain settlement complete: ${event.display_amount || '50000.00'} ${event.display_currency || 'USD'} settled on Solana`;
+    // AI review events
+    case 'ai_review_required':
+      const fieldCount = event.fields?.length || 0;
+      return `Human review required: ${fieldCount} AI-extracted field${fieldCount !== 1 ? 's' : ''} need verification`;
+    case 'ai_review_approved':
+      return event.message || 'Human approved AI extractions — proceeding with conversion';
+    case 'ai_review_rejected':
+      return event.message || 'Human rejected AI extractions — conversion cancelled';
     default:
       return type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   }

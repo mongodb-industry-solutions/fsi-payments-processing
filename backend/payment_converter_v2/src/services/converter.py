@@ -60,7 +60,8 @@ class Converter:
         request_id: Optional[str] = None,
         original_source_message: Optional[str] = None,
         conversion_run_id: Optional[str] = None,
-        use_ai: bool = True
+        use_ai: bool = True,
+        validate_country: bool = True
     ) -> Dict[str, Any]:
         """
         Convert a payment message from source to target format.
@@ -77,6 +78,8 @@ class Converter:
             original_source_message: Original source message for cache lookup (multi-hop)
             conversion_run_id: Optional unique ID for this conversion run (enables independence)
             use_ai: If True, use AI lane for unstructured fields. If False, use regex patterns.
+            validate_country: If True, run country-specific validation (Japan/India rules).
+                             Set to False to defer validation (e.g., for AI review first).
 
         Returns:
             Dictionary containing:
@@ -132,7 +135,9 @@ class Converter:
             )
             
             # Step 6: Check for human review
-            fields_for_review = self.transformer.check_human_review_needed(ai_results)
+            # Simple rule: any AI-processed field requires human review
+            # (bypasses confidence threshold - if AI touched it, human verifies it)
+            fields_for_review = list(ai_results.keys()) if ai_results else []
             
             # Step 7: Build output message
             output_format = self._detect_output_format(target_format)
@@ -199,17 +204,19 @@ class Converter:
                     conversion_run_id=conversion_run_id
                 )
 
-                # Validate country-specific rules AFTER saving
+                # Validate country-specific rules AFTER saving (if enabled)
                 # Raises CountryValidationException if violated
                 # Agent will update the saved document, then retry will use corrected version
-                validate_country_rules(
-                    canonical_json=json.loads(converted_message),
-                    conversion_id=conversion_id,
-                    source_format=source_format,
-                    target_format=target_format,
-                    conversion_run_id=conversion_run_id,
-                    detailed_processing=detailed_processing
-                )
+                # Can be skipped with validate_country=False to allow AI review first
+                if validate_country:
+                    validate_country_rules(
+                        canonical_json=json.loads(converted_message),
+                        conversion_id=conversion_id,
+                        source_format=source_format,
+                        target_format=target_format,
+                        conversion_run_id=conversion_run_id,
+                        detailed_processing=detailed_processing
+                    )
             
             return result
             

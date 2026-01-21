@@ -71,6 +71,10 @@ if settings.solana_private_key:
 # Key: thread_id, Value: dict with conversion_run_id, source/target formats, validation context
 pending_conversions: Dict[str, Dict[str, Any]] = {}
 
+# Pending AI reviews store - tracks state when AI-processed fields need human review
+# Key: conversion_run_id, Value: dict with hop1_result, request details for resuming hop2
+pending_ai_reviews: Dict[str, Dict[str, Any]] = {}
+
 
 # ============================================================================
 # Request/Response Models
@@ -504,23 +508,67 @@ async def convert_multi_hop_stream(request: MultiHopConversionRequest):
             # Emit start event
             yield f"data: {json.dumps({'type': 'start', 'conversion_run_id': conversion_run_id})}\n\n"
 
-            # Hop 1: Source → JSON
+            # Hop 1: Source → JSON (skip country validation - do it after AI review)
             yield f"data: {json.dumps({'type': 'hop1_start', 'source': request.source_format, 'target': 'JSON'})}\n\n"
 
             hop1_start = time.time()
 
+            # Convert with country validation disabled - we'll do it after AI review
+            hop1_result = await converter.convert(
+                source_format=request.source_format,
+                target_format="JSON",
+                message=request.message,
+                conversion_run_id=conversion_run_id,
+                use_ai=request.use_ai,
+                validate_country=False  # Defer to after AI review
+            )
+
+            hop1_time = time.time() - hop1_start
+            yield f"data: {json.dumps({'type': 'hop1_complete', 'time': round(hop1_time, 2), 'detailed_processing': hop1_result.get('detailed_processing', {})})}\n\n"
+
+            # Check if AI fields were processed and need human review
+            # This is independent of confidence - any AI usage triggers review
+            fields_for_review = hop1_result.get('fields_for_review', [])
+            ai_lane_data = hop1_result.get('detailed_processing', {}).get('ai_lane', {})
+            ai_fields = ai_lane_data.get('fields', [])
+
+            logger.info(f"AI Review Check: use_ai={request.use_ai}, fields_for_review={fields_for_review}, ai_lane_total={ai_lane_data.get('total_fields', 0)}, ai_fields_count={len(ai_fields)}")
+
+            if fields_for_review and request.use_ai and ai_fields:
+                logger.info(f"AI review required for {len(ai_fields)} fields")
+
+                # Store state for resume (including detailed_processing for country validation later)
+                pending_ai_reviews[conversion_run_id] = {
+                    'hop1_result': hop1_result,
+                    'request': {
+                        'source_format': request.source_format,
+                        'target_format': request.target_format,
+                        'message': request.message,
+                        'use_ai': request.use_ai
+                    },
+                    'conversion_run_id': conversion_run_id,
+                    'start_time': start_time,
+                    'hop1_time': hop1_time
+                }
+
+                # Emit review required event with AI field details
+                yield f"data: {json.dumps({'type': 'ai_review_required', 'conversion_run_id': conversion_run_id, 'fields': ai_fields, 'message': 'AI-processed fields require human verification before proceeding'})}\n\n"
+
+                # Stop streaming - frontend will call /ai-review/resume-stream
+                return
+
+            # No AI review needed - proceed with country validation
             try:
-                hop1_result = await converter.convert(
+                # Now run country validation (was deferred from converter)
+                from src.validators.country_rules import validate_country_rules
+                validate_country_rules(
+                    canonical_json=json.loads(hop1_result['converted_message']),
+                    conversion_id=f"{request.source_format}_to_JSON",
                     source_format=request.source_format,
                     target_format="JSON",
-                    message=request.message,
                     conversion_run_id=conversion_run_id,
-                    use_ai=request.use_ai
+                    detailed_processing=hop1_result.get('detailed_processing', {})
                 )
-
-                hop1_time = time.time() - hop1_start
-                yield f"data: {json.dumps({'type': 'hop1_complete', 'time': round(hop1_time, 2), 'detailed_processing': hop1_result.get('detailed_processing', {})})}\n\n"
-
             except CountryValidationException as e:
                 # Country validation failed - emit event with full context for frontend
                 yield f"data: {json.dumps({'type': 'validation_failed', 'country': e.conversion_context.get('additional_context', {}).get('country'), 'field': e.field_name, 'problem': e.problem, 'original_value': e.original_value})}\n\n"
@@ -883,6 +931,18 @@ class ResumeAgentRequest(BaseModel):
     decision: HumanReviewDecision = Field(..., description="Human reviewer's decision")
 
 
+class AIReviewDecision(BaseModel):
+    """Human's decision on AI-extracted fields."""
+    approved: bool = Field(..., description="Whether all AI extractions are approved")
+    corrections: Optional[Dict[str, Any]] = Field(default=None, description="Optional corrections to AI extractions")
+
+
+class ResumeAIReviewRequest(BaseModel):
+    """Request to resume conversion after AI field review."""
+    conversion_run_id: str = Field(..., description="Conversion run ID from ai_review_required event")
+    decision: AIReviewDecision = Field(..., description="Human reviewer's decision on AI fields")
+
+
 @router.post("/agent/resume", status_code=status.HTTP_200_OK)
 async def resume_agent_workflow(request: ResumeAgentRequest):
     """
@@ -1186,6 +1246,259 @@ async def resume_agent_workflow_stream(request: ResumeAgentRequest):
 
         except Exception as e:
             logger.error(f"Error in streaming resume: {e}", exc_info=True)
+            error_event = json.dumps({
+                "type": "error",
+                "message": str(e)
+            })
+            yield f"data: {error_event}\n\n"
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        }
+    )
+
+
+@router.post("/ai-review/resume-stream", status_code=status.HTTP_200_OK)
+async def resume_ai_review_stream(request: ResumeAIReviewRequest):
+    """
+    Resume conversion after human review of AI-extracted fields.
+
+    This endpoint continues the multi-hop conversion after the human has
+    reviewed and approved AI-processed fields (like remittance info, instructions).
+
+    The stream will emit:
+    - ai_review_approved/ai_review_rejected: Decision acknowledgment
+    - hop2_start: Starting second conversion hop
+    - hop2_complete: Second hop finished
+    - complete: Final result with output
+
+    Args:
+        request: Contains conversion_run_id and human's approval decision
+
+    Returns:
+        StreamingResponse with hop2 events and final conversion result
+    """
+
+    async def event_generator():
+        """Generate SSE events for resumed conversion (hop2)."""
+        try:
+            logger.info(f"AI review resume: run_id={request.conversion_run_id}, approved={request.decision.approved}")
+
+            # Get stored conversion state
+            pending = pending_ai_reviews.get(request.conversion_run_id)
+            if not pending:
+                error_event = json.dumps({
+                    "type": "error",
+                    "message": f"No pending AI review found for conversion_run_id: {request.conversion_run_id}"
+                })
+                yield f"data: {error_event}\n\n"
+                return
+
+            hop1_result = pending.get("hop1_result")
+            req_data = pending.get("request")
+            start_time = pending.get("start_time", time.time())
+            conversion_run_id = request.conversion_run_id
+
+            # If not approved, send rejection and stop
+            if not request.decision.approved:
+                logger.info("Human rejected AI extractions - conversion stopped")
+                reject_event = json.dumps({
+                    "type": "ai_review_rejected",
+                    "message": "Human rejected AI extractions - conversion cancelled"
+                })
+                yield f"data: {reject_event}\n\n"
+
+                # Clean up
+                if conversion_run_id in pending_ai_reviews:
+                    del pending_ai_reviews[conversion_run_id]
+                return
+
+            # Send approval event
+            approve_event = json.dumps({
+                "type": "ai_review_approved",
+                "message": "Human approved AI extractions - proceeding with conversion"
+            })
+            yield f"data: {approve_event}\n\n"
+
+            # If corrections were provided, update the canonical JSON
+            if request.decision.corrections:
+                logger.info(f"Applying corrections to canonical JSON: {request.decision.corrections}")
+                # Parse the current JSON
+                hop1_json = json.loads(hop1_result['converted_message']) if isinstance(
+                    hop1_result['converted_message'], str
+                ) else hop1_result['converted_message']
+
+                # Apply corrections (flatten nested paths like "remittance.purpose" → hop1_json["remittance"]["purpose"])
+                for field_path, new_value in request.decision.corrections.items():
+                    keys = field_path.split('.')
+                    target = hop1_json
+                    for key in keys[:-1]:
+                        target = target.setdefault(key, {})
+                    target[keys[-1]] = new_value
+
+                # Update hop1_result with corrected JSON
+                hop1_result['converted_message'] = json.dumps(hop1_json)
+
+                # Update MongoDB cache
+                await mongodb_service.update_canonical_json(
+                    original_message=req_data['message'],
+                    json_data=hop1_result['converted_message'],
+                    conversion_run_id=conversion_run_id,
+                    field_name="ai_review_corrections",
+                    new_value=str(request.decision.corrections),
+                    reason="Human corrections during AI review"
+                )
+
+            # Now run country validation (deferred from hop1)
+            try:
+                from src.validators.country_rules import validate_country_rules
+                validate_country_rules(
+                    canonical_json=json.loads(hop1_result['converted_message']),
+                    conversion_id=f"{req_data['source_format']}_to_JSON",
+                    source_format=req_data['source_format'],
+                    target_format="JSON",
+                    conversion_run_id=conversion_run_id,
+                    detailed_processing=hop1_result.get('detailed_processing', {})
+                )
+                logger.info("Country validation passed after AI review")
+            except CountryValidationException as e:
+                # Country validation failed - need agent correction
+                logger.info(f"Country validation failed after AI review: {e.field_name}")
+                yield f"data: {json.dumps({'type': 'validation_failed', 'country': e.conversion_context.get('additional_context', {}).get('country'), 'field': e.field_name, 'problem': e.problem, 'original_value': e.original_value})}\n\n"
+                yield f"data: {json.dumps({'type': 'agent_start', 'problem': e.problem[:100] + '...' if len(e.problem) > 100 else e.problem, 'field': e.field_name})}\n\n"
+
+                # Run agent flow
+                final_state = {}
+                async for event in agent_client.process_payment_stream_with_review(
+                    problem=e.problem,
+                    field_name=e.field_name,
+                    original_value=e.original_value,
+                    payment_data=e.payment_data,
+                    conversion_context=e.conversion_context
+                ):
+                    if "supervisor" in event:
+                        supervisor_state = event["supervisor"]
+                        final_state.update(supervisor_state)
+                        messages = supervisor_state.get("messages", [])
+                        reasoning = messages[-1].get("content", "") if messages else ""
+                        next_agent = supervisor_state.get("next_agent", "")
+                        yield f"data: {json.dumps({'type': 'agent_supervisor', 'status': 'routing', 'reasoning': reasoning, 'next_agent': next_agent, 'problem': e.problem[:100], 'details': {'messages_count': len(messages)}})}\n\n"
+
+                    elif "resolution" in event:
+                        resolution_state = event["resolution"]
+                        final_state.update(resolution_state)
+                        messages = resolution_state.get("messages", [])
+                        for msg in messages:
+                            if "tool_calls" in msg and msg.get("tool_calls"):
+                                for tool_call in msg["tool_calls"]:
+                                    yield f"data: {json.dumps({'type': 'tool_call', 'tool': tool_call.get('name', 'unknown'), 'args': tool_call.get('args', {}), 'reasoning': msg.get('content', ''), 'details': tool_call.get('args', {})})}\n\n"
+                            if msg.get("type") == "tool":
+                                try:
+                                    tool_result = json.loads(msg.get("content", "{}"))
+                                except:
+                                    tool_result = str(msg.get("content", ""))
+                                yield f"data: {json.dumps({'type': 'tool_result', 'tool': msg.get('name', 'unknown'), 'result': tool_result, 'details': tool_result})}\n\n"
+                        solution = resolution_state.get("solution", {})
+                        if solution and solution.get("reasoning"):
+                            yield f"data: {json.dumps({'type': 'agent_resolution', 'status': 'complete', 'proposed_value': solution.get('proposed_value', ''), 'confidence': solution.get('confidence', 0), 'reasoning': solution.get('reasoning', ''), 'details': solution})}\n\n"
+
+                    elif "execution" in event:
+                        execution_state = event["execution"]
+                        final_state.update(execution_state)
+                        result = execution_state.get("result", {})
+                        yield f"data: {json.dumps({'type': 'agent_execution', 'conversion_run_id': conversion_run_id, 'status': 'complete', 'field': result.get('field_name', ''), 'old_value': result.get('old_value', ''), 'new_value': result.get('new_value', ''), 'reasoning': result.get('reasoning', ''), 'details': result})}\n\n"
+
+                    elif event.get("type") == "review_required":
+                        # Agent needs human review - store state and pause
+                        logger.info(f"Agent review required during AI resume: {event}")
+                        pending_conversions[event.get("thread_id")] = {
+                            "conversion_run_id": conversion_run_id,
+                            "source_format": req_data['source_format'],
+                            "target_format": req_data['target_format'],
+                            "original_message": req_data['message'],
+                            "use_ai": req_data.get('use_ai', True),
+                            "validation_exception": {
+                                "problem": e.problem,
+                                "field_name": e.field_name,
+                                "original_value": e.original_value,
+                                "conversion_context": e.conversion_context
+                            },
+                            "start_time": start_time,
+                            "hop1_details": hop1_result.get('detailed_processing', {}),
+                            "proposed_value": event.get("proposed_value", "")
+                        }
+                        yield f"data: {json.dumps(event)}\n\n"
+                        # Clean up AI review pending state
+                        if conversion_run_id in pending_ai_reviews:
+                            del pending_ai_reviews[conversion_run_id]
+                        return
+
+                    elif event.get("type") == "complete":
+                        agent_result = final_state.get("result", {})
+                        yield f"data: {json.dumps({'type': 'agent_complete', 'new_value': agent_result.get('new_value'), 'field': e.field_name, 'success': agent_result.get('success', True)})}\n\n"
+
+                    elif event.get("type") == "error":
+                        yield f"data: {json.dumps({'type': 'error', 'message': event.get('message')})}\n\n"
+                        return
+
+                # Agent completed - retrieve corrected JSON
+                cached_json = await mongodb_service.get_canonical_json(req_data['message'], conversion_run_id=conversion_run_id)
+                hop1_result['converted_message'] = cached_json['json_data']
+
+            # Continue with Hop 2: JSON → Target format
+            yield f"data: {json.dumps({'type': 'hop2_start', 'source': 'JSON', 'target': req_data['target_format']})}\n\n"
+
+            hop2_start = time.time()
+            hop2_result = await converter.convert(
+                source_format="JSON",
+                target_format=req_data['target_format'],
+                message=hop1_result['converted_message'],
+                original_source_message=req_data['message'],
+                conversion_run_id=conversion_run_id,
+                use_ai=req_data.get('use_ai', True)
+            )
+
+            hop2_time = time.time() - hop2_start
+            yield f"data: {json.dumps({'type': 'hop2_complete', 'time': round(hop2_time, 2), 'detailed_processing': hop2_result.get('detailed_processing', {})})}\n\n"
+
+            # Calculate total time
+            total_time = time.time() - start_time
+
+            # Build final complete event
+            stats = hop2_result["processing_stats"]
+            lane_dist = stats.get("lane_distribution", {})
+
+            complete_event = json.dumps({
+                "type": "complete",
+                "success": True,
+                "conversion_run_id": conversion_run_id,
+                "output": hop2_result["converted_message"],
+                "processing_stats": {
+                    "rules_lane": lane_dist.get("RULES", 0),
+                    "ai_lane": lane_dist.get("AI", 0),
+                    "human_lane": lane_dist.get("HUMAN", 0)
+                },
+                "confidence_scores": hop2_result.get("confidence_scores", {}),
+                "total_time": round(total_time, 2),
+                "hop1_details": hop1_result.get("detailed_processing", {}),
+                "hop2_details": hop2_result.get("detailed_processing", {}),
+                "human_reviewed": True
+            })
+            yield f"data: {complete_event}\n\n"
+
+            # Clean up pending state
+            if conversion_run_id in pending_ai_reviews:
+                del pending_ai_reviews[conversion_run_id]
+
+            logger.info(f"AI review resume complete: total_time={total_time:.2f}s")
+
+        except Exception as e:
+            logger.error(f"Error in AI review resume: {e}", exc_info=True)
             error_event = json.dumps({
                 "type": "error",
                 "message": str(e)

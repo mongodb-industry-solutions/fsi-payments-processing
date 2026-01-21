@@ -6,24 +6,38 @@ import CollapsibleScenariosPanel from './components/CollapsibleScenariosPanel';
 import GeographicMapPanel from './components/GeographicMapPanel';
 import TransactionAgentPanel from './components/TransactionAgentPanel';
 import HumanReviewModal from './components/HumanReviewModal';
+import AIReviewModal from './components/AIReviewModal';
 import { getAllScenarios, getScenario } from './scenarios';
 
 // Use Next.js API routes to proxy to converter sidecar
 // Browser → /api/... → Next.js server → 127.0.0.1:8001 (converter)
 
 /**
- * Filter events to show only agent-related activities
- * Conversion hop events (MT103→JSON, JSON→pacs.008) are handled by the converter service,
- * not by the Transaction Agent, so we exclude them from the agent panel.
+ * Filter events for agentic scenarios
+ * Includes both conversion flow events (hop1, hop2) and agent intervention events
+ * to show the complete picture of how the agent handles country-specific issues
  */
 function isAgentRelatedEvent(event) {
   const agentEventTypes = [
+    // Conversion flow events (provide context for agent intervention)
+    'start',              // Conversion started
+    'hop1_start',         // First hop begins
+    'hop1_complete',      // First hop completes
+    'hop2_start',         // Second hop begins
+    'hop2_complete',      // Second hop completes
+    'complete',           // Conversion finished
+    // AI review events (human-in-the-loop for unstructured fields)
+    'ai_review_required',    // AI fields need human review
+    'ai_review_approved',    // Human approved AI extractions
+    'ai_review_rejected',    // Human rejected AI extractions
+    // Agent intervention events
     'validation_failed',  // Triggers agent intervention
     'agent_start',        // Agent begins processing
     'agent_supervisor',   // Supervisor routing decision
     'tool_call',          // Tool invocation (IFSC lookup, transliteration)
     'tool_result',        // Tool results
     'agent_resolution',   // Proposed solution
+    'review_required',    // Human review needed for agent proposal
     'review_approved',    // Human approved change
     'review_rejected',    // Human rejected change
     'agent_execution_start', // Execution agent starting
@@ -49,6 +63,10 @@ function isConversionHopEvent(event) {
     'hop2_complete',   // Second hop completes
     'complete',        // Conversion finished
     'error',           // Errors
+    // AI review events (human-in-the-loop for unstructured fields)
+    'ai_review_required',    // AI fields need human review
+    'ai_review_approved',    // Human approved AI extractions
+    'ai_review_rejected',    // Human rejected AI extractions
     // Crypto/blockchain settlement events
     'crypto_start',           // Blockchain settlement starting
     'crypto_wallet_extract',  // Extracting wallet addresses
@@ -108,11 +126,17 @@ export default function AgenticAIPage() {
   const EVENT_DISPLAY_DELAY = 400; // ms between events for non-agentic scenarios
   const CRYPTO_EVENT_DELAY = 1000; // ms between events for crypto scenarios (~10s total, ensures 1s per card)
 
-  // Human-in-the-loop review state
+  // Human-in-the-loop review state (for agent corrections like Japan/India)
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [reviewData, setReviewData] = useState(null);
   const [reviewThreadId, setReviewThreadId] = useState(null);
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+
+  // AI field review state (for unstructured field extractions like remittance/instructions)
+  const [isAIReviewModalOpen, setIsAIReviewModalOpen] = useState(false);
+  const [aiReviewData, setAIReviewData] = useState(null);
+  const [aiReviewRunId, setAIReviewRunId] = useState(null);
+  const [isSubmittingAIReview, setIsSubmittingAIReview] = useState(false);
 
   // AI/Rules mode toggle - controls whether to use LLM or regex for unstructured fields
   const [useAI, setUseAI] = useState(true);
@@ -437,12 +461,21 @@ export default function AgenticAIPage() {
                 setError(eventData.data?.message || eventData.message || 'Unknown error');
               }
 
-              // Handle review_required event (human-in-the-loop)
+              // Handle review_required event (human-in-the-loop for agent corrections)
               if (eventData.type === 'review_required') {
                 console.log('👤 Human review required:', eventData);
                 setReviewThreadId(eventData.thread_id);
                 setReviewData(eventData);
                 setIsReviewModalOpen(true);
+                // Don't set isStreaming to false yet - we're paused, not done
+              }
+
+              // Handle ai_review_required event (human review of AI-extracted fields)
+              if (eventData.type === 'ai_review_required') {
+                console.log('🤖 AI field review required:', eventData);
+                setAIReviewRunId(eventData.conversion_run_id);
+                setAIReviewData(eventData);
+                setIsAIReviewModalOpen(true);
                 // Don't set isStreaming to false yet - we're paused, not done
               }
             } catch (e) {
@@ -628,6 +661,166 @@ export default function AgenticAIPage() {
     handleRejectReview();
   };
 
+  // AI field review handlers (for unstructured fields like remittance/instructions)
+  const handleApproveAIReview = async (corrections = null) => {
+    if (!aiReviewRunId) return;
+
+    setIsSubmittingAIReview(true);
+    setIsAIReviewModalOpen(false);  // Close modal immediately for snappier UX
+
+    try {
+      // Use streaming resume endpoint
+      const response = await fetch('/api/ai-review/resume-stream', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          conversion_run_id: aiReviewRunId,
+          decision: {
+            approved: true,
+            corrections: corrections  // Optional field corrections
+          }
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`AI review resume failed: ${response.status}`);
+      }
+
+      // Process SSE stream
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const event = JSON.parse(line.slice(6));
+              console.log('📡 AI review resume event:', event);
+
+              // Add the event to the timeline
+              if (event.type) {
+                addEvent(event);
+              }
+
+              // Handle specific event types
+              if (event.type === 'hop2_complete' && event.detailed_processing) {
+                setHop2Details(event.detailed_processing);
+              }
+
+              if (event.type === 'complete') {
+                if (event.output) {
+                  setOutput(event.output);
+                }
+                if (event.processing_stats) {
+                  setStats(event.processing_stats);
+                }
+                if (event.total_time) {
+                  setTotalTime(event.total_time);
+                }
+              }
+
+              if (event.type === 'error') {
+                setError(event.message);
+              }
+
+              // Handle review_required event (agent needs human review after AI approval)
+              if (event.type === 'review_required') {
+                console.log('👤 Agent review required after AI approval:', event);
+                setReviewThreadId(event.thread_id);
+                setReviewData(event);
+                setIsReviewModalOpen(true);
+                // Stream will continue after human reviews agent's proposal
+                return;  // Exit the loop - human will resume via agent resume endpoint
+              }
+            } catch (parseErr) {
+              console.warn('Failed to parse SSE event:', line, parseErr);
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Error resuming AI review:', err);
+      setError(`Failed to resume: ${err.message}`);
+    } finally {
+      setIsSubmittingAIReview(false);
+      setIsStreaming(false);
+    }
+  };
+
+  const handleRejectAIReview = async () => {
+    if (!aiReviewRunId) return;
+
+    setIsSubmittingAIReview(true);
+
+    try {
+      const response = await fetch('/api/ai-review/resume-stream', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          conversion_run_id: aiReviewRunId,
+          decision: {
+            approved: false,
+            corrections: null
+          }
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`AI review reject failed: ${response.status}`);
+      }
+
+      // Process SSE stream (will get ai_review_rejected event)
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const event = JSON.parse(line.slice(6));
+              console.log('📡 AI review reject event:', event);
+
+              if (event.type) {
+                addEvent(event);
+              }
+            } catch (parseErr) {
+              console.warn('Failed to parse SSE event:', line, parseErr);
+            }
+          }
+        }
+      }
+
+      setIsAIReviewModalOpen(false);
+    } catch (err) {
+      console.error('Error rejecting AI review:', err);
+      setError(`Failed to reject: ${err.message}`);
+    } finally {
+      setIsSubmittingAIReview(false);
+      setIsStreaming(false);
+    }
+  };
+
+  const handleCloseAIReviewModal = () => {
+    // Closing without decision is treated as rejection
+    handleRejectAIReview();
+  };
+
   return (
     <div style={{ padding: 'var(--space-xl, 32px)', maxWidth: 'var(--container-lg, 1920px)', margin: '0 auto' }}>
       {/* Error Banner */}
@@ -686,7 +879,7 @@ export default function AgenticAIPage() {
         />
       </div>
 
-      {/* Human Review Modal */}
+      {/* Human Review Modal (for agent corrections like Japan/India) */}
       <HumanReviewModal
         isOpen={isReviewModalOpen}
         onClose={handleCloseReviewModal}
@@ -694,6 +887,16 @@ export default function AgenticAIPage() {
         onReject={handleRejectReview}
         reviewData={reviewData}
         isSubmitting={isSubmittingReview}
+      />
+
+      {/* AI Review Modal (for unstructured field extractions) */}
+      <AIReviewModal
+        isOpen={isAIReviewModalOpen}
+        onClose={handleCloseAIReviewModal}
+        onApprove={handleApproveAIReview}
+        onReject={handleRejectAIReview}
+        reviewData={aiReviewData}
+        isSubmitting={isSubmittingAIReview}
       />
     </div>
   );
