@@ -253,14 +253,10 @@ function StoryCard({ step, position, totalSteps, currentIndex, onPrev, onNext, c
  * StoryOverlay Component
  * Displays sequential story cards synced with transaction events
  * Cards persist and can be navigated with back/forward arrows
- * Position is calculated relative to country locations on the map
  *
- * KEY DESIGN: Story cards advance IMMEDIATELY when events arrive.
+ * Cards advance immediately when events arrive - no queue delay.
  * Event timing is controlled by page.js event queue throttling (400ms/1000ms).
- * No independent timing here - we trust the event queue for pacing.
  */
-const CARD_DISPLAY_TIME = 3000; // Minimum 3 seconds per card
-
 export default function StoryOverlay({
   story = [],
   isActive = false,
@@ -272,47 +268,12 @@ export default function StoryOverlay({
   const [autoAdvance, setAutoAdvance] = useState(true); // Whether to auto-advance to new steps
   const triggeredStepsRef = useRef(new Set()); // Track which triggers have fired
 
-  // Card display queue - ensures each card is shown for minimum time
-  const cardQueueRef = useRef([]); // Queue of card indices to display
-  const isProcessingQueueRef = useRef(false);
-  const queueTimerRef = useRef(null);
-  const lastQueuedIndexRef = useRef(-1); // Track last index added to queue
-
   // Helper to reset all state
   const resetState = () => {
     setTriggeredSteps([]);
     setCurrentViewIndex(0);
     setAutoAdvance(true);
     triggeredStepsRef.current = new Set();
-    // Reset queue state
-    cardQueueRef.current = [];
-    isProcessingQueueRef.current = false;
-    lastQueuedIndexRef.current = -1;
-    if (queueTimerRef.current) {
-      clearTimeout(queueTimerRef.current);
-      queueTimerRef.current = null;
-    }
-  };
-
-  // Process card display queue - shows each card for minimum time
-  const processCardQueue = () => {
-    if (cardQueueRef.current.length === 0) {
-      isProcessingQueueRef.current = false;
-      return;
-    }
-
-    isProcessingQueueRef.current = true;
-    const nextIndex = cardQueueRef.current.shift();
-
-    // Only advance if autoAdvance is enabled
-    if (autoAdvance) {
-      setCurrentViewIndex(nextIndex);
-    }
-
-    // Schedule next card after delay
-    queueTimerRef.current = setTimeout(() => {
-      processCardQueue();
-    }, CARD_DISPLAY_TIME);
   };
 
   // Reset when scenario changes (story array reference changes)
@@ -437,40 +398,14 @@ export default function StoryOverlay({
     }
   }, [isActive, story, events]);
 
-  // Queue new cards for display when triggeredSteps changes
-  // This ensures each card is shown for minimum time before advancing
+  // Auto-advance to latest card when new steps are triggered
   useEffect(() => {
-    if (triggeredSteps.length === 0) {
-      lastQueuedIndexRef.current = -1;
-      return;
+    if (triggeredSteps.length > 0 && autoAdvance) {
+      setCurrentViewIndex(triggeredSteps.length - 1);
     }
+  }, [triggeredSteps.length, autoAdvance]);
 
-    // Find new cards that haven't been queued yet
-    const startIndex = lastQueuedIndexRef.current + 1;
-    if (startIndex < triggeredSteps.length) {
-      // Add new card indices to queue
-      for (let i = startIndex; i < triggeredSteps.length; i++) {
-        cardQueueRef.current.push(i);
-      }
-      lastQueuedIndexRef.current = triggeredSteps.length - 1;
-
-      // Start processing queue if not already running
-      if (!isProcessingQueueRef.current) {
-        processCardQueue();
-      }
-    }
-  }, [triggeredSteps.length]);
-
-  // Cleanup timer on unmount
-  useEffect(() => {
-    return () => {
-      if (queueTimerRef.current) {
-        clearTimeout(queueTimerRef.current);
-      }
-    };
-  }, []);
-
-  // Navigation handlers - simplified, no timing logic needed
+  // Navigation handlers
   const handlePrev = () => {
     setAutoAdvance(false); // User manually navigated, stop auto-advance
     setCurrentViewIndex(prev => Math.max(0, prev - 1));
