@@ -1,14 +1,12 @@
 'use client';
 
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { H2, Body } from '@leafygreen-ui/typography';
 import Card from '@leafygreen-ui/card';
 import Badge from '@leafygreen-ui/badge';
 import Icon from '@leafygreen-ui/icon';
 import EventItem from './EventItem';
 import OutputCard from './OutputCard';
-
-const AUTO_SCROLL_DELAY = 3000; // 3 seconds per event
 
 /**
  * Get agent status based on events and streaming state
@@ -48,87 +46,33 @@ export default function TransactionAgentPanel({
   const status = getAgentStatus(isStreaming, events, output);
   const hasActivity = events.length > 0 || output;
 
-  // Auto-scroll refs and state
+  // Auto-scroll refs
   const scrollContainerRef = useRef(null);
-  const eventRefsMap = useRef(new Map()); // Map of event.id -> DOM element
-  const lastScrolledIndexRef = useRef(-1);
-  const scrollTimerRef = useRef(null);
-  const scrollQueueRef = useRef([]);
-  const isProcessingScrollRef = useRef(false);
+  const lastEventRef = useRef(null);
 
-  // Process scroll queue - scrolls to next event after delay
-  const processScrollQueue = () => {
-    if (scrollQueueRef.current.length === 0) {
-      isProcessingScrollRef.current = false;
-      return;
-    }
-
-    isProcessingScrollRef.current = true;
-    const nextEventId = scrollQueueRef.current.shift();
-    const element = eventRefsMap.current.get(nextEventId);
-
-    if (element && scrollContainerRef.current) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-
-    // Schedule next scroll after delay
-    scrollTimerRef.current = setTimeout(() => {
-      processScrollQueue();
-    }, AUTO_SCROLL_DELAY);
-  };
-
-  // Queue new events for auto-scroll
+  // Simple auto-scroll: scroll to latest event when events change
   useEffect(() => {
-    if (events.length === 0) {
-      // Reset on clear
-      lastScrolledIndexRef.current = -1;
-      scrollQueueRef.current = [];
-      if (scrollTimerRef.current) {
-        clearTimeout(scrollTimerRef.current);
-        scrollTimerRef.current = null;
-      }
-      isProcessingScrollRef.current = false;
-      return;
+    if (events.length > 0 && lastEventRef.current && scrollContainerRef.current) {
+      // Small delay to ensure DOM has updated
+      const timer = setTimeout(() => {
+        lastEventRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+      }, 50);
+      return () => clearTimeout(timer);
     }
-
-    // Find new events that haven't been queued yet
-    const newEvents = events.slice(lastScrolledIndexRef.current + 1);
-    if (newEvents.length > 0) {
-      // Add new event IDs to scroll queue
-      newEvents.forEach(event => {
-        scrollQueueRef.current.push(event.id);
-      });
-      lastScrolledIndexRef.current = events.length - 1;
-
-      // Start processing if not already
-      if (!isProcessingScrollRef.current) {
-        processScrollQueue();
-      }
-    }
-  }, [events]);
+  }, [events.length]);
 
   // Scroll to output when it appears
   useEffect(() => {
     if (output && scrollContainerRef.current) {
-      // Add a delay then scroll to bottom for output
       const timer = setTimeout(() => {
         scrollContainerRef.current.scrollTo({
           top: scrollContainerRef.current.scrollHeight,
           behavior: 'smooth'
         });
-      }, AUTO_SCROLL_DELAY);
+      }, 100);
       return () => clearTimeout(timer);
     }
   }, [output]);
-
-  // Cleanup timers on unmount
-  useEffect(() => {
-    return () => {
-      if (scrollTimerRef.current) {
-        clearTimeout(scrollTimerRef.current);
-      }
-    };
-  }, []);
 
   // Notify parent when output card has rendered (for journey animation sync)
   // Use a small delay to ensure the DOM has updated and the output card is visible
@@ -232,14 +176,10 @@ export default function TransactionAgentPanel({
         ) : (
           // Events Stream
           <div style={{ width: '100%' }}>
-            {events.map((event) => (
+            {events.map((event, index) => (
               <div
                 key={event.id}
-                ref={(el) => {
-                  if (el) {
-                    eventRefsMap.current.set(event.id, el);
-                  }
-                }}
+                ref={index === events.length - 1 ? lastEventRef : null}
               >
                 <EventItem
                   event={event}
