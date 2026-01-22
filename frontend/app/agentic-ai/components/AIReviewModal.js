@@ -90,9 +90,7 @@ export default function AIReviewModal({
           width: 550px !important;
           max-width: 90vw !important;
           max-height: 90vh !important;
-          border-left: 4px solid #016BF8 !important;
-          box-shadow: 0 8px 32px rgba(1, 107, 248, 0.2), 0 4px 12px rgba(0, 30, 43, 0.15) !important;
-          background: linear-gradient(135deg, #FFFFFF 0%, #F5FAFF 100%) !important;
+          box-shadow: 0 8px 32px rgba(0, 30, 43, 0.15), 0 4px 12px rgba(0, 30, 43, 0.1) !important;
         }
       `}</style>
       <Modal

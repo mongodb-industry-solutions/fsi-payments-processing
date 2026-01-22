@@ -139,7 +139,7 @@ export default function AgenticAIPage() {
   const [isSubmittingAIReview, setIsSubmittingAIReview] = useState(false);
 
   // AI/Rules mode toggle - controls whether to use LLM or regex for unstructured fields
-  const [useAI, setUseAI] = useState(true);
+  const [useAI, setUseAI] = useState(false);
 
   // Animation sync state - signals when transaction logs have finished rendering
   // This ensures the journey animation completes in sync with the logs panel
@@ -304,9 +304,6 @@ export default function AgenticAIPage() {
     // Switch to new scenario
     setSelectedScenario(scenarioId);
 
-    // Auto-collapse panel after selection
-    setIsPanelExpanded(false);
-
     // Restore cached results for new scenario (if any)
     const cached = scenarioResultsCache.current[scenarioId];
     if (cached) {
@@ -341,6 +338,9 @@ export default function AgenticAIPage() {
     if (!selectedScenario) return;
 
     const scenario = getScenario(selectedScenario);
+
+    // Collapse scenario panel when simulation starts
+    setIsPanelExpanded(false);
 
     setIsStreaming(true);
     setEvents([]);
