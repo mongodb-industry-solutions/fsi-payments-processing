@@ -9,8 +9,9 @@ export const SCENARIOS = {
     title: 'Germany → Japan Automotive Supply',
     description: 'Volkswagen AG pays Denso Corporation - ¥45M JPY (~€280K)',
     badge: 'TRANSLITERATION',
-    badgeVariant: 'green',
+    badgeVariant: 'blue',
     isAgentic: true,
+    mongoFeature: 'ATLAS SEARCH',
     info: {
       problem: 'Japanese banks require creditor names in Katakana script, but the source MT103 contains "DENSO CORPORATION" in Latin characters.',
       solution: 'Transaction Agent detects this requirement and automatically transliterates the name to Katakana using Japan\'s official transliteration rules.',
@@ -138,6 +139,7 @@ PRECISION SENSORS AND ECU MODULES
     badge: 'IFSC LOOKUP',
     badgeVariant: 'blue',
     isAgentic: true,
+    mongoFeature: 'ATLAS SEARCH',
     info: {
       problem: 'Indian banking requires specific IFSC codes for bank identification, but the source MT103 only has descriptive details: "HDFC Bank, Fort Branch, Mumbai".',
       solution: 'Transaction Agent looks up the correct IFSC code from India\'s official database using bank name, branch, and location, then validates and inserts it.',
@@ -259,6 +261,7 @@ CLOUD INFRASTRUCTURE DEVELOPMENT
     badge: 'CARD PAYMENT',
     badgeVariant: 'yellow',
     isAgentic: false,  // No country validation - shows conversion hop events instead
+    mongoFeature: 'DOCUMENT MODEL',
     info: {
       process: 'Cross-border card authorization converted from legacy ISO 8583 (POS terminal format) to modern ISO 20022 cain.001 for card network processing between acquirer and issuer.',
       aiExtraction: 'AI parses unstructured merchant field "SIM LIM SQUARE ELECTRONICS    SINGAPORE     SGP" into structured name, city, and country fields.',
@@ -353,10 +356,11 @@ CLOUD INFRASTRUCTURE DEVELOPMENT
   internal_mx: {
     id: 'internal_mx',
     title: 'UK → Australia Internal MX Transition',
-    description: 'BP PLC pays BHP Group - A$8.5M AUD for mining services',
+    description: 'BP PLC pays BHP Group for mining equipment - A$8.5M AUD',
     badge: 'MX TRANSITION',
     badgeVariant: 'lightgray',
     isAgentic: false,
+    mongoFeature: 'DOCUMENT MODEL',
     info: {
       process: 'Demonstrates internal MT-to-MX transition: bank receives pacs.008 externally, converts to internal canonical JSON for legacy system processing, then back to pacs.008 for outbound transmission.',
       hop1: 'pacs.008 → JSON: Incoming ISO 20022 message converted to canonical JSON for internal routing and legacy system compatibility.',
@@ -506,11 +510,12 @@ CLOUD INFRASTRUCTURE DEVELOPMENT
   crypto: {
     id: 'crypto',
     title: 'India → USA → Mexico Crypto Settlement',
-    description: 'Mumbai fintech pays US partner, final settlement to Mexico via Solana - $50,000 USD',
+    description: 'Mumbai fintech pays US partner, settles to Mexico via Solana - $50K USD',
     badge: 'BLOCKCHAIN',
-    badgeVariant: 'purple',
+    badgeVariant: 'blue',
     isAgentic: false,
     isCryptoSettlement: true,
+    mongoFeature: 'DOCUMENT MODEL',
     info: {
       process: 'ISO 20022 payment converted to canonical JSON, then settled on Solana blockchain as last-mile payment to Mexico.',
       hop1: 'pacs.008 → JSON: Extract payment details and wallet addresses from RmtInf/Ustrd fields.',
@@ -697,8 +702,9 @@ CLOUD INFRASTRUCTURE DEVELOPMENT
     title: 'Canada → Singapore Tech Services',
     description: 'Shopify Inc pays Grab Holdings for API integration - S$3.2M SGD',
     badge: 'PURPOSE CODE',
-    badgeVariant: 'purple',
+    badgeVariant: 'lightgray',
     isAgentic: true,
+    mongoFeature: 'VECTOR SEARCH',
     info: {
       problem: 'ISO 20022 requires standardized purpose codes (e.g., SALA, SUPP, SCVE), but the source MT103 only contains free-text: "Platform API integration and cloud infrastructure services".',
       solution: 'Transaction Agent uses semantic vector search to classify the payment description into the correct ISO 20022 purpose code: SCVE (Services).',
@@ -820,10 +826,11 @@ CONTRACT SHOP-GRAB-2024-API-001
   name_mismatch: {
     id: 'name_mismatch',
     title: 'USA → UK Banking Services',
-    description: 'Goldman Sachs pays HSBC for custody services - £5M GBP - Name verification required',
+    description: 'Goldman Sachs pays HSBC for custody services - £5M GBP',
     badge: 'NAME VERIFICATION',
     badgeVariant: 'yellow',
     isAgentic: true,
+    mongoFeature: 'ATLAS SEARCH',
     info: {
       problem: 'Payment creditor shows "HSBC" but sanctions screening requires exact legal name match. Trading names and abbreviations often fail compliance checks.',
       solution: 'Transaction Agent searches the KYC registry to find "HSBC Holdings plc" as the official legal name matching the trading name "HSBC".',

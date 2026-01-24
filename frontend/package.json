@@ -25,6 +25,7 @@
     "@leafygreen-ui/modal": "^20.0.2",
     "@leafygreen-ui/palette": "^5.0.1",
     "@leafygreen-ui/polymorphic": "^3.0.3",
+    "@leafygreen-ui/popover": "^14.3.2",
     "@leafygreen-ui/select": "^16.1.1",
     "@leafygreen-ui/table": "^15.1.2",
     "@leafygreen-ui/tabs": "^17.0.2",

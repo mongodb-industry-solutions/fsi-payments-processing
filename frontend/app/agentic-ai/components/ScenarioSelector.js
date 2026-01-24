@@ -1,11 +1,11 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Body } from '@leafygreen-ui/typography';
 import Card from '@leafygreen-ui/card';
 import Badge from '@leafygreen-ui/badge';
 import Icon from '@leafygreen-ui/icon';
-import Tooltip from '@leafygreen-ui/tooltip';
+import Popover from '@leafygreen-ui/popover';
 
 /**
  * ScenarioSelector Component - Compact Version
@@ -17,6 +17,27 @@ export default function ScenarioSelector({
   onSelectScenario,
   isStreaming
 }) {
+  const [openPopover, setOpenPopover] = useState(null);
+  const buttonRefs = useRef({});
+
+  // Close popover when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event) {
+      // Check if click is outside any popover content
+      const popoverContent = document.querySelector('[data-popover-content]');
+      const clickedInfoIcon = event.target.closest('[data-info-trigger]');
+
+      if (openPopover && !popoverContent?.contains(event.target) && !clickedInfoIcon) {
+        setOpenPopover(null);
+      }
+    }
+
+    if (openPopover) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [openPopover]);
+
   return (
     <>
     <div style={{ position: 'relative' }}>
@@ -35,6 +56,8 @@ export default function ScenarioSelector({
       >
       {scenarios.map((scenario) => {
         const isSelected = scenario.id === selectedScenario;
+        const isPopoverOpen = openPopover === scenario.id;
+
         return (
           <Card
             key={scenario.id}
@@ -67,14 +90,14 @@ export default function ScenarioSelector({
               }
             }}
           >
-            {/* Top Row: Route + Selection */}
+            {/* Top Row: Route + Agentic Badge + Selection */}
             <div style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
               marginBottom: '8px'
             }}>
-              {/* Country Route */}
+              {/* Country Route + Agentic Badge + Info Icon */}
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -87,6 +110,128 @@ export default function ScenarioSelector({
                 <Body style={{ fontSize: 'var(--font-base, 15px)', fontWeight: '700', color: '#1C2D38' }}>
                   {scenario.targetCountry.code}
                 </Body>
+                {scenario.isAgentic && (
+                  <Badge variant="purple" style={{ fontSize: '10px', marginLeft: '4px' }}>
+                    AGENTIC
+                  </Badge>
+                )}
+                {/* Info Popover */}
+                {scenario.info && (
+                  <>
+                    <div
+                      ref={(el) => buttonRefs.current[scenario.id] = el}
+                      data-info-trigger
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setOpenPopover(isPopoverOpen ? null : scenario.id);
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        cursor: 'pointer',
+                        padding: '2px',
+                        borderRadius: '4px',
+                        transition: 'background-color 0.15s ease'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.05)'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                    >
+                      <Icon
+                        glyph="InfoWithCircle"
+                        size="small"
+                        fill={isPopoverOpen ? '#00A35C' : '#889397'}
+                      />
+                    </div>
+                    <Popover
+                      active={isPopoverOpen}
+                      refEl={buttonRefs.current[scenario.id]}
+                      align="bottom"
+                      justify="start"
+                      spacing={8}
+                      adjustOnMutation
+                    >
+                      <div
+                        data-popover-content
+                        onClick={(e) => e.stopPropagation()}
+                        style={{
+                          width: '300px',
+                          backgroundColor: '#FFFFFF',
+                          borderRadius: '8px',
+                          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08)',
+                          border: '1px solid #E7EAEE',
+                          padding: '16px'
+                        }}
+                      >
+                        {scenario.info.problem && (
+                          <div style={{ marginBottom: '12px' }}>
+                            <div style={{
+                              fontSize: '11px',
+                              fontWeight: '600',
+                              color: '#5C6C75',
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.5px',
+                              marginBottom: '6px'
+                            }}>
+                              Problem
+                            </div>
+                            <p style={{
+                              fontSize: '13px',
+                              lineHeight: '1.5',
+                              margin: 0,
+                              color: '#1C2D38'
+                            }}>
+                              {scenario.info.problem}
+                            </p>
+                          </div>
+                        )}
+                        {scenario.info.solution && (
+                          <div>
+                            <div style={{
+                              fontSize: '11px',
+                              fontWeight: '600',
+                              color: '#00A35C',
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.5px',
+                              marginBottom: '6px'
+                            }}>
+                              Solution
+                            </div>
+                            <p style={{
+                              fontSize: '13px',
+                              lineHeight: '1.5',
+                              margin: 0,
+                              color: '#1C2D38'
+                            }}>
+                              {scenario.info.solution}
+                            </p>
+                          </div>
+                        )}
+                        {scenario.info.process && (
+                          <div>
+                            <div style={{
+                              fontSize: '11px',
+                              fontWeight: '600',
+                              color: '#5C6C75',
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.5px',
+                              marginBottom: '6px'
+                            }}>
+                              Process
+                            </div>
+                            <p style={{
+                              fontSize: '13px',
+                              lineHeight: '1.5',
+                              margin: 0,
+                              color: '#1C2D38'
+                            }}>
+                              {scenario.info.process}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </Popover>
+                  </>
+                )}
               </div>
 
               {/* Selection Check */}
@@ -123,70 +268,16 @@ export default function ScenarioSelector({
             <div style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '8px',
+              gap: '6px',
               flexWrap: 'wrap'
             }}>
-              <Badge variant={scenario.badgeVariant} style={{ fontSize: 'var(--font-xs, 11px)' }}>
+              <Badge variant={scenario.badgeVariant} style={{ fontSize: 'var(--font-xs, 11px)', whiteSpace: 'nowrap' }}>
                 {scenario.badge}
               </Badge>
-              {scenario.isAgentic && (
-                <Badge variant="purple" style={{ fontSize: 'var(--font-xs, 11px)' }}>
-                  AGENTIC
+              {scenario.mongoFeature && (
+                <Badge variant="green" style={{ fontSize: 'var(--font-xs, 11px)', whiteSpace: 'nowrap' }}>
+                  {scenario.mongoFeature}
                 </Badge>
-              )}
-
-              {/* Info Tooltip */}
-              {scenario.info && (
-                <Tooltip
-                  trigger={
-                    <div
-                      onClick={(e) => e.stopPropagation()}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        cursor: 'help',
-                        marginLeft: 'auto'
-                      }}
-                    >
-                      <Icon glyph="InfoWithCircle" size="small" fill="#889397" />
-                    </div>
-                  }
-                  darkMode={false}
-                >
-                  <div style={{
-                    maxWidth: '280px',
-                    padding: '10px',
-                    color: '#000000',
-                    backgroundColor: '#FFFFFF',
-                    borderRadius: '6px'
-                  }}>
-                    {scenario.info.problem && (
-                      <>
-                        <strong style={{ fontSize: '11px', display: 'block', marginBottom: '4px' }}>
-                          Problem
-                        </strong>
-                        <p style={{ fontSize: '11px', marginBottom: '8px', lineHeight: '1.5', margin: '0 0 8px 0' }}>
-                          {scenario.info.problem}
-                        </p>
-                      </>
-                    )}
-                    {scenario.info.solution && (
-                      <>
-                        <strong style={{ fontSize: '11px', display: 'block', marginBottom: '4px' }}>
-                          Solution
-                        </strong>
-                        <p style={{ fontSize: '11px', lineHeight: '1.5', margin: 0 }}>
-                          {scenario.info.solution}
-                        </p>
-                      </>
-                    )}
-                    {scenario.info.process && (
-                      <p style={{ fontSize: '11px', lineHeight: '1.5', margin: 0 }}>
-                        {scenario.info.process}
-                      </p>
-                    )}
-                  </div>
-                </Tooltip>
               )}
             </div>
           </Card>
