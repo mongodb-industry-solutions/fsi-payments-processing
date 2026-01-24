@@ -170,18 +170,6 @@ export default function AIReviewModal({
                       </Body>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      {/* Confidence */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <div style={{
-                          width: '8px',
-                          height: '8px',
-                          borderRadius: '50%',
-                          background: getConfidenceColor(field.confidence || 0)
-                        }} />
-                        <Body style={{ fontSize: '11px', color: '#889397' }}>
-                          {((field.confidence || 0) * 100).toFixed(0)}%
-                        </Body>
-                      </div>
                       <Icon
                         glyph={expandedFields.has(index) ? 'ChevronUp' : 'ChevronDown'}
                         fill="#889397"
@@ -232,15 +220,6 @@ export default function AIReviewModal({
                             : field.ai_response || '(no extraction)'}
                         </div>
                       </div>
-
-                      {/* Confidence Reason */}
-                      {field.confidence_reason && (
-                        <div style={{ marginTop: '8px' }}>
-                          <Body style={{ fontSize: '11px', color: '#889397', fontStyle: 'italic' }}>
-                            {field.confidence_reason}
-                          </Body>
-                        </div>
-                      )}
                     </div>
                   )}
                 </div>

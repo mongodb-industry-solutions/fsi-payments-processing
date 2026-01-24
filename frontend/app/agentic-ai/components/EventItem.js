@@ -682,9 +682,6 @@ function renderEventDetails(event) {
                       {JSON.stringify(field.ai_response, null, 2)}
                     </pre>
                   )}
-                  <Body style={{ fontSize: '10px', color: '#889397', marginTop: '4px' }}>
-                    Confidence: {((field.confidence || 0) * 100).toFixed(0)}%
-                  </Body>
                 </div>
               ))}
             </div>
