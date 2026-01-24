@@ -123,7 +123,8 @@ export default function AgenticAIPage() {
   const eventQueueRef = useRef([]);
   const throttleTimerRef = useRef(null);
   const pendingOutputRef = useRef(null); // Store output until queue is empty
-  const EVENT_DISPLAY_DELAY = 400; // ms between events for non-agentic scenarios
+  const AGENTIC_EVENT_DELAY = 400; // ms between events for agentic scenarios (if any queued)
+  const NON_AGENTIC_EVENT_DELAY = 900; // ms between events for non-agentic scenarios (card_payment, internal_mx) - ~5.4s for 6 events
   const CRYPTO_EVENT_DELAY = 1000; // ms between events for crypto scenarios (~10s total, ensures 1s per card)
 
   // Human-in-the-loop review state (for agent corrections like Japan/India)
@@ -195,13 +196,25 @@ export default function AgenticAIPage() {
     setExpandedEvents(prev => new Set([...prev, nextEvent.id]));
 
     // Schedule next event with appropriate delay
-    // Crypto scenarios and crypto events use longer delay for better demo pacing (~15s total)
+    // Crypto scenarios use longest delay (~10s total)
+    // Non-agentic scenarios (card_payment, internal_mx) use medium delay (~5.4s total)
+    // Agentic scenarios use shortest delay (agent processing provides natural pacing)
     if (eventQueueRef.current.length > 0) {
       const scenario = getScenario(selectedScenario);
       const isCryptoScenario = scenario?.isCryptoSettlement === true;
+      const isNonAgenticScenario = scenario?.isAgentic === false;
       const upcomingEvent = eventQueueRef.current[0];
       const useCryptoDelay = isCryptoScenario || isCryptoEvent(nextEvent) || isCryptoEvent(upcomingEvent);
-      const delay = useCryptoDelay ? CRYPTO_EVENT_DELAY : EVENT_DISPLAY_DELAY;
+
+      // Determine delay: crypto > non-agentic > agentic
+      let delay;
+      if (useCryptoDelay) {
+        delay = CRYPTO_EVENT_DELAY;
+      } else if (isNonAgenticScenario) {
+        delay = NON_AGENTIC_EVENT_DELAY;
+      } else {
+        delay = AGENTIC_EVENT_DELAY;
+      }
       throttleTimerRef.current = setTimeout(processEventQueue, delay);
     } else {
       // Queue just became empty - schedule one more call to apply pending output
@@ -230,11 +243,13 @@ export default function AgenticAIPage() {
 
       // Start processing if not already running
       if (!throttleTimerRef.current) {
-        // Crypto scenarios use longer delays throughout for better demo pacing (~15s total)
+        // Crypto scenarios use longer delays throughout for better demo pacing (~10s total)
+        // Non-agentic scenarios (card_payment, internal_mx) use medium delay (~5.4s total)
         if (useCryptoDelay) {
           throttleTimerRef.current = setTimeout(processEventQueue, CRYPTO_EVENT_DELAY);
         } else {
-          processEventQueue();
+          // Non-agentic, non-crypto: start with initial delay for smoother pacing
+          throttleTimerRef.current = setTimeout(processEventQueue, NON_AGENTIC_EVENT_DELAY);
         }
       }
     } else {
