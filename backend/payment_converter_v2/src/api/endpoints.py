@@ -919,6 +919,46 @@ async def get_canonical_json_diff(conversion_run_id: str):
         )
 
 
+@router.get("/canonical-json/{conversion_run_id}", status_code=status.HTTP_200_OK)
+async def get_canonical_json_full(conversion_run_id: str):
+    """
+    Fetch the full canonical JSON document from MongoDB.
+
+    Returns the complete document including all metadata, audit trails,
+    and processing information stored in canonical_json_storage.
+
+    Args:
+        conversion_run_id: UUID of the conversion run
+
+    Returns:
+        Full MongoDB document with all fields
+
+    Raises:
+        HTTPException 404: If document not found
+    """
+    try:
+        doc = await mongodb_service.json_storage_collection.find_one({"_id": conversion_run_id})
+
+        if not doc:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Canonical JSON document not found for conversion_run_id: {conversion_run_id}"
+            )
+
+        logger.info(f"Retrieved full canonical JSON document for {conversion_run_id}")
+
+        return doc
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching full canonical JSON document: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch canonical JSON document: {str(e)}"
+        )
+
+
 class HumanReviewDecision(BaseModel):
     """Human reviewer's decision on proposed change."""
     approved: bool = Field(..., description="Whether the change is approved")

@@ -36,12 +36,20 @@ function getFeaturedExample(rulesFields) {
 export default function BubbleDetailPanel({ bubbleType, data, stats }) {
   // State for JSON bubble - must be at top level (React hooks rules)
   const [canonicalJson, setCanonicalJson] = useState(null);
+  const [fullDocument, setFullDocument] = useState(null);
+  const [showFullDocument, setShowFullDocument] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   // State for conversion bubble expandable sections
   const [rulesExpanded, setRulesExpanded] = useState(false);
   const [configExpanded, setConfigExpanded] = useState(false);
+
+  // State for maximize modal
+  const [isMaximized, setIsMaximized] = useState(false);
+
+  // State for MongoDB Configuration maximize modal (separate from main panel maximize)
+  const [isConfigMaximized, setIsConfigMaximized] = useState(false);
 
   // Fetch canonical JSON when bubble type is '2' and conversionRunId is available
   useEffect(() => {
@@ -59,16 +67,32 @@ export default function BubbleDetailPanel({ bubbleType, data, stats }) {
       setError(null);
       try {
         console.log('🔍 Fetching canonical JSON for conversion_run_id:', conversionRunId);
-        const response = await fetch(
-          `/api/canonical-json/${conversionRunId}/diff`
-        );
-        if (!response.ok) {
-          throw new Error(`Failed to fetch canonical JSON: ${response.status}`);
+
+        // Fetch both endpoints in parallel
+        const [diffResponse, fullResponse] = await Promise.all([
+          fetch(`/api/canonical-json/${conversionRunId}/diff`),
+          fetch(`/api/canonical-json/${conversionRunId}`)
+        ]);
+
+        if (!diffResponse.ok) {
+          throw new Error(`Failed to fetch canonical JSON: ${diffResponse.status}`);
         }
-        const result = await response.json();
-        console.log('✅ Canonical JSON fetched:', result);
+
+        const diffResult = await diffResponse.json();
+        console.log('✅ Canonical JSON diff fetched:', diffResult);
+
         // Use after_json (canonical JSON after agent corrections)
-        setCanonicalJson(result.after_json);
+        setCanonicalJson(diffResult.after_json);
+
+        // Fetch full MongoDB document if available
+        if (fullResponse.ok) {
+          const fullDoc = await fullResponse.json();
+          console.log('✅ Full document fetched:', fullDoc);
+          setFullDocument(fullDoc);
+        } else {
+          // Fallback to diff result if full document endpoint fails
+          setFullDocument(diffResult);
+        }
       } catch (err) {
         console.error('❌ Error fetching canonical JSON:', err);
         setError(err.message);
@@ -115,9 +139,43 @@ export default function BubbleDetailPanel({ bubbleType, data, stats }) {
         borderRadius: '8px',
         padding: '24px'
       }}>
-        <H3 style={{ marginBottom: '16px' }}>
-          {bubbleType === '1' ? 'Source Message' : 'Target Message'}
-        </H3>
+        {/* Header with Maximize Button */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '16px'
+        }}>
+          <H3 style={{ margin: 0 }}>
+            {bubbleType === '1' ? 'Source Message' : 'Target Message'}
+          </H3>
+          <button
+            onClick={() => setIsMaximized(true)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '32px',
+              height: '32px',
+              background: '#F9FBFA',
+              border: '1px solid #E7EAEE',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              transition: 'all 0.15s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = '#E7EAEE';
+              e.currentTarget.style.borderColor = '#C1C7C6';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = '#F9FBFA';
+              e.currentTarget.style.borderColor = '#E7EAEE';
+            }}
+            title="Maximize"
+          >
+            <Icon glyph="FullScreenEnter" size="small" fill="#5C6C75" />
+          </button>
+        </div>
 
         <Label style={{
           fontSize: '12px',
@@ -145,6 +203,93 @@ export default function BubbleDetailPanel({ bubbleType, data, stats }) {
           </Code>
         </div>
       </div>
+
+      {/* Maximized Modal for Message Bubbles */}
+      {isMaximized && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.4)',
+            zIndex: 1000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '40px'
+          }}
+          onClick={() => setIsMaximized(false)}
+        >
+          <div
+            style={{
+              backgroundColor: 'white',
+              borderRadius: '12px',
+              width: '90vw',
+              maxWidth: '1200px',
+              maxHeight: '90vh',
+              overflow: 'hidden',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+              display: 'flex',
+              flexDirection: 'column'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div style={{
+              padding: '20px 24px',
+              borderBottom: '1px solid #E7EAEE',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexShrink: 0
+            }}>
+              <div>
+                <H3 style={{ margin: 0 }}>
+                  {bubbleType === '1' ? 'Source Message' : 'Target Message'}
+                </H3>
+                <Label style={{ fontSize: '12px', color: '#889397', marginTop: '6px', display: 'block' }}>
+                  Format: {data.format}
+                </Label>
+              </div>
+              <button
+                onClick={() => setIsMaximized(false)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '36px',
+                  height: '36px',
+                  background: '#F9FBFA',
+                  border: '1px solid #E7EAEE',
+                  borderRadius: '6px',
+                  cursor: 'pointer'
+                }}
+                title="Close"
+              >
+                <Icon glyph="X" size="small" fill="#5C6C75" />
+              </button>
+            </div>
+            {/* Content */}
+            <div
+              className="bubble-detail-scrollable"
+              style={{
+                flex: 1,
+                overflow: 'auto',
+                padding: '24px',
+                background: '#F9FBFA'
+              }}
+            >
+              <Code
+                language={data.format?.startsWith('MT') ? 'swift' : 'xml'}
+              >
+                {data.message || 'No message data available'}
+              </Code>
+            </div>
+          </div>
+        </div>
+      )}
       </>
     );
   }
@@ -194,16 +339,50 @@ export default function BubbleDetailPanel({ bubbleType, data, stats }) {
           borderRadius: '8px',
           padding: '24px'
         }}>
-          {/* Header */}
+          {/* Header with Maximize Button */}
           <div style={{
             marginBottom: '24px',
             paddingBottom: '16px',
             borderBottom: '1px solid #E7EAEE'
           }}>
-            <H3>Hop {hopNumber} Conversion</H3>
-            <Label style={{ fontSize: '12px', color: '#889397', marginTop: '8px', display: 'block' }}>
-              {data.conversionId}
-            </Label>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'flex-start'
+            }}>
+              <div>
+                <H3 style={{ margin: 0 }}>Hop {hopNumber} Conversion</H3>
+                <Label style={{ fontSize: '12px', color: '#889397', marginTop: '8px', display: 'block' }}>
+                  {data.conversionId}
+                </Label>
+              </div>
+              <button
+                onClick={() => setIsMaximized(true)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '32px',
+                  height: '32px',
+                  background: '#F9FBFA',
+                  border: '1px solid #E7EAEE',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = '#E7EAEE';
+                  e.currentTarget.style.borderColor = '#C1C7C6';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = '#F9FBFA';
+                  e.currentTarget.style.borderColor = '#E7EAEE';
+                }}
+                title="Maximize"
+              >
+                <Icon glyph="FullScreenEnter" size="small" fill="#5C6C75" />
+              </button>
+            </div>
           </div>
 
           {/* MongoDB Configuration Panel */}
@@ -229,9 +408,36 @@ export default function BubbleDetailPanel({ bubbleType, data, stats }) {
                     MongoDB Configuration
                   </Body>
                 </div>
-                <span style={{ fontSize: '11px', color: '#889397' }}>
-                  {configExpanded ? 'Hide' : 'Show'}
-                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  {/* Maximize Button */}
+                  <div
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsConfigMaximized(true);
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '4px',
+                      cursor: 'pointer',
+                      borderRadius: '4px',
+                      transition: 'all 0.15s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = 'rgba(0, 0, 0, 0.08)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'transparent';
+                    }}
+                    title="Maximize Configuration"
+                  >
+                    <Icon glyph="FullScreenEnter" size="small" fill="#5C6C75" />
+                  </div>
+                  <span style={{ fontSize: '11px', color: '#889397' }}>
+                    {configExpanded ? 'Hide' : 'Show'}
+                  </span>
+                </div>
               </button>
 
               {configExpanded && (
@@ -626,6 +832,293 @@ export default function BubbleDetailPanel({ bubbleType, data, stats }) {
             )}
           </div>
         </div>
+
+        {/* Maximized Modal for Conversion Bubbles */}
+        {isMaximized && (
+          <div
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.4)',
+              zIndex: 1000,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '40px'
+            }}
+            onClick={() => setIsMaximized(false)}
+          >
+            <div
+              style={{
+                backgroundColor: 'white',
+                borderRadius: '12px',
+                width: '95vw',
+                maxWidth: '1400px',
+                maxHeight: '90vh',
+                overflow: 'hidden',
+                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                display: 'flex',
+                flexDirection: 'column'
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div style={{
+                padding: '20px 24px',
+                borderBottom: '1px solid #E7EAEE',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexShrink: 0
+              }}>
+                <div>
+                  <H3 style={{ margin: 0 }}>Hop {hopNumber} Conversion</H3>
+                  <Label style={{ fontSize: '12px', color: '#889397', marginTop: '6px', display: 'block' }}>
+                    {data.conversionId}
+                  </Label>
+                </div>
+                <button
+                  onClick={() => setIsMaximized(false)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '36px',
+                    height: '36px',
+                    background: '#F9FBFA',
+                    border: '1px solid #E7EAEE',
+                    borderRadius: '6px',
+                    cursor: 'pointer'
+                  }}
+                  title="Close"
+                >
+                  <Icon glyph="X" size="small" fill="#5C6C75" />
+                </button>
+              </div>
+
+              {/* Content - Two Column Layout */}
+              <div style={{
+                flex: 1,
+                overflow: 'auto',
+                padding: '24px'
+              }}>
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
+                  gap: '24px',
+                  minHeight: '100%'
+                }}>
+              {/* Left Column: Rules Engine */}
+              <div style={{
+                padding: '20px',
+                background: '#F9FBFA',
+                borderRadius: '8px',
+                border: '1px solid #E7EAEE'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+                  <Icon glyph="Database" size="small" fill="#0B61A4" />
+                  <Body weight="medium" style={{ fontSize: '14px', color: '#1C2D38' }}>
+                    Rules Engine ({rulesCount} fields)
+                  </Body>
+                </div>
+
+                {/* All Rules Fields Table */}
+                {rulesLane.fields && (
+                  <div className="bubble-detail-scrollable" style={{
+                    maxHeight: '400px',
+                    overflow: 'auto',
+                    background: 'white',
+                    borderRadius: '6px',
+                    border: '1px solid #E7EAEE'
+                  }}>
+                    <table style={{ width: '100%', fontSize: '12px', borderCollapse: 'collapse' }}>
+                      <thead>
+                        <tr style={{ borderBottom: '2px solid #E7EAEE', background: '#F9FBFA', position: 'sticky', top: 0 }}>
+                          <th style={{ textAlign: 'left', padding: '10px', fontWeight: '600' }}>Source</th>
+                          <th style={{ textAlign: 'left', padding: '10px', fontWeight: '600' }}>Target</th>
+                          <th style={{ textAlign: 'left', padding: '10px', fontWeight: '600' }}>Output</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {rulesLane.fields.map((field, idx) => (
+                          <tr key={idx} style={{ borderBottom: '1px solid #E7EAEE' }}>
+                            <td style={{ padding: '10px', fontWeight: '600', color: '#0B61A4' }}>
+                              {field.source_field || '-'}
+                            </td>
+                            <td style={{ padding: '10px', fontFamily: 'monospace', fontSize: '11px' }}>
+                              {Array.isArray(field.target_field) ? field.target_field.join(', ') : field.target_field}
+                            </td>
+                            <td style={{ padding: '10px', fontFamily: 'monospace', fontSize: '11px', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {field.output_value && Object.keys(field.output_value).length > 0
+                                ? Object.entries(field.output_value).map(([k, v]) => `${k}: ${v}`).join(', ')
+                                : '-'
+                              }
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+
+              {/* Right Column: AI Extraction */}
+              <div style={{
+                padding: '20px',
+                background: aiCount > 0 ? '#FFF9E6' : '#F9FBFA',
+                borderRadius: '8px',
+                border: aiCount > 0 ? '1px solid rgba(255, 192, 16, 0.5)' : '1px dashed #E7EAEE'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+                  <Icon glyph={aiCount > 0 ? 'Sparkle' : 'Checkmark'} size="small" fill={aiCount > 0 ? '#895D1A' : '#00A35C'} />
+                  <Body weight="medium" style={{ fontSize: '14px', color: '#1C2D38' }}>
+                    {aiCount > 0 ? `AI Extraction (${aiCount} fields)` : 'Rules Only'}
+                  </Body>
+                </div>
+
+                {aiCount > 0 && aiLane.fields ? (
+                  <div className="bubble-detail-scrollable" style={{ maxHeight: '400px', overflow: 'auto' }}>
+                    {aiLane.fields.map((field, idx) => (
+                      <div key={idx} style={{
+                        background: 'white',
+                        borderRadius: '6px',
+                        padding: '16px',
+                        marginBottom: '12px',
+                        border: '1px solid rgba(255, 192, 16, 0.3)'
+                      }}>
+                        <Label style={{ fontSize: '11px', color: '#889397', marginBottom: '8px', display: 'block' }}>
+                          Field {field.source_field}
+                        </Label>
+                        <div style={{ marginBottom: '12px' }}>
+                          <Label style={{ fontSize: '10px', color: '#889397', marginBottom: '4px', display: 'block' }}>INPUT</Label>
+                          <div style={{
+                            background: '#F9FBFA',
+                            padding: '10px',
+                            borderRadius: '4px',
+                            fontFamily: 'monospace',
+                            fontSize: '12px',
+                            whiteSpace: 'pre-wrap',
+                            wordBreak: 'break-word'
+                          }}>
+                            {field.input_text}
+                          </div>
+                        </div>
+                        <div>
+                          <Label style={{ fontSize: '10px', color: '#00A35C', marginBottom: '4px', display: 'block' }}>OUTPUT</Label>
+                          <div style={{
+                            background: '#E3FCF7',
+                            padding: '10px',
+                            borderRadius: '4px',
+                            border: '1px solid rgba(0, 163, 92, 0.3)'
+                          }}>
+                            <Code language="json">
+                              {JSON.stringify(field.ai_response, null, 2)}
+                            </Code>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ textAlign: 'center', padding: '40px', color: '#889397' }}>
+                    <Body style={{ fontSize: '13px' }}>All fields processed deterministically. No AI extraction required.</Body>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+        )}
+
+        {/* Maximized Modal for MongoDB Configuration */}
+        {isConfigMaximized && (
+          <div
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.4)',
+              zIndex: 1000,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '40px'
+            }}
+            onClick={() => setIsConfigMaximized(false)}
+          >
+            <div
+              style={{
+                backgroundColor: 'white',
+                borderRadius: '12px',
+                width: '90vw',
+                maxWidth: '1200px',
+                maxHeight: '90vh',
+                overflow: 'hidden',
+                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                display: 'flex',
+                flexDirection: 'column'
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div style={{
+                padding: '20px 24px',
+                borderBottom: '1px solid #E7EAEE',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexShrink: 0
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <Icon glyph="Database" size="small" fill="#0B61A4" />
+                  <div>
+                    <H3 style={{ margin: 0 }}>MongoDB Configuration</H3>
+                    <Label style={{ fontSize: '12px', color: '#889397', marginTop: '4px', display: 'block' }}>
+                      {data.conversionId}
+                    </Label>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsConfigMaximized(false)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '36px',
+                    height: '36px',
+                    background: '#F9FBFA',
+                    border: '1px solid #E7EAEE',
+                    borderRadius: '6px',
+                    cursor: 'pointer'
+                  }}
+                  title="Close"
+                >
+                  <Icon glyph="X" size="small" fill="#5C6C75" />
+                </button>
+              </div>
+              {/* Content */}
+              <div
+                className="bubble-detail-scrollable"
+                style={{
+                  flex: 1,
+                  overflow: 'auto',
+                  padding: '24px',
+                  background: '#F9FBFA'
+                }}
+              >
+                <Code language="json">
+                  {JSON.stringify(configuration, null, 2)}
+                </Code>
+              </div>
+            </div>
+          </div>
+        )}
       </>
     );
   }
@@ -663,9 +1156,43 @@ export default function BubbleDetailPanel({ bubbleType, data, stats }) {
         borderRadius: '8px',
         padding: '24px'
       }}>
-        <H3 style={{ marginBottom: '16px' }}>
-          Intermediate Canonical JSON
-        </H3>
+        {/* Header with Maximize Button */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '16px'
+        }}>
+          <H3 style={{ margin: 0 }}>
+            Intermediate Canonical JSON
+          </H3>
+          <button
+            onClick={() => setIsMaximized(true)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '32px',
+              height: '32px',
+              background: '#F9FBFA',
+              border: '1px solid #E7EAEE',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              transition: 'all 0.15s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = '#E7EAEE';
+              e.currentTarget.style.borderColor = '#C1C7C6';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = '#F9FBFA';
+              e.currentTarget.style.borderColor = '#E7EAEE';
+            }}
+            title="Maximize"
+          >
+            <Icon glyph="FullScreenEnter" size="small" fill="#5C6C75" />
+          </button>
+        </div>
 
         <div style={{
           background: '#F9FBFA',
@@ -747,17 +1274,39 @@ export default function BubbleDetailPanel({ bubbleType, data, stats }) {
         {/* Show canonical JSON if loaded */}
         {canonicalJson && !loading && !error && (
           <div style={{ marginTop: '16px' }}>
-            <Label style={{
-              fontSize: '12px',
-              color: '#889397',
-              display: 'block',
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
               marginBottom: '8px'
             }}>
-              Stored Canonical JSON (after Agent corrections)
-            </Label>
+              <Label style={{
+                fontSize: '12px',
+                color: '#889397'
+              }}>
+                {showFullDocument ? 'Full Document (with metadata)' : 'Canonical JSON (after Agent corrections)'}
+              </Label>
+              <button
+                onClick={() => setShowFullDocument(!showFullDocument)}
+                style={{
+                  padding: '6px 12px',
+                  background: showFullDocument ? '#0B61A4' : 'white',
+                  color: showFullDocument ? 'white' : '#5C6C75',
+                  border: '1px solid',
+                  borderColor: showFullDocument ? '#0B61A4' : '#E7EAEE',
+                  borderRadius: '4px',
+                  fontSize: '11px',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                {showFullDocument ? 'JSON Only' : 'Full Document'}
+              </button>
+            </div>
             <div className="bubble-detail-scrollable" style={{ maxHeight: '500px', overflow: 'auto' }}>
               <Code language="json">
-                {JSON.stringify(canonicalJson, null, 2)}
+                {JSON.stringify(showFullDocument ? fullDocument : canonicalJson, null, 2)}
               </Code>
             </div>
           </div>
@@ -778,6 +1327,157 @@ export default function BubbleDetailPanel({ bubbleType, data, stats }) {
           </div>
         )}
       </div>
+
+      {/* Maximized Modal for JSON Bubble */}
+      {isMaximized && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.4)',
+            zIndex: 1000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '40px'
+          }}
+          onClick={() => setIsMaximized(false)}
+        >
+          <div
+            style={{
+              backgroundColor: 'white',
+              borderRadius: '12px',
+              width: '90vw',
+              maxWidth: '1200px',
+              maxHeight: '90vh',
+              overflow: 'hidden',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+              display: 'flex',
+              flexDirection: 'column'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div style={{
+              padding: '20px 24px',
+              borderBottom: '1px solid #E7EAEE',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexShrink: 0
+            }}>
+              <div>
+                <H3 style={{ margin: 0 }}>
+                  {showFullDocument ? 'Full Document' : 'Intermediate Canonical JSON'}
+                </H3>
+                <Label style={{ fontSize: '12px', color: '#889397', marginTop: '4px', display: 'block' }}>
+                  {showFullDocument ? 'Complete document with metadata' : 'After Agent corrections'}
+                </Label>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                {canonicalJson && (
+                  <button
+                    onClick={() => setShowFullDocument(!showFullDocument)}
+                    style={{
+                      padding: '6px 12px',
+                      background: showFullDocument ? '#0B61A4' : 'white',
+                      color: showFullDocument ? 'white' : '#5C6C75',
+                      border: '1px solid',
+                      borderColor: showFullDocument ? '#0B61A4' : '#E7EAEE',
+                      borderRadius: '4px',
+                      fontSize: '11px',
+                      fontWeight: '500',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    {showFullDocument ? 'JSON Only' : 'Full Document'}
+                  </button>
+                )}
+                <button
+                  onClick={() => setIsMaximized(false)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '36px',
+                    height: '36px',
+                    background: '#F9FBFA',
+                    border: '1px solid #E7EAEE',
+                    borderRadius: '6px',
+                    cursor: 'pointer'
+                  }}
+                  title="Close"
+                >
+                  <Icon glyph="X" size="small" fill="#5C6C75" />
+                </button>
+              </div>
+            </div>
+            {/* Content */}
+            <div style={{ flex: 1, overflow: 'auto', padding: '24px' }}>
+              {loading && (
+                <div style={{
+                  background: '#FFF9E6',
+                  borderRadius: '6px',
+                  padding: '16px',
+                  border: '1px solid #FFC010',
+                  textAlign: 'center'
+                }}>
+                  <Body style={{ fontSize: '13px', color: '#895D1A' }}>
+                    Loading canonical JSON...
+                  </Body>
+                </div>
+              )}
+
+              {error && !loading && (
+                <div style={{
+                  background: '#FFE9E6',
+                  borderRadius: '6px',
+                  padding: '16px',
+                  border: '1px solid #CD4246'
+                }}>
+                  <Body style={{ fontSize: '13px', color: '#CD4246' }}>
+                    {error}
+                  </Body>
+                </div>
+              )}
+
+              {canonicalJson && !loading && !error && (
+                <div
+                  className="bubble-detail-scrollable"
+                  style={{
+                    background: '#F9FBFA',
+                    borderRadius: '6px',
+                    padding: '20px',
+                    border: '1px solid #E7EAEE'
+                  }}
+                >
+                  <Code language="json">
+                    {JSON.stringify(showFullDocument ? fullDocument : canonicalJson, null, 2)}
+                  </Code>
+                </div>
+              )}
+
+              {!conversionRunId && !loading && (
+                <div style={{
+                  background: '#F9FBFA',
+                  borderRadius: '6px',
+                  padding: '24px',
+                  border: '1px solid #E7EAEE',
+                  textAlign: 'center'
+                }}>
+                  <Body style={{ fontSize: '13px', color: '#889397' }}>
+                    Run a conversion to view the canonical JSON
+                  </Body>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
       </>
     );
   }
