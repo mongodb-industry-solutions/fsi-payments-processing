@@ -1,20 +1,86 @@
 'use client';
 
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useMemo, useState } from 'react';
 import { H2, Body } from '@leafygreen-ui/typography';
 import Card from '@leafygreen-ui/card';
 import Badge from '@leafygreen-ui/badge';
 import Icon from '@leafygreen-ui/icon';
 import EventItem from './EventItem';
 import OutputCard from './OutputCard';
+import ThinkingIndicator from './ThinkingIndicator';
 
 /**
- * Get agent status based on events and streaming state
+ * Get agent status based on streaming state and output
  */
-function getAgentStatus(isStreaming, events, output) {
+function getAgentStatus(isStreaming, output) {
   if (output) return { label: 'Complete', variant: 'green' };
   if (isStreaming) return { label: 'Processing', variant: 'blue' };
   return { label: 'Ready', variant: 'lightgray' };
+}
+
+/**
+ * Determine if agent is currently "thinking" and what phase
+ * Returns { isThinking: boolean, phase: string }
+ */
+function getAgentThinkingState(events, isStreaming, output) {
+  // Not thinking if not streaming or already complete
+  if (!isStreaming || output) {
+    return { isThinking: false, phase: null };
+  }
+
+  // No events yet - not in agent mode
+  if (events.length === 0) {
+    return { isThinking: false, phase: null };
+  }
+
+  const lastEvent = events[events.length - 1];
+  const lastEventType = lastEvent?.type;
+
+  // Terminal events - definitely not thinking
+  const terminalEvents = [
+    'complete',
+    'agent_complete',
+    'error'
+  ];
+
+  if (terminalEvents.includes(lastEventType)) {
+    return { isThinking: false, phase: null };
+  }
+
+  // Events waiting for human input - not thinking
+  const waitingEvents = [
+    'review_required',
+    'ai_review_required',
+    'agent_resolution'
+  ];
+
+  if (waitingEvents.includes(lastEventType)) {
+    return { isThinking: false, phase: null };
+  }
+
+  // Check if we're in an agent flow (any agent_ event has occurred)
+  const hasAgentStarted = events.some(e => e.type?.startsWith('agent_'));
+  const hasAgentCompleted = events.some(e => e.type === 'agent_complete');
+
+  // If agent started but hasn't completed, show thinking
+  if (hasAgentStarted && !hasAgentCompleted) {
+    // Determine phase based on last event
+    const phaseMap = {
+      'validation_failed': 'analyzing',
+      'agent_start': 'analyzing',
+      'agent_supervisor': 'routing',
+      'tool_call': 'tool_executing',
+      'tool_result': 'resolving',
+      'review_approved': 'executing',
+      'agent_execution_start': 'executing',
+      'agent_execution': 'executing'
+    };
+
+    const phase = phaseMap[lastEventType] || 'processing';
+    return { isThinking: true, phase };
+  }
+
+  return { isThinking: false, phase: null };
 }
 
 /**
@@ -43,8 +109,54 @@ export default function TransactionAgentPanel({
   onToggleEvent,
   onOutputRendered
 }) {
-  const status = getAgentStatus(isStreaming, events, output);
+  const status = getAgentStatus(isStreaming, output);
   const hasActivity = events.length > 0 || output;
+
+  // Calculate thinking state based on events
+  const thinkingState = useMemo(
+    () => getAgentThinkingState(events, isStreaming, output),
+    [events, isStreaming, output]
+  );
+
+  // Track visible thinking state with minimum display duration
+  const [visibleThinking, setVisibleThinking] = useState({ isThinking: false, phase: null });
+  const thinkingTimerRef = useRef(null);
+  const MIN_THINKING_DISPLAY_MS = 800; // Minimum time to show thinking indicator
+
+  useEffect(() => {
+    if (thinkingState.isThinking) {
+      // Show immediately when thinking starts
+      setVisibleThinking(thinkingState);
+      // Clear any pending hide timer
+      if (thinkingTimerRef.current) {
+        clearTimeout(thinkingTimerRef.current);
+        thinkingTimerRef.current = null;
+      }
+    } else if (visibleThinking.isThinking) {
+      // Delay hiding to ensure minimum display time
+      thinkingTimerRef.current = setTimeout(() => {
+        setVisibleThinking({ isThinking: false, phase: null });
+        thinkingTimerRef.current = null;
+      }, MIN_THINKING_DISPLAY_MS);
+    }
+
+    return () => {
+      if (thinkingTimerRef.current) {
+        clearTimeout(thinkingTimerRef.current);
+      }
+    };
+  }, [thinkingState.isThinking, thinkingState.phase, events]);
+
+  // Reset thinking state when streaming stops or output appears
+  useEffect(() => {
+    if (!isStreaming || output) {
+      setVisibleThinking({ isThinking: false, phase: null });
+      if (thinkingTimerRef.current) {
+        clearTimeout(thinkingTimerRef.current);
+        thinkingTimerRef.current = null;
+      }
+    }
+  }, [isStreaming, output]);
 
   // Auto-scroll refs
   const scrollContainerRef = useRef(null);
@@ -203,6 +315,12 @@ export default function TransactionAgentPanel({
           </div>
         )}
       </div>
+
+      {/* Thinking Indicator - Fixed at bottom of panel, outside scroll area */}
+      <ThinkingIndicator
+        isVisible={visibleThinking.isThinking}
+        phase={visibleThinking.phase}
+      />
 
       {/* Animations and Custom Scrollbar Styles */}
       <style jsx global>{`

@@ -512,6 +512,7 @@ export default function AgenticAIPage() {
     if (!reviewThreadId) return;
 
     setIsSubmittingReview(true);
+    setIsStreaming(true);  // Resume streaming state for thinking indicator
     setIsReviewModalOpen(false);  // Close modal immediately for snappier UX
 
     try {
@@ -681,6 +682,7 @@ export default function AgenticAIPage() {
     if (!aiReviewRunId) return;
 
     setIsSubmittingAIReview(true);
+    setIsStreaming(true);  // Resume streaming state for thinking indicator
     setIsAIReviewModalOpen(false);  // Close modal immediately for snappier UX
 
     try {
