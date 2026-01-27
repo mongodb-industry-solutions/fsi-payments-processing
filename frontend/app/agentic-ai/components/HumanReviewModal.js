@@ -218,10 +218,11 @@ export default function HumanReviewModal({
               {isEditing ? (
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <TextInput
+                    label="Modified value"
+                    hideLabel={true}
                     value={modifiedValue}
                     onChange={(e) => setModifiedValue(e.target.value)}
                     style={{ flex: 1 }}
-                    aria-label="Modified value"
                   />
                   <Button size="small" onClick={handleCancelEdit}>
                     Cancel

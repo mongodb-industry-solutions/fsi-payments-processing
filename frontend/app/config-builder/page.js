@@ -192,6 +192,45 @@ const FORMAT_INFO = {
       { field: 'DbtrAcct', desc: 'Debtor Account (Sort Code)' },
       { field: 'CdtrAcct', desc: 'Creditor Account (Sort Code)' }
     ]
+  },
+  ISO8583_0200: {
+    name: 'ISO8583_0200',
+    type: 'ISO 8583',
+    description: 'Card authorization request message - POS terminal to acquirer for purchase transactions.',
+    keyFields: [
+      { field: 'mti', desc: 'Message Type Indicator (0200)' },
+      { field: 'pan', desc: 'Primary Account Number' },
+      { field: 'processing_code', desc: 'Processing Code' },
+      { field: 'amount', desc: 'Transaction Amount' },
+      { field: 'stan', desc: 'System Trace Audit Number' },
+      { field: 'merchant_info', desc: 'Card Acceptor Name/Location' }
+    ]
+  },
+  'cain.001': {
+    name: 'cain.001',
+    type: 'ISO 20022',
+    description: 'AcceptorAuthorisationRequest - Card transaction authorization in ISO 20022 format.',
+    keyFields: [
+      { field: 'MsgTp', desc: 'Message Type' },
+      { field: 'TxId', desc: 'Transaction Identification' },
+      { field: 'TxAmt', desc: 'Transaction Amount' },
+      { field: 'Card.PAN', desc: 'Primary Account Number' },
+      { field: 'AccptrTxDtTm', desc: 'Acceptor Transaction DateTime' },
+      { field: 'MrchntCtgyCd', desc: 'Merchant Category Code' }
+    ]
+  },
+  ISO8583_0210: {
+    name: 'ISO8583_0210',
+    type: 'ISO 8583',
+    description: 'Card authorization response message - Issuer response to acquirer for purchase transactions.',
+    keyFields: [
+      { field: 'mti', desc: 'Message Type Indicator (0210)' },
+      { field: 'pan', desc: 'Primary Account Number' },
+      { field: 'response_code', desc: 'Authorization Response Code' },
+      { field: 'auth_code', desc: 'Authorization ID Response' },
+      { field: 'amount', desc: 'Transaction Amount' },
+      { field: 'stan', desc: 'System Trace Audit Number' }
+    ]
   }
 };
 

@@ -313,6 +313,18 @@ body {
   border-radius: 4px;
 }
 
+/* Pulse animation for live indicators */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.2);
+  }
+}
+
 /* LeafyGreen Modal Centering Override */
 [data-lgid="modal-backdrop"] {
   display: flex !important;

@@ -729,14 +729,60 @@ function renderEventDetails(event) {
               ))}
             </div>
             {event.explorer_url && (
-              <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #C4B5FD' }}>
+              <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #C4B5FD' }}>
                 <a
                   href={event.explorer_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  style={{ fontSize: '11px', color: '#7C3AED', textDecoration: 'underline' }}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '10px 16px',
+                    background: 'linear-gradient(135deg, #00684A 0%, #00A35C 100%)',
+                    borderRadius: '8px',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    color: 'white',
+                    textDecoration: 'none',
+                    boxShadow: '0 2px 8px rgba(0, 163, 92, 0.3)',
+                    transition: 'all 0.2s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-1px)';
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 163, 92, 0.4)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 163, 92, 0.3)';
+                  }}
                 >
-                  View on Solana Explorer →
+                  <span style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    padding: '2px 6px',
+                    background: 'rgba(255,255,255,0.2)',
+                    borderRadius: '4px',
+                    fontSize: '10px',
+                    fontWeight: '700',
+                    letterSpacing: '0.5px'
+                  }}>
+                    <span style={{
+                      width: '6px',
+                      height: '6px',
+                      background: '#00ED64',
+                      borderRadius: '50%',
+                      animation: 'pulse 2s infinite'
+                    }}></span>
+                    LIVE
+                  </span>
+                  View on Solana Explorer
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                    <polyline points="15 3 21 3 21 9"></polyline>
+                    <line x1="10" y1="14" x2="21" y2="3"></line>
+                  </svg>
                 </a>
               </div>
             )}
