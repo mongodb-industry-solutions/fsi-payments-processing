@@ -29,6 +29,8 @@ dependencies = [
     "solana>=0.34.0",
     "solders>=0.21.0",
     "base58>=2.1.1",
+    # Security fix for CVE-2025-66418 and CVE-2025-66471
+    "urllib3>=2.6.0",
 ]
 
 [build-system]
