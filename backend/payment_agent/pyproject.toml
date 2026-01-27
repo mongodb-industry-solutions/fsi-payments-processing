@@ -20,6 +20,7 @@ dependencies = [
     "voyageai>=0.3.0",
     "urllib3>=2.6.0",
     "aiohttp>=3.13.3",  # Security fix for CVE-2025-69223
+    "filelock>=3.20.3",  # Security fix for CVE-2025-68146, CVE-2026-22701
 ]
 
 [build-system]
