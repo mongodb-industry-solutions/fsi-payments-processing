@@ -125,7 +125,8 @@ export default function AgenticAIPage() {
   const pendingOutputRef = useRef(null); // Store output until queue is empty
   const pendingReviewRef = useRef(null); // Store review_required data until event is displayed
   const pendingAIReviewRef = useRef(null); // Store ai_review_required data until event is displayed
-  const AGENTIC_EVENT_DELAY = 600; // ms between events for agentic scenarios (if any queued)
+  const AGENTIC_EVENT_DELAY = 1100; // ms between events for agentic scenarios (if any queued)
+  const AGENT_START_DELAY = 1800; // ms delay before agent_start - builds suspense after validation fails
   const NON_AGENTIC_EVENT_DELAY = 900; // ms between events for non-agentic scenarios (card_payment, internal_mx) - ~5.4s for 6 events
   const CRYPTO_EVENT_DELAY = 1000; // ms between events for crypto scenarios (~10s total, ensures 1s per card)
 
@@ -224,10 +225,13 @@ export default function AgenticAIPage() {
       const upcomingEvent = eventQueueRef.current[0];
       const useCryptoDelay = isCryptoScenario || isCryptoEvent(nextEvent) || isCryptoEvent(upcomingEvent);
 
-      // Determine delay: crypto > non-agentic > agentic
+      // Determine delay: crypto > agent_start (suspense) > non-agentic > agentic
       let delay;
       if (useCryptoDelay) {
         delay = CRYPTO_EVENT_DELAY;
+      } else if (upcomingEvent?.type === 'agent_start') {
+        // Longer pause before agent kicks in - builds suspense after validation fails
+        delay = AGENT_START_DELAY;
       } else if (isNonAgenticScenario) {
         delay = NON_AGENTIC_EVENT_DELAY;
       } else {

@@ -45,7 +45,7 @@ export default function ScenarioSelector({
         className="scenario-grid"
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
           gap: 'var(--space-md, 16px)',
           maxHeight: '280px',
           overflowY: 'auto',
