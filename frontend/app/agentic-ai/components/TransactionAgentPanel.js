@@ -163,15 +163,16 @@ export default function TransactionAgentPanel({
   const lastEventRef = useRef(null);
 
   // Simple auto-scroll: scroll to latest event when events change
+  // Skip if output exists - the output scroll effect handles that case
   useEffect(() => {
-    if (events.length > 0 && lastEventRef.current && scrollContainerRef.current) {
+    if (events.length > 0 && lastEventRef.current && scrollContainerRef.current && !output) {
       // Small delay to ensure DOM has updated
       const timer = setTimeout(() => {
         lastEventRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
       }, 50);
       return () => clearTimeout(timer);
     }
-  }, [events.length]);
+  }, [events.length, output]);
 
   // Scroll to output when it appears
   useEffect(() => {

@@ -123,7 +123,9 @@ export default function AgenticAIPage() {
   const eventQueueRef = useRef([]);
   const throttleTimerRef = useRef(null);
   const pendingOutputRef = useRef(null); // Store output until queue is empty
-  const AGENTIC_EVENT_DELAY = 400; // ms between events for agentic scenarios (if any queued)
+  const pendingReviewRef = useRef(null); // Store review_required data until event is displayed
+  const pendingAIReviewRef = useRef(null); // Store ai_review_required data until event is displayed
+  const AGENTIC_EVENT_DELAY = 600; // ms between events for agentic scenarios (if any queued)
   const NON_AGENTIC_EVENT_DELAY = 900; // ms between events for non-agentic scenarios (card_payment, internal_mx) - ~5.4s for 6 events
   const CRYPTO_EVENT_DELAY = 1000; // ms between events for crypto scenarios (~10s total, ensures 1s per card)
 
@@ -195,6 +197,22 @@ export default function AgenticAIPage() {
     // Auto-expand new events
     setExpandedEvents(prev => new Set([...prev, nextEvent.id]));
 
+    // Open review modals AFTER the event is displayed (not when SSE arrives)
+    if (nextEvent.type === 'review_required' && pendingReviewRef.current) {
+      const { threadId, data } = pendingReviewRef.current;
+      setReviewThreadId(threadId);
+      setReviewData(data);
+      setIsReviewModalOpen(true);
+      pendingReviewRef.current = null;
+    }
+    if (nextEvent.type === 'ai_review_required' && pendingAIReviewRef.current) {
+      const { runId, data } = pendingAIReviewRef.current;
+      setAIReviewRunId(runId);
+      setAIReviewData(data);
+      setIsAIReviewModalOpen(true);
+      pendingAIReviewRef.current = null;
+    }
+
     // Schedule next event with appropriate delay
     // Crypto scenarios use longest delay (~10s total)
     // Non-agentic scenarios (card_payment, internal_mx) use medium delay (~5.4s total)
@@ -237,26 +255,25 @@ export default function AgenticAIPage() {
     // Check if this event or scenario needs crypto-level delays
     const useCryptoDelay = isCryptoScenario || isCryptoEvent(eventData);
 
-    if (isNonAgentic && isConversionHopEvent(eventData)) {
-      // Queue the event for throttled display
-      eventQueueRef.current.push(enrichedEvent);
+    // Queue ALL events for throttled display - provides consistent visual pacing
+    // Different delays based on scenario type:
+    // - Crypto scenarios: longest delay (1000ms) for dramatic effect
+    // - Non-agentic scenarios: medium delay (900ms) for readable pacing
+    // - Agentic scenarios: shorter delay (400ms) since agent events provide natural pauses
+    eventQueueRef.current.push(enrichedEvent);
 
-      // Start processing if not already running
-      if (!throttleTimerRef.current) {
-        // Crypto scenarios use longer delays throughout for better demo pacing (~10s total)
-        // Non-agentic scenarios (card_payment, internal_mx) use medium delay (~5.4s total)
-        if (useCryptoDelay) {
-          throttleTimerRef.current = setTimeout(processEventQueue, CRYPTO_EVENT_DELAY);
-        } else {
-          // Non-agentic, non-crypto: start with initial delay for smoother pacing
-          throttleTimerRef.current = setTimeout(processEventQueue, NON_AGENTIC_EVENT_DELAY);
-        }
+    // Start processing if not already running
+    if (!throttleTimerRef.current) {
+      let initialDelay;
+      if (useCryptoDelay) {
+        initialDelay = CRYPTO_EVENT_DELAY;
+      } else if (isNonAgentic) {
+        initialDelay = NON_AGENTIC_EVENT_DELAY;
+      } else {
+        // Agentic scenarios - still throttle initial events so they don't jump
+        initialDelay = AGENTIC_EVENT_DELAY;
       }
-    } else {
-      // Agentic scenarios - add immediately (agent processing provides natural delays)
-      setEvents(prev => [...prev, enrichedEvent]);
-      // Auto-expand new events
-      setExpandedEvents(prev => new Set([...prev, enrichedEvent.id]));
+      throttleTimerRef.current = setTimeout(processEventQueue, initialDelay);
     }
   };
 
@@ -367,9 +384,11 @@ export default function AgenticAIPage() {
     setHop2Details(null);
     setConversionRunId(null);
     setLogsRenderComplete(false); // Reset animation sync
-    // Clear event queue and pending output for fresh simulation
+    // Clear event queue and pending data for fresh simulation
     eventQueueRef.current = [];
     pendingOutputRef.current = null;
+    pendingReviewRef.current = null;
+    pendingAIReviewRef.current = null;
     if (throttleTimerRef.current) {
       clearTimeout(throttleTimerRef.current);
       throttleTimerRef.current = null;
@@ -451,12 +470,9 @@ export default function AgenticAIPage() {
                 const completeStats = eventData.data?.processing_stats || null;
                 const completeTotalTime = eventData.data?.total_time || 0;
 
-                // For throttled scenarios, store output until queue empties
+                // Store output until queue empties (for all scenarios with queued events)
                 // This ensures the output card appears AFTER all events are displayed
-                const completeScenario = getScenario(selectedScenario);
-                const isThrottled = completeScenario?.isAgentic === false;
-
-                if (isThrottled && eventQueueRef.current.length > 0) {
+                if (eventQueueRef.current.length > 0) {
                   // Store for later - will be applied when queue empties
                   pendingOutputRef.current = {
                     output: completeOutput,
@@ -464,7 +480,7 @@ export default function AgenticAIPage() {
                     totalTime: completeTotalTime
                   };
                 } else {
-                  // Not throttled or queue already empty - set immediately
+                  // Queue already empty - set immediately
                   setOutput(completeOutput);
                   setStats(completeStats);
                   setTotalTime(completeTotalTime);
@@ -477,20 +493,24 @@ export default function AgenticAIPage() {
               }
 
               // Handle review_required event (human-in-the-loop for agent corrections)
+              // Store for later - modal opens when event is displayed from queue
               if (eventData.type === 'review_required') {
-                console.log('👤 Human review required:', eventData);
-                setReviewThreadId(eventData.thread_id);
-                setReviewData(eventData);
-                setIsReviewModalOpen(true);
+                console.log('👤 Human review required (queued):', eventData);
+                pendingReviewRef.current = {
+                  threadId: eventData.thread_id,
+                  data: eventData
+                };
                 // Don't set isStreaming to false yet - we're paused, not done
               }
 
               // Handle ai_review_required event (human review of AI-extracted fields)
+              // Store for later - modal opens when event is displayed from queue
               if (eventData.type === 'ai_review_required') {
-                console.log('🤖 AI field review required:', eventData);
-                setAIReviewRunId(eventData.conversion_run_id);
-                setAIReviewData(eventData);
-                setIsAIReviewModalOpen(true);
+                console.log('🤖 AI field review required (queued):', eventData);
+                pendingAIReviewRef.current = {
+                  runId: eventData.conversion_run_id,
+                  data: eventData
+                };
                 // Don't set isStreaming to false yet - we're paused, not done
               }
             } catch (e) {
@@ -568,14 +588,21 @@ export default function AgenticAIPage() {
               }
 
               if (event.type === 'complete') {
-                if (event.output) {
-                  setOutput(event.output);
-                }
-                if (event.processing_stats) {
-                  setStats(event.processing_stats);
-                }
-                if (event.total_time) {
-                  setTotalTime(event.total_time);
+                // Store output until queue empties (consistent with main stream handling)
+                const completeOutput = event.output || '';
+                const completeStats = event.processing_stats || null;
+                const completeTotalTime = event.total_time || 0;
+
+                if (eventQueueRef.current.length > 0) {
+                  pendingOutputRef.current = {
+                    output: completeOutput,
+                    stats: completeStats,
+                    totalTime: completeTotalTime
+                  };
+                } else {
+                  if (completeOutput) setOutput(completeOutput);
+                  if (completeStats) setStats(completeStats);
+                  if (completeTotalTime) setTotalTime(completeTotalTime);
                 }
                 // Extract hop details from complete event (sent by streaming resume)
                 if (event.hop1_details) {
@@ -733,14 +760,21 @@ export default function AgenticAIPage() {
               }
 
               if (event.type === 'complete') {
-                if (event.output) {
-                  setOutput(event.output);
-                }
-                if (event.processing_stats) {
-                  setStats(event.processing_stats);
-                }
-                if (event.total_time) {
-                  setTotalTime(event.total_time);
+                // Store output until queue empties (consistent with main stream handling)
+                const completeOutput = event.output || '';
+                const completeStats = event.processing_stats || null;
+                const completeTotalTime = event.total_time || 0;
+
+                if (eventQueueRef.current.length > 0) {
+                  pendingOutputRef.current = {
+                    output: completeOutput,
+                    stats: completeStats,
+                    totalTime: completeTotalTime
+                  };
+                } else {
+                  if (completeOutput) setOutput(completeOutput);
+                  if (completeStats) setStats(completeStats);
+                  if (completeTotalTime) setTotalTime(completeTotalTime);
                 }
               }
 
@@ -749,11 +783,13 @@ export default function AgenticAIPage() {
               }
 
               // Handle review_required event (agent needs human review after AI approval)
+              // Store for later - modal opens when event is displayed from queue
               if (event.type === 'review_required') {
-                console.log('👤 Agent review required after AI approval:', event);
-                setReviewThreadId(event.thread_id);
-                setReviewData(event);
-                setIsReviewModalOpen(true);
+                console.log('👤 Agent review required after AI approval (queued):', event);
+                pendingReviewRef.current = {
+                  threadId: event.thread_id,
+                  data: event
+                };
                 // Stream will continue after human reviews agent's proposal
                 return;  // Exit the loop - human will resume via agent resume endpoint
               }
