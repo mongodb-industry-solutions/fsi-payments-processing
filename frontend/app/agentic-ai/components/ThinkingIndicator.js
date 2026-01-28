@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Body } from '@leafygreen-ui/typography';
 
 /**
@@ -22,13 +22,34 @@ function getThinkingMessage(phase) {
 /**
  * ThinkingIndicator Component
  * Displays an animated indicator when the agent is processing
+ * Includes smooth fade-out transition when hiding
  *
  * @param {Object} props
  * @param {string} props.phase - Current thinking phase (analyzing, routing, resolving, etc.)
  * @param {boolean} props.isVisible - Whether the indicator should be shown
  */
 export default function ThinkingIndicator({ phase = 'default', isVisible = false }) {
-  if (!isVisible) return null;
+  const [shouldRender, setShouldRender] = useState(false);
+  const [isAnimatingOut, setIsAnimatingOut] = useState(false);
+
+  useEffect(() => {
+    if (isVisible) {
+      // Show immediately
+      setShouldRender(true);
+      setIsAnimatingOut(false);
+    } else if (shouldRender) {
+      // Start fade-out animation
+      setIsAnimatingOut(true);
+      // Remove from DOM after animation completes
+      const timer = setTimeout(() => {
+        setShouldRender(false);
+        setIsAnimatingOut(false);
+      }, 300); // Match fadeOut animation duration
+      return () => clearTimeout(timer);
+    }
+  }, [isVisible, shouldRender]);
+
+  if (!shouldRender) return null;
 
   const message = getThinkingMessage(phase);
 
