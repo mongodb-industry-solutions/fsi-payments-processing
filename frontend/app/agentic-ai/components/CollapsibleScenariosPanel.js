@@ -162,56 +162,76 @@ export default function CollapsibleScenariosPanel({
               paddingTop: '16px',
               borderTop: '1px solid #E7EAEE'
             }}>
-              {/* AI/Rules Mode Toggle */}
+              {/* AI/Rules Mode Toggle - Segmented Control */}
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '8px'
+                gap: '12px'
               }}>
                 <span style={{
                   fontSize: '13px',
                   color: '#5C6C75',
                   fontWeight: 500
                 }}>
-                  Processing:
+                  Processing Mode:
                 </span>
-                <button
-                  onClick={() => onToggleAI && onToggleAI(!useAI)}
-                  disabled={isStreaming}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    padding: '6px 12px',
-                    borderRadius: '16px',
-                    border: 'none',
-                    cursor: isStreaming ? 'not-allowed' : 'pointer',
-                    fontSize: '12px',
-                    fontWeight: 600,
-                    transition: 'all 0.2s ease',
-                    background: useAI ? '#00684A' : '#E8EDEB',
-                    color: useAI ? 'white' : '#1C2D38',
-                    opacity: isStreaming ? 0.6 : 1
-                  }}
-                >
-                  {useAI ? (
-                    <>
-                      <span style={{ fontSize: '14px' }}>🤖</span>
-                      AI Mode
-                    </>
-                  ) : (
-                    <>
-                      <span style={{ fontSize: '14px' }}>⚡</span>
-                      Rules Mode
-                    </>
-                  )}
-                </button>
+                <div style={{
+                  display: 'flex',
+                  borderRadius: '20px',
+                  border: '1px solid #E8EDEB',
+                  background: '#F9FBFA',
+                  padding: '3px',
+                  opacity: isStreaming ? 0.6 : 1
+                }}>
+                  <button
+                    onClick={() => onToggleAI && onToggleAI(false)}
+                    disabled={isStreaming}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '6px 14px',
+                      borderRadius: '16px',
+                      border: 'none',
+                      cursor: isStreaming ? 'not-allowed' : 'pointer',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      transition: 'all 0.2s ease',
+                      background: !useAI ? '#1C2D38' : 'transparent',
+                      color: !useAI ? 'white' : '#5C6C75'
+                    }}
+                  >
+                    <span style={{ fontSize: '13px' }}>⚡</span>
+                    Rules
+                  </button>
+                  <button
+                    onClick={() => onToggleAI && onToggleAI(true)}
+                    disabled={isStreaming}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '6px 14px',
+                      borderRadius: '16px',
+                      border: 'none',
+                      cursor: isStreaming ? 'not-allowed' : 'pointer',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      transition: 'all 0.2s ease',
+                      background: useAI ? '#00684A' : 'transparent',
+                      color: useAI ? 'white' : '#5C6C75'
+                    }}
+                  >
+                    <span style={{ fontSize: '13px' }}>🤖</span>
+                    AI
+                  </button>
+                </div>
                 <span style={{
                   fontSize: '11px',
                   color: '#889397',
-                  maxWidth: '180px'
+                  maxWidth: '200px'
                 }}>
-                  {useAI ? 'LLM parses unstructured fields' : 'Regex patterns extract fields'}
+                  {useAI ? 'LLM parses unstructured fields' : 'Regex patterns extract unstructured fields'}
                 </span>
               </div>
 
