@@ -235,7 +235,7 @@ Third-party Gateway (JSON wrapper):
 
                     <H3 className={styles.introTitle}>The Multi-Rail Reality</H3>
                     <Body className={styles.introParagraph}>
-                      Card networks run ISO 8583. SWIFT's 11,000+ members migrate to ISO 20022 by Nov 2025. Instant rails demand real-time processing. Each evolved independently—payment hubs maintain dozens of adapters, each a failure point.
+                      In the post-ISO 20022 era, payments complexity has not disappeared—it has fragmented further. While external messaging is now standardized, many banks still operate without a true payment hub, relying on siloed, rail-specific systems and legacy cores that cannot ingest or preserve the richness of ISO 20022 data. As ISO 8583, ISO 20022, real-time payments, and emerging rails coexist, enriched messages are flattened, duplicated, or inconsistently translated across systems, creating operational blind spots and compounding failure risks. This fragmentation also prevents banks from leveraging agentic AI—capable of reasoning across payment context, lifecycle states, and exceptions—because the underlying data remains inconsistent and rail-bound. Without a payment canonical data hub to normalize payment intent and semantics, both real-time control and intelligent automation remain out of reach.
                     </Body>
                   </div>
 
