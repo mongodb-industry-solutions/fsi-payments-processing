@@ -35,6 +35,8 @@ export default function CollapsibleScenariosPanel({
   onToggleAI
 }) {
   const selectedScenarioData = scenarios.find(s => s.id === selectedScenario);
+  const isDeterministic = selectedScenarioData?.isDeterministic === true;
+  const toggleDisabled = isStreaming || isDeterministic;
 
   return (
     <div style={{
@@ -181,11 +183,12 @@ export default function CollapsibleScenariosPanel({
                   border: '1px solid #E8EDEB',
                   background: '#F9FBFA',
                   padding: '3px',
-                  opacity: isStreaming ? 0.6 : 1
+                  opacity: toggleDisabled ? 0.5 : 1,
+                  cursor: isDeterministic ? 'not-allowed' : 'default'
                 }}>
                   <button
-                    onClick={() => onToggleAI && onToggleAI(false)}
-                    disabled={isStreaming}
+                    onClick={() => !isDeterministic && onToggleAI && onToggleAI(false)}
+                    disabled={toggleDisabled}
                     style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -193,7 +196,7 @@ export default function CollapsibleScenariosPanel({
                       padding: '6px 14px',
                       borderRadius: '16px',
                       border: 'none',
-                      cursor: isStreaming ? 'not-allowed' : 'pointer',
+                      cursor: toggleDisabled ? 'not-allowed' : 'pointer',
                       fontSize: '12px',
                       fontWeight: 600,
                       transition: 'all 0.2s ease',
@@ -205,8 +208,8 @@ export default function CollapsibleScenariosPanel({
                     Rules
                   </button>
                   <button
-                    onClick={() => onToggleAI && onToggleAI(true)}
-                    disabled={isStreaming}
+                    onClick={() => !isDeterministic && onToggleAI && onToggleAI(true)}
+                    disabled={toggleDisabled}
                     style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -214,7 +217,7 @@ export default function CollapsibleScenariosPanel({
                       padding: '6px 14px',
                       borderRadius: '16px',
                       border: 'none',
-                      cursor: isStreaming ? 'not-allowed' : 'pointer',
+                      cursor: toggleDisabled ? 'not-allowed' : 'pointer',
                       fontSize: '12px',
                       fontWeight: 600,
                       transition: 'all 0.2s ease',
@@ -231,7 +234,9 @@ export default function CollapsibleScenariosPanel({
                   color: '#889397',
                   maxWidth: '200px'
                 }}>
-                  {useAI ? 'LLM parses unstructured fields' : 'Regex patterns extract unstructured fields'}
+                  {isDeterministic
+                    ? 'All fields mapped deterministically'
+                    : useAI ? 'LLM parses unstructured fields' : 'Regex patterns extract unstructured fields'}
                 </span>
               </div>
 

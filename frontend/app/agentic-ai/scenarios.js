@@ -360,6 +360,7 @@ CLOUD INFRASTRUCTURE DEVELOPMENT
     badge: 'MX TRANSITION',
     badgeVariant: 'lightgray',
     isAgentic: false,
+    isDeterministic: true,
     mongoFeature: 'DOCUMENT MODEL',
     info: {
       process: 'Demonstrates internal MT-to-MX transition: bank receives pacs.008 externally, converts to internal canonical JSON for legacy system processing, then back to pacs.008 for outbound transmission.',

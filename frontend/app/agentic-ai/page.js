@@ -340,6 +340,12 @@ export default function AgenticAIPage() {
     // Switch to new scenario
     setSelectedScenario(scenarioId);
 
+    // Force Rules mode for deterministic scenarios (no LLM processing)
+    const newScenario = getScenario(scenarioId);
+    if (newScenario?.isDeterministic) {
+      setUseAI(false);
+    }
+
     // Restore cached results for new scenario (if any)
     const cached = scenarioResultsCache.current[scenarioId];
     if (cached) {
