@@ -90,7 +90,7 @@ class SemanticLearningService:
         matched, unknown, learned_from = self._match_fields(detected_fields)
         logger.info(f"Matched {len(matched)} fields, {len(unknown)} unknown")
 
-        # 4. Get LLM suggestions for unknown fields (display-only, NOT auto-applied)
+        # 4. Get LLM suggestions for unknown fields (included in config, marked ai_suggested: true)
         suggestions = []
         prompt_info = None
         if unknown and self.llm_mapper:
@@ -127,11 +127,12 @@ class SemanticLearningService:
         # 5. Get target format spec for output paths
         target_format_spec = await self.db.get_format_specification(target_format)
 
-        # 6. Build new config (only includes matched fields, NOT suggestions)
+        # 6. Build new config (includes matched fields + AI-suggested mappings for unknown fields)
         new_config = self._build_config(
             source_format, target_format,
             detected_fields, matched, unknown,
-            target_format_spec
+            target_format_spec,
+            suggestions=suggestions
         )
 
         # 7. Calculate confidence
@@ -145,7 +146,7 @@ class SemanticLearningService:
             "matched_fields": list(matched.keys()),
             "unknown_fields": unknown,
             "learned_from": learned_from,
-            "suggestions": suggestions,  # Display-only LLM suggestions for unknown fields
+            "suggestions": suggestions,  # LLM suggestions for unknown fields (also included in config with ai_suggested: true)
             "llm_prompt_info": prompt_info  # Prompt construction details for frontend
         }
 
@@ -416,21 +417,23 @@ class SemanticLearningService:
         detected_fields: Dict[str, str],
         matched: Dict[str, Dict],
         unknown: List[str],
-        target_format_spec: Optional[Dict[str, Any]] = None
+        target_format_spec: Optional[Dict[str, Any]] = None,
+        suggestions: Optional[List[Dict[str, Any]]] = None
     ) -> Dict[str, Any]:
         """
         Build new config in simplified schema {_id, extract, map, output}.
 
-        Only includes matched fields. Unknown fields are excluded from config
-        and reported separately for manual review.
+        Includes matched fields and LLM-suggested mappings for unknown fields.
+        All mappings use the standard config schema (from, to, split, multiline, ai, patterns).
 
         Args:
             source_format: Source format name
             target_format: Target format name
             detected_fields: All detected fields
             matched: Matched field mappings
-            unknown: Unknown field IDs (excluded from config)
+            unknown: Unknown field IDs
             target_format_spec: Optional format specification for output paths
+            suggestions: LLM-suggested mappings for unknown fields
 
         Returns:
             Complete configuration dictionary
@@ -482,6 +485,50 @@ class SemanticLearningService:
                     output[to_field] = supported_fields[to_field].get("path", to_field)
                 else:
                     output[to_field] = to_field
+
+        # Include LLM-suggested mappings for unknown fields
+        # Uses the same schema as all other mappings (from, to)
+        if suggestions:
+            for suggestion in suggestions:
+                field_id = suggestion.get("field_id")
+                suggested_mapping = suggestion.get("suggested_mapping", {})
+                target_info = suggestion.get("target_field_info", {})
+
+                if not field_id or not suggested_mapping:
+                    continue
+
+                # Add extract pattern for the unknown field
+                if field_id not in extract:
+                    pattern = self._generate_extract_pattern(field_id)
+                    if pattern:
+                        extract[field_id] = pattern
+
+                # Build mapping entry using standard config schema
+                new_mapping = {
+                    "from": suggested_mapping.get("from", field_id),
+                    "to": suggested_mapping.get("to", [])
+                }
+                map_array.append(new_mapping)
+
+                # Add to output using target field path
+                to_fields = suggested_mapping.get("to", [])
+                if isinstance(to_fields, list):
+                    for field in to_fields:
+                        if field in supported_fields:
+                            output[field] = supported_fields[field].get("path", field)
+                        elif target_info.get("path"):
+                            output[field] = target_info["path"]
+                        else:
+                            output[field] = field
+                elif to_fields:
+                    if to_fields in supported_fields:
+                        output[to_fields] = supported_fields[to_fields].get("path", to_fields)
+                    elif target_info.get("path"):
+                        output[to_fields] = target_info["path"]
+                    else:
+                        output[to_fields] = to_fields
+
+                logger.info(f"Included LLM-suggested mapping: {field_id} → {suggested_mapping.get('to')}")
 
         return {
             "_id": config_id,
