@@ -29,6 +29,49 @@ logger = logging.getLogger(__name__)
 
 
 # =============================================================================
+# SHARED UTILITIES
+# =============================================================================
+
+
+def clean_markdown(text: str) -> str:
+    """
+    Strip markdown formatting from LLM responses for clean frontend display.
+
+    Removes bold/italic markers, headings, separator lines, internal parsing
+    markers (FINAL_VALUE, CONFIDENCE, SOURCE), and converts markdown tables
+    to a simple list format.
+    """
+    # Remove ** markdown bold markers
+    text = re.sub(r'\*\*', '', text)
+    # Remove * markdown italic markers (but preserve bullet points)
+    text = re.sub(r'(?<!\n)\*(?!\s)', '', text)
+    # Remove ## markdown heading markers
+    text = re.sub(r'^#{1,6}\s*', '', text, flags=re.MULTILINE)
+    # Remove internal parsing markers
+    text = re.sub(r'^FINAL_VALUE:.*$', '', text, flags=re.MULTILINE)
+    text = re.sub(r'^CONFIDENCE:.*$', '', text, flags=re.MULTILINE)
+    text = re.sub(r'^SOURCE:.*$', '', text, flags=re.MULTILINE)
+    # Remove separator lines (---)
+    text = re.sub(r'^-{2,}$', '', text, flags=re.MULTILINE)
+    # Remove table header separator lines (|---|---|)
+    text = re.sub(r'^\|[-:\s|]+\|$', '', text, flags=re.MULTILINE)
+
+    # Convert table rows "| Key | Value |" to "- Key: Value"
+    def convert_table_row(match):
+        cells = [c.strip() for c in match.group(0).split('|') if c.strip()]
+        if len(cells) == 2:
+            return f"- {cells[0]}: {cells[1]}"
+        elif len(cells) > 0:
+            return f"- {' | '.join(cells)}"
+        return ''
+
+    text = re.sub(r'^\|[^|]+\|[^|]*\|$', convert_table_row, text, flags=re.MULTILINE)
+    # Clean up excessive blank lines
+    text = re.sub(r'\n{3,}', '\n\n', text).strip()
+    return text
+
+
+# =============================================================================
 # LLM INITIALIZATION
 # =============================================================================
 
@@ -39,13 +82,13 @@ def create_llm(temperature: float = None, model_id: str = None) -> ChatBedrock:
 
     Args:
         temperature: Temperature for LLM (0.0-1.0). Uses settings default if not provided.
-        model_id: Bedrock model ID. Uses Claude 3.5 Sonnet if not provided.
+        model_id: Bedrock model ID. Uses settings.agent_model_id if not provided.
 
     Returns:
         ChatBedrock instance configured for the agent
     """
     return ChatBedrock(
-        model_id=model_id or "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+        model_id=model_id or settings.agent_model_id,
         region_name=settings.aws_region,
         model_kwargs={
             "temperature": temperature if temperature is not None else settings.agent_temperature,
@@ -441,34 +484,9 @@ Analyze this problem and use your tools to find the correct value for '{field_na
             if not proposed_value:
                 logger.warning(f"No proposed_value found in response or tool results")
 
-            # Clean up markdown formatting from reasoning for frontend display
-            reasoning_text = final_message.content if final_message else "No response from agent"
-            # Remove ** markdown bold markers
-            reasoning_text = re.sub(r'\*\*', '', reasoning_text)
-            # Remove * markdown italic markers (but preserve bullet points)
-            reasoning_text = re.sub(r'(?<!\n)\*(?!\s)', '', reasoning_text)
-            # Remove ## markdown heading markers
-            reasoning_text = re.sub(r'^#{1,6}\s*', '', reasoning_text, flags=re.MULTILINE)
-            # Remove internal parsing markers (FINAL_VALUE, CONFIDENCE, SOURCE lines)
-            reasoning_text = re.sub(r'^FINAL_VALUE:.*$', '', reasoning_text, flags=re.MULTILINE)
-            reasoning_text = re.sub(r'^CONFIDENCE:.*$', '', reasoning_text, flags=re.MULTILINE)
-            reasoning_text = re.sub(r'^SOURCE:.*$', '', reasoning_text, flags=re.MULTILINE)
-            # Remove separator lines (---)
-            reasoning_text = re.sub(r'^-{2,}$', '', reasoning_text, flags=re.MULTILINE)
-            # Convert markdown tables to cleaner format
-            # Remove table header separator lines (|---|---|)
-            reasoning_text = re.sub(r'^\|[-:\s|]+\|$', '', reasoning_text, flags=re.MULTILINE)
-            # Convert table rows "| Key | Value |" to "- Key: Value"
-            def convert_table_row(match):
-                cells = [c.strip() for c in match.group(0).split('|') if c.strip()]
-                if len(cells) == 2:
-                    return f"- {cells[0]}: {cells[1]}"
-                elif len(cells) > 0:
-                    return f"- {' | '.join(cells)}"
-                return ''
-            reasoning_text = re.sub(r'^\|[^|]+\|[^|]*\|$', convert_table_row, reasoning_text, flags=re.MULTILINE)
-            # Clean up excessive blank lines
-            reasoning_text = re.sub(r'\n{3,}', '\n\n', reasoning_text).strip()
+            reasoning_text = clean_markdown(
+                final_message.content if final_message else "No response from agent"
+            )
 
             # Build solution from agent's autonomous decision
             solution = {
@@ -567,8 +585,8 @@ When you've completed the update, summarize:
 - Timestamp of the change
 """
 
-    # Create LLM for Execution Agent
-    llm = create_llm(temperature=0.0)  # Use 0.0 for deterministic updates
+    # Create LLM for Execution Agent (deterministic)
+    llm = create_llm(temperature=settings.execution_temperature)
 
     # Create tools list
     tools = [update_payment_field]
@@ -644,34 +662,9 @@ Extract the new value from the solution and use update_payment_field to apply it
 
             logger.info(f"Execution Agent completed: {final_message.content if final_message else 'No response'}")
 
-            # Clean up markdown formatting from reasoning for frontend display
-            reasoning_text = final_message.content if final_message else "No response from agent"
-            # Remove ** markdown bold markers
-            reasoning_text = re.sub(r'\*\*', '', reasoning_text)
-            # Remove * markdown italic markers (but preserve bullet points)
-            reasoning_text = re.sub(r'(?<!\n)\*(?!\s)', '', reasoning_text)
-            # Remove ## markdown heading markers
-            reasoning_text = re.sub(r'^#{1,6}\s*', '', reasoning_text, flags=re.MULTILINE)
-            # Remove internal parsing markers (FINAL_VALUE, CONFIDENCE, SOURCE lines)
-            reasoning_text = re.sub(r'^FINAL_VALUE:.*$', '', reasoning_text, flags=re.MULTILINE)
-            reasoning_text = re.sub(r'^CONFIDENCE:.*$', '', reasoning_text, flags=re.MULTILINE)
-            reasoning_text = re.sub(r'^SOURCE:.*$', '', reasoning_text, flags=re.MULTILINE)
-            # Remove separator lines (---)
-            reasoning_text = re.sub(r'^-{2,}$', '', reasoning_text, flags=re.MULTILINE)
-            # Convert markdown tables to cleaner format
-            # Remove table header separator lines (|---|---|)
-            reasoning_text = re.sub(r'^\|[-:\s|]+\|$', '', reasoning_text, flags=re.MULTILINE)
-            # Convert table rows "| Key | Value |" to "- Key: Value"
-            def convert_table_row(match):
-                cells = [c.strip() for c in match.group(0).split('|') if c.strip()]
-                if len(cells) == 2:
-                    return f"- {cells[0]}: {cells[1]}"
-                elif len(cells) > 0:
-                    return f"- {' | '.join(cells)}"
-                return ''
-            reasoning_text = re.sub(r'^\|[^|]+\|[^|]*\|$', convert_table_row, reasoning_text, flags=re.MULTILINE)
-            # Clean up excessive blank lines
-            reasoning_text = re.sub(r'\n{3,}', '\n\n', reasoning_text).strip()
+            reasoning_text = clean_markdown(
+                final_message.content if final_message else "No response from agent"
+            )
 
             # Parse the agent's response to extract execution result
             result = {
@@ -693,8 +686,6 @@ Extract the new value from the solution and use update_payment_field to apply it
             # Look for ToolMessage responses which contain actual tool results
             for msg in messages:
                 if msg.__class__.__name__ == "ToolMessage":
-                    # Parse the tool response
-                    import json
                     try:
                         tool_response = json.loads(msg.content)
                         result["success"] = tool_response.get("updated", False)

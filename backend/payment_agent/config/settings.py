@@ -18,13 +18,12 @@ class Settings(BaseSettings):
     aws_profile: Optional[str] = Field(default=None, description="AWS Profile (optional)")
 
     # Service Configuration
-    service_port: int = Field(default=8003, description="Service port")
     log_level: str = Field(default="INFO", description="Logging level")
 
-    # Agent Configuration
-    agent_temperature: float = Field(default=0.1, description="Temperature for agent LLM")
-    agent_max_retries: int = Field(default=3, description="Max retries for agent actions")
-    tool_timeout_seconds: int = Field(default=30, description="Timeout for tool calls")
+    # Agent LLM Configuration
+    agent_model_id: str = Field(default="us.anthropic.claude-haiku-4-5-20251001-v1:0", description="Bedrock model ID for agents")
+    agent_temperature: float = Field(default=0.1, description="Default temperature for agent LLM")
+    execution_temperature: float = Field(default=0.0, description="Temperature for execution agent (deterministic)")
 
     # Atlas Search Configuration
     atlas_search_enabled: bool = Field(default=True, description="Enable Atlas Search fuzzy matching")
