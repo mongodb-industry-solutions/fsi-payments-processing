@@ -1,0 +1,130 @@
+[{
+  "_id": {
+    "$oid": "691f175e80dc24cf5c69bbaa"
+  },
+  "name_english": "SONY CORPORATION",
+  "name_katakana": "ソニー",
+  "name_hiragana": "そにー",
+  "bank_name": "Mizuho Bank",
+  "bank_name_katakana": "みずほ銀行",
+  "swift_code": "MHCBJPJT",
+  "city": "Tokyo",
+  "country": "JP"
+},
+{
+  "_id": {
+    "$oid": "691f175e80dc24cf5c69bbab"
+  },
+  "name_english": "HONDA MOTOR CO LTD",
+  "name_katakana": "ホンダ",
+  "name_hiragana": "ほんだ",
+  "bank_name": "Bank of Tokyo-Mitsubishi UFJ",
+  "bank_name_katakana": "三菱UFJ銀行",
+  "swift_code": "BOTKJPJT",
+  "city": "Tokyo",
+  "country": "JP"
+},
+{
+  "_id": {
+    "$oid": "691f175e80dc24cf5c69bbae"
+  },
+  "name_english": "MITSUBISHI CORPORATION",
+  "name_katakana": "三菱商事",
+  "name_hiragana": "みつびししょうじ",
+  "bank_name": "Bank of Tokyo-Mitsubishi UFJ",
+  "bank_name_katakana": "三菱UFJ銀行",
+  "swift_code": "BOTKJPJT",
+  "city": "Tokyo",
+  "country": "JP"
+},
+{
+  "_id": {
+    "$oid": "691f175e80dc24cf5c69bba7"
+  },
+  "name_english": "DENSO CORPORATION",
+  "name_katakana": "デンソー・コーポレーション",
+  "name_hiragana": "でんそー・こーぽれーしょん",
+  "bank_name": "Bank of Tokyo-Mitsubishi UFJ",
+  "bank_name_katakana": "三菱UFJ銀行",
+  "swift_code": "BOTKJPJT",
+  "city": "Tokyo",
+  "country": "JP"
+},
+{
+  "_id": {
+    "$oid": "691f175e80dc24cf5c69bba8"
+  },
+  "name_english": "VOLKSWAGEN AG",
+  "name_katakana": "フォルクスワーゲン",
+  "name_hiragana": "ふぉるくすわーげん",
+  "bank_name": "Deutsche Bank",
+  "bank_name_katakana": null,
+  "swift_code": "DEUTDEFFXXX",
+  "city": "Berlin",
+  "country": "DE"
+},
+{
+  "_id": {
+    "$oid": "691f175e80dc24cf5c69bba9"
+  },
+  "name_english": "TOYOTA MOTOR CORPORATION",
+  "name_katakana": "トヨタ自動車",
+  "name_hiragana": "とよたじどうしゃ",
+  "bank_name": "Sumitomo Mitsui Banking Corporation",
+  "bank_name_katakana": "三井住友銀行",
+  "swift_code": "SMBCJPJT",
+  "city": "Tokyo",
+  "country": "JP"
+},
+{
+  "_id": {
+    "$oid": "691f175e80dc24cf5c69bbac"
+  },
+  "name_english": "NISSAN MOTOR CO LTD",
+  "name_katakana": "ニッサン",
+  "name_hiragana": "にっさん",
+  "bank_name": "Sumitomo Mitsui Banking Corporation",
+  "bank_name_katakana": "三井住友銀行",
+  "swift_code": "SMBCJPJT",
+  "city": "Yokohama",
+  "country": "JP"
+},
+{
+  "_id": {
+    "$oid": "691f175e80dc24cf5c69bbad"
+  },
+  "name_english": "PANASONIC CORPORATION",
+  "name_katakana": "パナソニック",
+  "name_hiragana": "ぱなそにっく",
+  "bank_name": "Mizuho Bank",
+  "bank_name_katakana": "みずほ銀行",
+  "swift_code": "MHCBJPJT",
+  "city": "Osaka",
+  "country": "JP"
+},
+{
+  "_id": {
+    "$oid": "691f175e80dc24cf5c69bbaf"
+  },
+  "name_english": "INFOSYS LIMITED",
+  "name_katakana": null,
+  "name_hiragana": null,
+  "bank_name": "HDFC Bank",
+  "bank_name_katakana": null,
+  "swift_code": "HDFCINBBXXX",
+  "city": "Mumbai",
+  "country": "IN"
+},
+{
+  "_id": {
+    "$oid": "691f175e80dc24cf5c69bbb0"
+  },
+  "name_english": "GOOGLE LLC",
+  "name_katakana": "グーグル",
+  "name_hiragana": "ぐーぐる",
+  "bank_name": "JPMorgan Chase",
+  "bank_name_katakana": null,
+  "swift_code": "CHASUS33XXX",
+  "city": "Mountain View",
+  "country": "US"
+}]

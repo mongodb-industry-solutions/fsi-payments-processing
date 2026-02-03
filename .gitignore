@@ -38,7 +38,7 @@ env.bak/
 venv.bak/
 help-for-me/
 backend/requirements/
-backend/data/
+# backend/data/
 backup/
 backend/converter_service/explain
 backend/converter_service/tests

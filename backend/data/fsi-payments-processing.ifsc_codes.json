@@ -1,0 +1,224 @@
+[{
+  "_id": {
+    "$oid": "691c9eaac04a1d41fe703752"
+  },
+  "ifsc": "HDFC0000300",
+  "bank": "HDFC Bank",
+  "branch": "Fort",
+  "city": "Mumbai",
+  "district": "Mumbai",
+  "state": "Maharashtra",
+  "address": "Fort Branch, Mumbai 400001",
+  "contact": "022-22661234",
+  "micr": "400240003"
+},
+{
+  "_id": {
+    "$oid": "691c9eaac04a1d41fe703754"
+  },
+  "ifsc": "ICIC0000104",
+  "bank": "ICICI Bank",
+  "branch": "Anna Nagar",
+  "city": "Chennai",
+  "district": "Chennai",
+  "state": "Tamil Nadu",
+  "address": "Anna Nagar, Chennai 600040",
+  "contact": "044-26213456",
+  "micr": "600229002"
+},
+{
+  "_id": {
+    "$oid": "691c9eaac04a1d41fe703759"
+  },
+  "ifsc": "UTIB0000001",
+  "bank": "Axis Bank",
+  "branch": "Kasturba Gandhi Marg",
+  "city": "New Delhi",
+  "district": "New Delhi",
+  "state": "Delhi",
+  "address": "Kasturba Gandhi Marg, New Delhi 110001",
+  "contact": "011-23321234",
+  "micr": "110211001"
+},
+{
+  "_id": {
+    "$oid": "691c9eaac04a1d41fe70375d"
+  },
+  "ifsc": "KKBK0000123",
+  "bank": "Kotak Mahindra Bank",
+  "branch": "Connaught Place",
+  "city": "New Delhi",
+  "district": "New Delhi",
+  "state": "Delhi",
+  "address": "Connaught Place, New Delhi 110001",
+  "contact": "011-42323456",
+  "micr": "110485001"
+},
+{
+  "_id": {
+    "$oid": "691c9eaac04a1d41fe70374f"
+  },
+  "ifsc": "HDFC0000001",
+  "bank": "HDFC Bank",
+  "branch": "Connaught Place",
+  "city": "New Delhi",
+  "district": "New Delhi",
+  "state": "Delhi",
+  "address": "Jeevan Bharti Building, Connaught Circus, New Delhi 110001",
+  "contact": "011-23414895",
+  "micr": "110240001"
+},
+{
+  "_id": {
+    "$oid": "691c9eaac04a1d41fe703755"
+  },
+  "ifsc": "ICIC0000103",
+  "bank": "ICICI Bank",
+  "branch": "MG Road",
+  "city": "Bangalore",
+  "district": "Bangalore",
+  "state": "Karnataka",
+  "address": "MG Road, Bangalore 560001",
+  "contact": "080-25587890",
+  "micr": "560229001"
+},
+{
+  "_id": {
+    "$oid": "691c9eaac04a1d41fe703758"
+  },
+  "ifsc": "SBIN0001234",
+  "bank": "State Bank of India",
+  "branch": "MG Road",
+  "city": "Bangalore",
+  "district": "Bangalore",
+  "state": "Karnataka",
+  "address": "MG Road, Bangalore 560001",
+  "contact": "080-25584466",
+  "micr": "560002001"
+},
+{
+  "_id": {
+    "$oid": "691c9eaac04a1d41fe70375e"
+  },
+  "ifsc": "KKBK0000456",
+  "bank": "Kotak Mahindra Bank",
+  "branch": "Anna Nagar",
+  "city": "Chennai",
+  "district": "Chennai",
+  "state": "Tamil Nadu",
+  "address": "Anna Nagar, Chennai 600040",
+  "contact": "044-26264567",
+  "micr": "600485002"
+},
+{
+  "_id": {
+    "$oid": "691c9eaac04a1d41fe703750"
+  },
+  "ifsc": "HDFC0000123",
+  "bank": "HDFC Bank",
+  "branch": "Anna Nagar",
+  "city": "Chennai",
+  "district": "Chennai",
+  "state": "Tamil Nadu",
+  "address": "No 1, First Main Road, Anna Nagar, Chennai 600040",
+  "contact": "044-26264646",
+  "micr": "600240002"
+},
+{
+  "_id": {
+    "$oid": "691c9eaac04a1d41fe703751"
+  },
+  "ifsc": "HDFC0000240",
+  "bank": "HDFC Bank",
+  "branch": "MG Road",
+  "city": "Bangalore",
+  "district": "Bangalore",
+  "state": "Karnataka",
+  "address": "MG Road, Bangalore 560001",
+  "contact": "080-25584157",
+  "micr": "560240001"
+},
+{
+  "_id": {
+    "$oid": "691c9eaac04a1d41fe703753"
+  },
+  "ifsc": "ICIC0000001",
+  "bank": "ICICI Bank",
+  "branch": "Connaught Place",
+  "city": "New Delhi",
+  "district": "New Delhi",
+  "state": "Delhi",
+  "address": "Connaught Place, New Delhi 110001",
+  "contact": "011-41412345",
+  "micr": "110229001"
+},
+{
+  "_id": {
+    "$oid": "691c9eaac04a1d41fe703756"
+  },
+  "ifsc": "SBIN0000001",
+  "bank": "State Bank of India",
+  "branch": "Parliament Street",
+  "city": "New Delhi",
+  "district": "New Delhi",
+  "state": "Delhi",
+  "address": "11 Parliament Street, New Delhi 110001",
+  "contact": "011-23748088",
+  "micr": "110002001"
+},
+{
+  "_id": {
+    "$oid": "691c9eaac04a1d41fe703757"
+  },
+  "ifsc": "SBIN0000123",
+  "bank": "State Bank of India",
+  "branch": "Anna Nagar",
+  "city": "Chennai",
+  "district": "Chennai",
+  "state": "Tamil Nadu",
+  "address": "Anna Nagar West, Chennai 600040",
+  "contact": "044-26180500",
+  "micr": "600002002"
+},
+{
+  "_id": {
+    "$oid": "691c9eaac04a1d41fe70375b"
+  },
+  "ifsc": "PUNB0000100",
+  "bank": "Punjab National Bank",
+  "branch": "Parliament Street",
+  "city": "New Delhi",
+  "district": "New Delhi",
+  "state": "Delhi",
+  "address": "7 Parliament Street, New Delhi 110001",
+  "contact": "011-23325252",
+  "micr": "110024001"
+},
+{
+  "_id": {
+    "$oid": "691c9eaac04a1d41fe70375a"
+  },
+  "ifsc": "UTIB0000345",
+  "bank": "Axis Bank",
+  "branch": "T Nagar",
+  "city": "Chennai",
+  "district": "Chennai",
+  "state": "Tamil Nadu",
+  "address": "T Nagar, Chennai 600017",
+  "contact": "044-28341234",
+  "micr": "600211002"
+},
+{
+  "_id": {
+    "$oid": "691c9eaac04a1d41fe70375c"
+  },
+  "ifsc": "PUNB0001200",
+  "bank": "Punjab National Bank",
+  "branch": "Anna Salai",
+  "city": "Chennai",
+  "district": "Chennai",
+  "state": "Tamil Nadu",
+  "address": "Anna Salai, Chennai 600002",
+  "contact": "044-28523456",
+  "micr": "600024002"
+}]

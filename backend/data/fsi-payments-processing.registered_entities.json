@@ -1,0 +1,152 @@
+[{
+  "_id": {
+    "$oid": "694557cd37156832475c94a7"
+  },
+  "entity_id": "ENT-001",
+  "legal_name": "Acme Corporation Limited",
+  "trading_names": [
+    "Acme Corp",
+    "Acme Co.",
+    "ACME",
+    "Acme Inc"
+  ],
+  "country": "US",
+  "entity_type": "corporation",
+  "status": "active"
+},
+{
+  "_id": {
+    "$oid": "694557cd37156832475c94a8"
+  },
+  "entity_id": "ENT-002",
+  "legal_name": "International Business Machines Corporation",
+  "trading_names": [
+    "IBM",
+    "IBM Corp",
+    "IBM Corporation"
+  ],
+  "country": "US",
+  "entity_type": "corporation",
+  "status": "active"
+},
+{
+  "_id": {
+    "$oid": "694557cd37156832475c94a9"
+  },
+  "entity_id": "ENT-003",
+  "legal_name": "Alphabet Inc.",
+  "trading_names": [
+    "Google",
+    "Google LLC",
+    "Google Inc"
+  ],
+  "country": "US",
+  "entity_type": "corporation",
+  "status": "active"
+},
+{
+  "_id": {
+    "$oid": "694557cd37156832475c94aa"
+  },
+  "entity_id": "ENT-004",
+  "legal_name": "Deutsche Bank AG",
+  "trading_names": [
+    "Deutsche Bank",
+    "DB",
+    "Deutsche"
+  ],
+  "country": "DE",
+  "entity_type": "corporation",
+  "status": "active"
+},
+{
+  "_id": {
+    "$oid": "694557cd37156832475c94ab"
+  },
+  "entity_id": "ENT-005",
+  "legal_name": "Toyota Motor Corporation",
+  "trading_names": [
+    "Toyota",
+    "Toyota Motors",
+    "Toyota Motor"
+  ],
+  "country": "JP",
+  "entity_type": "corporation",
+  "status": "active"
+},
+{
+  "_id": {
+    "$oid": "694557cd37156832475c94ac"
+  },
+  "entity_id": "ENT-006",
+  "legal_name": "Volkswagen Aktiengesellschaft",
+  "trading_names": [
+    "Volkswagen",
+    "VW",
+    "Volkswagen AG",
+    "Volkswagon"
+  ],
+  "country": "DE",
+  "entity_type": "corporation",
+  "status": "active"
+},
+{
+  "_id": {
+    "$oid": "694557cd37156832475c94ad"
+  },
+  "entity_id": "ENT-007",
+  "legal_name": "Samsung Electronics Co., Ltd.",
+  "trading_names": [
+    "Samsung",
+    "Samsung Electronics",
+    "Samsung Corp"
+  ],
+  "country": "KR",
+  "entity_type": "corporation",
+  "status": "active"
+},
+{
+  "_id": {
+    "$oid": "694557cd37156832475c94ae"
+  },
+  "entity_id": "ENT-008",
+  "legal_name": "Tata Consultancy Services Limited",
+  "trading_names": [
+    "TCS",
+    "Tata Consultancy",
+    "Tata TCS"
+  ],
+  "country": "IN",
+  "entity_type": "corporation",
+  "status": "active"
+},
+{
+  "_id": {
+    "$oid": "694557cd37156832475c94af"
+  },
+  "entity_id": "ENT-009",
+  "legal_name": "HSBC Holdings plc",
+  "trading_names": [
+    "HSBC",
+    "HSBC Bank",
+    "Hongkong Shanghai Bank"
+  ],
+  "country": "GB",
+  "entity_type": "corporation",
+  "status": "active"
+},
+{
+  "_id": {
+    "$oid": "694557cd37156832475c94b0"
+  },
+  "entity_id": "ENT-010",
+  "legal_name": "Sony Corporation",
+  "trading_names": [
+    "Sony",
+    "Sony Corp",
+    "Sony Inc"
+  ],
+  "country": "JP",
+  "entity_type": "corporation",
+  "status": "active"
+}]
