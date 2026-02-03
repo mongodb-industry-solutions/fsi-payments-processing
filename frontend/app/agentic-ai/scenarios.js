@@ -11,6 +11,7 @@ export const SCENARIOS = {
     badge: 'TRANSLITERATION',
     badgeVariant: 'blue',
     isAgentic: true,
+    agentCollection: 'bank_details',
     mongoFeature: 'ATLAS SEARCH',
     info: {
       problem: 'Japanese banks require creditor names in Katakana script, but the source MT103 contains "DENSO CORPORATION" in Latin characters.',
@@ -139,6 +140,7 @@ PRECISION SENSORS AND ECU MODULES
     badge: 'IFSC LOOKUP',
     badgeVariant: 'blue',
     isAgentic: true,
+    agentCollection: 'ifsc_codes',
     mongoFeature: 'ATLAS SEARCH',
     info: {
       problem: 'Indian banking requires specific IFSC codes for bank identification, but the source MT103 only has descriptive details: "HDFC Bank, Fort Branch, Mumbai".',
@@ -261,6 +263,7 @@ CLOUD INFRASTRUCTURE DEVELOPMENT
     badge: 'CARD PAYMENT',
     badgeVariant: 'yellow',
     isAgentic: false,  // No country validation - shows conversion hop events instead
+    agentCollection: null,
     mongoFeature: 'DOCUMENT MODEL',
     info: {
       process: 'Cross-border card authorization converted from legacy ISO 8583 (POS terminal format) to modern ISO 20022 cain.001 for card network processing between acquirer and issuer.',
@@ -361,6 +364,7 @@ CLOUD INFRASTRUCTURE DEVELOPMENT
     badgeVariant: 'lightgray',
     isAgentic: false,
     isDeterministic: true,
+    agentCollection: null,
     mongoFeature: 'DOCUMENT MODEL',
     info: {
       process: 'Demonstrates internal MT-to-MX transition: bank receives pacs.008 externally, converts to internal canonical JSON for legacy system processing, then back to pacs.008 for outbound transmission.',
@@ -516,6 +520,7 @@ CLOUD INFRASTRUCTURE DEVELOPMENT
     badgeVariant: 'blue',
     isAgentic: false,
     isCryptoSettlement: true,
+    agentCollection: null,
     mongoFeature: 'DOCUMENT MODEL',
     info: {
       process: 'ISO 20022 payment converted to canonical JSON, then settled on Solana blockchain as last-mile payment to Mexico.',
@@ -705,6 +710,7 @@ CLOUD INFRASTRUCTURE DEVELOPMENT
     badge: 'PURPOSE CODE',
     badgeVariant: 'lightgray',
     isAgentic: true,
+    agentCollection: 'purpose_codes',
     mongoFeature: 'VECTOR SEARCH',
     info: {
       problem: 'ISO 20022 requires standardized purpose codes (e.g., SALA, SUPP, SCVE), but the source MT103 only contains free-text: "Platform API integration and cloud infrastructure services".',
@@ -831,6 +837,7 @@ CONTRACT SHOP-GRAB-2024-API-001
     badge: 'NAME VERIFICATION',
     badgeVariant: 'yellow',
     isAgentic: true,
+    agentCollection: 'registered_entities',
     mongoFeature: 'ATLAS SEARCH',
     info: {
       problem: 'Payment creditor shows "HSBC" but sanctions screening requires exact legal name match. Trading names and abbreviations often fail compliance checks.',

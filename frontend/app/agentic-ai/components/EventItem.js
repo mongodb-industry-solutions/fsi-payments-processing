@@ -5,6 +5,7 @@ import { Body } from '@leafygreen-ui/typography';
 import Icon from '@leafygreen-ui/icon';
 import Badge from '@leafygreen-ui/badge';
 import JSONDiffModal from './JSONDiffModal';
+import CollectionPreviewModal from './CollectionPreviewModal';
 
 // Use Next.js API routes to proxy to converter sidecar
 
@@ -854,13 +855,19 @@ function isExpandable(event) {
  * @param {Object} props.event - Event object with type, data, timestamp, id
  * @param {boolean} props.isExpanded - Whether event is expanded
  * @param {Function} props.onToggleExpand - Callback to toggle expansion
+ * @param {string|null} props.collectionName - MongoDB collection for preview (null hides button)
  */
-export default function EventItem({ event, isExpanded, onToggleExpand }) {
+export default function EventItem({ event, isExpanded, onToggleExpand, collectionName }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [jsonDiffData, setJsonDiffData] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-  
+
+  // Collection preview state
+  const [isCollectionModalOpen, setIsCollectionModalOpen] = useState(false);
+  const [collectionData, setCollectionData] = useState(null);
+  const [isCollectionLoading, setIsCollectionLoading] = useState(false);
+
   const icon = getEventIcon(event.type);
   const color = getEventColor(event.type);
   const message = formatEventMessage(event);
@@ -868,9 +875,12 @@ export default function EventItem({ event, isExpanded, onToggleExpand }) {
   const canExpand = isExpandable(event);
   const bannerStyle = getEventBannerStyle(event.type);
   const isAgentStart = event.type === 'agent_start';
-  
+
   // Show code button only for agent_execution events with conversion_run_id
   const showCodeButton = event.type === 'agent_execution' && event.conversion_run_id;
+
+  // Show database button on tool events when a collection is mapped
+  const showDbButton = collectionName && ['tool_call', 'tool_result'].includes(event.type);
   
   // Fetch JSON diff from API
   const handleFetchJSONDiff = async (e) => {
@@ -905,6 +915,30 @@ export default function EventItem({ event, isExpanded, onToggleExpand }) {
       setError(err.message);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Fetch collection preview from API
+  const handleFetchCollectionPreview = async (e) => {
+    e.stopPropagation();
+    if (!collectionName) return;
+
+    setIsCollectionLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch(`/api/collection-preview/${collectionName}`);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch collection preview: ${response.statusText}`);
+      }
+      const data = await response.json();
+      setCollectionData(data);
+      setIsCollectionModalOpen(true);
+    } catch (err) {
+      console.error('Error fetching collection preview:', err);
+      setError(err.message);
+    } finally {
+      setIsCollectionLoading(false);
     }
   };
 
@@ -1003,6 +1037,38 @@ export default function EventItem({ event, isExpanded, onToggleExpand }) {
                   <Icon glyph="Code" fill={isLoading ? "#889397" : "#0B61A4"} size="small" />
                 </button>
               )}
+              {showDbButton && (
+                <button
+                  onClick={handleFetchCollectionPreview}
+                  disabled={isCollectionLoading}
+                  style={{
+                    border: '1px solid #E7EAEE',
+                    background: 'white',
+                    borderRadius: '4px',
+                    padding: '4px 6px',
+                    cursor: isCollectionLoading ? 'wait' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    transition: 'all 0.15s ease',
+                    opacity: isCollectionLoading ? 0.6 : 1
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isCollectionLoading) {
+                      e.currentTarget.style.background = '#F9FBFA';
+                      e.currentTarget.style.borderColor = '#00684A';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isCollectionLoading) {
+                      e.currentTarget.style.background = 'white';
+                      e.currentTarget.style.borderColor = '#E7EAEE';
+                    }
+                  }}
+                  title="Preview MongoDB collection"
+                >
+                  <Icon glyph="Database" fill={isCollectionLoading ? "#889397" : "#00684A"} size="small" />
+                </button>
+              )}
               {canExpand && (
                 <Icon
                   glyph={isExpanded ? 'ChevronUp' : 'ChevronDown'}
@@ -1046,6 +1112,16 @@ export default function EventItem({ event, isExpanded, onToggleExpand }) {
           beforeJSON={jsonDiffData.before_json}
           afterJSON={jsonDiffData.after_json}
           changedFields={jsonDiffData.changed_fields}
+        />
+      )}
+
+      {/* Collection Preview Modal */}
+      {collectionData && (
+        <CollectionPreviewModal
+          isOpen={isCollectionModalOpen}
+          onClose={() => setIsCollectionModalOpen(false)}
+          collectionName={collectionData.collection}
+          documents={collectionData.documents}
         />
       )}
     </div>

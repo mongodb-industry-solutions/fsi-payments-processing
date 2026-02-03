@@ -5,6 +5,7 @@ Endpoints:
 - POST /api/v1/payment-agent/process-stream-with-review: Stream processing with human review
 - POST /api/v1/payment-agent/resume-stream: Resume paused workflow after review
 - GET /api/v1/payment-agent/health: Health check
+- GET /api/v1/payment-agent/collection-preview/{collection_name}: Sample documents from a collection
 """
 
 import logging
@@ -12,9 +13,9 @@ from datetime import datetime
 import json
 import uuid
 
-from fastapi import FastAPI, status
+from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from langgraph.types import Command
 
 from graph import get_workflow
@@ -217,6 +218,39 @@ async def process_payment_stream_with_review(request: ProcessPaymentRequest):
         media_type="text/event-stream",
         headers=SSE_HEADERS,
     )
+
+
+ALLOWED_COLLECTIONS = {"bank_details", "ifsc_codes", "purpose_codes", "registered_entities"}
+
+
+@app.get(
+    "/api/v1/payment-agent/collection-preview/{collection_name}",
+    summary="Collection Preview",
+    description="Return 3 sample documents from an agent-used collection",
+)
+async def collection_preview(collection_name: str):
+    if collection_name not in ALLOWED_COLLECTIONS:
+        raise HTTPException(status_code=404, detail=f"Collection '{collection_name}' not available for preview")
+
+    from services.mongodb_service import get_mongodb_service
+
+    try:
+        db_service = get_mongodb_service()
+        collection = db_service.get_collection(collection_name)
+        docs = list(collection.find({}, limit=3))
+        for doc in docs:
+            doc.pop("_id", None)
+            # Truncate embedding vectors: show first 5 values + "..."
+            if "embedding" in doc and isinstance(doc["embedding"], list) and len(doc["embedding"]) > 5:
+                doc["embedding"] = doc["embedding"][:5] + ["... ({} dims total)".format(len(doc["embedding"]))]
+        return JSONResponse(content={
+            "collection": collection_name,
+            "sample_count": len(docs),
+            "documents": docs,
+        })
+    except Exception as e:
+        logger.error(f"Collection preview error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # =============================================================================

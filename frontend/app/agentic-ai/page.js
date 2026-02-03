@@ -939,6 +939,7 @@ export default function AgenticAIPage() {
           expandedEvents={expandedEvents}
           onToggleEvent={toggleEventExpansion}
           onOutputRendered={() => setLogsRenderComplete(true)}
+          collectionName={getScenario(selectedScenario)?.agentCollection || null}
         />
       </div>
 

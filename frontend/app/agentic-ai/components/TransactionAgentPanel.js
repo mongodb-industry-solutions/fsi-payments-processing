@@ -97,6 +97,7 @@ function getAgentThinkingState(events, isStreaming, output) {
  * @param {Set} props.expandedEvents - Set of expanded event IDs
  * @param {Function} props.onToggleEvent - Callback to toggle event expansion
  * @param {Function} props.onOutputRendered - Callback when output card has rendered (for animation sync)
+ * @param {string|null} props.collectionName - MongoDB collection name for preview (null = no preview button)
  */
 export default function TransactionAgentPanel({
   events,
@@ -107,7 +108,8 @@ export default function TransactionAgentPanel({
   isStreaming,
   expandedEvents,
   onToggleEvent,
-  onOutputRendered
+  onOutputRendered,
+  collectionName
 }) {
   const status = getAgentStatus(isStreaming, output);
   const hasActivity = events.length > 0 || output;
@@ -298,6 +300,7 @@ export default function TransactionAgentPanel({
                   event={event}
                   isExpanded={expandedEvents.has(event.id)}
                   onToggleExpand={() => onToggleEvent(event.id)}
+                  collectionName={collectionName}
                 />
               </div>
             ))}
