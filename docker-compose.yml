@@ -1,25 +1,41 @@
 services:
-  demoname-backend:
+  converter:
     build:
       context: .
-      no_cache: true
-      dockerfile: Dockerfile.backend
-    image: imagename-backend:latest
+      dockerfile: Dockerfile.converter
+    image: fsi-payments-converter:latest
     volumes:
       - ~/.aws/credentials:/root/.aws/credentials:ro
       - ~/.aws/config:/root/.aws/config:ro
-      - ~/.aws/sso/cache:/root/.aws/sso/cache:rw  # Only make cache writable
+      - ~/.aws/sso/cache:/root/.aws/sso/cache:rw
     ports:
-      - "8000:8000"
+      - "8001:8001"
     restart: always
-    container_name: demoname-backend
-  demoname-frontend:
+    container_name: fsi-payments-converter
+
+  agent:
     build:
       context: .
-      no_cache: true
-      dockerfile: Dockerfile.frontend
-    image: imagename-frontend:latest
+      dockerfile: Dockerfile.agent
+    image: fsi-payments-agent:latest
+    volumes:
+      - ~/.aws/credentials:/root/.aws/credentials:ro
+      - ~/.aws/config:/root/.aws/config:ro
+      - ~/.aws/sso/cache:/root/.aws/sso/cache:rw
     ports:
-      - "3000:3000"
+      - "8002:8002"
     restart: always
-    container_name: demoname-frontend
+    container_name: fsi-payments-agent
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    image: fsi-payments-frontend:latest
+    ports:
+      - "3000:8080"
+    restart: always
+    container_name: fsi-payments-frontend
+    depends_on:
+      - converter
+      - agent
