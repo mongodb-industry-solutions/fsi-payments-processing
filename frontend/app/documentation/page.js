@@ -14,10 +14,49 @@ export default function Documentation() {
   const [showAgentModal, setShowAgentModal] = useState(false);
   const [showConfigBuilderModal, setShowConfigBuilderModal] = useState(false);
   const [selectedFormat, setSelectedFormat] = useState(0);
+  const [showDbExplorer, setShowDbExplorer] = useState(false);
+  const [selectedDbCollection, setSelectedDbCollection] = useState(null);
+  const [collectionDocs, setCollectionDocs] = useState(null);
+  const [collectionLoading, setCollectionLoading] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  const dbCollections = [
+    { name: 'bank_details', icon: 'Building' },
+    { name: 'ifsc_codes', icon: 'MagnifyingGlass' },
+    { name: 'purpose_codes', icon: 'Sparkle' },
+    { name: 'registered_entities', icon: 'Shield' },
+    { name: 'conversion_configs', icon: 'CurlyBraces' },
+    { name: 'format_specifications', icon: 'Apps' },
+    { name: 'canonical_json_storage', icon: 'Array' },
+  ];
+
+  const handleCollectionSelect = async (collectionName) => {
+    if (selectedDbCollection === collectionName && collectionDocs) return;
+    setSelectedDbCollection(collectionName);
+    setCollectionLoading(true);
+    setCollectionDocs(null);
+    try {
+      const res = await fetch(`/api/collection-preview/${collectionName}`);
+      if (!res.ok) throw new Error(res.statusText);
+      const data = await res.json();
+      setCollectionDocs(data.documents);
+    } catch (err) {
+      console.error('Collection fetch error:', err);
+      setCollectionDocs([]);
+    } finally {
+      setCollectionLoading(false);
+    }
+  };
+
+  const openDbExplorer = () => {
+    setShowDbExplorer(true);
+    if (!selectedDbCollection) {
+      handleCollectionSelect(dbCollections[0].name);
+    }
+  };
 
   const paymentFormats = [
     {
@@ -525,6 +564,9 @@ Third-party Gateway (JSON wrapper):
                   <Body className={styles.introParagraph}>
                     MongoDB Atlas serves as the <strong>operational data layer</strong> for the entire platform—format configuration, transaction processing, agent decisions, and audit trails in one system.
                   </Body>
+                  <button className={styles.dbExplorerButton} onClick={openDbExplorer}>
+                    <Icon glyph="Database" size="small" /> Explore Database
+                  </button>
                 </div>
 
                 <div className={styles.featuresGridCompact}>
@@ -605,6 +647,68 @@ Third-party Gateway (JSON wrapper):
         </Tabs>
         )}
       </div>
+
+      {showDbExplorer && (
+        <div className={styles.dbOverlay} onClick={() => setShowDbExplorer(false)}>
+          <div className={styles.dbPanel} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.dbPanelHeader}>
+              <div className={styles.dbPanelHeaderLeft}>
+                <Icon glyph="Database" size="small" />
+                <H3>MongoDB Explorer</H3>
+              </div>
+              <button className={styles.dbCloseBtn} onClick={() => setShowDbExplorer(false)}>
+                <Icon glyph="X" size="small" />
+              </button>
+            </div>
+            <div className={styles.dbPanelBody}>
+              <div className={styles.dbSidebar}>
+                <div className={styles.dbSidebarTitle}>
+                  <Body weight="medium">COLLECTIONS</Body>
+                </div>
+                {dbCollections.map((col) => (
+                  <button
+                    key={col.name}
+                    className={`${styles.dbSidebarItem} ${selectedDbCollection === col.name ? styles.dbSidebarItemActive : ''}`}
+                    onClick={() => handleCollectionSelect(col.name)}
+                  >
+                    <Icon glyph={col.icon} size="small" />
+                    <span>{col.name}</span>
+                  </button>
+                ))}
+              </div>
+              <div className={styles.dbContent}>
+                {collectionLoading ? (
+                  <div className={styles.dbEmptyState}>
+                    <Body>Loading documents...</Body>
+                  </div>
+                ) : collectionDocs && collectionDocs.length > 0 ? (
+                  <>
+                    <div className={styles.dbContentHeader}>
+                      <Body weight="medium">{selectedDbCollection}</Body>
+                      <Badge variant="darkgray">{collectionDocs.length} documents</Badge>
+                    </div>
+                    <div className={styles.dbDocsList}>
+                      {collectionDocs.map((doc, idx) => (
+                        <pre key={idx} className={styles.dbDocJson}>
+                          {JSON.stringify(doc, null, 2)}
+                        </pre>
+                      ))}
+                    </div>
+                  </>
+                ) : selectedDbCollection ? (
+                  <div className={styles.dbEmptyState}>
+                    <Body>No documents found.</Body>
+                  </div>
+                ) : (
+                  <div className={styles.dbEmptyState}>
+                    <Body>Select a collection to explore.</Body>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

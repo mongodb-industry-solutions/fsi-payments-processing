@@ -220,7 +220,10 @@ async def process_payment_stream_with_review(request: ProcessPaymentRequest):
     )
 
 
-ALLOWED_COLLECTIONS = {"bank_details", "ifsc_codes", "purpose_codes", "registered_entities"}
+ALLOWED_COLLECTIONS = {
+    "bank_details", "ifsc_codes", "purpose_codes", "registered_entities",
+    "conversion_configs", "format_specifications", "canonical_json_storage",
+}
 
 
 @app.get(
@@ -234,15 +237,28 @@ async def collection_preview(collection_name: str):
 
     from services.mongodb_service import get_mongodb_service
 
+    def _sanitize(obj):
+        """Convert non-JSON-serializable MongoDB types to strings."""
+        if isinstance(obj, dict):
+            return {k: _sanitize(v) for k, v in obj.items()}
+        if isinstance(obj, list):
+            return [_sanitize(v) for v in obj]
+        try:
+            json.dumps(obj)
+            return obj
+        except (TypeError, ValueError):
+            return str(obj)
+
     try:
         db_service = get_mongodb_service()
         collection = db_service.get_collection(collection_name)
-        docs = list(collection.find({}, limit=3))
+        docs = list(collection.find({}, limit=5))
         for doc in docs:
             doc.pop("_id", None)
             # Truncate embedding vectors: show first 5 values + "..."
             if "embedding" in doc and isinstance(doc["embedding"], list) and len(doc["embedding"]) > 5:
                 doc["embedding"] = doc["embedding"][:5] + ["... ({} dims total)".format(len(doc["embedding"]))]
+        docs = [_sanitize(doc) for doc in docs]
         return JSONResponse(content={
             "collection": collection_name,
             "sample_count": len(docs),

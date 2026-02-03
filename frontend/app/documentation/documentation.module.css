@@ -1172,6 +1172,227 @@
   color: var(--green-dark1);
 }
 
+/* Database Explorer Button */
+.dbExplorerButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: #00684A;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  margin-top: 12px;
+  transition: background 0.15s;
+}
+
+.dbExplorerButton:hover {
+  background: #005C41;
+}
+
+.dbExplorerButton svg {
+  color: white;
+}
+
+/* Database Explorer Overlay */
+.dbOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dbPanel {
+  width: 90vw;
+  max-width: 1100px;
+  height: 80vh;
+  background: white;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.dbPanelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  background: #1C2D38;
+  flex-shrink: 0;
+}
+
+.dbPanelHeaderLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dbPanelHeaderLeft svg {
+  color: #00ED64;
+}
+
+.dbPanelHeader h3 {
+  color: white !important;
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.dbCloseBtn {
+  all: unset;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.6);
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+}
+
+.dbCloseBtn:hover {
+  color: white;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.dbPanelBody {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+/* Sidebar */
+.dbSidebar {
+  width: 220px;
+  background: #F9FBFA;
+  border-right: 1px solid #E7EAEE;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+
+.dbSidebarTitle {
+  padding: 12px 16px 8px;
+}
+
+.dbSidebarTitle p {
+  font-size: 0.65rem !important;
+  color: #889397 !important;
+  letter-spacing: 0.5px;
+  margin: 0;
+}
+
+.dbSidebarItem {
+  all: unset;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 16px;
+  font-size: 0.8rem;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  color: #1C2D38;
+  box-sizing: border-box;
+  transition: background 0.1s;
+}
+
+.dbSidebarItem:hover {
+  background: #E8EDEB;
+}
+
+.dbSidebarItemActive {
+  background: #E3FCF7;
+  color: #00684A;
+  font-weight: 600;
+  border-left: 3px solid #00684A;
+  padding-left: 13px;
+}
+
+.dbSidebarItem svg {
+  color: inherit;
+  flex-shrink: 0;
+}
+
+/* Content area */
+.dbContent {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.dbContentHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  border-bottom: 1px solid #E7EAEE;
+  background: white;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  flex-shrink: 0;
+}
+
+.dbContentHeader p {
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 0.85rem !important;
+  margin: 0;
+}
+
+.dbDocsList {
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dbDocJson {
+  margin: 0;
+  padding: 16px;
+  background: #F9FBFA;
+  border: 1px solid #E7EAEE;
+  border-radius: 8px;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 0.75rem;
+  line-height: 1.6;
+  color: #1C2D38;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.dbEmptyState {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dbEmptyState p {
+  color: #889397 !important;
+}
+
+.dbContent::-webkit-scrollbar {
+  width: 6px;
+}
+
+.dbContent::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.dbContent::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 3px;
+}
+
 /* Responsive for Why MongoDB Tab */
 @media (max-width: 1200px) {
   .featuresGridCompact {
