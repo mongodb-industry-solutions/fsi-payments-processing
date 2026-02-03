@@ -13,6 +13,7 @@ trigger:
       - .gitignore
       - EXAMPLE.env
       - LICENSE
+      - backend/data/**
 
 steps:
   # Step 1: Build and publish Frontend Docker image
@@ -139,6 +140,7 @@ trigger:
       - .gitignore
       - EXAMPLE.env
       - LICENSE
+      - backend/data/**
 
 steps:
   # Step 1: Build and publish Frontend Docker image
