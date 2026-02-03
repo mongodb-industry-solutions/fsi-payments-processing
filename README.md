@@ -1,6 +1,6 @@
-# FSI Payments Processing
+# Agentic Payments Platform
 
-AI-powered payment format converter that transforms between SWIFT MT, ISO 20022, ISO 8583, and other formats using a 3-lane processing architecture (Rules, AI, Human-in-the-loop). New formats require zero code changes — only MongoDB configuration.
+Demonstrates Agentic AI combined with MongoDB Atlas's flexible document model simplifies payment orchestration across legacy SWIFT, modern ISO 20022, and emerging rails
 
 ## Where MongoDB Shines
 
