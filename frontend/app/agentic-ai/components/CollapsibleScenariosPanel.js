@@ -32,7 +32,8 @@ export default function CollapsibleScenariosPanel({
   onReset,
   isStreaming,
   useAI = true,
-  onToggleAI
+  onToggleAI,
+  solanaStatus
 }) {
   const selectedScenarioData = scenarios.find(s => s.id === selectedScenario);
   const isDeterministic = selectedScenarioData?.isDeterministic === true;
@@ -152,6 +153,7 @@ export default function CollapsibleScenariosPanel({
             selectedScenario={selectedScenario}
             onSelectScenario={onSelectScenario}
             isStreaming={isStreaming}
+            solanaStatus={solanaStatus}
           />
 
           {/* Action Buttons */}

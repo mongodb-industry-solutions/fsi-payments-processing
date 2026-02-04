@@ -15,7 +15,8 @@ export default function ScenarioSelector({
   scenarios,
   selectedScenario,
   onSelectScenario,
-  isStreaming
+  isStreaming,
+  solanaStatus
 }) {
   const [openPopover, setOpenPopover] = useState(null);
   const buttonRefs = useRef({});
@@ -274,6 +275,33 @@ export default function ScenarioSelector({
               <Badge variant={scenario.badgeVariant} style={{ fontSize: 'var(--font-xs, 11px)', whiteSpace: 'nowrap' }}>
                 {scenario.badge}
               </Badge>
+              {scenario.isCryptoSettlement && solanaStatus && (
+                <div style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  padding: '2px 8px',
+                  borderRadius: '10px',
+                  backgroundColor: solanaStatus === 'healthy' ? '#F0FDF4' : solanaStatus === 'down' ? '#FEF2F2' : '#F9FAFB',
+                  border: `1px solid ${solanaStatus === 'healthy' ? '#BBF7D0' : solanaStatus === 'down' ? '#FECACA' : '#E5E7EB'}`
+                }}>
+                  <div style={{
+                    width: '6px',
+                    height: '6px',
+                    borderRadius: '50%',
+                    backgroundColor: solanaStatus === 'healthy' ? '#22C55E' : solanaStatus === 'down' ? '#EF4444' : '#9CA3AF',
+                    animation: solanaStatus === 'checking' ? 'pulse 1.5s infinite' : 'none'
+                  }} />
+                  <span style={{
+                    fontSize: '10px',
+                    fontWeight: '600',
+                    color: solanaStatus === 'healthy' ? '#16A34A' : solanaStatus === 'down' ? '#DC2626' : '#6B7280',
+                    letterSpacing: '0.5px'
+                  }}>
+                    {solanaStatus === 'healthy' ? 'DEVNET LIVE' : solanaStatus === 'down' ? 'DEVNET DOWN' : 'CHECKING'}
+                  </span>
+                </div>
+              )}
               {scenario.mongoFeature && (
                 <Badge variant="green" style={{ fontSize: 'var(--font-xs, 11px)', whiteSpace: 'nowrap' }}>
                   {scenario.mongoFeature}
@@ -299,6 +327,10 @@ export default function ScenarioSelector({
       }
       .scenario-grid::-webkit-scrollbar-thumb:hover {
         background: rgba(0, 0, 0, 0.3);
+      }
+      @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.4; }
       }
     `}</style>
     </>

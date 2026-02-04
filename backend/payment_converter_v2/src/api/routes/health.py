@@ -5,7 +5,7 @@ from typing import List
 import logging
 
 from src.api.models import HealthResponse, FormatInfo
-from src.api.dependencies import mongodb_service, bedrock_service
+from src.api.dependencies import mongodb_service, bedrock_service, solana_service
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -36,6 +36,38 @@ async def health_check() -> HealthResponse:
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=f"Health check failed: {str(e)}"
         )
+
+
+@router.get("/solana/health", status_code=status.HTTP_200_OK)
+async def solana_health_check():
+    """Check Solana devnet RPC connectivity and wallet status."""
+    if solana_service is None:
+        return {
+            "healthy": False,
+            "network": None,
+            "current_slot": None,
+            "wallet_balance_sol": None,
+            "error": "Solana service not configured"
+        }
+
+    try:
+        result = solana_service.health_check()
+        return {
+            "healthy": result.get("healthy", False),
+            "network": result.get("network"),
+            "current_slot": result.get("current_slot"),
+            "wallet_balance_sol": result.get("wallet", {}).get("balance_sol") if result.get("wallet") else None,
+            "error": result.get("error")
+        }
+    except Exception as e:
+        logger.error(f"Solana health check failed: {e}")
+        return {
+            "healthy": False,
+            "network": None,
+            "current_slot": None,
+            "wallet_balance_sol": None,
+            "error": str(e)
+        }
 
 
 @router.get("/formats", response_model=List[FormatInfo], status_code=status.HTTP_200_OK)

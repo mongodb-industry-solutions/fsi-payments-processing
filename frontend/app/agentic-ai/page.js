@@ -145,6 +145,9 @@ export default function AgenticAIPage() {
   // AI/Rules mode toggle - controls whether to use LLM or regex for unstructured fields
   const [useAI, setUseAI] = useState(false);
 
+  // Solana devnet health status: 'checking' | 'healthy' | 'down'
+  const [solanaStatus, setSolanaStatus] = useState('checking');
+
   // Animation sync state - signals when transaction logs have finished rendering
   // This ensures the journey animation completes in sync with the logs panel
   const [logsRenderComplete, setLogsRenderComplete] = useState(false);
@@ -176,6 +179,23 @@ export default function AgenticAIPage() {
         clearTimeout(throttleTimerRef.current);
       }
     };
+  }, []);
+
+  // Poll Solana devnet health every 30 seconds
+  useEffect(() => {
+    const checkSolanaHealth = async () => {
+      try {
+        const res = await fetch('/api/solana/health');
+        const data = await res.json();
+        setSolanaStatus(data.healthy ? 'healthy' : 'down');
+      } catch {
+        setSolanaStatus('down');
+      }
+    };
+
+    checkSolanaHealth();
+    const interval = setInterval(checkSolanaHealth, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   // Helper function to process the event queue with throttling
@@ -893,6 +913,13 @@ export default function AgenticAIPage() {
         </Banner>
       )}
 
+      {/* Solana Devnet Warning */}
+      {currentScenario?.isCryptoSettlement && solanaStatus === 'down' && (
+        <Banner variant="warning" style={{ marginBottom: '16px' }}>
+          Solana devnet is currently unavailable. The crypto settlement step will fail.
+        </Banner>
+      )}
+
       {/* Collapsible Scenarios Panel */}
       <CollapsibleScenariosPanel
         isExpanded={isPanelExpanded}
@@ -904,6 +931,7 @@ export default function AgenticAIPage() {
         onReset={handleReset}
         isStreaming={isStreaming}
         useAI={useAI}
+        solanaStatus={solanaStatus}
         onToggleAI={setUseAI}
       />
 
