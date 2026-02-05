@@ -45,11 +45,7 @@ Before you begin, ensure you have met the following requirements:
 
 1. Set up a [MongoDB Atlas](https://www.mongodb.com/atlas) cluster if you don't have one already.
 2. Locate your cluster, click **Connect**, and select **Connect your application**.
-3. Copy the connection string. It looks like this:
-
-   ```bash
-   mongodb+srv://<username>:<password>@cluster-name.xxxxx.mongodb.net/
-   ```
+3. Copy the connection string.
 
 > You'll need this connection string for the `MONGODB_URI` environment variable later.
 
@@ -251,20 +247,20 @@ Index name: `purpose_codes_vector`
    **`backend/payment_converter_v2/.env`:**
 
    ```bash
-   MONGODB_URI=<your-mongodb-atlas-uri>
-   DATABASE_NAME=fsi-payments-processing
-   AWS_DEFAULT_REGION=us-east-1
-   PAYMENT_AGENT_URL=http://localhost:8002
-   CORS_ORIGINS=http://localhost:3000
+   MONGODB_URI=
+   DATABASE_NAME=f
+   AWS_DEFAULT_REGION=
+   PAYMENT_AGENT_URL=
+   CORS_ORIGINS=
    ```
 
    **`backend/payment_agent/.env`:**
 
    ```bash
-   MONGODB_URI=<your-mongodb-atlas-uri>
-   DATABASE_NAME=fsi-payments-processing
-   AWS_REGION=us-east-1
-   VOYAGE_API_KEY=<your-voyage-ai-api-key>
+   MONGODB_URI=
+   DATABASE_NAME=
+   AWS_REGION=
+   VOYAGE_API_KEY=
    ```
 
 ### Frontend
