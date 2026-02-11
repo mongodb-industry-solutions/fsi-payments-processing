@@ -87,14 +87,23 @@ def create_llm(temperature: float = None, model_id: str = None) -> ChatBedrock:
     Returns:
         ChatBedrock instance configured for the agent
     """
-    return ChatBedrock(
-        model_id=model_id or settings.agent_model_id,
-        region_name=settings.aws_region,
-        model_kwargs={
+    resolved_model_id = model_id or settings.agent_model_id
+
+    # When using inference profile ARN, must specify provider
+    kwargs = {
+        "model_id": resolved_model_id,
+        "region_name": settings.aws_region,
+        "model_kwargs": {
             "temperature": temperature if temperature is not None else settings.agent_temperature,
             "max_tokens": 4096
         }
-    )
+    }
+
+    # Add provider for ARN-based model IDs (inference profiles)
+    if resolved_model_id.startswith("arn:"):
+        kwargs["provider"] = "anthropic"
+
+    return ChatBedrock(**kwargs)
 
 
 # =============================================================================
