@@ -1,0 +1,33 @@
+
+ ~/Dev/i/repo          254 | AdministratorAccess-275662791714 us-east-1 aws 
+> aws bedrock create-inference-profile \
+  --inference-profile-name "agentic-payments-platform-haiku" \
+  --model-source '{"copyFrom": "arn:aws:bedrock:us-east-1:275662791714:inference-profile/us.anthropic.claude-haiku-4-5-20251001-v1:0"}' \
+  --tags '[
+    {"key":"Project","value":"agentic-payments-platform"},
+    {"key":"Environment","value":"demo"},
+    {"key":"Owner","value":"kiran.tulsulkar@mongodb.com"},
+    {"key":"purpose","value":"ist-finance"}
+  ]' \
+  --no-cli-pager
+{
+    "inferenceProfileArn": "arn:aws:bedrock:us-east-1:275662791714:application-inference-profile/q93cifjfcpa1",
+    "status": "ACTIVE"
+}
+
+ ~/Dev/i/repo          INT | AdministratorAccess-275662791714 us-east-1 aws 
+> aws bedrock create-inference-profile \
+  --inference-profile-name "agentic-payments-platform-sonnet" \
+  --model-source '{"copyFrom": "arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-3-5-sonnet-20240620-v1:0"}' \
+  --tags '[
+    {"key":"Project","value":"agentic-payments-platform"},
+    {"key":"Environment","value":"demo"},
+    {"key":"Owner","value":"kiran.tulsulkar@mongodb.com"},
+    {"key":"purpose","value":"ist-finance"}
+  ]' \
+  --no-cli-pager
+{
+    "inferenceProfileArn": "arn:aws:bedrock:us-east-1:275662791714:application-inference-profile/pbsav3g2fr8d",
+    "status": "ACTIVE"
+}
+

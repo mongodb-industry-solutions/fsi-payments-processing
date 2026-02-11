@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     log_level: str = Field(default="INFO", description="Logging level")
 
     # Agent LLM Configuration
-    agent_model_id: str = Field(default="us.anthropic.claude-haiku-4-5-20251001-v1:0", description="Bedrock model ID for agents")
+    agent_model_id: str = Field(default="arn:aws:bedrock:us-east-1:275662791714:application-inference-profile/q93cifjfcpa1", description="Bedrock model ID for agents")
     agent_temperature: float = Field(default=0.1, description="Default temperature for agent LLM")
     execution_temperature: float = Field(default=0.0, description="Temperature for execution agent (deterministic)")
 
