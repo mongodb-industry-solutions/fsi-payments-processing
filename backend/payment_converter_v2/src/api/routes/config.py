@@ -79,8 +79,10 @@ async def auto_configure(request: AutoConfigureRequest) -> AutoConfigureResponse
 
         logger.info(
             f"Generated config {config_id}: "
-            f"{result['fields_detected']} fields, "
-            f"{len(result['matched_fields'])} matched, "
+            f"source={result['source_fields_identified']}, "
+            f"target_required={result['target_fields_required']}, "
+            f"mapped={result['target_fields_mapped']}, "
+            f"ai={result['target_fields_ai']}, "
             f"confidence={result['confidence']}"
         )
 
@@ -88,7 +90,10 @@ async def auto_configure(request: AutoConfigureRequest) -> AutoConfigureResponse
             configuration_id=result["configuration_id"],
             config=result["config"],
             confidence=result["confidence"],
-            fields_detected=result["fields_detected"],
+            source_fields_identified=result["source_fields_identified"],
+            target_fields_required=result["target_fields_required"],
+            target_fields_mapped=result["target_fields_mapped"],
+            target_fields_ai=result["target_fields_ai"],
             matched_fields=result["matched_fields"],
             unknown_fields=result["unknown_fields"],
             learned_from=result["learned_from"],

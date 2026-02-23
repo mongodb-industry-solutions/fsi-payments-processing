@@ -1677,9 +1677,7 @@ export default function ConfigBuilderPage() {
 
               <div style={{ marginBottom: '12px' }}>
                 <span style={{ fontSize: '13px', color: 'var(--gray-dark1)' }}>
-                  Fields detected: {generatedConfig.fields_detected} |
-                  Matched: {generatedConfig.matched_fields?.length || 0} |
-                  Unknown: {generatedConfig.unknown_fields?.length || 0}
+                  Source fields: {generatedConfig.source_fields_identified} | Target fields: {generatedConfig.target_fields_required} | Mapped: {generatedConfig.target_fields_mapped} | AI: {generatedConfig.target_fields_ai}
                 </span>
               </div>
 

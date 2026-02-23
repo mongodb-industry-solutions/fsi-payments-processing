@@ -87,8 +87,9 @@ class SemanticLearningService:
             raise ValueError("No fields detected in sample message")
 
         # 3. Match detected fields against combined lookup
+        # matched includes both source fields and derived fields (for config building)
         matched, unknown, learned_from = self._match_fields(detected_fields)
-        logger.info(f"Matched {len(matched)} fields, {len(unknown)} unknown")
+        logger.info(f"Matched {len(matched)} fields ({len(unknown)} unknown) from {len(detected_fields)} source fields")
 
         # 4. Get LLM suggestions for unknown fields (included in config, marked ai_suggested: true)
         suggestions = []
@@ -135,19 +136,51 @@ class SemanticLearningService:
             suggestions=suggestions
         )
 
-        # 7. Calculate confidence
-        confidence = len(matched) / len(detected_fields) if detected_fields else 0
+        # 7. Count target fields — how much of the target format did we cover?
+
+        # Target fields mapped from pattern-matched source fields (exclude derived)
+        target_fields_mapped = 0
+        for field_id, mapping in matched.items():
+            if field_id in detected_fields:  # Source fields only, not derived
+                to_field = mapping.get("to")
+                if isinstance(to_field, list):
+                    target_fields_mapped += len(to_field)
+                elif to_field:
+                    target_fields_mapped += 1
+
+        # Target fields covered by AI suggestions for unknown source fields
+        target_fields_ai = 0
+        for suggestion in suggestions:
+            to_field = suggestion.get("suggested_mapping", {}).get("to", [])
+            if isinstance(to_field, list):
+                target_fields_ai += len(to_field)
+            elif to_field:
+                target_fields_ai += 1
+
+        # Total target fields from format specification
+        target_fields_required = 0
+        if target_format_spec:
+            target_fields_required = len(target_format_spec.get("supported_fields", {}))
+
+        # Confidence = target coverage ratio
+        confidence = (target_fields_mapped + target_fields_ai) / target_fields_required if target_fields_required > 0 else 0
+
+        # Source-only matched fields list (for unknown fields display)
+        source_matched_fields = [f for f in matched.keys() if f in detected_fields]
 
         return {
             "configuration_id": new_config["_id"],
             "config": new_config,
             "confidence": round(confidence, 2),
-            "fields_detected": len(detected_fields),
-            "matched_fields": list(matched.keys()),
+            "source_fields_identified": len(detected_fields),
+            "target_fields_required": target_fields_required,
+            "target_fields_mapped": target_fields_mapped,
+            "target_fields_ai": target_fields_ai,
+            "matched_fields": source_matched_fields,
             "unknown_fields": unknown,
             "learned_from": learned_from,
-            "suggestions": suggestions,  # LLM suggestions for unknown fields (also included in config with ai_suggested: true)
-            "llm_prompt_info": prompt_info  # Prompt construction details for frontend
+            "suggestions": suggestions,
+            "llm_prompt_info": prompt_info
         }
 
     async def _build_combined_lookup(self) -> None:
@@ -355,7 +388,8 @@ class SemanticLearningService:
         Match detected fields against combined lookup.
 
         Also includes derived field mappings (like value_date -> value_date with dateFormat)
-        when their parent field outputs to that derived field.
+        when their parent field outputs to that derived field. Derived fields are included
+        in the config but excluded from match/unknown counts since they aren't source fields.
 
         Args:
             detected: Dictionary of detected field_id -> value
@@ -386,6 +420,7 @@ class SemanticLearningService:
         # Second pass: find self-transform mappings with actual transformations
         # e.g., value_date -> value_date with dateFormat
         # Skip passthrough mappings (from == to with no transformation)
+        # These are included in the config but NOT counted as matched source fields
         transform_keys = {"dateFormat", "split", "multiline", "ai", "transform"}
 
         for field_id, info in self._field_lookup.items():
