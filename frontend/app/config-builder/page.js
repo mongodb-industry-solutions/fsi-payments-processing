@@ -18,8 +18,10 @@ const SAMPLE_MESSAGES = {
     message: `{1:F01CHASUS33AXXX0000000000}{2:I202DEUTDEFFXXXXN}{4:
 :20:MT202TEST
 :21:REF2024MT202001
+:13C:/STIME/1230+0100
 :32A:241215EUR500000,00
 :52A:CHASUS33XXX
+:56A:BNPAFRPPXXX
 :57A:DEUTDEFFXXX
 :58A:/DE12345678901234567890
 BENEFICIARY INSTITUTION
@@ -1677,27 +1679,49 @@ export default function ConfigBuilderPage() {
 
               <div style={{ marginBottom: '12px' }}>
                 <span style={{ fontSize: '13px', color: 'var(--gray-dark1)' }}>
-                  Source fields: {generatedConfig.source_fields_identified} | Target fields: {generatedConfig.target_fields_required} | Mapped: {generatedConfig.target_fields_mapped} | AI: {generatedConfig.target_fields_ai}
+                  Source Fields: {generatedConfig.source_fields_identified} | Target Coverage: {(generatedConfig.target_fields_mapped || 0) + (generatedConfig.target_fields_ai || 0)}/{generatedConfig.target_fields_required || 0}
                 </span>
               </div>
 
+              {generatedConfig.matched_fields?.length > 0 && (
+                <div className="field-badges">
+                  <span style={{ fontSize: '12px', color: 'var(--gray-dark1)' }}>Mapped fields:</span>
+                  {generatedConfig.matched_fields.flatMap((f) => {
+                    const mapping = generatedConfig.config?.map?.find(m => m.from === f);
+                    const targets = mapping?.to || [];
+                    if (targets.length <= 1) {
+                      return [(
+                        <Badge key={f} variant="green">
+                          {f} → {targets[0] || f}
+                        </Badge>
+                      )];
+                    }
+                    return targets.map((t) => (
+                      <Badge key={`${f}-${t}`} variant="green">
+                        {f} → {t}
+                      </Badge>
+                    ));
+                  })}
+                </div>
+              )}
+
               {generatedConfig.unknown_fields?.length > 0 && (
                 <div className="field-badges">
-                  <span style={{ fontSize: '12px', color: 'var(--gray-dark1)' }}>Unknown fields:</span>
+                  <span style={{ fontSize: '12px', color: 'var(--gray-dark1)' }}>Uncertain fields:</span>
                   {generatedConfig.unknown_fields.map((f) => (
                     <Badge key={f} variant="yellow">{f}</Badge>
                   ))}
                 </div>
               )}
 
-              {/* LLM Suggestions for Unknown Fields */}
+              {/* LLM Suggestions for Uncertain Fields */}
               {generatedConfig.suggestions?.length > 0 && (
                 <div className="suggestions-section">
                   <div className="suggestions-title">
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
                       <path d="M8 1a7 7 0 100 14A7 7 0 008 1zm0 12.5a5.5 5.5 0 110-11 5.5 5.5 0 010 11zM8 4a.75.75 0 00-.75.75v3.5a.75.75 0 001.5 0v-3.5A.75.75 0 008 4zm0 7a1 1 0 100-2 1 1 0 000 2z"/>
                     </svg>
-                    AI Suggestions for Unknown Fields
+                    AI Suggestions for Uncertain Fields
                     <Badge variant="yellow">{generatedConfig.suggestions.length}</Badge>
                   </div>
                   {generatedConfig.suggestions.map((suggestion, idx) => (
@@ -1723,6 +1747,15 @@ export default function ConfigBuilderPage() {
                         </div>
                       )}
                     </div>
+                  ))}
+                </div>
+              )}
+
+              {generatedConfig.not_covered_fields?.length > 0 && (
+                <div className="field-badges">
+                  <span style={{ fontSize: '12px', color: 'var(--gray-dark1)' }}>Unresolvable Target Fields:</span>
+                  {generatedConfig.not_covered_fields.map((f) => (
+                    <Badge key={f} variant="lightgray">{f}</Badge>
                   ))}
                 </div>
               )}

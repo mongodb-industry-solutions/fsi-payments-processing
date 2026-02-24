@@ -80,6 +80,7 @@ class AutoConfigureResponse(BaseModel):
     matched_fields: List[str] = Field(..., description="Source field IDs matched from existing configs")
     unknown_fields: List[str] = Field(..., description="Source field IDs not found in any existing config")
     learned_from: List[str] = Field(..., description="Config IDs used for learning")
+    not_covered_fields: List[str] = Field(default=[], description="Target field names with no source or AI mapping")
     suggestions: List[Dict[str, Any]] = Field(default=[], description="LLM-suggested mappings for unknown fields (display-only)")
     llm_prompt_info: Optional[Dict[str, Any]] = Field(default=None, description="LLM prompt construction details for frontend display")
 

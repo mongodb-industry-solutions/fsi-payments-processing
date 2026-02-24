@@ -162,11 +162,31 @@ class SemanticLearningService:
         if target_format_spec:
             target_fields_required = len(target_format_spec.get("supported_fields", {}))
 
-        # Confidence = target coverage ratio
-        confidence = (target_fields_mapped + target_fields_ai) / target_fields_required if target_fields_required > 0 else 0
-
         # Source-only matched fields list (for unknown fields display)
         source_matched_fields = [f for f in matched.keys() if f in detected_fields]
+
+        # Collect covered target field names
+        covered_target_fields = set()
+        for field_id, mapping in matched.items():
+            if field_id in detected_fields:
+                to_field = mapping.get("to")
+                if isinstance(to_field, list):
+                    covered_target_fields.update(to_field)
+                elif to_field:
+                    covered_target_fields.add(to_field)
+        for suggestion in suggestions:
+            to_field = suggestion.get("suggested_mapping", {}).get("to", [])
+            if isinstance(to_field, list):
+                covered_target_fields.update(to_field)
+            elif to_field:
+                covered_target_fields.add(to_field)
+
+        # Not covered = target fields with no source or AI mapping
+        all_target_fields = set(target_format_spec.get("supported_fields", {}).keys()) if target_format_spec else set()
+        not_covered_fields = sorted(all_target_fields - covered_target_fields)
+
+        # Confidence = target coverage rate (mapped + ai) / required
+        confidence = (target_fields_mapped + target_fields_ai) / target_fields_required if target_fields_required > 0 else 0
 
         return {
             "configuration_id": new_config["_id"],
@@ -179,6 +199,7 @@ class SemanticLearningService:
             "matched_fields": source_matched_fields,
             "unknown_fields": unknown,
             "learned_from": learned_from,
+            "not_covered_fields": not_covered_fields,
             "suggestions": suggestions,
             "llm_prompt_info": prompt_info
         }

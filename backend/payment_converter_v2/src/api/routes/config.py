@@ -97,6 +97,7 @@ async def auto_configure(request: AutoConfigureRequest) -> AutoConfigureResponse
             matched_fields=result["matched_fields"],
             unknown_fields=result["unknown_fields"],
             learned_from=result["learned_from"],
+            not_covered_fields=result.get("not_covered_fields", []),
             suggestions=result.get("suggestions", []),
             llm_prompt_info=result.get("llm_prompt_info")
         )
