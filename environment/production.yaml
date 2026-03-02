@@ -4,6 +4,14 @@
 env:
   NODE_ENV: production
 
+# Kanopy security and ownership (requires web-app chart v4.30.0+)
+security:
+  dataClassification: "Internal"
+  dataDesignation: ["MI"]
+
+ownership:
+  driEmail: kiran.tulsulkar@mongodb.com
+
 # AWS IRSA Service Account
 serviceAccount:
   enabled: true
