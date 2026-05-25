@@ -232,7 +232,7 @@ JSON response:"""
             "model_id": self.MODEL_ID,
             # Format specification document from MongoDB
             "format_specification": {
-                "collection": "format_specifications",
+                "collection": "formatSpecifications",
                 "document_id": target_spec.get("_id"),
                 "format_type": target_spec.get("format_type"),
                 "description": target_spec.get("description"),
@@ -253,7 +253,7 @@ JSON response:"""
                 {
                     "step": 3,
                     "name": "Target Constraints",
-                    "description": f"Load {len(supported_fields)} fields from format_specifications.{target_spec.get('_id')}, mark {len(blocked_fields)} as already mapped"
+                    "description": f"Load {len(supported_fields)} fields from formatSpecifications.{target_spec.get('_id')}, mark {len(blocked_fields)} as already mapped"
                 },
                 {
                     "step": 4,

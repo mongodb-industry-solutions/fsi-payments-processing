@@ -619,7 +619,10 @@ export default function ConfigBuilderPage() {
   const loadConfigs = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/configs');
+      const response = await fetch(
+        '/PaymentOrderInitiationTransaction/OrderInitiation/Retrieve',
+        { method: 'POST' }
+      );
       if (!response.ok) throw new Error('Failed to load configs');
       const data = await response.json();
       setConfigs(data.configs || []);
@@ -633,7 +636,10 @@ export default function ConfigBuilderPage() {
 
   const loadFormatSpecs = async () => {
     try {
-      const response = await fetch('/api/format-specifications');
+      const response = await fetch(
+        '/PaymentOrderInitiationTransaction/Compliance/Retrieve',
+        { method: 'POST' }
+      );
       if (response.ok) {
         const data = await response.json();
         setFormatSpecs(data.specifications || []);
@@ -659,15 +665,18 @@ export default function ConfigBuilderPage() {
       setSuccessMessage(null);
       setGeneratedConfig(null);
 
-      const response = await fetch('/api/auto-configure', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          source_format: sourceFormat,
-          target_format: targetFormat,
-          sample_message: sampleMessage
-        })
-      });
+      const response = await fetch(
+        '/PaymentOrderInitiationTransaction/OrderInitiation/Exchange',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            source_format: sourceFormat,
+            target_format: targetFormat,
+            sample_message: sampleMessage
+          })
+        }
+      );
 
       if (!response.ok) {
         const errData = await response.json();
@@ -691,8 +700,14 @@ export default function ConfigBuilderPage() {
       setGenerateError(null);
 
       const response = await fetch(
-        `/api/auto-configure/${generatedConfig.configuration_id}/approve`,
-        { method: 'POST' }
+        '/PaymentOrderInitiationTransaction/Update',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            paymentMessageConversionReference: generatedConfig.configuration_id
+          })
+        }
       );
 
       if (!response.ok) {

@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-@router.post("/agent/resume-stream", status_code=status.HTTP_200_OK)
+@router.post("/api/v1/agent/resume-stream", status_code=status.HTTP_200_OK)
 async def resume_agent_workflow_stream(request: ResumeAgentRequest):
     """
     Resume the payment agent workflow after human review, streaming execution events.
@@ -127,7 +127,7 @@ async def resume_agent_workflow_stream(request: ResumeAgentRequest):
     )
 
 
-@router.post("/ai-review/resume-stream", status_code=status.HTTP_200_OK)
+@router.post("/api/v1/ai-review/resume-stream", status_code=status.HTTP_200_OK)
 async def resume_ai_review_stream(request: ResumeAIReviewRequest):
     """
     Resume conversion after human review of AI-extracted fields.
@@ -173,6 +173,12 @@ async def resume_ai_review_stream(request: ResumeAIReviewRequest):
 
                 hop1_result['converted_message'] = json.dumps(hop1_json)
 
+                # TODO(bian-migration): mongodb_service.update_canonical_json is
+                # not defined anywhere — this call is a pre-existing demo bug
+                # (predates the BIAN migration). When it is implemented, it must
+                # apply translator.to_storage() before writing and translator
+                # .from_storage() on any read-back path. Track in a separate
+                # ticket; do not silently no-op.
                 await mongodb_service.update_canonical_json(
                     original_message=req_data['message'],
                     json_data=hop1_result['converted_message'],

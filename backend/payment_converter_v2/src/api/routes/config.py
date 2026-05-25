@@ -1,9 +1,23 @@
-"""Configuration management endpoints (config-builder page)."""
+"""Configuration management endpoints (config-builder page) — BIAN v14 URL convention.
+
+Service Domain: PaymentOrderInitiation
+Control Record: PaymentOrderInitiationTransaction
+BIAN v14 valid BQs for this SD: Compliance, Confirmation, OrderInitiation.
+CR-level actions: Initiate, Retrieve, Update.
+
+Mapping rationale:
+  - List conversion configs  -> OrderInitiation.Retrieve
+  - List format specs        -> Compliance.Retrieve   (format specs are compliance/standards reference data)
+  - Auto-configure (propose) -> OrderInitiation.Exchange  (LLM proposes a draft, awaits human review)
+  - Approve config           -> CR.Update             (finalize draft to approved state)
+"""
 
 from fastapi import APIRouter, HTTPException, status
 from datetime import datetime, timedelta
 import logging
 import uuid
+
+from pydantic import BaseModel, Field
 
 from src.api.models import (
     AutoConfigureRequest,
@@ -16,7 +30,17 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-@router.get("/configs", status_code=status.HTTP_200_OK)
+class ApproveConfigRequest(BaseModel):
+    """Body for the CR-level Update endpoint — replaces the legacy {config_id} path param."""
+    paymentMessageConversionReference: str = Field(
+        ..., description="The conversion ID to approve (e.g. 'MT103_to_JSON')."
+    )
+
+
+@router.post(
+    "/PaymentOrderInitiationTransaction/OrderInitiation/Retrieve",
+    status_code=status.HTTP_200_OK,
+)
 async def list_all_configs():
     """
     List all conversion configurations with full details.
@@ -34,7 +58,10 @@ async def list_all_configs():
         )
 
 
-@router.get("/format-specifications", status_code=status.HTTP_200_OK)
+@router.post(
+    "/PaymentOrderInitiationTransaction/Compliance/Retrieve",
+    status_code=status.HTTP_200_OK,
+)
 async def list_format_specifications():
     """
     List all target format specifications.
@@ -52,7 +79,11 @@ async def list_format_specifications():
         )
 
 
-@router.post("/auto-configure", response_model=AutoConfigureResponse, status_code=status.HTTP_200_OK)
+@router.post(
+    "/PaymentOrderInitiationTransaction/OrderInitiation/Exchange",
+    response_model=AutoConfigureResponse,
+    status_code=status.HTTP_200_OK,
+)
 async def auto_configure(request: AutoConfigureRequest) -> AutoConfigureResponse:
     """
     Auto-generate a conversion configuration by learning from existing configs.
@@ -116,14 +147,19 @@ async def auto_configure(request: AutoConfigureRequest) -> AutoConfigureResponse
         )
 
 
-@router.post("/auto-configure/{config_id}/approve", response_model=ApproveConfigResponse, status_code=status.HTTP_200_OK)
-async def approve_config(config_id: str) -> ApproveConfigResponse:
+@router.post(
+    "/PaymentOrderInitiationTransaction/Update",
+    response_model=ApproveConfigResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def approve_config(body: ApproveConfigRequest) -> ApproveConfigResponse:
     """
     Approve and save an auto-generated configuration with 10-minute TTL.
 
-    Moves config from temporary storage to conversion_configs collection.
+    Moves config from temporary storage to conversionConfigs collection.
     A unique session suffix prevents ID conflicts between users.
     """
+    config_id = body.paymentMessageConversionReference
     try:
         logger.info(f"Approving config: {config_id}")
 

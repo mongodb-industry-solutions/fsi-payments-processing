@@ -288,7 +288,7 @@ AVAILABLE TOOLS:
 
 1. atlas_search(collection: str, query: str, search_fields: list, fuzzy: bool = True)
    - KEYWORD-BASED database lookup
-   - Collections: "bank_details" (has name_english, name_katakana), "ifsc_codes", "registered_entities"
+   - Collections: "bankDetails" (has name_english, name_katakana), "ifscCodes", "registeredEntities"
    - fuzzy=False: exact match (confidence: 1.0)
    - fuzzy=True: typo-tolerant (confidence: 0.7-0.95)
    - Returns: found (bool), top_result (dict), confidence

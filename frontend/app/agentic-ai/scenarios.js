@@ -11,7 +11,7 @@ export const SCENARIOS = {
     badge: 'TRANSLITERATION',
     badgeVariant: 'blue',
     isAgentic: true,
-    agentCollection: 'bank_details',
+    agentCollection: 'bankDetails',
     mongoFeature: 'ATLAS SEARCH',
     info: {
       problem: 'Japanese banks require creditor names in Katakana script, but the source MT103 contains "DENSO CORPORATION" in Latin characters.',
@@ -140,7 +140,7 @@ PRECISION SENSORS AND ECU MODULES
     badge: 'IFSC LOOKUP',
     badgeVariant: 'blue',
     isAgentic: true,
-    agentCollection: 'ifsc_codes',
+    agentCollection: 'ifscCodes',
     mongoFeature: 'ATLAS SEARCH',
     info: {
       problem: 'Indian banking requires specific IFSC codes for bank identification, but the source MT103 only has descriptive details: "HDFC Bank, Fort Branch, Mumbai".',
@@ -710,7 +710,7 @@ CLOUD INFRASTRUCTURE DEVELOPMENT
     badge: 'PURPOSE CODE',
     badgeVariant: 'lightgray',
     isAgentic: true,
-    agentCollection: 'purpose_codes',
+    agentCollection: 'purposeCodes',
     mongoFeature: 'VECTOR SEARCH',
     info: {
       problem: 'ISO 20022 requires standardized purpose codes (e.g., SALA, SUPP, SCVE), but the source MT103 only contains free-text: "Platform API integration and cloud infrastructure services".',
@@ -837,7 +837,7 @@ CONTRACT SHOP-GRAB-2024-API-001
     badge: 'NAME VERIFICATION',
     badgeVariant: 'yellow',
     isAgentic: true,
-    agentCollection: 'registered_entities',
+    agentCollection: 'registeredEntities',
     mongoFeature: 'ATLAS SEARCH',
     info: {
       problem: 'Payment creditor shows "HSBC" but sanctions screening requires exact legal name match. Trading names and abbreviations often fail compliance checks.',

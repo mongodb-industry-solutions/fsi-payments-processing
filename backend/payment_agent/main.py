@@ -221,8 +221,9 @@ async def process_payment_stream_with_review(request: ProcessPaymentRequest):
 
 
 ALLOWED_COLLECTIONS = {
-    "bank_details", "ifsc_codes", "purpose_codes", "registered_entities",
-    "conversion_configs", "format_specifications", "canonical_json_storage",
+    "bankDetails", "ifscCodes", "purposeCodes", "registeredEntities",
+    "conversionConfigs", "formatSpecifications", "canonicalJsonStorage",
+    "aiPrompts", "tempConfigs",
 }
 
 

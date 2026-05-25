@@ -896,7 +896,12 @@ export default function EventItem({ event, isExpanded, onToggleExpand, collectio
     
     try {
       const response = await fetch(
-        `/api/canonical-json/${event.conversion_run_id}/diff`
+        '/PaymentOrderInitiationTransaction/Confirmation/Retrieve',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ conversionRunReference: event.conversion_run_id }),
+        }
       );
       
       if (!response.ok) {

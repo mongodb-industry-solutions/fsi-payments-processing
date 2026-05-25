@@ -8,6 +8,7 @@ import json
 import logging
 
 from config.validator import validate_config
+from src.services.translator import from_storage, to_storage
 
 logger = logging.getLogger(__name__)
 
@@ -30,11 +31,11 @@ class MongoDBService:
         """
         self.client: AsyncIOMotorClient = AsyncIOMotorClient(mongodb_uri)
         self.db: AsyncIOMotorDatabase = self.client[database_name]
-        self.configs_collection = self.db["conversion_configs"]
-        self.prompts_collection = self.db["ai_prompts"]
-        self.json_storage_collection = self.db["canonical_json_storage"]
-        self.temp_configs_collection = self.db["temp_configs"]
-        self.format_specs_collection = self.db["format_specifications"]
+        self.configs_collection = self.db["conversionConfigs"]
+        self.prompts_collection = self.db["aiPrompts"]
+        self.json_storage_collection = self.db["canonicalJsonStorage"]
+        self.temp_configs_collection = self.db["tempConfigs"]
+        self.format_specs_collection = self.db["formatSpecifications"]
 
         logger.info(f"MongoDB service initialized for database: {database_name}")
     
@@ -184,7 +185,7 @@ class MongoDBService:
                 expireAfterSeconds=0,  # Delete when expires_at timestamp is reached
                 sparse=True  # Only index documents that have expires_at field
             )
-            logger.info("TTL index ensured on conversion_configs.expires_at")
+            logger.info("TTL index ensured on conversionConfigs.expires_at")
         except Exception as e:
             # Index might already exist, that's fine
             logger.debug(f"TTL index creation note: {e}")
@@ -461,6 +462,10 @@ class MongoDBService:
                 "created_at": datetime.utcnow()
             }
 
+            # BIAN storage boundary: flip snake_case -> camelCase before write.
+            # Runtime pipeline keeps consuming snake_case via from_storage on read.
+            doc = to_storage(doc)
+
             # Upsert to handle duplicate conversions
             await self.json_storage_collection.replace_one(
                 {"_id": doc_id},
@@ -504,6 +509,11 @@ class MongoDBService:
 
             if cached:
                 logger.debug(f"Cache HIT for ID: {doc_id[:16]}...")
+
+                # BIAN storage boundary: flip camelCase -> snake_case so the
+                # runtime pipeline (conversion configs, regex patterns) keeps
+                # seeing snake_case keys.
+                cached = from_storage(cached)
 
                 # Convert json_data dict back to string for converter compatibility
                 # Use ensure_ascii=False to preserve Unicode characters (Japanese, etc.)

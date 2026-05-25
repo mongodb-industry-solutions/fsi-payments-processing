@@ -24,13 +24,13 @@ export default function Documentation() {
   }, []);
 
   const dbCollections = [
-    { name: 'bank_details', icon: 'Building' },
-    { name: 'ifsc_codes', icon: 'MagnifyingGlass' },
-    { name: 'purpose_codes', icon: 'Sparkle' },
-    { name: 'registered_entities', icon: 'Shield' },
-    { name: 'conversion_configs', icon: 'CurlyBraces' },
-    { name: 'format_specifications', icon: 'Apps' },
-    { name: 'canonical_json_storage', icon: 'Array' },
+    { name: 'bankDetails', icon: 'Building' },
+    { name: 'ifscCodes', icon: 'MagnifyingGlass' },
+    { name: 'purposeCodes', icon: 'Sparkle' },
+    { name: 'registeredEntities', icon: 'Shield' },
+    { name: 'conversionConfigs', icon: 'CurlyBraces' },
+    { name: 'formatSpecifications', icon: 'Apps' },
+    { name: 'canonicalJsonStorage', icon: 'Array' },
   ];
 
   const handleCollectionSelect = async (collectionName) => {

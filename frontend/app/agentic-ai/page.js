@@ -425,7 +425,7 @@ export default function AgenticAIPage() {
     }
 
     try {
-      const response = await fetch('/api/convert/multi-hop/stream', {
+      const response = await fetch('/PaymentOrderInitiationTransaction/Initiate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

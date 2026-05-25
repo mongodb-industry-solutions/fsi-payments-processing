@@ -33,14 +33,6 @@ class MultiHopConversionRequest(BaseModel):
     }
 
 
-class FormatInfo(BaseModel):
-    """Format information"""
-    conversion_id: str = Field(..., description="Conversion ID")
-    source_format: str = Field(..., description="Source format name")
-    target_format: str = Field(..., description="Target format name")
-    description: Optional[str] = Field(None, description="Conversion description")
-
-
 class HealthResponse(BaseModel):
     """Health check response"""
     status: str = Field(..., description="Service status")

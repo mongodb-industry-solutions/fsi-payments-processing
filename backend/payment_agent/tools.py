@@ -34,6 +34,12 @@ import logging
 from typing import Dict, Any
 from langchain_core.tools import tool
 
+from services.translator import (
+    dotted_path_to_storage,
+    from_storage,
+    query_to_storage,
+)
+
 logger = logging.getLogger(__name__)
 
 
@@ -156,9 +162,9 @@ def atlas_search(
     3. If still not found, use transliterate_text for AI generation
 
     Supported Collections:
-    - "bank_details": Company names, Katakana translations, bank info
-    - "ifsc_codes": Indian bank IFSC codes, branches, cities
-    - "registered_entities": Legal names and trading names for name verification
+    - "bankDetails": Company names, Katakana translations, bank info
+    - "ifscCodes": Indian bank IFSC codes, branches, cities
+    - "registeredEntities": Legal names and trading names for name verification
 
     Fuzzy Matching:
     - Handles typos like "DENSOO" → "DENSO CORPORATION"
@@ -166,7 +172,7 @@ def atlas_search(
     - Handles partial matches like "Toyota Motor" → "TOYOTA MOTOR CORPORATION"
 
     Args:
-        collection: Collection name ("bank_details" or "ifsc_codes")
+        collection: Collection name ("bankDetails" or "ifscCodes")
         query: Search text (e.g., "DENSOO", "HDFC Connaught Delhi")
         search_fields: Fields to search in (e.g., ["name_english"] or ["bank", "branch", "city"])
         return_fields: Fields to return (optional, returns matched fields if not specified)
@@ -185,15 +191,15 @@ def atlas_search(
 
     Examples:
         # Find company with typo in name
-        >>> atlas_search("bank_details", "DENSOO CORP", ["name_english"])
+        >>> atlas_search("bankDetails", "DENSOO CORP", ["name_english"])
         {"found": True, "top_result": {"name_english": "DENSO CORPORATION", ...}, ...}
 
         # Find IFSC with partial bank/branch info
-        >>> atlas_search("ifsc_codes", "HDFC Connaught Delhi", ["bank", "branch", "city"])
+        >>> atlas_search("ifscCodes", "HDFC Connaught Delhi", ["bank", "branch", "city"])
         {"found": True, "top_result": {"ifsc": "HDFC0000001", ...}, ...}
 
         # Find legal name from trading name
-        >>> atlas_search("registered_entities", "Acme Co.", ["legal_name", "trading_names"])
+        >>> atlas_search("registeredEntities", "Acme Co.", ["legal_name", "trading_names"])
         {"found": True, "top_result": {"legal_name": "Acme Corporation Limited", ...}, ...}
     """
     from services.mongodb_service import get_mongodb_service
@@ -216,9 +222,9 @@ def atlas_search(
 
     # Map collection to its search index name
     index_map = {
-        "bank_details": "bank_details_search",
-        "ifsc_codes": "ifsc_codes_search",
-        "registered_entities": "registered_entities_search"
+        "bankDetails": "bankDetailsSearch",
+        "ifscCodes": "ifscCodesSearch",
+        "registeredEntities": "registeredEntitiesSearch",
     }
     index_name = index_map.get(collection)
 
@@ -367,7 +373,7 @@ def vector_search(
     - vector_search: Query is natural language that needs conceptual matching
 
     Args:
-        collection: Any MongoDB collection with embeddings (e.g., "purpose_codes", "products", "faqs")
+        collection: Any MongoDB collection with embeddings (e.g., "purposeCodes", "products", "faqs")
         query: Free-text description to match semantically
         index_name: Vector search index name (default: "{collection}_vector")
         embedding_field: Field containing embeddings (default: "embedding")
@@ -387,7 +393,7 @@ def vector_search(
 
     Examples:
         # Classify payment description
-        >>> vector_search("purpose_codes", "paying monthly salaries to staff")
+        >>> vector_search("purposeCodes", "paying monthly salaries to staff")
         {"found": True, "top_result": {"code": "SALA", "name": "Salary Payment"}, ...}
 
         # Search product catalog
@@ -421,8 +427,8 @@ def vector_search(
             "error": "Vector Search is disabled"
         }
 
-    # Use provided index_name or derive from collection name
-    vector_index_name = index_name or f"{collection}_vector"
+    # Use provided index_name or derive from collection name (camelCase + "Vector" suffix)
+    vector_index_name = index_name or f"{collection}Vector"
 
     try:
         # Generate query embedding
@@ -616,7 +622,7 @@ def update_payment_field(payment_id: str, field_name: str, new_value: str) -> Di
             }
 
         mongo = get_mongodb_service()
-        collection = mongo.get_collection("canonical_json_storage")
+        collection = mongo.get_collection("canonicalJsonStorage")
 
         # Determine search field based on payment_id format
         # If payment_id is a UUID (36 chars with hyphens), search by _id (conversion_run_id)
@@ -627,7 +633,8 @@ def update_payment_field(payment_id: str, field_name: str, new_value: str) -> Di
             logger.info(f"Searching by conversion_run_id: {payment_id[:16]}...")
         else:
             # This is a conversion_id (e.g., "MT103_to_JSON")
-            query = {"conversion_id": payment_id}
+            # Translate the wrapper field name to storage shape (camelCase).
+            query = query_to_storage({"conversion_id": payment_id})
             logger.info(f"Searching by conversion_id: {payment_id}")
 
         # Find the payment record
@@ -644,26 +651,34 @@ def update_payment_field(payment_id: str, field_name: str, new_value: str) -> Di
                 "error": "Payment record not found"
             }
 
+        # Storage shape is camelCase; flip back to snake_case so the rest of
+        # this function (which uses snake_case field_name) reads the right
+        # values from json_data.
+        payment_record = from_storage(payment_record)
+
         # Get old value for audit (json_data contains the canonical JSON)
         json_data = payment_record.get("json_data", {})
         old_value = json_data.get(field_name, "")
 
-        # Update the field
+        # Update the field. Translate every $set key (e.g.
+        # "json_data.creditor_name" -> "jsonData.creditorName",
+        # "metadata.audit_trail.creditor_name" -> "metadata.auditTrail.creditorName")
+        # so writes land at the same paths used by save_canonical_json.
         now = datetime.now(timezone.utc).isoformat()
+        set_dict = {
+            f"json_data.{field_name}": new_value,
+            "metadata.last_updated": now,
+            f"metadata.audit_trail.{field_name}": {
+                "old_value": old_value,
+                "new_value": new_value,
+                "updated_at": now,
+                "updated_by": "payment_agent",
+            },
+        }
+        set_dict = {dotted_path_to_storage(k): v for k, v in set_dict.items()}
         update_result = collection.update_one(
-            query,  # Use same query as find_one (either by _id or conversion_id)
-            {
-                "$set": {
-                    f"json_data.{field_name}": new_value,
-                    "metadata.last_updated": now,
-                    f"metadata.audit_trail.{field_name}": {
-                        "old_value": old_value,
-                        "new_value": new_value,
-                        "updated_at": now,
-                        "updated_by": "payment_agent"
-                    }
-                }
-            }
+            query,  # Use same query as find_one (either by _id or conversionId)
+            {"$set": set_dict},
         )
 
         if update_result.modified_count > 0:

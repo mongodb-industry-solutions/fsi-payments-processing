@@ -327,7 +327,7 @@ def validate_purpose_code_rules(
                 "additional_context": {
                     "validation_rule": "purpose_code_classification",
                     "remittance_info": remittance_text,
-                    "search_collection": "purpose_codes"
+                    "search_collection": "purposeCodes"
                 }
             }
         )

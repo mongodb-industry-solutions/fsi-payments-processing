@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     
     # MongoDB Configuration
     mongodb_uri: str = Field(..., description="MongoDB connection URI")
-    database_name: str = Field(default="fsi-payments-processing", description="Database name")
+    database_name: str = Field(default="leafy_bank_bian", description="Database name")
     
     # AWS Configuration (boto3 uses default credential chain)
     aws_default_region: str = Field(default="us-east-1", description="AWS Region")

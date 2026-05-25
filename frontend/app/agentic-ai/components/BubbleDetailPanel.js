@@ -68,10 +68,16 @@ export default function BubbleDetailPanel({ bubbleType, data, stats }) {
       try {
         console.log('🔍 Fetching canonical JSON for conversion_run_id:', conversionRunId);
 
-        // Fetch both endpoints in parallel
+        // Fetch both endpoints in parallel — BIAN URLs, conversion ID in body.
+        const body = JSON.stringify({ conversionRunReference: conversionRunId });
+        const init = {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body,
+        };
         const [diffResponse, fullResponse] = await Promise.all([
-          fetch(`/api/canonical-json/${conversionRunId}/diff`),
-          fetch(`/api/canonical-json/${conversionRunId}`)
+          fetch('/PaymentOrderInitiationTransaction/Confirmation/Retrieve', init),
+          fetch('/PaymentOrderInitiationTransaction/Retrieve', init),
         ]);
 
         if (!diffResponse.ok) {

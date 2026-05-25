@@ -17,12 +17,24 @@ from src.api.dependencies import (
 )
 from src.api.state import pending_conversions, pending_ai_reviews
 from src.exceptions import CountryValidationException
+from src.services.translator import from_storage
+from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-@router.post("/convert/multi-hop/stream", status_code=status.HTTP_200_OK)
+class CanonicalJsonRetrieveRequest(BaseModel):
+    """Body for canonical JSON Retrieve / Confirmation.Retrieve — was a path param."""
+    conversionRunReference: str = Field(
+        ..., description="The conversion run ID (UUID v4) to retrieve."
+    )
+
+
+@router.post(
+    "/PaymentOrderInitiationTransaction/Initiate",
+    status_code=status.HTTP_200_OK,
+)
 async def convert_multi_hop_stream(request: MultiHopConversionRequest):
     """
     Stream multi-hop conversion with real-time SSE updates.
@@ -326,13 +338,17 @@ async def convert_multi_hop_stream(request: MultiHopConversionRequest):
     )
 
 
-@router.get("/canonical-json/{conversion_run_id}/diff", status_code=status.HTTP_200_OK)
-async def get_canonical_json_diff(conversion_run_id: str):
+@router.post(
+    "/PaymentOrderInitiationTransaction/Confirmation/Retrieve",
+    status_code=status.HTTP_200_OK,
+)
+async def get_canonical_json_diff(body: CanonicalJsonRetrieveRequest):
     """
     Fetch before/after canonical JSON with changes from audit trail.
 
     Reconstructs the before state from audit trail for diff visualization.
     """
+    conversion_run_id = body.conversionRunReference
     try:
         doc = await mongodb_service.json_storage_collection.find_one({"_id": conversion_run_id})
 
@@ -342,6 +358,9 @@ async def get_canonical_json_diff(conversion_run_id: str):
                 detail=f"Canonical JSON document not found for conversion_run_id: {conversion_run_id}"
             )
 
+        # Storage shape is camelCase; flip back so audit-trail keys, json_data
+        # keys, and metadata keys all match the snake_case shape the UI expects.
+        doc = from_storage(doc)
         after_json = doc.get("json_data", {})
         audit_trail = doc.get("metadata", {}).get("audit_trail", {})
 
@@ -369,13 +388,17 @@ async def get_canonical_json_diff(conversion_run_id: str):
         )
 
 
-@router.get("/canonical-json/{conversion_run_id}", status_code=status.HTTP_200_OK)
-async def get_canonical_json_full(conversion_run_id: str):
+@router.post(
+    "/PaymentOrderInitiationTransaction/Retrieve",
+    status_code=status.HTTP_200_OK,
+)
+async def get_canonical_json_full(body: CanonicalJsonRetrieveRequest):
     """
     Fetch the full canonical JSON document from MongoDB.
 
     Returns the complete document including metadata and audit trails.
     """
+    conversion_run_id = body.conversionRunReference
     try:
         doc = await mongodb_service.json_storage_collection.find_one({"_id": conversion_run_id})
 
@@ -385,6 +408,9 @@ async def get_canonical_json_full(conversion_run_id: str):
                 detail=f"Canonical JSON document not found for conversion_run_id: {conversion_run_id}"
             )
 
+        # Storage shape is camelCase; flip back so the UI keeps seeing the
+        # snake_case keys it has always rendered.
+        doc = from_storage(doc)
         logger.info(f"Retrieved full canonical JSON document for {conversion_run_id}")
         return doc
 
