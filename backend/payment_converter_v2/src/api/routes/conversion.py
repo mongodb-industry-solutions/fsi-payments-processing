@@ -17,7 +17,6 @@ from src.api.dependencies import (
 )
 from src.api.state import pending_conversions, pending_ai_reviews
 from src.exceptions import CountryValidationException
-from src.services.translator import from_storage
 from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
@@ -224,7 +223,7 @@ async def convert_multi_hop_stream(request: MultiHopConversionRequest):
                 cached_json = await mongodb_service.get_canonical_json(request.message, conversion_run_id=conversion_run_id)
                 hop1_result = {
                     'conversion_id': f"{request.source_format}_to_JSON",
-                    'converted_message': cached_json['json_data'],
+                    'converted_message': cached_json['jsonData'],
                     'processing_stats': {'lane_distribution': {'RULES': 0, 'AI': 0, 'HUMAN': 0}},
                     'confidence_scores': {},
                     'human_review_required': False,
@@ -239,18 +238,18 @@ async def convert_multi_hop_stream(request: MultiHopConversionRequest):
             hop1_json = json.loads(hop1_result['converted_message']) if isinstance(hop1_result['converted_message'], str) else hop1_result['converted_message']
 
             is_crypto_settlement = (
-                hop1_json.get('crypto_blockchain') is not None and
-                hop1_json.get('crypto_receiver_wallet') is not None
+                hop1_json.get('cryptoBlockchain') is not None and
+                hop1_json.get('cryptoReceiverWallet') is not None
             )
 
             if is_crypto_settlement and solana_service:
                 # Crypto settlement flow
-                blockchain = hop1_json.get('crypto_blockchain')
-                receiver_wallet = hop1_json.get('crypto_receiver_wallet')
+                blockchain = hop1_json.get('cryptoBlockchain')
+                receiver_wallet = hop1_json.get('cryptoReceiverWallet')
                 amount_sol = 0.001
 
-                yield f"data: {json.dumps({'type': 'crypto_start', 'detail': 'Initiating Solana blockchain settlement using canonical JSON fields', 'dropdown': {'title': 'Canonical JSON → Blockchain Bridge', 'items': ['Canonical JSON serves as universal payment format', f'Blockchain: {blockchain}', 'Receiver wallet extracted from crypto_receiver_wallet field', 'Solana SDK initialized with devnet RPC endpoint', 'Transaction will be recorded on immutable blockchain ledger']}})}\n\n"
-                yield f"data: {json.dumps({'type': 'crypto_wallet_extract', 'receiver': receiver_wallet, 'detail': 'Extracted receiver wallet from canonical JSON', 'dropdown': {'title': 'Wallet Extraction Details', 'items': [f'Source field: canonical_json.crypto_receiver_wallet', f'Receiver: {receiver_wallet}', 'Wallet validated as valid Solana public key (Base58)', 'Service wallet will execute transfer on behalf of payer']}})}\n\n"
+                yield f"data: {json.dumps({'type': 'crypto_start', 'detail': 'Initiating Solana blockchain settlement using canonical JSON fields', 'dropdown': {'title': 'Canonical JSON → Blockchain Bridge', 'items': ['Canonical JSON serves as universal payment format', f'Blockchain: {blockchain}', 'Receiver wallet extracted from cryptoReceiverWallet field', 'Solana SDK initialized with devnet RPC endpoint', 'Transaction will be recorded on immutable blockchain ledger']}})}\n\n"
+                yield f"data: {json.dumps({'type': 'crypto_wallet_extract', 'receiver': receiver_wallet, 'detail': 'Extracted receiver wallet from canonical JSON', 'dropdown': {'title': 'Wallet Extraction Details', 'items': [f'Source field: canonical_json.cryptoReceiverWallet', f'Receiver: {receiver_wallet}', 'Wallet validated as valid Solana public key (Base58)', 'Service wallet will execute transfer on behalf of payer']}})}\n\n"
                 yield f"data: {json.dumps({'type': 'crypto_tx_build', 'detail': 'Building Solana transfer instruction', 'dropdown': {'title': 'Transaction Construction', 'items': ['Fetching latest blockhash from Solana RPC', 'Creating SystemProgram.transfer instruction', 'From: Service wallet (custodial)', f'To: {receiver_wallet[:16]}...', f'Amount: {amount_sol} SOL (demo proof-of-settlement)', 'Compiling MessageV0 with transfer instruction']}})}\n\n"
                 yield f"data: {json.dumps({'type': 'crypto_tx_sign', 'detail': 'Signing transaction with service wallet', 'dropdown': {'title': 'Cryptographic Signing', 'items': ['Loading service keypair from secure storage', 'Creating VersionedTransaction with MessageV0', 'Signing with Ed25519 signature algorithm', 'Transaction signature generated (64 bytes)']}})}\n\n"
                 yield f"data: {json.dumps({'type': 'crypto_tx_submit', 'detail': 'Broadcasting to Solana devnet', 'dropdown': {'title': 'Network Broadcast', 'items': ['RPC Endpoint: https://api.devnet.solana.com', 'Method: sendRawTransaction', 'Commitment level: confirmed', 'Waiting for validator confirmation...']}})}\n\n"
@@ -358,15 +357,13 @@ async def get_canonical_json_diff(body: CanonicalJsonRetrieveRequest):
                 detail=f"Canonical JSON document not found for conversion_run_id: {conversion_run_id}"
             )
 
-        # Storage shape is camelCase; flip back so audit-trail keys, json_data
-        # keys, and metadata keys all match the snake_case shape the UI expects.
-        doc = from_storage(doc)
-        after_json = doc.get("json_data", {})
-        audit_trail = doc.get("metadata", {}).get("audit_trail", {})
+        # Storage is camelCase end-to-end now; read directly.
+        after_json = doc.get("jsonData", {})
+        audit_trail = doc.get("metadata", {}).get("auditTrail", {})
 
         before_json = after_json.copy()
         for field_name, changes in audit_trail.items():
-            before_json[field_name] = changes.get("old_value", "")
+            before_json[field_name] = changes.get("oldValue", "")
 
         changed_fields = list(audit_trail.keys())
         logger.info(f"Retrieved canonical JSON diff for {conversion_run_id}: {len(changed_fields)} fields changed")
@@ -408,9 +405,7 @@ async def get_canonical_json_full(body: CanonicalJsonRetrieveRequest):
                 detail=f"Canonical JSON document not found for conversion_run_id: {conversion_run_id}"
             )
 
-        # Storage shape is camelCase; flip back so the UI keeps seeing the
-        # snake_case keys it has always rendered.
-        doc = from_storage(doc)
+        # Storage is camelCase end-to-end now; UI sees the same shape.
         logger.info(f"Retrieved full canonical JSON document for {conversion_run_id}")
         return doc
 

@@ -43,10 +43,10 @@ class AgentState(TypedDict):
 
     # The canonical JSON payment from payment_converter_v2
     # This is a flat dictionary with ~40 fields like:
-    # - transaction_ref, amount, currency, value_date (required)
-    # - debtor_name, debtor_account, debtor_bank
-    # - creditor_name, creditor_account, creditor_bank
-    # - remittance_info, charge_bearer, etc.
+    # - transactionRef, amount, currency, valueDate (required)
+    # - debtorName, debtorAccount, debtorBank
+    # - creditorName, creditorAccount, creditorBank
+    # - remittanceInfo, chargeBearer, etc.
     payment_data: Dict[str, Any]
 
     # Problem description for autonomous agent analysis
@@ -57,7 +57,7 @@ class AgentState(TypedDict):
     task_type: str  # "japan_transliteration", "india_ifsc", etc.
 
     # Field to be modified
-    field_name: str  # Direct field name (e.g., "creditor_name", "creditor_bank")
+    field_name: str  # Direct field name (e.g., "creditorName", "creditorBank")
 
     # Original value before agent modification (for audit trail)
     original_value: Optional[str]

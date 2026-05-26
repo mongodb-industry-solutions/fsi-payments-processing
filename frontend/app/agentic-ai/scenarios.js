@@ -553,7 +553,7 @@ CLOUD INFRASTRUCTURE DEVELOPMENT
         icon: 'transform',
         title: 'Canonical JSON Generated',
         description: 'Payment normalized with Solana wallet address and settlement instructions.',
-        highlight: 'crypto_receiver_wallet',
+        highlight: 'cryptoReceiverWallet',
         color: '#00A35C',
         delay: 0
       },

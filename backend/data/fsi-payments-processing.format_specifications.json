@@ -1,732 +1,734 @@
-[{
-  "_id": "JSON",
-  "format_type": "INTERNAL",
-  "description": "Canonical JSON format - universal bridge between all formats",
-  "supported_fields": {
-    "transaction_ref": {
-      "path": "transaction_ref",
-      "description": "Primary transaction reference/ID",
-      "required": true,
-      "type": "string"
-    },
-    "end_to_end_id": {
-      "path": "end_to_end_id",
-      "description": "End-to-end identification for tracking",
-      "required": false,
-      "type": "string"
-    },
-    "instruction_id": {
-      "path": "instruction_id",
-      "description": "Instruction identification",
-      "required": false,
-      "type": "string"
-    },
-    "related_ref": {
-      "path": "related_ref",
-      "description": "Related reference (for linked transactions)",
-      "required": false,
-      "type": "string"
-    },
-    "message_id": {
-      "path": "message_id",
-      "description": "Message identifier",
-      "required": false,
-      "type": "string"
-    },
-    "amount": {
-      "path": "amount",
-      "description": "Transaction amount (decimal)",
-      "required": true,
-      "type": "decimal"
-    },
-    "currency": {
-      "path": "currency",
-      "description": "Currency code (3 letters)",
-      "required": true,
-      "type": "string"
-    },
-    "value_date": {
-      "path": "value_date",
-      "description": "Value date (YYYYMMDD)",
-      "required": true,
-      "type": "string"
-    },
-    "execution_date": {
-      "path": "execution_date",
-      "description": "Execution date",
-      "required": false,
-      "type": "string"
-    },
-    "creation_datetime": {
-      "path": "creation_datetime",
-      "description": "Message creation timestamp",
-      "required": false,
-      "type": "string"
-    },
-    "debtor_name": {
-      "path": "debtor_name",
-      "description": "Sender/payer name",
-      "required": false,
-      "type": "string"
-    },
-    "debtor_account": {
-      "path": "debtor_account",
-      "description": "Sender/payer account number",
-      "required": false,
-      "type": "string"
-    },
-    "debtor_address": {
-      "path": "debtor_address",
-      "description": "Sender/payer address",
-      "required": false,
-      "type": "string"
-    },
-    "creditor_name": {
-      "path": "creditor_name",
-      "description": "Receiver/payee name",
-      "required": false,
-      "type": "string"
-    },
-    "creditor_account": {
-      "path": "creditor_account",
-      "description": "Receiver/payee account number",
-      "required": false,
-      "type": "string"
-    },
-    "creditor_address": {
-      "path": "creditor_address",
-      "description": "Receiver/payee address",
-      "required": false,
-      "type": "string"
-    },
-    "debtor_bank": {
-      "path": "debtor_bank",
-      "description": "Sender's bank BIC/identifier",
-      "required": false,
-      "type": "string"
-    },
-    "creditor_bank": {
-      "path": "creditor_bank",
-      "description": "Receiver's bank BIC/identifier",
-      "required": false,
-      "type": "string"
-    },
-    "intermediary_bank": {
-      "path": "intermediary_bank",
-      "description": "Intermediary bank BIC",
-      "required": false,
-      "type": "string"
-    },
-    "account_with_bank": {
-      "path": "account_with_bank",
-      "description": "Account with institution",
-      "required": false,
-      "type": "string"
-    },
-    "sender_correspondent": {
-      "path": "sender_correspondent",
-      "description": "Sender's correspondent",
-      "required": false,
-      "type": "string"
-    },
-    "remittance_info": {
-      "path": "remittance_info",
-      "description": "Payment remittance information (unstructured)",
-      "required": false,
-      "type": "string"
-    },
-    "payment_purpose": {
-      "path": "payment_purpose",
-      "description": "Purpose of payment",
-      "required": false,
-      "type": "string"
-    },
-    "charge_bearer": {
-      "path": "charge_bearer",
-      "description": "Who bears the charges (SHA/OUR/BEN)",
-      "required": false,
-      "type": "string"
-    },
-    "instruction_info": {
-      "path": "instruction_info",
-      "description": "Bank instruction information",
-      "required": false,
-      "type": "string"
-    },
-    "regulatory_reporting": {
-      "path": "regulatory_reporting",
-      "description": "Regulatory reporting info",
-      "required": false,
-      "type": "string"
-    },
-    "bank_operation_code": {
-      "path": "bank_operation_code",
-      "description": "Bank operation code",
-      "required": false,
-      "type": "string"
-    },
-    "card_number": {
-      "path": "card_number",
-      "description": "Primary Account Number (PAN, masked)",
-      "required": false,
-      "type": "string"
-    },
-    "card_expiry": {
-      "path": "card_expiry",
-      "description": "Card expiration date (YYMM)",
-      "required": false,
-      "type": "string"
-    },
-    "authorization_code": {
-      "path": "authorization_code",
-      "description": "Authorization response code",
-      "required": false,
-      "type": "string"
-    },
-    "terminal_id": {
-      "path": "terminal_id",
-      "description": "POS terminal identifier",
-      "required": false,
-      "type": "string"
-    },
-    "merchant_id": {
-      "path": "merchant_id",
-      "description": "Merchant identifier",
-      "required": false,
-      "type": "string"
-    },
-    "merchant_info": {
-      "path": "merchant_info",
-      "description": "Merchant name/location (free text)",
-      "required": false,
-      "type": "string"
-    },
-    "merchant_name": {
-      "path": "merchant_name",
-      "description": "Extracted merchant name",
-      "required": false,
-      "type": "string"
-    },
-    "merchant_city": {
-      "path": "merchant_city",
-      "description": "Extracted merchant city",
-      "required": false,
-      "type": "string"
-    },
-    "merchant_country": {
-      "path": "merchant_country",
-      "description": "Extracted merchant country code",
-      "required": false,
-      "type": "string"
-    },
-    "acquirer_id": {
-      "path": "acquirer_id",
-      "description": "Acquiring institution identifier",
-      "required": false,
-      "type": "string"
-    },
-    "processing_code": {
-      "path": "processing_code",
-      "description": "Transaction type code",
-      "required": false,
-      "type": "string"
-    },
-    "entry_mode": {
-      "path": "entry_mode",
-      "description": "Card entry mode (chip, swipe, contactless)",
-      "required": false,
-      "type": "string"
-    },
-    "pos_condition": {
-      "path": "pos_condition",
-      "description": "POS condition code",
-      "required": false,
-      "type": "string"
-    },
-    "transaction_time": {
-      "path": "transaction_time",
-      "description": "Local transaction time",
-      "required": false,
-      "type": "string"
-    },
-    "message_type": {
-      "path": "message_type",
-      "description": "Message type indicator",
-      "required": false,
-      "type": "string"
-    },
-    "return_reason_code": {
-      "path": "return_reason_code",
-      "description": "Return reason code (e.g., AC04, AM04, MD01)",
-      "required": false,
-      "type": "string"
-    },
-    "original_message_type": {
-      "path": "original_message_type",
-      "description": "Original message type being returned (e.g., pacs.008.001.08)",
-      "required": false,
-      "type": "string"
+[
+  {
+    "_id": "JSON",
+    "format_type": "INTERNAL",
+    "description": "Canonical JSON format - universal bridge between all formats",
+    "supported_fields": {
+      "transactionRef": {
+        "path": "transactionRef",
+        "description": "Primary transaction reference/ID",
+        "required": true,
+        "type": "string"
+      },
+      "endToEndId": {
+        "path": "endToEndId",
+        "description": "End-to-end identification for tracking",
+        "required": false,
+        "type": "string"
+      },
+      "instructionId": {
+        "path": "instructionId",
+        "description": "Instruction identification",
+        "required": false,
+        "type": "string"
+      },
+      "relatedRef": {
+        "path": "relatedRef",
+        "description": "Related reference (for linked transactions)",
+        "required": false,
+        "type": "string"
+      },
+      "messageId": {
+        "path": "messageId",
+        "description": "Message identifier",
+        "required": false,
+        "type": "string"
+      },
+      "amount": {
+        "path": "amount",
+        "description": "Transaction amount (decimal)",
+        "required": true,
+        "type": "decimal"
+      },
+      "currency": {
+        "path": "currency",
+        "description": "Currency code (3 letters)",
+        "required": true,
+        "type": "string"
+      },
+      "valueDate": {
+        "path": "valueDate",
+        "description": "Value date (YYYYMMDD)",
+        "required": true,
+        "type": "string"
+      },
+      "executionDate": {
+        "path": "executionDate",
+        "description": "Execution date",
+        "required": false,
+        "type": "string"
+      },
+      "creationDateTime": {
+        "path": "creationDateTime",
+        "description": "Message creation timestamp",
+        "required": false,
+        "type": "string"
+      },
+      "debtorName": {
+        "path": "debtorName",
+        "description": "Sender/payer name",
+        "required": false,
+        "type": "string"
+      },
+      "debtorAccount": {
+        "path": "debtorAccount",
+        "description": "Sender/payer account number",
+        "required": false,
+        "type": "string"
+      },
+      "debtorAddress": {
+        "path": "debtorAddress",
+        "description": "Sender/payer address",
+        "required": false,
+        "type": "string"
+      },
+      "creditorName": {
+        "path": "creditorName",
+        "description": "Receiver/payee name",
+        "required": false,
+        "type": "string"
+      },
+      "creditorAccount": {
+        "path": "creditorAccount",
+        "description": "Receiver/payee account number",
+        "required": false,
+        "type": "string"
+      },
+      "creditorAddress": {
+        "path": "creditorAddress",
+        "description": "Receiver/payee address",
+        "required": false,
+        "type": "string"
+      },
+      "debtorBank": {
+        "path": "debtorBank",
+        "description": "Sender's bank BIC/identifier",
+        "required": false,
+        "type": "string"
+      },
+      "creditorBank": {
+        "path": "creditorBank",
+        "description": "Receiver's bank BIC/identifier",
+        "required": false,
+        "type": "string"
+      },
+      "intermediaryBank": {
+        "path": "intermediaryBank",
+        "description": "Intermediary bank BIC",
+        "required": false,
+        "type": "string"
+      },
+      "account_with_bank": {
+        "path": "account_with_bank",
+        "description": "Account with institution",
+        "required": false,
+        "type": "string"
+      },
+      "senderCorrespondent": {
+        "path": "senderCorrespondent",
+        "description": "Sender's correspondent",
+        "required": false,
+        "type": "string"
+      },
+      "remittanceInfo": {
+        "path": "remittanceInfo",
+        "description": "Payment remittance information (unstructured)",
+        "required": false,
+        "type": "string"
+      },
+      "paymentPurpose": {
+        "path": "paymentPurpose",
+        "description": "Purpose of payment",
+        "required": false,
+        "type": "string"
+      },
+      "chargeBearer": {
+        "path": "chargeBearer",
+        "description": "Who bears the charges (SHA/OUR/BEN)",
+        "required": false,
+        "type": "string"
+      },
+      "instructionInfo": {
+        "path": "instructionInfo",
+        "description": "Bank instruction information",
+        "required": false,
+        "type": "string"
+      },
+      "regulatory_reporting": {
+        "path": "regulatory_reporting",
+        "description": "Regulatory reporting info",
+        "required": false,
+        "type": "string"
+      },
+      "bankOperationCode": {
+        "path": "bankOperationCode",
+        "description": "Bank operation code",
+        "required": false,
+        "type": "string"
+      },
+      "cardNumber": {
+        "path": "cardNumber",
+        "description": "Primary Account Number (PAN, masked)",
+        "required": false,
+        "type": "string"
+      },
+      "card_expiry": {
+        "path": "card_expiry",
+        "description": "Card expiration date (YYMM)",
+        "required": false,
+        "type": "string"
+      },
+      "authorization_code": {
+        "path": "authorization_code",
+        "description": "Authorization response code",
+        "required": false,
+        "type": "string"
+      },
+      "terminalId": {
+        "path": "terminalId",
+        "description": "POS terminal identifier",
+        "required": false,
+        "type": "string"
+      },
+      "merchantId": {
+        "path": "merchantId",
+        "description": "Merchant identifier",
+        "required": false,
+        "type": "string"
+      },
+      "merchantInfo": {
+        "path": "merchantInfo",
+        "description": "Merchant name/location (free text)",
+        "required": false,
+        "type": "string"
+      },
+      "merchantName": {
+        "path": "merchantName",
+        "description": "Extracted merchant name",
+        "required": false,
+        "type": "string"
+      },
+      "merchantCity": {
+        "path": "merchantCity",
+        "description": "Extracted merchant city",
+        "required": false,
+        "type": "string"
+      },
+      "merchantCountry": {
+        "path": "merchantCountry",
+        "description": "Extracted merchant country code",
+        "required": false,
+        "type": "string"
+      },
+      "acquirer_id": {
+        "path": "acquirer_id",
+        "description": "Acquiring institution identifier",
+        "required": false,
+        "type": "string"
+      },
+      "processingCode": {
+        "path": "processingCode",
+        "description": "Transaction type code",
+        "required": false,
+        "type": "string"
+      },
+      "entry_mode": {
+        "path": "entry_mode",
+        "description": "Card entry mode (chip, swipe, contactless)",
+        "required": false,
+        "type": "string"
+      },
+      "pos_condition": {
+        "path": "pos_condition",
+        "description": "POS condition code",
+        "required": false,
+        "type": "string"
+      },
+      "transactionTime": {
+        "path": "transactionTime",
+        "description": "Local transaction time",
+        "required": false,
+        "type": "string"
+      },
+      "messageType": {
+        "path": "messageType",
+        "description": "Message type indicator",
+        "required": false,
+        "type": "string"
+      },
+      "return_reason_code": {
+        "path": "return_reason_code",
+        "description": "Return reason code (e.g., AC04, AM04, MD01)",
+        "required": false,
+        "type": "string"
+      },
+      "original_message_type": {
+        "path": "original_message_type",
+        "description": "Original message type being returned (e.g., pacs.008.001.08)",
+        "required": false,
+        "type": "string"
+      }
+    }
+  },
+  {
+    "_id": "pacs.008",
+    "format_type": "ISO20022",
+    "description": "Customer Credit Transfer (FI to FI)",
+    "supported_fields": {
+      "messageId": {
+        "path": "Document.FIToFICstmrCdtTrf.GrpHdr.MsgId",
+        "description": "Unique message identifier",
+        "required": true,
+        "type": "string"
+      },
+      "creationDateTime": {
+        "path": "Document.FIToFICstmrCdtTrf.GrpHdr.CreDtTm",
+        "description": "Message creation timestamp",
+        "required": true,
+        "type": "string"
+      },
+      "transactionRef": {
+        "path": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.PmtId.InstrId",
+        "description": "Instruction identification",
+        "required": true,
+        "type": "string"
+      },
+      "endToEndId": {
+        "path": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.PmtId.EndToEndId",
+        "description": "End-to-end identification for tracking",
+        "required": false,
+        "type": "string"
+      },
+      "amount": {
+        "path": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.IntrBkSttlmAmt.#text",
+        "description": "Interbank settlement amount",
+        "required": true,
+        "type": "decimal"
+      },
+      "currency": {
+        "path": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.IntrBkSttlmAmt.@Ccy",
+        "description": "Currency code (ISO 4217)",
+        "required": true,
+        "type": "string"
+      },
+      "valueDate": {
+        "path": "Document.FIToFICstmrCdtTrf.GrpHdr.IntrBkSttlmDt",
+        "description": "Interbank settlement date",
+        "required": true,
+        "type": "string"
+      },
+      "debtorName": {
+        "path": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.Dbtr.Nm",
+        "description": "Debtor/sender name",
+        "required": true,
+        "type": "string"
+      },
+      "debtorAccount": {
+        "path": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.DbtrAcct.Id.IBAN",
+        "description": "Debtor account IBAN",
+        "required": false,
+        "type": "string"
+      },
+      "debtorBank": {
+        "path": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.DbtrAgt.FinInstnId.BICFI",
+        "description": "Debtor agent BIC",
+        "required": true,
+        "type": "string"
+      },
+      "creditorName": {
+        "path": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.Cdtr.Nm",
+        "description": "Creditor/receiver name",
+        "required": true,
+        "type": "string"
+      },
+      "creditorAccount": {
+        "path": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.CdtrAcct.Id.IBAN",
+        "description": "Creditor account IBAN",
+        "required": false,
+        "type": "string"
+      },
+      "creditorBank": {
+        "path": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.CdtrAgt.FinInstnId.BICFI",
+        "description": "Creditor agent BIC",
+        "required": true,
+        "type": "string"
+      },
+      "remittanceInfo": {
+        "path": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.RmtInf.Ustrd",
+        "description": "Unstructured remittance information",
+        "required": false,
+        "type": "string"
+      },
+      "chargeBearer": {
+        "path": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.ChrgBr",
+        "description": "Charge bearer code (SHAR/DEBT/CRED)",
+        "required": false,
+        "type": "string"
+      },
+      "intermediaryBank": {
+        "path": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.IntrmyAgt1.FinInstnId.BICFI",
+        "description": "Intermediary agent BIC",
+        "required": false,
+        "type": "string"
+      }
+    }
+  },
+  {
+    "_id": "pacs.009",
+    "format_type": "ISO20022",
+    "description": "Financial Institution Credit Transfer",
+    "supported_fields": {
+      "messageId": {
+        "path": "Document.FICdtTrf.GrpHdr.MsgId",
+        "description": "Unique message identifier",
+        "required": true,
+        "type": "string"
+      },
+      "creationDateTime": {
+        "path": "Document.FICdtTrf.GrpHdr.CreDtTm",
+        "description": "Message creation timestamp",
+        "required": true,
+        "type": "string"
+      },
+      "transactionRef": {
+        "path": "Document.FICdtTrf.CdtTrfTxInf.PmtId.InstrId",
+        "description": "Instruction identification",
+        "required": true,
+        "type": "string"
+      },
+      "endToEndId": {
+        "path": "Document.FICdtTrf.CdtTrfTxInf.PmtId.EndToEndId",
+        "description": "End-to-end identification",
+        "required": false,
+        "type": "string"
+      },
+      "relatedRef": {
+        "path": "Document.FICdtTrf.CdtTrfTxInf.PmtId.TxId",
+        "description": "Transaction identification / related reference",
+        "required": false,
+        "type": "string"
+      },
+      "amount": {
+        "path": "Document.FICdtTrf.CdtTrfTxInf.IntrBkSttlmAmt.#text",
+        "description": "Interbank settlement amount",
+        "required": true,
+        "type": "decimal"
+      },
+      "currency": {
+        "path": "Document.FICdtTrf.CdtTrfTxInf.IntrBkSttlmAmt.@Ccy",
+        "description": "Currency code (ISO 4217)",
+        "required": true,
+        "type": "string"
+      },
+      "valueDate": {
+        "path": "Document.FICdtTrf.CdtTrfTxInf.IntrBkSttlmDt",
+        "description": "Interbank settlement date",
+        "required": true,
+        "type": "string"
+      },
+      "debtorBank": {
+        "path": "Document.FICdtTrf.CdtTrfTxInf.InstgAgt.FinInstnId.BICFI",
+        "description": "Instructing agent BIC",
+        "required": true,
+        "type": "string"
+      },
+      "creditorBank": {
+        "path": "Document.FICdtTrf.CdtTrfTxInf.InstdAgt.FinInstnId.BICFI",
+        "description": "Instructed agent BIC",
+        "required": true,
+        "type": "string"
+      },
+      "intermediaryBank": {
+        "path": "Document.FICdtTrf.CdtTrfTxInf.IntrmyAgt1.FinInstnId.BICFI",
+        "description": "Intermediary agent BIC",
+        "required": false,
+        "type": "string"
+      },
+      "account_with_bank": {
+        "path": "Document.FICdtTrf.CdtTrfTxInf.CdtrAgt.FinInstnId.BICFI",
+        "description": "Beneficiary institution / account with institution BIC (SWIFT field 58A)",
+        "required": false,
+        "type": "string"
+      },
+      "instructionInfo": {
+        "path": "Document.FICdtTrf.CdtTrfTxInf.InstrForNxtAgt.InstrInf",
+        "description": "Instructions for next agent",
+        "required": false,
+        "type": "string"
+      },
+      "settlement_time": {
+        "path": "Document.FICdtTrf.CdtTrfTxInf.SttlmTmReq.CLSTm",
+        "description": "CLS settlement time",
+        "required": false,
+        "type": "string"
+      }
+    }
+  },
+  {
+    "_id": "cain.001",
+    "format_type": "ISO20022",
+    "description": "Card Transaction (Acquirer to Issuer)",
+    "supported_fields": {
+      "messageId": {
+        "path": "Document.CardTx.GrpHdr.MsgId",
+        "description": "Unique message identifier",
+        "required": true,
+        "type": "string"
+      },
+      "creationDateTime": {
+        "path": "Document.CardTx.GrpHdr.CreDtTm",
+        "description": "Message creation timestamp",
+        "required": true,
+        "type": "string"
+      },
+      "transactionRef": {
+        "path": "Document.CardTx.Tx.TxId.TxRef",
+        "description": "Transaction reference",
+        "required": true,
+        "type": "string"
+      },
+      "endToEndId": {
+        "path": "Document.CardTx.Tx.TxId.RtrvlRefNb",
+        "description": "Retrieval reference number",
+        "required": false,
+        "type": "string"
+      },
+      "authorization_code": {
+        "path": "Document.CardTx.Authstn.AuthstnCd",
+        "description": "Authorization code",
+        "required": false,
+        "type": "string"
+      },
+      "messageType": {
+        "path": "Document.CardTx.Tx.MsgTp",
+        "description": "Message type indicator",
+        "required": true,
+        "type": "string"
+      },
+      "amount": {
+        "path": "Document.CardTx.Tx.TxAmt.Amt",
+        "description": "Transaction amount",
+        "required": true,
+        "type": "decimal"
+      },
+      "currency": {
+        "path": "Document.CardTx.Tx.TxAmt.Ccy",
+        "description": "Currency code",
+        "required": true,
+        "type": "string"
+      },
+      "valueDate": {
+        "path": "Document.CardTx.Tx.AccptrTxDtTm",
+        "description": "Acceptor transaction date/time",
+        "required": true,
+        "type": "string"
+      },
+      "transactionTime": {
+        "path": "Document.CardTx.Tx.TxDtTm",
+        "description": "Transaction date/time",
+        "required": false,
+        "type": "string"
+      },
+      "cardNumber": {
+        "path": "Document.CardTx.Card.PAN",
+        "description": "Primary Account Number (masked)",
+        "required": true,
+        "type": "string"
+      },
+      "card_expiry": {
+        "path": "Document.CardTx.Card.XpryDt",
+        "description": "Card expiry date",
+        "required": false,
+        "type": "string"
+      },
+      "entry_mode": {
+        "path": "Document.CardTx.Cntxt.TxCntxt.CardDataNtryMd",
+        "description": "Card data entry mode",
+        "required": false,
+        "type": "string"
+      },
+      "terminalId": {
+        "path": "Document.CardTx.Cntxt.PtOfIntractn.Id.Id",
+        "description": "Point of interaction ID",
+        "required": false,
+        "type": "string"
+      },
+      "acquirer_id": {
+        "path": "Document.CardTx.Envt.Acqrr.Id.Id",
+        "description": "Acquirer identifier",
+        "required": false,
+        "type": "string"
+      },
+      "pos_condition": {
+        "path": "Document.CardTx.Cntxt.TxCntxt.TxChanl",
+        "description": "Transaction channel",
+        "required": false,
+        "type": "string"
+      },
+      "merchantId": {
+        "path": "Document.CardTx.Envt.Mrchnt.Id.Id",
+        "description": "Merchant identifier",
+        "required": true,
+        "type": "string"
+      },
+      "merchantName": {
+        "path": "Document.CardTx.Envt.Mrchnt.Nm",
+        "description": "Merchant name",
+        "required": true,
+        "type": "string"
+      },
+      "merchantCity": {
+        "path": "Document.CardTx.Envt.Mrchnt.Adr.TwnNm",
+        "description": "Merchant city",
+        "required": false,
+        "type": "string"
+      },
+      "merchantCountry": {
+        "path": "Document.CardTx.Envt.Mrchnt.Adr.Ctry",
+        "description": "Merchant country code",
+        "required": false,
+        "type": "string"
+      },
+      "processingCode": {
+        "path": "Document.CardTx.Tx.TxTp",
+        "description": "Transaction type",
+        "required": false,
+        "type": "string"
+      }
+    }
+  },
+  {
+    "_id": "TARGET2",
+    "format_type": "REGIONAL",
+    "description": "TARGET2 Trans-European settlement format",
+    "supported_fields": {
+      "transactionRef": {
+        "path": "TxRef",
+        "description": "Transaction reference",
+        "required": true,
+        "type": "string"
+      },
+      "amount": {
+        "path": "IntrBkSttlmAmt",
+        "description": "Interbank settlement amount",
+        "required": true,
+        "type": "decimal"
+      },
+      "currency": {
+        "path": "Ccy",
+        "description": "Currency code",
+        "required": true,
+        "type": "string"
+      },
+      "valueDate": {
+        "path": "IntrBkSttlmDt",
+        "description": "Interbank settlement date",
+        "required": true,
+        "type": "string"
+      },
+      "bankOperationCode": {
+        "path": "SttlmMtd",
+        "description": "Settlement method",
+        "required": false,
+        "type": "string"
+      },
+      "debtorBank": {
+        "path": "InstgAgt",
+        "description": "Instructing agent",
+        "required": true,
+        "type": "string"
+      },
+      "creditorBank": {
+        "path": "InstdAgt",
+        "description": "Instructed agent",
+        "required": true,
+        "type": "string"
+      },
+      "debtorName": {
+        "path": "DbtrNm",
+        "description": "Debtor name",
+        "required": false,
+        "type": "string"
+      },
+      "creditorName": {
+        "path": "CdtrNm",
+        "description": "Creditor name",
+        "required": false,
+        "type": "string"
+      }
+    }
+  },
+  {
+    "_id": "CHAPS",
+    "format_type": "REGIONAL",
+    "description": "CHAPS UK clearing system format",
+    "supported_fields": {
+      "transactionRef": {
+        "path": "ChpsTxRef",
+        "description": "CHAPS transaction reference",
+        "required": true,
+        "type": "string"
+      },
+      "amount": {
+        "path": "SttlmAmt",
+        "description": "Settlement amount",
+        "required": true,
+        "type": "decimal"
+      },
+      "currency": {
+        "path": "Ccy",
+        "description": "Currency code (GBP)",
+        "required": true,
+        "type": "string"
+      },
+      "valueDate": {
+        "path": "SttlmDt",
+        "description": "Settlement date",
+        "required": true,
+        "type": "string"
+      },
+      "debtorName": {
+        "path": "DbtrNm",
+        "description": "Debtor name",
+        "required": true,
+        "type": "string"
+      },
+      "debtorAccount": {
+        "path": "DbtrAcct",
+        "description": "Debtor account (sort code + account)",
+        "required": true,
+        "type": "string"
+      },
+      "debtorBank": {
+        "path": "DbtrAgt",
+        "description": "Debtor agent",
+        "required": true,
+        "type": "string"
+      },
+      "creditorName": {
+        "path": "CdtrNm",
+        "description": "Creditor name",
+        "required": true,
+        "type": "string"
+      },
+      "creditorAccount": {
+        "path": "CdtrAcct",
+        "description": "Creditor account (sort code + account)",
+        "required": true,
+        "type": "string"
+      },
+      "creditorBank": {
+        "path": "CdtrAgt",
+        "description": "Creditor agent",
+        "required": true,
+        "type": "string"
+      },
+      "remittanceInfo": {
+        "path": "RmtInf",
+        "description": "Remittance information",
+        "required": false,
+        "type": "string"
+      }
     }
   }
-},
-{
-  "_id": "pacs.008",
-  "format_type": "ISO20022",
-  "description": "Customer Credit Transfer (FI to FI)",
-  "supported_fields": {
-    "message_id": {
-      "path": "Document.FIToFICstmrCdtTrf.GrpHdr.MsgId",
-      "description": "Unique message identifier",
-      "required": true,
-      "type": "string"
-    },
-    "creation_datetime": {
-      "path": "Document.FIToFICstmrCdtTrf.GrpHdr.CreDtTm",
-      "description": "Message creation timestamp",
-      "required": true,
-      "type": "string"
-    },
-    "transaction_ref": {
-      "path": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.PmtId.InstrId",
-      "description": "Instruction identification",
-      "required": true,
-      "type": "string"
-    },
-    "end_to_end_id": {
-      "path": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.PmtId.EndToEndId",
-      "description": "End-to-end identification for tracking",
-      "required": false,
-      "type": "string"
-    },
-    "amount": {
-      "path": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.IntrBkSttlmAmt.#text",
-      "description": "Interbank settlement amount",
-      "required": true,
-      "type": "decimal"
-    },
-    "currency": {
-      "path": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.IntrBkSttlmAmt.@Ccy",
-      "description": "Currency code (ISO 4217)",
-      "required": true,
-      "type": "string"
-    },
-    "value_date": {
-      "path": "Document.FIToFICstmrCdtTrf.GrpHdr.IntrBkSttlmDt",
-      "description": "Interbank settlement date",
-      "required": true,
-      "type": "string"
-    },
-    "debtor_name": {
-      "path": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.Dbtr.Nm",
-      "description": "Debtor/sender name",
-      "required": true,
-      "type": "string"
-    },
-    "debtor_account": {
-      "path": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.DbtrAcct.Id.IBAN",
-      "description": "Debtor account IBAN",
-      "required": false,
-      "type": "string"
-    },
-    "debtor_bank": {
-      "path": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.DbtrAgt.FinInstnId.BICFI",
-      "description": "Debtor agent BIC",
-      "required": true,
-      "type": "string"
-    },
-    "creditor_name": {
-      "path": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.Cdtr.Nm",
-      "description": "Creditor/receiver name",
-      "required": true,
-      "type": "string"
-    },
-    "creditor_account": {
-      "path": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.CdtrAcct.Id.IBAN",
-      "description": "Creditor account IBAN",
-      "required": false,
-      "type": "string"
-    },
-    "creditor_bank": {
-      "path": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.CdtrAgt.FinInstnId.BICFI",
-      "description": "Creditor agent BIC",
-      "required": true,
-      "type": "string"
-    },
-    "remittance_info": {
-      "path": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.RmtInf.Ustrd",
-      "description": "Unstructured remittance information",
-      "required": false,
-      "type": "string"
-    },
-    "charge_bearer": {
-      "path": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.ChrgBr",
-      "description": "Charge bearer code (SHAR/DEBT/CRED)",
-      "required": false,
-      "type": "string"
-    },
-    "intermediary_bank": {
-      "path": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.IntrmyAgt1.FinInstnId.BICFI",
-      "description": "Intermediary agent BIC",
-      "required": false,
-      "type": "string"
-    }
-  }
-},
-{
-  "_id": "pacs.009",
-  "format_type": "ISO20022",
-  "description": "Financial Institution Credit Transfer",
-  "supported_fields": {
-    "message_id": {
-      "path": "Document.FICdtTrf.GrpHdr.MsgId",
-      "description": "Unique message identifier",
-      "required": true,
-      "type": "string"
-    },
-    "creation_datetime": {
-      "path": "Document.FICdtTrf.GrpHdr.CreDtTm",
-      "description": "Message creation timestamp",
-      "required": true,
-      "type": "string"
-    },
-    "transaction_ref": {
-      "path": "Document.FICdtTrf.CdtTrfTxInf.PmtId.InstrId",
-      "description": "Instruction identification",
-      "required": true,
-      "type": "string"
-    },
-    "end_to_end_id": {
-      "path": "Document.FICdtTrf.CdtTrfTxInf.PmtId.EndToEndId",
-      "description": "End-to-end identification",
-      "required": false,
-      "type": "string"
-    },
-    "related_ref": {
-      "path": "Document.FICdtTrf.CdtTrfTxInf.PmtId.TxId",
-      "description": "Transaction identification / related reference",
-      "required": false,
-      "type": "string"
-    },
-    "amount": {
-      "path": "Document.FICdtTrf.CdtTrfTxInf.IntrBkSttlmAmt.#text",
-      "description": "Interbank settlement amount",
-      "required": true,
-      "type": "decimal"
-    },
-    "currency": {
-      "path": "Document.FICdtTrf.CdtTrfTxInf.IntrBkSttlmAmt.@Ccy",
-      "description": "Currency code (ISO 4217)",
-      "required": true,
-      "type": "string"
-    },
-    "value_date": {
-      "path": "Document.FICdtTrf.CdtTrfTxInf.IntrBkSttlmDt",
-      "description": "Interbank settlement date",
-      "required": true,
-      "type": "string"
-    },
-    "debtor_bank": {
-      "path": "Document.FICdtTrf.CdtTrfTxInf.InstgAgt.FinInstnId.BICFI",
-      "description": "Instructing agent BIC",
-      "required": true,
-      "type": "string"
-    },
-    "creditor_bank": {
-      "path": "Document.FICdtTrf.CdtTrfTxInf.InstdAgt.FinInstnId.BICFI",
-      "description": "Instructed agent BIC",
-      "required": true,
-      "type": "string"
-    },
-    "intermediary_bank": {
-      "path": "Document.FICdtTrf.CdtTrfTxInf.IntrmyAgt1.FinInstnId.BICFI",
-      "description": "Intermediary agent BIC",
-      "required": false,
-      "type": "string"
-    },
-    "account_with_bank": {
-      "path": "Document.FICdtTrf.CdtTrfTxInf.CdtrAgt.FinInstnId.BICFI",
-      "description": "Beneficiary institution / account with institution BIC (SWIFT field 58A)",
-      "required": false,
-      "type": "string"
-    },
-    "instruction_info": {
-      "path": "Document.FICdtTrf.CdtTrfTxInf.InstrForNxtAgt.InstrInf",
-      "description": "Instructions for next agent",
-      "required": false,
-      "type": "string"
-    },
-    "settlement_time": {
-      "path": "Document.FICdtTrf.CdtTrfTxInf.SttlmTmReq.CLSTm",
-      "description": "CLS settlement time",
-      "required": false,
-      "type": "string"
-    }
-  }
-},
-{
-  "_id": "cain.001",
-  "format_type": "ISO20022",
-  "description": "Card Transaction (Acquirer to Issuer)",
-  "supported_fields": {
-    "message_id": {
-      "path": "Document.CardTx.GrpHdr.MsgId",
-      "description": "Unique message identifier",
-      "required": true,
-      "type": "string"
-    },
-    "creation_datetime": {
-      "path": "Document.CardTx.GrpHdr.CreDtTm",
-      "description": "Message creation timestamp",
-      "required": true,
-      "type": "string"
-    },
-    "transaction_ref": {
-      "path": "Document.CardTx.Tx.TxId.TxRef",
-      "description": "Transaction reference",
-      "required": true,
-      "type": "string"
-    },
-    "end_to_end_id": {
-      "path": "Document.CardTx.Tx.TxId.RtrvlRefNb",
-      "description": "Retrieval reference number",
-      "required": false,
-      "type": "string"
-    },
-    "authorization_code": {
-      "path": "Document.CardTx.Authstn.AuthstnCd",
-      "description": "Authorization code",
-      "required": false,
-      "type": "string"
-    },
-    "message_type": {
-      "path": "Document.CardTx.Tx.MsgTp",
-      "description": "Message type indicator",
-      "required": true,
-      "type": "string"
-    },
-    "amount": {
-      "path": "Document.CardTx.Tx.TxAmt.Amt",
-      "description": "Transaction amount",
-      "required": true,
-      "type": "decimal"
-    },
-    "currency": {
-      "path": "Document.CardTx.Tx.TxAmt.Ccy",
-      "description": "Currency code",
-      "required": true,
-      "type": "string"
-    },
-    "value_date": {
-      "path": "Document.CardTx.Tx.AccptrTxDtTm",
-      "description": "Acceptor transaction date/time",
-      "required": true,
-      "type": "string"
-    },
-    "transaction_time": {
-      "path": "Document.CardTx.Tx.TxDtTm",
-      "description": "Transaction date/time",
-      "required": false,
-      "type": "string"
-    },
-    "card_number": {
-      "path": "Document.CardTx.Card.PAN",
-      "description": "Primary Account Number (masked)",
-      "required": true,
-      "type": "string"
-    },
-    "card_expiry": {
-      "path": "Document.CardTx.Card.XpryDt",
-      "description": "Card expiry date",
-      "required": false,
-      "type": "string"
-    },
-    "entry_mode": {
-      "path": "Document.CardTx.Cntxt.TxCntxt.CardDataNtryMd",
-      "description": "Card data entry mode",
-      "required": false,
-      "type": "string"
-    },
-    "terminal_id": {
-      "path": "Document.CardTx.Cntxt.PtOfIntractn.Id.Id",
-      "description": "Point of interaction ID",
-      "required": false,
-      "type": "string"
-    },
-    "acquirer_id": {
-      "path": "Document.CardTx.Envt.Acqrr.Id.Id",
-      "description": "Acquirer identifier",
-      "required": false,
-      "type": "string"
-    },
-    "pos_condition": {
-      "path": "Document.CardTx.Cntxt.TxCntxt.TxChanl",
-      "description": "Transaction channel",
-      "required": false,
-      "type": "string"
-    },
-    "merchant_id": {
-      "path": "Document.CardTx.Envt.Mrchnt.Id.Id",
-      "description": "Merchant identifier",
-      "required": true,
-      "type": "string"
-    },
-    "merchant_name": {
-      "path": "Document.CardTx.Envt.Mrchnt.Nm",
-      "description": "Merchant name",
-      "required": true,
-      "type": "string"
-    },
-    "merchant_city": {
-      "path": "Document.CardTx.Envt.Mrchnt.Adr.TwnNm",
-      "description": "Merchant city",
-      "required": false,
-      "type": "string"
-    },
-    "merchant_country": {
-      "path": "Document.CardTx.Envt.Mrchnt.Adr.Ctry",
-      "description": "Merchant country code",
-      "required": false,
-      "type": "string"
-    },
-    "processing_code": {
-      "path": "Document.CardTx.Tx.TxTp",
-      "description": "Transaction type",
-      "required": false,
-      "type": "string"
-    }
-  }
-},
-{
-  "_id": "TARGET2",
-  "format_type": "REGIONAL",
-  "description": "TARGET2 Trans-European settlement format",
-  "supported_fields": {
-    "transaction_ref": {
-      "path": "TxRef",
-      "description": "Transaction reference",
-      "required": true,
-      "type": "string"
-    },
-    "amount": {
-      "path": "IntrBkSttlmAmt",
-      "description": "Interbank settlement amount",
-      "required": true,
-      "type": "decimal"
-    },
-    "currency": {
-      "path": "Ccy",
-      "description": "Currency code",
-      "required": true,
-      "type": "string"
-    },
-    "value_date": {
-      "path": "IntrBkSttlmDt",
-      "description": "Interbank settlement date",
-      "required": true,
-      "type": "string"
-    },
-    "bank_operation_code": {
-      "path": "SttlmMtd",
-      "description": "Settlement method",
-      "required": false,
-      "type": "string"
-    },
-    "debtor_bank": {
-      "path": "InstgAgt",
-      "description": "Instructing agent",
-      "required": true,
-      "type": "string"
-    },
-    "creditor_bank": {
-      "path": "InstdAgt",
-      "description": "Instructed agent",
-      "required": true,
-      "type": "string"
-    },
-    "debtor_name": {
-      "path": "DbtrNm",
-      "description": "Debtor name",
-      "required": false,
-      "type": "string"
-    },
-    "creditor_name": {
-      "path": "CdtrNm",
-      "description": "Creditor name",
-      "required": false,
-      "type": "string"
-    }
-  }
-},
-{
-  "_id": "CHAPS",
-  "format_type": "REGIONAL",
-  "description": "CHAPS UK clearing system format",
-  "supported_fields": {
-    "transaction_ref": {
-      "path": "ChpsTxRef",
-      "description": "CHAPS transaction reference",
-      "required": true,
-      "type": "string"
-    },
-    "amount": {
-      "path": "SttlmAmt",
-      "description": "Settlement amount",
-      "required": true,
-      "type": "decimal"
-    },
-    "currency": {
-      "path": "Ccy",
-      "description": "Currency code (GBP)",
-      "required": true,
-      "type": "string"
-    },
-    "value_date": {
-      "path": "SttlmDt",
-      "description": "Settlement date",
-      "required": true,
-      "type": "string"
-    },
-    "debtor_name": {
-      "path": "DbtrNm",
-      "description": "Debtor name",
-      "required": true,
-      "type": "string"
-    },
-    "debtor_account": {
-      "path": "DbtrAcct",
-      "description": "Debtor account (sort code + account)",
-      "required": true,
-      "type": "string"
-    },
-    "debtor_bank": {
-      "path": "DbtrAgt",
-      "description": "Debtor agent",
-      "required": true,
-      "type": "string"
-    },
-    "creditor_name": {
-      "path": "CdtrNm",
-      "description": "Creditor name",
-      "required": true,
-      "type": "string"
-    },
-    "creditor_account": {
-      "path": "CdtrAcct",
-      "description": "Creditor account (sort code + account)",
-      "required": true,
-      "type": "string"
-    },
-    "creditor_bank": {
-      "path": "CdtrAgt",
-      "description": "Creditor agent",
-      "required": true,
-      "type": "string"
-    },
-    "remittance_info": {
-      "path": "RmtInf",
-      "description": "Remittance information",
-      "required": false,
-      "type": "string"
-    }
-  }
-}]
+]

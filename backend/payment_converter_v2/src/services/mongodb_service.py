@@ -8,7 +8,6 @@ import json
 import logging
 
 from config.validator import validate_config
-from src.services.translator import from_storage, to_storage
 
 logger = logging.getLogger(__name__)
 
@@ -456,15 +455,11 @@ class MongoDBService:
 
             doc = {
                 "_id": doc_id,
-                "conversion_id": conversion_id,
-                "json_data": json_dict,  # Store as dict/object, not string
+                "conversionId": conversion_id,
+                "jsonData": json_dict,  # Store as dict/object, not string
                 "metadata": metadata,
-                "created_at": datetime.utcnow()
+                "createdAt": datetime.utcnow()
             }
-
-            # BIAN storage boundary: flip snake_case -> camelCase before write.
-            # Runtime pipeline keeps consuming snake_case via from_storage on read.
-            doc = to_storage(doc)
 
             # Upsert to handle duplicate conversions
             await self.json_storage_collection.replace_one(
@@ -510,15 +505,10 @@ class MongoDBService:
             if cached:
                 logger.debug(f"Cache HIT for ID: {doc_id[:16]}...")
 
-                # BIAN storage boundary: flip camelCase -> snake_case so the
-                # runtime pipeline (conversion configs, regex patterns) keeps
-                # seeing snake_case keys.
-                cached = from_storage(cached)
-
-                # Convert json_data dict back to string for converter compatibility
-                # Use ensure_ascii=False to preserve Unicode characters (Japanese, etc.)
-                if isinstance(cached.get('json_data'), dict):
-                    cached['json_data'] = json.dumps(cached['json_data'], ensure_ascii=False)
+                # Convert jsonData dict back to string for converter compatibility.
+                # Use ensure_ascii=False to preserve Unicode (Japanese, etc.).
+                if isinstance(cached.get('jsonData'), dict):
+                    cached['jsonData'] = json.dumps(cached['jsonData'], ensure_ascii=False)
 
             else:
                 logger.debug(f"Cache MISS for ID: {doc_id[:16]}...")

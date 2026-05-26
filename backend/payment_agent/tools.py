@@ -34,12 +34,6 @@ import logging
 from typing import Dict, Any
 from langchain_core.tools import tool
 
-from services.translator import (
-    dotted_path_to_storage,
-    from_storage,
-    query_to_storage,
-)
-
 logger = logging.getLogger(__name__)
 
 
@@ -540,8 +534,8 @@ def update_payment_field(payment_id: str, field_name: str, new_value: str) -> Di
     the correct value for a field.
 
     Common use cases:
-    - Update creditor_name with transliterated Japanese text
-    - Add IFSC code to creditor_bank field
+    - Update creditorName with transliterated Japanese text
+    - Add IFSC code to creditorBic field
     - Correct any payment field based on resolution findings
     - Enrich missing information in payment data
 
@@ -551,7 +545,7 @@ def update_payment_field(payment_id: str, field_name: str, new_value: str) -> Di
     3. The update is successfully applied
 
     Args:
-        payment_id: Unique identifier for the payment (e.g., conversion_id or transaction_ref)
+        payment_id: Unique identifier for the payment (e.g., conversionId or transactionRef)
         field_name: Name of the field to update (must be from canonical JSON vocabulary)
         new_value: The new value to set for the field
 
@@ -568,12 +562,12 @@ def update_payment_field(payment_id: str, field_name: str, new_value: str) -> Di
     Example:
         >>> update_payment_field(
         ...     payment_id="MT103_to_pacs008_12345",
-        ...     field_name="creditor_name",
+        ...     field_name="creditorName",
         ...     new_value="トヨタ自動車株式会社"
         ... )
         {
             "payment_id": "MT103_to_pacs008_12345",
-            "field_name": "creditor_name",
+            "field_name": "creditorName",
             "old_value": "Toyota Motor Corporation",
             "new_value": "トヨタ自動車株式会社",
             "updated": True,
@@ -588,24 +582,24 @@ def update_payment_field(payment_id: str, field_name: str, new_value: str) -> Di
     # Define canonical JSON field vocabulary for validation
     VALID_FIELDS = {
         # Required fields
-        "transaction_ref", "amount", "currency", "value_date",
+        "transactionRef", "amount", "currency", "valueDate",
         # Party fields
-        "debtor_name", "debtor_account", "debtor_address", "debtor_country",
-        "debtor_agent", "debtor_agent_bic",
-        "creditor_name", "creditor_account", "creditor_address", "creditor_country",
-        "creditor_agent", "creditor_bic", "creditor_bank",
-        "intermediary_agent", "intermediary_agent_bic",
+        "debtorName", "debtorAccount", "debtorAddress", "debtorCountry",
+        "debtorAgent", "debtorAgentBic",
+        "creditorName", "creditorAccount", "creditorAddress", "creditorCountry",
+        "creditorAgent", "creditorBic", "creditorBank",
+        "intermediaryAgent", "intermediaryAgentBic",
         # Payment details
-        "remittance_info", "payment_purpose", "instruction_code",
-        "end_to_end_id", "instruction_id", "message_id",
-        "charge_bearer", "charges", "exchange_rate",
+        "remittanceInfo", "paymentPurpose", "instructionCode",
+        "endToEndId", "instructionId", "messageId",
+        "chargeBearer", "charges", "exchangeRate",
         # Additional fields
-        "priority", "payment_method", "service_level",
-        "local_instrument", "category_purpose",
-        "regulatory_reporting", "related_reference",
-        "creditor_agent_name", "creditor_agent_address",
-        "debtor_agent_name", "debtor_agent_address",
-        "ultimate_debtor", "ultimate_creditor"
+        "priority", "paymentMethod", "serviceLevel",
+        "localInstrument", "categoryPurpose",
+        "regulatoryReporting", "relatedReference",
+        "creditorAgentName", "creditorAgentAddress",
+        "debtorAgentName", "debtorAgentAddress",
+        "ultimateDebtor", "ultimateCreditor"
     }
 
     try:
@@ -632,9 +626,8 @@ def update_payment_field(payment_id: str, field_name: str, new_value: str) -> Di
             query = {"_id": payment_id}
             logger.info(f"Searching by conversion_run_id: {payment_id[:16]}...")
         else:
-            # This is a conversion_id (e.g., "MT103_to_JSON")
-            # Translate the wrapper field name to storage shape (camelCase).
-            query = query_to_storage({"conversion_id": payment_id})
+            # This is a conversion_id (e.g., "MT103_to_JSON").
+            query = {"conversionId": payment_id}
             logger.info(f"Searching by conversion_id: {payment_id}")
 
         # Find the payment record
@@ -651,31 +644,22 @@ def update_payment_field(payment_id: str, field_name: str, new_value: str) -> Di
                 "error": "Payment record not found"
             }
 
-        # Storage shape is camelCase; flip back to snake_case so the rest of
-        # this function (which uses snake_case field_name) reads the right
-        # values from json_data.
-        payment_record = from_storage(payment_record)
-
-        # Get old value for audit (json_data contains the canonical JSON)
-        json_data = payment_record.get("json_data", {})
+        # Storage shape is camelCase end-to-end now — no translation needed.
+        json_data = payment_record.get("jsonData", {})
         old_value = json_data.get(field_name, "")
 
-        # Update the field. Translate every $set key (e.g.
-        # "json_data.creditor_name" -> "jsonData.creditorName",
-        # "metadata.audit_trail.creditor_name" -> "metadata.auditTrail.creditorName")
-        # so writes land at the same paths used by save_canonical_json.
+        # Build $set with camelCase dotted paths directly.
         now = datetime.now(timezone.utc).isoformat()
         set_dict = {
-            f"json_data.{field_name}": new_value,
-            "metadata.last_updated": now,
-            f"metadata.audit_trail.{field_name}": {
-                "old_value": old_value,
-                "new_value": new_value,
-                "updated_at": now,
-                "updated_by": "payment_agent",
+            f"jsonData.{field_name}": new_value,
+            "metadata.lastUpdated": now,
+            f"metadata.auditTrail.{field_name}": {
+                "oldValue": old_value,
+                "newValue": new_value,
+                "updatedAt": now,
+                "updatedBy": "payment_agent",
             },
         }
-        set_dict = {dotted_path_to_storage(k): v for k, v in set_dict.items()}
         update_result = collection.update_one(
             query,  # Use same query as find_one (either by _id or conversionId)
             {"$set": set_dict},

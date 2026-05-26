@@ -164,12 +164,12 @@ const FORMAT_INFO = {
     type: 'Internal',
     description: 'Universal bridge format - all payment formats convert through this intermediate structure.',
     keyFields: [
-      { field: 'transaction_ref', desc: 'Transaction Reference' },
+      { field: 'transactionRef', desc: 'Transaction Reference' },
       { field: 'amount/currency', desc: 'Payment Amount' },
-      { field: 'value_date', desc: 'Settlement Date' },
-      { field: 'debtor_*', desc: 'Debtor Information' },
-      { field: 'creditor_*', desc: 'Creditor Information' },
-      { field: 'remittance_info', desc: 'Payment Details' }
+      { field: 'valueDate', desc: 'Settlement Date' },
+      { field: 'debtor*', desc: 'Debtor Information' },
+      { field: 'creditor*', desc: 'Creditor Information' },
+      { field: 'remittanceInfo', desc: 'Payment Details' }
     ]
   },
   TARGET2: {
@@ -206,7 +206,7 @@ const FORMAT_INFO = {
       { field: 'processing_code', desc: 'Processing Code' },
       { field: 'amount', desc: 'Transaction Amount' },
       { field: 'stan', desc: 'System Trace Audit Number' },
-      { field: 'merchant_info', desc: 'Card Acceptor Name/Location' }
+      { field: 'merchantInfo', desc: 'Card Acceptor Name/Location' }
     ]
   },
   'cain.001': {
@@ -1475,7 +1475,7 @@ export default function ConfigBuilderPage() {
                       </p>
                       <div className="schema-card-code">
                         <pre>{`"output": {
-  "ref": "transaction_ref",
+  "ref": "transactionRef",
   "amount": "amount"
 }`}</pre>
                       </div>
@@ -1504,43 +1504,43 @@ export default function ConfigBuilderPage() {
                     <div className="canonical-field-group">
                       <div className="canonical-field-title">Required Fields</div>
                       <div className="canonical-fields">
-                        <span className="canonical-field required">transaction_ref</span>
+                        <span className="canonical-field required">transactionRef</span>
                         <span className="canonical-field required">amount</span>
                         <span className="canonical-field required">currency</span>
-                        <span className="canonical-field required">value_date</span>
+                        <span className="canonical-field required">valueDate</span>
                       </div>
                     </div>
 
                     <div className="canonical-field-group">
                       <div className="canonical-field-title">Party Information</div>
                       <div className="canonical-fields">
-                        <span className="canonical-field">debtor_name</span>
-                        <span className="canonical-field">debtor_account</span>
-                        <span className="canonical-field">debtor_bank</span>
-                        <span className="canonical-field">creditor_name</span>
-                        <span className="canonical-field">creditor_account</span>
-                        <span className="canonical-field">creditor_bank</span>
+                        <span className="canonical-field">debtorName</span>
+                        <span className="canonical-field">debtorAccount</span>
+                        <span className="canonical-field">debtorBank</span>
+                        <span className="canonical-field">creditorName</span>
+                        <span className="canonical-field">creditorAccount</span>
+                        <span className="canonical-field">creditorBank</span>
                       </div>
                     </div>
 
                     <div className="canonical-field-group">
                       <div className="canonical-field-title">Payment Details</div>
                       <div className="canonical-fields">
-                        <span className="canonical-field">remittance_info</span>
-                        <span className="canonical-field">charge_bearer</span>
-                        <span className="canonical-field">bank_operation_code</span>
-                        <span className="canonical-field">end_to_end_id</span>
-                        <span className="canonical-field">instruction_id</span>
+                        <span className="canonical-field">remittanceInfo</span>
+                        <span className="canonical-field">chargeBearer</span>
+                        <span className="canonical-field">bankOperationCode</span>
+                        <span className="canonical-field">endToEndId</span>
+                        <span className="canonical-field">instructionId</span>
                       </div>
                     </div>
 
                     <div className="canonical-field-group">
                       <div className="canonical-field-title">Crypto Settlement (Optional)</div>
                       <div className="canonical-fields">
-                        <span className="canonical-field">crypto_enabled</span>
-                        <span className="canonical-field">crypto_blockchain</span>
-                        <span className="canonical-field">crypto_sender_wallet</span>
-                        <span className="canonical-field">crypto_receiver_wallet</span>
+                        <span className="canonical-field">cryptoEnabled</span>
+                        <span className="canonical-field">cryptoBlockchain</span>
+                        <span className="canonical-field">cryptoSenderWallet</span>
+                        <span className="canonical-field">cryptoReceiverWallet</span>
                       </div>
                     </div>
                   </div>

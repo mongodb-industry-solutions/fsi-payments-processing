@@ -91,14 +91,14 @@ async def resume_agent_workflow_stream(request: ResumeAgentRequest):
                 conversion_run_id=conversion_run_id
             )
 
-            if not cached_json or not cached_json.get('json_data'):
+            if not cached_json or not cached_json.get('jsonData'):
                 yield f"data: {json.dumps({'type': 'error', 'message': 'Failed to retrieve corrected JSON from MongoDB'})}\n\n"
                 return
 
             hop2_result = await converter.convert(
                 source_format="JSON",
                 target_format=target_format,
-                message=cached_json['json_data'],
+                message=cached_json['jsonData'],
                 original_source_message=original_message,
                 conversion_run_id=conversion_run_id,
                 use_ai=use_ai
@@ -173,12 +173,11 @@ async def resume_ai_review_stream(request: ResumeAIReviewRequest):
 
                 hop1_result['converted_message'] = json.dumps(hop1_json)
 
-                # TODO(bian-migration): mongodb_service.update_canonical_json is
-                # not defined anywhere — this call is a pre-existing demo bug
-                # (predates the BIAN migration). When it is implemented, it must
-                # apply translator.to_storage() before writing and translator
-                # .from_storage() on any read-back path. Track in a separate
-                # ticket; do not silently no-op.
+                # TODO: mongodb_service.update_canonical_json is not defined
+                # anywhere — this call is a pre-existing demo bug. When it is
+                # implemented, write directly with camelCase keys (jsonData.*,
+                # metadata.auditTrail.*, etc.). Track in a separate ticket;
+                # do not silently no-op.
                 await mongodb_service.update_canonical_json(
                     original_message=req_data['message'],
                     json_data=hop1_result['converted_message'],
@@ -276,7 +275,7 @@ async def resume_ai_review_stream(request: ResumeAIReviewRequest):
                         return
 
                 cached_json = await mongodb_service.get_canonical_json(req_data['message'], conversion_run_id=conversion_run_id)
-                hop1_result['converted_message'] = cached_json['json_data']
+                hop1_result['converted_message'] = cached_json['jsonData']
 
             # Hop 2: JSON → Target format
             yield f"data: {json.dumps({'type': 'hop2_start', 'source': 'JSON', 'target': req_data['target_format']})}\n\n"

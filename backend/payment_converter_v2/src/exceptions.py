@@ -34,7 +34,7 @@ class CountryValidationException(Exception):
             problem: Rich description of the problem for agent to analyze
                      (e.g., "Creditor name contains Western characters but
                      Japanese payments require katakana script")
-            field_name: Field that violated the rule (e.g., "creditor_name")
+            field_name: Field that violated the rule (e.g., "creditorName")
             original_value: Current (invalid) value
             payment_data: Full canonical JSON payment data
             conversion_context: Conversion metadata (source/target/id)
