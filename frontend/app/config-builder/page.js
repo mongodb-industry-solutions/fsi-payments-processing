@@ -671,9 +671,9 @@ export default function ConfigBuilderPage() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            source_format: sourceFormat,
-            target_format: targetFormat,
-            sample_message: sampleMessage
+            sourceFormat: sourceFormat,
+            targetFormat: targetFormat,
+            sampleMessage: sampleMessage
           })
         }
       );
@@ -705,7 +705,7 @@ export default function ConfigBuilderPage() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            paymentMessageConversionReference: generatedConfig.configuration_id
+            configurationId: generatedConfig.configurationId
           })
         }
       );
@@ -716,7 +716,7 @@ export default function ConfigBuilderPage() {
       }
 
       const data = await response.json();
-      const uniqueConfigId = data.configuration_id; // Backend returns unique ID with suffix
+      const uniqueConfigId = data.configurationId; // Backend returns unique ID with suffix
 
       setSessionConfigId(uniqueConfigId); // Track this session's config
       setSchemaConfigId(uniqueConfigId); // Auto-select in Schema Reference dropdown
@@ -1677,7 +1677,7 @@ export default function ConfigBuilderPage() {
             <div className="result-section">
               <div className="section-title">
                 <span>Generated Config</span>
-                <Badge variant="green">{generatedConfig.configuration_id}</Badge>
+                <Badge variant="green">{generatedConfig.configurationId}</Badge>
               </div>
 
               <div className="confidence-bar">
@@ -1695,14 +1695,14 @@ export default function ConfigBuilderPage() {
 
               <div style={{ marginBottom: '12px' }}>
                 <span style={{ fontSize: '13px', color: 'var(--gray-dark1)' }}>
-                  Source Fields: {generatedConfig.source_fields_identified} | Target Coverage: {(generatedConfig.target_fields_mapped || 0) + (generatedConfig.target_fields_ai || 0)}/{generatedConfig.target_fields_required || 0}
+                  Source Fields: {generatedConfig.sourceFieldsIdentified} | Target Coverage: {(generatedConfig.targetFieldsMapped || 0) + (generatedConfig.targetFieldsAi || 0)}/{generatedConfig.targetFieldsRequired || 0}
                 </span>
               </div>
 
-              {generatedConfig.matched_fields?.length > 0 && (
+              {generatedConfig.matchedFields?.length > 0 && (
                 <div className="field-badges">
                   <span style={{ fontSize: '12px', color: 'var(--gray-dark1)' }}>Mapped fields:</span>
-                  {generatedConfig.matched_fields.flatMap((f) => {
+                  {generatedConfig.matchedFields.flatMap((f) => {
                     const mapping = generatedConfig.config?.map?.find(m => m.from === f);
                     const targets = mapping?.to || [];
                     if (targets.length <= 1) {
@@ -1721,10 +1721,10 @@ export default function ConfigBuilderPage() {
                 </div>
               )}
 
-              {generatedConfig.unknown_fields?.length > 0 && (
+              {generatedConfig.unknownFields?.length > 0 && (
                 <div className="field-badges">
                   <span style={{ fontSize: '12px', color: 'var(--gray-dark1)' }}>Uncertain fields:</span>
-                  {generatedConfig.unknown_fields.map((f) => (
+                  {generatedConfig.unknownFields.map((f) => (
                     <Badge key={f} variant="yellow">{f}</Badge>
                   ))}
                 </div>
@@ -1767,17 +1767,17 @@ export default function ConfigBuilderPage() {
                 </div>
               )}
 
-              {generatedConfig.not_covered_fields?.length > 0 && (
+              {generatedConfig.notCoveredFields?.length > 0 && (
                 <div className="field-badges">
                   <span style={{ fontSize: '12px', color: 'var(--gray-dark1)' }}>Unresolvable Target Fields:</span>
-                  {generatedConfig.not_covered_fields.map((f) => (
+                  {generatedConfig.notCoveredFields.map((f) => (
                     <Badge key={f} variant="lightgray">{f}</Badge>
                   ))}
                 </div>
               )}
 
               {/* LLM Prompt Construction Details */}
-              {generatedConfig.llm_prompt_info && (
+              {generatedConfig.llmPromptInfo && (
                 <div className="expandable-section" style={{ marginTop: '16px' }}>
                   <div
                     className="expandable-header"
@@ -1796,16 +1796,16 @@ export default function ConfigBuilderPage() {
                   </div>
                   {showPromptDetails && (
                     <div className="expandable-content">
-                      <LLMPromptDetails promptInfo={generatedConfig.llm_prompt_info} />
+                      <LLMPromptDetails promptInfo={generatedConfig.llmPromptInfo} />
                     </div>
                   )}
                 </div>
               )}
 
-              {generatedConfig.learned_from?.length > 0 && (
+              {generatedConfig.learnedFrom?.length > 0 && (
                 <div style={{ marginBottom: '12px' }}>
                   <span style={{ fontSize: '12px', color: 'var(--gray-dark1)' }}>Learned from: </span>
-                  {generatedConfig.learned_from.map((c) => (
+                  {generatedConfig.learnedFrom.map((c) => (
                     <Badge key={c} variant="lightgray" style={{ marginRight: '4px' }}>{c}</Badge>
                   ))}
                 </div>

@@ -69,7 +69,7 @@ export default function BubbleDetailPanel({ bubbleType, data, stats }) {
         console.log('🔍 Fetching canonical JSON for conversion_run_id:', conversionRunId);
 
         // Fetch both endpoints in parallel — BIAN URLs, conversion ID in body.
-        const body = JSON.stringify({ conversionRunReference: conversionRunId });
+        const body = JSON.stringify({ conversionRunId: conversionRunId });
         const init = {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -87,17 +87,18 @@ export default function BubbleDetailPanel({ bubbleType, data, stats }) {
         const diffResult = await diffResponse.json();
         console.log('✅ Canonical JSON diff fetched:', diffResult);
 
-        // Use after_json (canonical JSON after agent corrections)
-        setCanonicalJson(diffResult.after_json);
+        // Diff envelope: { conversionRunId, diff: { beforeJson, afterJson, changedFields } }
+        setCanonicalJson(diffResult.diff?.afterJson);
 
-        // Fetch full MongoDB document if available
+        // Fetch full MongoDB document if available.
+        // Full envelope: { conversionRunId, canonicalJson: {...doc...} }
         if (fullResponse.ok) {
           const fullDoc = await fullResponse.json();
           console.log('✅ Full document fetched:', fullDoc);
-          setFullDocument(fullDoc);
+          setFullDocument(fullDoc.canonicalJson);
         } else {
-          // Fallback to diff result if full document endpoint fails
-          setFullDocument(diffResult);
+          // Fallback: show the diff's after-state as the full doc.
+          setFullDocument(diffResult.diff?.afterJson);
         }
       } catch (err) {
         console.error('❌ Error fetching canonical JSON:', err);

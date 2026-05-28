@@ -25,9 +25,10 @@ router = APIRouter()
 
 class CanonicalJsonRetrieveRequest(BaseModel):
     """Body for canonical JSON Retrieve / Confirmation.Retrieve — was a path param."""
-    conversionRunReference: str = Field(
+    conversionRunId: str = Field(
         ..., description="The conversion run ID (UUID v4) to retrieve."
     )
+    model_config = {"extra": "forbid"}
 
 
 @router.post(
@@ -53,21 +54,21 @@ async def convert_multi_hop_stream(request: MultiHopConversionRequest):
         agent_correction = None
 
         try:
-            logger.info(f"Starting streaming multi-hop: {request.source_format} → {request.target_format}")
+            logger.info(f"Starting streaming multi-hop: {request.sourceFormat} → {request.targetFormat}")
 
             yield f"data: {json.dumps({'type': 'start', 'conversion_run_id': conversion_run_id})}\n\n"
 
             # Hop 1: Source → JSON (country validation deferred)
-            yield f"data: {json.dumps({'type': 'hop1_start', 'source': request.source_format, 'target': 'JSON'})}\n\n"
+            yield f"data: {json.dumps({'type': 'hop1_start', 'source': request.sourceFormat, 'target': 'JSON'})}\n\n"
 
             hop1_start = time.time()
 
             hop1_result = await converter.convert(
-                source_format=request.source_format,
+                source_format=request.sourceFormat,
                 target_format="JSON",
                 message=request.message,
                 conversion_run_id=conversion_run_id,
-                use_ai=request.use_ai,
+                use_ai=request.useAi,
                 validate_country=False
             )
 
@@ -79,18 +80,18 @@ async def convert_multi_hop_stream(request: MultiHopConversionRequest):
             ai_lane_data = hop1_result.get('detailed_processing', {}).get('ai_lane', {})
             ai_fields = ai_lane_data.get('fields', [])
 
-            logger.info(f"AI Review Check: use_ai={request.use_ai}, fields_for_review={fields_for_review}, ai_lane_total={ai_lane_data.get('total_fields', 0)}, ai_fields_count={len(ai_fields)}")
+            logger.info(f"AI Review Check: use_ai={request.useAi}, fields_for_review={fields_for_review}, ai_lane_total={ai_lane_data.get('total_fields', 0)}, ai_fields_count={len(ai_fields)}")
 
-            if fields_for_review and request.use_ai and ai_fields:
+            if fields_for_review and request.useAi and ai_fields:
                 logger.info(f"AI review required for {len(ai_fields)} fields")
 
                 pending_ai_reviews.set(conversion_run_id, {
                     'hop1_result': hop1_result,
                     'request': {
-                        'source_format': request.source_format,
-                        'target_format': request.target_format,
+                        'source_format': request.sourceFormat,
+                        'target_format': request.targetFormat,
                         'message': request.message,
-                        'use_ai': request.use_ai
+                        'use_ai': request.useAi
                     },
                     'conversion_run_id': conversion_run_id,
                     'start_time': start_time,
@@ -105,8 +106,8 @@ async def convert_multi_hop_stream(request: MultiHopConversionRequest):
                 from src.validators.country_rules import validate_country_rules
                 validate_country_rules(
                     canonical_json=json.loads(hop1_result['converted_message']),
-                    conversion_id=f"{request.source_format}_to_JSON",
-                    source_format=request.source_format,
+                    conversion_id=f"{request.sourceFormat}_to_JSON",
+                    source_format=request.sourceFormat,
                     target_format="JSON",
                     conversion_run_id=conversion_run_id,
                     detailed_processing=hop1_result.get('detailed_processing', {})
@@ -186,10 +187,10 @@ async def convert_multi_hop_stream(request: MultiHopConversionRequest):
                         hop1_details = e.conversion_context.get('detailed_processing', {})
                         pending_conversions.set(event.get("thread_id"), {
                             "conversion_run_id": conversion_run_id,
-                            "source_format": request.source_format,
-                            "target_format": request.target_format,
+                            "source_format": request.sourceFormat,
+                            "target_format": request.targetFormat,
                             "original_message": request.message,
-                            "use_ai": request.use_ai,
+                            "use_ai": request.useAi,
                             "validation_exception": {
                                 "problem": e.problem,
                                 "field_name": e.field_name,
@@ -222,12 +223,12 @@ async def convert_multi_hop_stream(request: MultiHopConversionRequest):
 
                 cached_json = await mongodb_service.get_canonical_json(request.message, conversion_run_id=conversion_run_id)
                 hop1_result = {
-                    'conversion_id': f"{request.source_format}_to_JSON",
+                    'conversion_id': f"{request.sourceFormat}_to_JSON",
                     'converted_message': cached_json['jsonData'],
                     'processing_stats': {'lane_distribution': {'RULES': 0, 'AI': 0, 'HUMAN': 0}},
                     'confidence_scores': {},
                     'human_review_required': False,
-                    'metadata': {'source_format': request.source_format, 'target_format': "JSON"},
+                    'metadata': {'source_format': request.sourceFormat, 'target_format': "JSON"},
                     'detailed_processing': e.conversion_context.get('detailed_processing', {})
                 }
 
@@ -293,16 +294,16 @@ async def convert_multi_hop_stream(request: MultiHopConversionRequest):
 
             else:
                 # Standard Hop 2: JSON → Target format
-                yield f"data: {json.dumps({'type': 'hop2_start', 'source': 'JSON', 'target': request.target_format})}\n\n"
+                yield f"data: {json.dumps({'type': 'hop2_start', 'source': 'JSON', 'target': request.targetFormat})}\n\n"
 
                 hop2_start = time.time()
                 hop2_result = await converter.convert(
                     source_format="JSON",
-                    target_format=request.target_format,
+                    target_format=request.targetFormat,
                     message=hop1_result['converted_message'],
                     original_source_message=request.message,
                     conversion_run_id=conversion_run_id,
-                    use_ai=request.use_ai
+                    use_ai=request.useAi
                 )
 
                 hop2_time = time.time() - hop2_start
@@ -347,7 +348,7 @@ async def get_canonical_json_diff(body: CanonicalJsonRetrieveRequest):
 
     Reconstructs the before state from audit trail for diff visualization.
     """
-    conversion_run_id = body.conversionRunReference
+    conversion_run_id = body.conversionRunId
     try:
         doc = await mongodb_service.json_storage_collection.find_one({"_id": conversion_run_id})
 
@@ -369,10 +370,12 @@ async def get_canonical_json_diff(body: CanonicalJsonRetrieveRequest):
         logger.info(f"Retrieved canonical JSON diff for {conversion_run_id}: {len(changed_fields)} fields changed")
 
         return {
-            "conversion_run_id": conversion_run_id,
-            "before_json": before_json,
-            "after_json": after_json,
-            "changed_fields": changed_fields
+            "conversionRunId": conversion_run_id,
+            "diff": {
+                "beforeJson": before_json,
+                "afterJson": after_json,
+                "changedFields": changed_fields,
+            },
         }
 
     except HTTPException:
@@ -395,7 +398,7 @@ async def get_canonical_json_full(body: CanonicalJsonRetrieveRequest):
 
     Returns the complete document including metadata and audit trails.
     """
-    conversion_run_id = body.conversionRunReference
+    conversion_run_id = body.conversionRunId
     try:
         doc = await mongodb_service.json_storage_collection.find_one({"_id": conversion_run_id})
 
@@ -405,9 +408,13 @@ async def get_canonical_json_full(body: CanonicalJsonRetrieveRequest):
                 detail=f"Canonical JSON document not found for conversion_run_id: {conversion_run_id}"
             )
 
-        # Storage is camelCase end-to-end now; UI sees the same shape.
+        # Storage is camelCase end-to-end now; the doc IS the canonical JSON.
+        # Wrap in envelope: { conversionRunId, canonicalJson: {...doc...} }
         logger.info(f"Retrieved full canonical JSON document for {conversion_run_id}")
-        return doc
+        return {
+            "conversionRunId": conversion_run_id,
+            "canonicalJson": doc,
+        }
 
     except HTTPException:
         raise

@@ -431,10 +431,10 @@ export default function AgenticAIPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          source_format: scenario.sourceFormat,
-          target_format: scenario.targetFormat,
+          sourceFormat: scenario.sourceFormat,
+          targetFormat: scenario.targetFormat,
           message: scenario.message,
-          use_ai: useAI
+          useAi: useAI
         })
       });
 

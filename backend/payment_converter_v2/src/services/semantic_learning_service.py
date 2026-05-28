@@ -190,19 +190,19 @@ class SemanticLearningService:
         confidence = (target_fields_mapped + target_fields_ai) / target_fields_required if target_fields_required > 0 else 0
 
         return {
-            "configuration_id": new_config["_id"],
+            "configurationId": new_config["_id"],
             "config": new_config,
             "confidence": round(confidence, 2),
-            "source_fields_identified": len(detected_fields),
-            "target_fields_required": target_fields_required,
-            "target_fields_mapped": target_fields_mapped,
-            "target_fields_ai": target_fields_ai,
-            "matched_fields": source_matched_fields,
-            "unknown_fields": unknown,
-            "learned_from": learned_from,
-            "not_covered_fields": not_covered_fields,
+            "sourceFieldsIdentified": len(detected_fields),
+            "targetFieldsRequired": target_fields_required,
+            "targetFieldsMapped": target_fields_mapped,
+            "targetFieldsAi": target_fields_ai,
+            "matchedFields": source_matched_fields,
+            "unknownFields": unknown,
+            "learnedFrom": learned_from,
+            "notCoveredFields": not_covered_fields,
             "suggestions": suggestions,
-            "llm_prompt_info": prompt_info
+            "llmPromptInfo": prompt_info
         }
 
     async def _build_combined_lookup(self) -> None:

@@ -32,9 +32,10 @@ router = APIRouter()
 
 class ApproveConfigRequest(BaseModel):
     """Body for the CR-level Update endpoint — replaces the legacy {config_id} path param."""
-    paymentMessageConversionReference: str = Field(
-        ..., description="The conversion ID to approve (e.g. 'MT103_to_JSON')."
+    configurationId: str = Field(
+        ..., description="The configuration ID to approve (e.g. 'MT103_to_JSON')."
     )
+    model_config = {"extra": "forbid"}
 
 
 @router.post(
@@ -93,15 +94,16 @@ async def auto_configure(request: AutoConfigureRequest) -> AutoConfigureResponse
     Stored temporarily (5 min TTL) for review.
     """
     try:
-        logger.info(f"Auto-configure: {request.source_format} → {request.target_format}")
+        logger.info(f"Auto-configure: {request.sourceFormat} → {request.targetFormat}")
 
+        # generate_config returns a dict with camelCase keys (matches wire shape).
         result = await semantic_learning_service.generate_config(
-            source_format=request.source_format,
-            target_format=request.target_format,
-            sample_message=request.sample_message
+            source_format=request.sourceFormat,
+            target_format=request.targetFormat,
+            sample_message=request.sampleMessage
         )
 
-        config_id = result["configuration_id"]
+        config_id = result["configurationId"]
         await mongodb_service.save_temp_config(
             config_id=config_id,
             config=result["config"],
@@ -110,28 +112,14 @@ async def auto_configure(request: AutoConfigureRequest) -> AutoConfigureResponse
 
         logger.info(
             f"Generated config {config_id}: "
-            f"source={result['source_fields_identified']}, "
-            f"target_required={result['target_fields_required']}, "
-            f"mapped={result['target_fields_mapped']}, "
-            f"ai={result['target_fields_ai']}, "
+            f"source={result['sourceFieldsIdentified']}, "
+            f"target_required={result['targetFieldsRequired']}, "
+            f"mapped={result['targetFieldsMapped']}, "
+            f"ai={result['targetFieldsAi']}, "
             f"confidence={result['confidence']}"
         )
 
-        return AutoConfigureResponse(
-            configuration_id=result["configuration_id"],
-            config=result["config"],
-            confidence=result["confidence"],
-            source_fields_identified=result["source_fields_identified"],
-            target_fields_required=result["target_fields_required"],
-            target_fields_mapped=result["target_fields_mapped"],
-            target_fields_ai=result["target_fields_ai"],
-            matched_fields=result["matched_fields"],
-            unknown_fields=result["unknown_fields"],
-            learned_from=result["learned_from"],
-            not_covered_fields=result.get("not_covered_fields", []),
-            suggestions=result.get("suggestions", []),
-            llm_prompt_info=result.get("llm_prompt_info")
-        )
+        return AutoConfigureResponse(**result)
 
     except ValueError as e:
         logger.error(f"Auto-configure validation error: {str(e)}")
@@ -159,7 +147,7 @@ async def approve_config(body: ApproveConfigRequest) -> ApproveConfigResponse:
     Moves config from temporary storage to conversionConfigs collection.
     A unique session suffix prevents ID conflicts between users.
     """
-    config_id = body.paymentMessageConversionReference
+    config_id = body.configurationId
     try:
         logger.info(f"Approving config: {config_id}")
 
@@ -192,8 +180,8 @@ async def approve_config(body: ApproveConfigRequest) -> ApproveConfigResponse:
         logger.info(f"Config {unique_config_id} approved and saved (expires in 10 min)")
 
         return ApproveConfigResponse(
+            configurationId=unique_config_id,
             status="approved",
-            configuration_id=unique_config_id
         )
 
     except HTTPException:
