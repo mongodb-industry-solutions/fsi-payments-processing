@@ -1,14 +1,14 @@
-// BIAN v14 valid — OrderInitiation.Retrieve replaces /api/v1/configs.
+// Proxy route for list-configs endpoint.
 // Browser → Next.js API → Converter sidecar (127.0.0.1:8001)
 
 const CONVERTER_URL = 'http://127.0.0.1:8001';
-const BIAN_URL = '/PaymentOrderInitiationTransaction/OrderInitiation/Retrieve';
 
-export async function POST() {
+export async function GET() {
   try {
-    const response = await fetch(`${CONVERTER_URL}${BIAN_URL}`, {
-      method: 'POST',
+    const response = await fetch(`${CONVERTER_URL}/api/v1/configs`, {
+      method: 'GET',
       headers: { 'Content-Type': 'application/json' },
+      cache: 'no-store',
     });
 
     const data = await response.json();
@@ -17,7 +17,7 @@ export async function POST() {
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    console.error('OrderInitiation/Retrieve proxy error:', error);
+    console.error('configs proxy error:', error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },

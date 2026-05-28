@@ -1,16 +1,13 @@
-// BIAN v14 valid — OrderInitiation.Exchange replaces /api/v1/auto-configure.
-// Exchange = bidirectional negotiation: LLM proposes a draft conversion config,
-// human reviews/approves it via the Update endpoint.
+// Proxy route for auto-configure (LLM-assisted config draft).
 // Browser → Next.js API → Converter sidecar (127.0.0.1:8001)
 
 const CONVERTER_URL = 'http://127.0.0.1:8001';
-const BIAN_URL = '/PaymentOrderInitiationTransaction/OrderInitiation/Exchange';
 
 export async function POST(request) {
   try {
     const body = await request.json();
 
-    const response = await fetch(`${CONVERTER_URL}${BIAN_URL}`, {
+    const response = await fetch(`${CONVERTER_URL}/api/v1/auto-configure`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
@@ -22,7 +19,7 @@ export async function POST(request) {
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    console.error('OrderInitiation/Exchange proxy error:', error);
+    console.error('auto-configure proxy error:', error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },

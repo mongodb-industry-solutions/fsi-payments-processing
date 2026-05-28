@@ -619,10 +619,7 @@ export default function ConfigBuilderPage() {
   const loadConfigs = async () => {
     try {
       setLoading(true);
-      const response = await fetch(
-        '/PaymentOrderInitiationTransaction/OrderInitiation/Retrieve',
-        { method: 'POST' }
-      );
+      const response = await fetch('/api/configs');
       if (!response.ok) throw new Error('Failed to load configs');
       const data = await response.json();
       setConfigs(data.configs || []);
@@ -636,10 +633,7 @@ export default function ConfigBuilderPage() {
 
   const loadFormatSpecs = async () => {
     try {
-      const response = await fetch(
-        '/PaymentOrderInitiationTransaction/Compliance/Retrieve',
-        { method: 'POST' }
-      );
+      const response = await fetch('/api/format-specifications');
       if (response.ok) {
         const data = await response.json();
         setFormatSpecs(data.specifications || []);
@@ -665,18 +659,15 @@ export default function ConfigBuilderPage() {
       setSuccessMessage(null);
       setGeneratedConfig(null);
 
-      const response = await fetch(
-        '/PaymentOrderInitiationTransaction/OrderInitiation/Exchange',
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            sourceFormat: sourceFormat,
-            targetFormat: targetFormat,
-            sampleMessage: sampleMessage
-          })
-        }
-      );
+      const response = await fetch('/api/auto-configure', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sourceFormat: sourceFormat,
+          targetFormat: targetFormat,
+          sampleMessage: sampleMessage
+        })
+      });
 
       if (!response.ok) {
         const errData = await response.json();
@@ -700,13 +691,10 @@ export default function ConfigBuilderPage() {
       setGenerateError(null);
 
       const response = await fetch(
-        '/PaymentOrderInitiationTransaction/Update',
+        `/api/auto-configure/${encodeURIComponent(generatedConfig.configurationId)}/approve`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            configurationId: generatedConfig.configurationId
-          })
         }
       );
 

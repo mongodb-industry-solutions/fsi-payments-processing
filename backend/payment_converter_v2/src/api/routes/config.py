@@ -1,23 +1,15 @@
-"""Configuration management endpoints (config-builder page) — BIAN v14 URL convention.
+"""Configuration management endpoints (config-builder page).
 
-Service Domain: PaymentOrderInitiation
-Control Record: PaymentOrderInitiationTransaction
-BIAN v14 valid BQs for this SD: Compliance, Confirmation, OrderInitiation.
-CR-level actions: Initiate, Retrieve, Update.
-
-Mapping rationale:
-  - List conversion configs  -> OrderInitiation.Retrieve
-  - List format specs        -> Compliance.Retrieve   (format specs are compliance/standards reference data)
-  - Auto-configure (propose) -> OrderInitiation.Exchange  (LLM proposes a draft, awaits human review)
-  - Approve config           -> CR.Update             (finalize draft to approved state)
+These are converter admin routes — they don't represent a banking control record,
+so they live under /api/v1/* rather than the BIAN URL surface. Request and
+response bodies remain camelCase with `extra="forbid"` (matches the rest of the
+service).
 """
 
 from fastapi import APIRouter, HTTPException, status
 from datetime import datetime, timedelta
 import logging
 import uuid
-
-from pydantic import BaseModel, Field
 
 from src.api.models import (
     AutoConfigureRequest,
@@ -30,24 +22,12 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-class ApproveConfigRequest(BaseModel):
-    """Body for the CR-level Update endpoint — replaces the legacy {config_id} path param."""
-    configurationId: str = Field(
-        ..., description="The configuration ID to approve (e.g. 'MT103_to_JSON')."
-    )
-    model_config = {"extra": "forbid"}
-
-
-@router.post(
-    "/PaymentOrderInitiationTransaction/OrderInitiation/Retrieve",
+@router.get(
+    "/api/v1/configs",
     status_code=status.HTTP_200_OK,
 )
 async def list_all_configs():
-    """
-    List all conversion configurations with full details.
-
-    Returns complete config documents from MongoDB for the Config Builder UI.
-    """
+    """List all conversion configurations with full details."""
     try:
         configs = await mongodb_service.list_configs()
         return {"configs": configs}
@@ -59,16 +39,12 @@ async def list_all_configs():
         )
 
 
-@router.post(
-    "/PaymentOrderInitiationTransaction/Compliance/Retrieve",
+@router.get(
+    "/api/v1/format-specifications",
     status_code=status.HTTP_200_OK,
 )
 async def list_format_specifications():
-    """
-    List all target format specifications.
-
-    Returns format specs from MongoDB for the Config Builder target format dropdown.
-    """
+    """List all target format specifications."""
     try:
         specs = await mongodb_service.list_format_specifications()
         return {"specifications": specs}
@@ -81,7 +57,7 @@ async def list_format_specifications():
 
 
 @router.post(
-    "/PaymentOrderInitiationTransaction/OrderInitiation/Exchange",
+    "/api/v1/auto-configure",
     response_model=AutoConfigureResponse,
     status_code=status.HTTP_200_OK,
 )
@@ -96,7 +72,6 @@ async def auto_configure(request: AutoConfigureRequest) -> AutoConfigureResponse
     try:
         logger.info(f"Auto-configure: {request.sourceFormat} → {request.targetFormat}")
 
-        # generate_config returns a dict with camelCase keys (matches wire shape).
         result = await semantic_learning_service.generate_config(
             source_format=request.sourceFormat,
             target_format=request.targetFormat,
@@ -136,46 +111,41 @@ async def auto_configure(request: AutoConfigureRequest) -> AutoConfigureResponse
 
 
 @router.post(
-    "/PaymentOrderInitiationTransaction/Update",
+    "/api/v1/auto-configure/{configuration_id}/approve",
     response_model=ApproveConfigResponse,
     status_code=status.HTTP_200_OK,
 )
-async def approve_config(body: ApproveConfigRequest) -> ApproveConfigResponse:
+async def approve_config(configuration_id: str) -> ApproveConfigResponse:
     """
     Approve and save an auto-generated configuration with 10-minute TTL.
 
     Moves config from temporary storage to conversionConfigs collection.
     A unique session suffix prevents ID conflicts between users.
     """
-    config_id = body.configurationId
     try:
-        logger.info(f"Approving config: {config_id}")
+        logger.info(f"Approving config: {configuration_id}")
 
-        temp_config = await mongodb_service.get_temp_config(config_id)
+        temp_config = await mongodb_service.get_temp_config(configuration_id)
         if not temp_config:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Config not found or expired: {config_id}"
+                detail=f"Config not found or expired: {configuration_id}"
             )
 
-        # Clean up temp markers
         if "map" in temp_config:
             for mapping in temp_config["map"]:
                 mapping.pop("_unknown", None)
 
-        # Generate unique ID (session-unique)
         unique_suffix = uuid.uuid4().hex[:8]
-        unique_config_id = f"{config_id}_{unique_suffix}"
+        unique_config_id = f"{configuration_id}_{unique_suffix}"
         temp_config["_id"] = unique_config_id
 
-        # Add 10-minute TTL for config-builder configs
         temp_config["expires_at"] = datetime.utcnow() + timedelta(minutes=10)
 
-        # Ensure TTL index exists (idempotent)
         await mongodb_service.ensure_configs_ttl_index()
 
         await mongodb_service.insert_config(temp_config)
-        await mongodb_service.delete_temp_config(config_id)
+        await mongodb_service.delete_temp_config(configuration_id)
 
         logger.info(f"Config {unique_config_id} approved and saved (expires in 10 min)")
 

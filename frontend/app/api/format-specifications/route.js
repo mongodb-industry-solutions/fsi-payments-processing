@@ -1,18 +1,14 @@
-// BIAN URL — replaces /api/v1/canonical-json/{conversionRunId}.
-// Body must carry { "conversionRunId": "<uuid>" }.
+// Proxy route for list-format-specifications endpoint.
 // Browser → Next.js API → Converter sidecar (127.0.0.1:8001)
 
 const CONVERTER_URL = 'http://127.0.0.1:8001';
-const BIAN_URL = '/PaymentOrderInitiationTransaction/Retrieve';
 
-export async function POST(request) {
+export async function GET() {
   try {
-    const body = await request.json();
-
-    const response = await fetch(`${CONVERTER_URL}${BIAN_URL}`, {
-      method: 'POST',
+    const response = await fetch(`${CONVERTER_URL}/api/v1/format-specifications`, {
+      method: 'GET',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+      cache: 'no-store',
     });
 
     const data = await response.json();
@@ -21,7 +17,7 @@ export async function POST(request) {
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    console.error('PaymentOrderInitiationTransaction/Retrieve proxy error:', error);
+    console.error('format-specifications proxy error:', error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },

@@ -24,7 +24,7 @@ router = APIRouter()
 
 
 class CanonicalJsonRetrieveRequest(BaseModel):
-    """Body for canonical JSON Retrieve / Confirmation.Retrieve — was a path param."""
+    """Body for the BIAN Retrieve endpoint."""
     conversionRunId: str = Field(
         ..., description="The conversion run ID (UUID v4) to retrieve."
     )
@@ -338,17 +338,18 @@ async def convert_multi_hop_stream(request: MultiHopConversionRequest):
     )
 
 
-@router.post(
-    "/PaymentOrderInitiationTransaction/Confirmation/Retrieve",
+@router.get(
+    "/api/v1/canonical-json/{conversion_run_id}/diff",
     status_code=status.HTTP_200_OK,
 )
-async def get_canonical_json_diff(body: CanonicalJsonRetrieveRequest):
+async def get_canonical_json_diff(conversion_run_id: str):
     """
     Fetch before/after canonical JSON with changes from audit trail.
 
     Reconstructs the before state from audit trail for diff visualization.
+    Admin/observability route — not BIAN-shaped (audit history is not a
+    PaymentOrderInitiationTransaction operation).
     """
-    conversion_run_id = body.conversionRunId
     try:
         doc = await mongodb_service.json_storage_collection.find_one({"_id": conversion_run_id})
 
