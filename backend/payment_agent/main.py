@@ -222,6 +222,7 @@ async def process_payment_stream_with_review(request: ProcessPaymentRequest):
 
 ALLOWED_COLLECTIONS = {
     "bankDetails", "ifscCodes", "purposeCodes", "registeredEntities",
+    "correspondentBanks", "legalEntities",  # BIAN migration: merged + renamed
     "conversionConfigs", "formatSpecifications", "canonicalJsonStorage",
     "aiPrompts", "tempConfigs",
 }

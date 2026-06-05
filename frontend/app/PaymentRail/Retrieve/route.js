@@ -3,7 +3,7 @@
 // Browser → Next.js API → Converter sidecar (127.0.0.1:8001)
 
 const CONVERTER_URL = 'http://127.0.0.1:8001';
-const BIAN_URL = '/PaymentOrderInitiationTransaction/Retrieve';
+const BIAN_URL = '/PaymentRail/Retrieve';
 
 export async function POST(request) {
   try {
@@ -21,7 +21,7 @@ export async function POST(request) {
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    console.error('PaymentOrderInitiationTransaction/Retrieve proxy error:', error);
+    console.error('PaymentRail/Retrieve proxy error:', error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },

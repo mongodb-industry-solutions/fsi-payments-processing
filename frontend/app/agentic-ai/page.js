@@ -425,7 +425,7 @@ export default function AgenticAIPage() {
     }
 
     try {
-      const response = await fetch('/PaymentOrderInitiationTransaction/Initiate', {
+      const response = await fetch('/PaymentRail/Initiate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

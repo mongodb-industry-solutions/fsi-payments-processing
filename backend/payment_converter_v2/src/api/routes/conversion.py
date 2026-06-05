@@ -32,7 +32,7 @@ class CanonicalJsonRetrieveRequest(BaseModel):
 
 
 @router.post(
-    "/PaymentOrderInitiationTransaction/Initiate",
+    "/PaymentRail/Initiate",
     status_code=status.HTTP_200_OK,
 )
 async def convert_multi_hop_stream(request: MultiHopConversionRequest):
@@ -348,7 +348,7 @@ async def get_canonical_json_diff(conversion_run_id: str):
 
     Reconstructs the before state from audit trail for diff visualization.
     Admin/observability route — not BIAN-shaped (audit history is not a
-    PaymentOrderInitiationTransaction operation).
+    PaymentRail operation).
     """
     try:
         doc = await mongodb_service.json_storage_collection.find_one({"_id": conversion_run_id})
@@ -390,7 +390,7 @@ async def get_canonical_json_diff(conversion_run_id: str):
 
 
 @router.post(
-    "/PaymentOrderInitiationTransaction/Retrieve",
+    "/PaymentRail/Retrieve",
     status_code=status.HTTP_200_OK,
 )
 async def get_canonical_json_full(body: CanonicalJsonRetrieveRequest):
