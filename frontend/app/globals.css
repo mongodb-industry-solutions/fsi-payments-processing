@@ -234,6 +234,12 @@ body {
   color: var(--black);
 }
 
+/* Icon-only variant (e.g. BIAN Data Model book glyph) — square, no label gap */
+.nav-button-icon {
+  padding: var(--space-sm, 10px);
+  gap: 0;
+}
+
 /* Main Content */
 .main-content {
   max-width: 100%;
