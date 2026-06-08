@@ -24,13 +24,12 @@ export default function Documentation() {
   }, []);
 
   const dbCollections = [
-    { name: 'bankDetails', icon: 'Building' },
-    { name: 'ifscCodes', icon: 'MagnifyingGlass' },
+    { name: 'canonicalJsonStorage', icon: 'Array' },
+    { name: 'correspondentBanks', icon: 'Building' },
+    { name: 'legalEntities', icon: 'Shield' },
     { name: 'purposeCodes', icon: 'Sparkle' },
-    { name: 'registeredEntities', icon: 'Shield' },
     { name: 'conversionConfigs', icon: 'CurlyBraces' },
     { name: 'formatSpecifications', icon: 'Apps' },
-    { name: 'canonicalJsonStorage', icon: 'Array' },
   ];
 
   const handleCollectionSelect = async (collectionName) => {
