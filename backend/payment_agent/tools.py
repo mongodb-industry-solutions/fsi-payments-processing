@@ -214,11 +214,17 @@ def atlas_search(
             "error": "Atlas Search is disabled"
         }
 
-    # Map collection to its search index name
+    # Map collection (logical name) to its Atlas Search index.
+    # bankDetails + ifscCodes were merged into correspondentBanks; registeredEntities
+    # was renamed to legalEntities. The old logical keys are kept as aliases so the
+    # agent prompt is unchanged. Physical collection resolution happens in
+    # MongoDBService.get_collection. See collection-mapping-and-demo-changes.md.
     index_map = {
-        "bankDetails": "bankDetailsSearch",
-        "ifscCodes": "ifscCodesSearch",
-        "registeredEntities": "registeredEntitiesSearch",
+        "bankDetails": "correspondentBanksSearch",       # alias → merged collection
+        "ifscCodes": "correspondentBanksSearch",         # alias → merged collection
+        "correspondentBanks": "correspondentBanksSearch",
+        "registeredEntities": "legalEntitiesSearch",     # alias → renamed collection
+        "legalEntities": "legalEntitiesSearch",
     }
     index_name = index_map.get(collection)
 

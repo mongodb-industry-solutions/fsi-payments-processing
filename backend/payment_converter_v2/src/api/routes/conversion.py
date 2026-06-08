@@ -17,27 +17,34 @@ from src.api.dependencies import (
 )
 from src.api.state import pending_conversions, pending_ai_reviews
 from src.exceptions import CountryValidationException
-from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-
-class CanonicalJsonRetrieveRequest(BaseModel):
-    """Body for the BIAN Retrieve endpoint."""
-    conversionRunId: str = Field(
-        ..., description="The conversion run ID (UUID v4) to retrieve."
-    )
-    model_config = {"extra": "forbid"}
+# PaymentRail runs a single fixed implicit operating session. The canonical
+# BIAN shape is 1 PaymentRailOperatingSession : N transactions; this demo has
+# no scheduled/batching session, so all conversions belong to one always-on
+# session (1:N collapsed to 1). See bian-data-model bianCardinalityNote.
+PAYMENT_RAIL_SESSION_ID = "PRAIL-SESSION-DEFAULT"
 
 
-@router.post(
-    "/PaymentOrderInitiationTransaction/Initiate",
-    status_code=status.HTTP_200_OK,
-)
-async def convert_multi_hop_stream(request: MultiHopConversionRequest):
-    """
-    Stream multi-hop conversion with real-time SSE updates.
+def _validate_session(session_id: str) -> None:
+    """Reject any session id other than the single fixed implicit session."""
+    if session_id != PAYMENT_RAIL_SESSION_ID:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Unknown PaymentRail operating session: {session_id}",
+        )
+
+
+async def _run_conversion_stream(request: MultiHopConversionRequest):
+    """Shared multi-hop conversion streamer (SSE).
+
+    Logic is unchanged from the original /PaymentRail/Initiate handler — only
+    the public routing differs: the conversion is surfaced as an
+    OutboundTransaction or InboundTransaction BQ (chosen by targetFormat). The
+    two hops (source->JSON, JSON->target) are internal processing stages of one
+    transaction, NOT separate BQs.
 
     Events emitted:
     - hop1_start / hop1_complete
@@ -338,6 +345,57 @@ async def convert_multi_hop_stream(request: MultiHopConversionRequest):
     )
 
 
+@router.post(
+    "/PaymentRail/{session_id}/OutboundTransaction/Initiate",
+    status_code=status.HTTP_200_OK,
+)
+async def outbound_transaction_initiate(
+    session_id: str, request: MultiHopConversionRequest
+):
+    """BIAN PaymentRail · OutboundTransaction.Initiate.
+
+    Format/emit a payment message to send (canonical/source -> wire format).
+    targetFormat must be a wire format (not JSON). The source->JSON->target
+    hops are internal processing of this one OutboundTransaction.
+    """
+    _validate_session(session_id)
+    if request.targetFormat.strip().upper() == "JSON":
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=(
+                "OutboundTransaction requires a wire targetFormat "
+                "(e.g. pacs.008, MT103, cain.001, ISO8583). Use "
+                "InboundTransaction for targetFormat=JSON."
+            ),
+        )
+    return await _run_conversion_stream(request)
+
+
+@router.post(
+    "/PaymentRail/{session_id}/InboundTransaction/Initiate",
+    status_code=status.HTTP_200_OK,
+)
+async def inbound_transaction_initiate(
+    session_id: str, request: MultiHopConversionRequest
+):
+    """BIAN PaymentRail · InboundTransaction.Initiate.
+
+    Ingest a received message into canonical form (wire -> JSON). targetFormat
+    must be JSON. This is the single-hop ingest path.
+    """
+    _validate_session(session_id)
+    if request.targetFormat.strip().upper() != "JSON":
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=(
+                "InboundTransaction requires targetFormat=JSON (ingesting a "
+                "received message). Use OutboundTransaction to emit a wire "
+                "format."
+            ),
+        )
+    return await _run_conversion_stream(request)
+
+
 @router.get(
     "/api/v1/canonical-json/{conversion_run_id}/diff",
     status_code=status.HTTP_200_OK,
@@ -348,7 +406,7 @@ async def get_canonical_json_diff(conversion_run_id: str):
 
     Reconstructs the before state from audit trail for diff visualization.
     Admin/observability route — not BIAN-shaped (audit history is not a
-    PaymentOrderInitiationTransaction operation).
+    PaymentRail operation).
     """
     try:
         doc = await mongodb_service.json_storage_collection.find_one({"_id": conversion_run_id})
@@ -389,17 +447,14 @@ async def get_canonical_json_diff(conversion_run_id: str):
         )
 
 
-@router.post(
-    "/PaymentOrderInitiationTransaction/Retrieve",
-    status_code=status.HTTP_200_OK,
-)
-async def get_canonical_json_full(body: CanonicalJsonRetrieveRequest):
-    """
-    Fetch the full canonical JSON document from MongoDB.
+async def _retrieve_canonical(session_id: str, conversion_run_id: str):
+    """Fetch one stored conversion by id (shared by both BQ Retrieve routes).
 
-    Returns the complete document including metadata and audit trails.
+    The BQ segment in the URL is cosmetic — both directions look the doc up by
+    _id and return the same envelope. Storage is camelCase end-to-end; the doc
+    IS the canonical JSON.
     """
-    conversion_run_id = body.conversionRunId
+    _validate_session(session_id)
     try:
         doc = await mongodb_service.json_storage_collection.find_one({"_id": conversion_run_id})
 
@@ -409,8 +464,6 @@ async def get_canonical_json_full(body: CanonicalJsonRetrieveRequest):
                 detail=f"Canonical JSON document not found for conversion_run_id: {conversion_run_id}"
             )
 
-        # Storage is camelCase end-to-end now; the doc IS the canonical JSON.
-        # Wrap in envelope: { conversionRunId, canonicalJson: {...doc...} }
         logger.info(f"Retrieved full canonical JSON document for {conversion_run_id}")
         return {
             "conversionRunId": conversion_run_id,
@@ -425,3 +478,21 @@ async def get_canonical_json_full(body: CanonicalJsonRetrieveRequest):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch canonical JSON document: {str(e)}"
         )
+
+
+@router.post(
+    "/PaymentRail/{session_id}/OutboundTransaction/{conversion_run_id}/Retrieve",
+    status_code=status.HTTP_200_OK,
+)
+async def outbound_transaction_retrieve(session_id: str, conversion_run_id: str):
+    """BIAN PaymentRail · OutboundTransaction.Retrieve — fetch one stored conversion."""
+    return await _retrieve_canonical(session_id, conversion_run_id)
+
+
+@router.post(
+    "/PaymentRail/{session_id}/InboundTransaction/{conversion_run_id}/Retrieve",
+    status_code=status.HTTP_200_OK,
+)
+async def inbound_transaction_retrieve(session_id: str, conversion_run_id: str):
+    """BIAN PaymentRail · InboundTransaction.Retrieve — fetch one stored conversion."""
+    return await _retrieve_canonical(session_id, conversion_run_id)

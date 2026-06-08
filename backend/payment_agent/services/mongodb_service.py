@@ -9,6 +9,17 @@ from pymongo.collection import Collection
 logger = logging.getLogger(__name__)
 
 
+# Logical → physical collection aliases (BIAN reference-collection migration, 2026-06-03).
+# The agent and UI keep calling the original logical names; these resolve to the
+# merged/renamed physical collections, so no agent-prompt or frontend edits are needed.
+# See bian-data-model/context/collection-mapping-and-demo-changes.md.
+COLLECTION_ALIASES = {
+    "bankDetails": "correspondentBanks",     # merged: bank_details + ifsc_codes
+    "ifscCodes": "correspondentBanks",       # merged: bank_details + ifsc_codes
+    "registeredEntities": "legalEntities",   # renamed
+}
+
+
 class MongoDBService:
     """MongoDB service for agent operations"""
 
@@ -39,10 +50,11 @@ class MongoDBService:
             raise
 
     def get_collection(self, collection_name: str) -> Collection:
-        """Get a collection from the database"""
+        """Get a collection from the database, resolving BIAN migration aliases."""
         if self.db is None:
             raise Exception("Database not connected")
-        return self.db[collection_name]
+        physical_name = COLLECTION_ALIASES.get(collection_name, collection_name)
+        return self.db[physical_name]
 
     def close(self):
         """Close MongoDB connection"""
