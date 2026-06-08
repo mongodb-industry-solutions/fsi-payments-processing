@@ -40,3 +40,4 @@ backend/payment_converter_v2/docs/
 security_check.sh
 setup_hooks.sh
 /backend/data/migrate_bian_collections.py
+backend/data/populate_leafy_bank_bian.py
