@@ -61,10 +61,10 @@ CORRESPONDENT_BANKS_SEARCH = {
         "mappings": {
             "dynamic": False,
             "fields": {
-                "name_english": {"type": "string", "analyzer": "lucene.standard"},
-                "name_katakana": {"type": "string", "analyzer": "lucene.standard"},
-                "name_hiragana": {"type": "string", "analyzer": "lucene.standard"},
-                "bank_name": {"type": "string", "analyzer": "lucene.standard"},
+                "nameEnglish": {"type": "string", "analyzer": "lucene.standard"},
+                "nameKatakana": {"type": "string", "analyzer": "lucene.standard"},
+                "nameHiragana": {"type": "string", "analyzer": "lucene.standard"},
+                "bankName": {"type": "string", "analyzer": "lucene.standard"},
                 "bank": {"type": "string", "analyzer": "lucene.standard"},
                 "branch": {"type": "string", "analyzer": "lucene.standard"},
                 "city": {"type": "string", "analyzer": "lucene.standard"},
@@ -81,8 +81,8 @@ LEGAL_ENTITIES_SEARCH = {
         "mappings": {
             "dynamic": False,
             "fields": {
-                "legal_name": {"type": "string", "analyzer": "lucene.standard"},
-                "trading_names": {"type": "string", "analyzer": "lucene.standard"},
+                "legalName": {"type": "string", "analyzer": "lucene.standard"},
+                "tradingNames": {"type": "string", "analyzer": "lucene.standard"},
             },
         }
     },

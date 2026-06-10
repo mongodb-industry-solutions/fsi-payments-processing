@@ -1038,8 +1038,8 @@
     -0.024772312492132187,
     0.004025500733405352
   ],
-  "embedding_text": "Salary Payment: Payment of salaries and wages to employees. Examples: monthly salary payment, employee wages, payroll disbursement, staff compensation, worker salary transfer, wage payment",
-  "created_at": "2026-01-01T07:16:16.139808+00:00"
+  "embeddingText": "Salary Payment: Payment of salaries and wages to employees. Examples: monthly salary payment, employee wages, payroll disbursement, staff compensation, worker salary transfer, wage payment",
+  "createdAt": "2026-01-01T07:16:16.139808+00:00"
 },
 {
   "_id": "PENS",
@@ -2081,8 +2081,8 @@
     -0.006825116463005543,
     0.040950700640678406
   ],
-  "embedding_text": "Pension Payment: Payment of pension and retirement benefits. Examples: retirement pension, pension fund payment, retiree benefits, superannuation payment, retirement allowance, pension disbursement",
-  "created_at": "2026-01-01T07:16:17.092532+00:00"
+  "embeddingText": "Pension Payment: Payment of pension and retirement benefits. Examples: retirement pension, pension fund payment, retiree benefits, superannuation payment, retirement allowance, pension disbursement",
+  "createdAt": "2026-01-01T07:16:17.092532+00:00"
 },
 {
   "_id": "TAXS",
@@ -3124,8 +3124,8 @@
     -0.010383229702711105,
     0.00230866065248847
   ],
-  "embedding_text": "Tax Payment: Payment of taxes to government authorities. Examples: quarterly tax payment, VAT remittance, corporate tax, income tax payment, tax authority payment, withholding tax",
-  "created_at": "2026-01-01T07:16:18.037618+00:00"
+  "embeddingText": "Tax Payment: Payment of taxes to government authorities. Examples: quarterly tax payment, VAT remittance, corporate tax, income tax payment, tax authority payment, withholding tax",
+  "createdAt": "2026-01-01T07:16:18.037618+00:00"
 },
 {
   "_id": "SUPP",
@@ -4168,8 +4168,8 @@
     0.0070535107515752316,
     0.008054654113948345
   ],
-  "embedding_text": "Supplier Payment: Payment to suppliers for goods or services. Examples: supplier invoice payment, vendor payment, purchase order settlement, accounts payable, supplier account settlement, supply chain payment",
-  "created_at": "2026-01-01T07:16:19.018265+00:00"
+  "embeddingText": "Supplier Payment: Payment to suppliers for goods or services. Examples: supplier invoice payment, vendor payment, purchase order settlement, accounts payable, supplier account settlement, supply chain payment",
+  "createdAt": "2026-01-01T07:16:19.018265+00:00"
 },
 {
   "_id": "GDDS",
@@ -5213,8 +5213,8 @@
     0.02498447708785534,
     0.002548967720940709
   ],
-  "embedding_text": "Goods and Services: Purchase of goods and services including IT, equipment, and supplies. Examples: product purchase, equipment acquisition, IT infrastructure, cloud hosting services, software licenses, office supplies",
-  "created_at": "2026-01-01T07:16:20.010564+00:00"
+  "embeddingText": "Goods and Services: Purchase of goods and services including IT, equipment, and supplies. Examples: product purchase, equipment acquisition, IT infrastructure, cloud hosting services, software licenses, office supplies",
+  "createdAt": "2026-01-01T07:16:20.010564+00:00"
 },
 {
   "_id": "SCVE",
@@ -6258,8 +6258,8 @@
     0.03972325101494789,
     0.02497451938688755
   ],
-  "embedding_text": "Services: Payment for professional and consulting services. Examples: consulting fees, professional services, advisory services, IT consulting, legal services, accounting fees",
-  "created_at": "2026-01-01T07:16:20.943912+00:00"
+  "embeddingText": "Services: Payment for professional and consulting services. Examples: consulting fees, professional services, advisory services, IT consulting, legal services, accounting fees",
+  "createdAt": "2026-01-01T07:16:20.943912+00:00"
 },
 {
   "_id": "INTC",
@@ -7301,8 +7301,8 @@
     0.03179672360420227,
     -0.013466847129166126
   ],
-  "embedding_text": "Intra Company Payment: Payment between entities within the same company group. Examples: intercompany transfer, internal funding, subsidiary payment, group company transfer, intra-group settlement, parent company funding",
-  "created_at": "2026-01-01T07:16:21.599880+00:00"
+  "embeddingText": "Intra Company Payment: Payment between entities within the same company group. Examples: intercompany transfer, internal funding, subsidiary payment, group company transfer, intra-group settlement, parent company funding",
+  "createdAt": "2026-01-01T07:16:21.599880+00:00"
 },
 {
   "_id": "TREA",
@@ -8344,8 +8344,8 @@
     0.008453904651105404,
     -0.005751426797360182
   ],
-  "embedding_text": "Treasury Payment: Treasury and cash management operations. Examples: liquidity management, cash pooling, treasury transfer, working capital, cash concentration, treasury operations",
-  "created_at": "2026-01-01T07:16:22.526209+00:00"
+  "embeddingText": "Treasury Payment: Treasury and cash management operations. Examples: liquidity management, cash pooling, treasury transfer, working capital, cash concentration, treasury operations",
+  "createdAt": "2026-01-01T07:16:22.526209+00:00"
 },
 {
   "_id": "DIVI",
@@ -9387,8 +9387,8 @@
     0.011654230765998363,
     0.020327147096395493
   ],
-  "embedding_text": "Dividend: Payment of dividends to shareholders. Examples: quarterly dividend, shareholder distribution, dividend payout, stock dividend, profit distribution, investor dividend",
-  "created_at": "2026-01-01T07:16:23.446715+00:00"
+  "embeddingText": "Dividend: Payment of dividends to shareholders. Examples: quarterly dividend, shareholder distribution, dividend payout, stock dividend, profit distribution, investor dividend",
+  "createdAt": "2026-01-01T07:16:23.446715+00:00"
 },
 {
   "_id": "COMM",
@@ -10430,8 +10430,8 @@
     -0.0022497482132166624,
     0.0017305755754932761
   ],
-  "embedding_text": "Commission: Payment of commissions and broker fees. Examples: sales commission, broker fees, agent commission, referral payment, finder's fee, commission payment",
-  "created_at": "2026-01-01T07:16:24.209082+00:00"
+  "embeddingText": "Commission: Payment of commissions and broker fees. Examples: sales commission, broker fees, agent commission, referral payment, finder's fee, commission payment",
+  "createdAt": "2026-01-01T07:16:24.209082+00:00"
 },
 {
   "_id": "LOAN",
@@ -11474,8 +11474,8 @@
     0.012155243195593357,
     0.025197729468345642
   ],
-  "embedding_text": "Loan: Loan disbursement or repayment. Examples: loan repayment, mortgage payment, loan principal, credit facility, loan disbursement, installment payment",
-  "created_at": "2026-01-01T07:16:25.122657+00:00"
+  "embeddingText": "Loan: Loan disbursement or repayment. Examples: loan repayment, mortgage payment, loan principal, credit facility, loan disbursement, installment payment",
+  "createdAt": "2026-01-01T07:16:25.122657+00:00"
 },
 {
   "_id": "SECU",
@@ -12517,8 +12517,8 @@
     -0.022978443652391434,
     -0.008772778324782848
   ],
-  "embedding_text": "Securities: Securities purchase or sale settlement. Examples: bond purchase, equity settlement, securities transaction, stock purchase, investment settlement, securities trading",
-  "created_at": "2026-01-01T07:16:26.049179+00:00"
+  "embeddingText": "Securities: Securities purchase or sale settlement. Examples: bond purchase, equity settlement, securities transaction, stock purchase, investment settlement, securities trading",
+  "createdAt": "2026-01-01T07:16:26.049179+00:00"
 },
 {
   "_id": "TRAD",
@@ -13560,8 +13560,8 @@
     0.015267387963831425,
     0.023409994319081306
   ],
-  "embedding_text": "Trade Services: Trade finance and documentary credit payments. Examples: letter of credit, trade settlement, documentary collection, export payment, import financing, trade finance",
-  "created_at": "2026-01-01T07:16:26.715613+00:00"
+  "embeddingText": "Trade Services: Trade finance and documentary credit payments. Examples: letter of credit, trade settlement, documentary collection, export payment, import financing, trade finance",
+  "createdAt": "2026-01-01T07:16:26.715613+00:00"
 },
 {
   "_id": "HEDG",
@@ -14603,8 +14603,8 @@
     0.006685581989586353,
     0.004613993223756552
   ],
-  "embedding_text": "Hedging: Hedging and derivatives settlement. Examples: FX hedge settlement, currency forward, derivatives payment, swap settlement, hedging transaction, risk management",
-  "created_at": "2026-01-01T07:16:27.657222+00:00"
+  "embeddingText": "Hedging: Hedging and derivatives settlement. Examples: FX hedge settlement, currency forward, derivatives payment, swap settlement, hedging transaction, risk management",
+  "createdAt": "2026-01-01T07:16:27.657222+00:00"
 },
 {
   "_id": "GOVT",
@@ -15646,6 +15646,6 @@
     -0.016900796443223953,
     0.03849625959992409
   ],
-  "embedding_text": "Government Payment: Payment to or from government entities. Examples: government grant, subsidy payment, regulatory fees, license fees, government contract, public sector payment",
-  "created_at": "2026-01-01T07:16:28.619999+00:00"
+  "embeddingText": "Government Payment: Payment to or from government entities. Examples: government grant, subsidy payment, regulatory fees, license fees, government contract, public sector payment",
+  "createdAt": "2026-01-01T07:16:28.619999+00:00"
 }]

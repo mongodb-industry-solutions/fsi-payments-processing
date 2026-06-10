@@ -168,7 +168,7 @@ def atlas_search(
     Args:
         collection: Collection name ("bankDetails" or "ifscCodes")
         query: Search text (e.g., "DENSOO", "HDFC Connaught Delhi")
-        search_fields: Fields to search in (e.g., ["name_english"] or ["bank", "branch", "city"])
+        search_fields: Fields to search in (e.g., ["nameEnglish"] or ["bank", "branch", "city"])
         return_fields: Fields to return (optional, returns matched fields if not specified)
         fuzzy: Enable fuzzy matching for typo tolerance (default: True)
         limit: Max results to return (default: 3)
@@ -185,16 +185,16 @@ def atlas_search(
 
     Examples:
         # Find company with typo in name
-        >>> atlas_search("bankDetails", "DENSOO CORP", ["name_english"])
-        {"found": True, "top_result": {"name_english": "DENSO CORPORATION", ...}, ...}
+        >>> atlas_search("bankDetails", "DENSOO CORP", ["nameEnglish"])
+        {"found": True, "top_result": {"nameEnglish": "DENSO CORPORATION", ...}, ...}
 
         # Find IFSC with partial bank/branch info
         >>> atlas_search("ifscCodes", "HDFC Connaught Delhi", ["bank", "branch", "city"])
         {"found": True, "top_result": {"ifsc": "HDFC0000001", ...}, ...}
 
         # Find legal name from trading name
-        >>> atlas_search("registeredEntities", "Acme Co.", ["legal_name", "trading_names"])
-        {"found": True, "top_result": {"legal_name": "Acme Corporation Limited", ...}, ...}
+        >>> atlas_search("registeredEntities", "Acme Co.", ["legalName", "tradingNames"])
+        {"found": True, "top_result": {"legalName": "Acme Corporation Limited", ...}, ...}
     """
     from services.mongodb_service import get_mongodb_service
     from config.settings import settings
@@ -463,7 +463,7 @@ def vector_search(
             "score": {"$meta": "vectorSearchScore"},
             "_id": 0,
             "embedding": 0,  # Don't return large embedding arrays
-            "embedding_text": 0
+            "embeddingText": 0
         }
         if return_fields:
             # Reset projection and only include specified fields + score
