@@ -17,6 +17,7 @@ export default function Documentation() {
   const [showDbExplorer, setShowDbExplorer] = useState(false);
   const [selectedDbCollection, setSelectedDbCollection] = useState(null);
   const [collectionDocs, setCollectionDocs] = useState(null);
+  const [collectionMeta, setCollectionMeta] = useState(null);
   const [collectionLoading, setCollectionLoading] = useState(false);
 
   useEffect(() => {
@@ -37,11 +38,13 @@ export default function Documentation() {
     setSelectedDbCollection(collectionName);
     setCollectionLoading(true);
     setCollectionDocs(null);
+    setCollectionMeta(null);
     try {
       const res = await fetch(`/api/collection-preview/${collectionName}`);
       if (!res.ok) throw new Error(res.statusText);
       const data = await res.json();
       setCollectionDocs(data.documents);
+      setCollectionMeta({ limit: data.limit, total: data.total_count });
     } catch (err) {
       console.error('Collection fetch error:', err);
       setCollectionDocs([]);
@@ -653,7 +656,14 @@ Third-party Gateway (JSON wrapper):
             <div className={styles.dbPanelHeader}>
               <div className={styles.dbPanelHeaderLeft}>
                 <Icon glyph="Database" size="small" />
-                <H3>MongoDB Explorer</H3>
+                <div className={styles.dbPanelHeaderText}>
+                  <H3>MongoDB Explorer</H3>
+                  {collectionMeta && (
+                    <span className={styles.dbPanelSubtitle}>
+                      Sample preview — up to {collectionMeta.limit} documents per collection
+                    </span>
+                  )}
+                </div>
               </div>
               <button className={styles.dbCloseBtn} onClick={() => setShowDbExplorer(false)}>
                 <Icon glyph="X" size="small" />
@@ -684,8 +694,17 @@ Third-party Gateway (JSON wrapper):
                   <>
                     <div className={styles.dbContentHeader}>
                       <Body weight="medium">{selectedDbCollection}</Body>
-                      <Badge variant="darkgray">{collectionDocs.length} documents</Badge>
+                      <Badge variant="darkgray">
+                        {collectionMeta && collectionMeta.total > collectionDocs.length
+                          ? `Showing ${collectionDocs.length} of ${collectionMeta.total}`
+                          : `${collectionDocs.length} documents`}
+                      </Badge>
                     </div>
+                    {collectionMeta && collectionMeta.total > collectionDocs.length && (
+                      <Body className={styles.dbCapNote}>
+                        Preview capped at {collectionMeta.limit} documents — this collection has {collectionMeta.total} in total.
+                      </Body>
+                    )}
                     <div className={styles.dbDocsList}>
                       {collectionDocs.map((doc, idx) => (
                         <pre key={idx} className={styles.dbDocJson}>

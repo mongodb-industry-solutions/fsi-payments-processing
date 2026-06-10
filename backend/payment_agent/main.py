@@ -228,10 +228,16 @@ ALLOWED_COLLECTIONS = {
 }
 
 
+# Max documents returned by the collection-preview endpoint. Capped so the
+# documentation explorer stays responsive; surfaced in the response (`limit`)
+# so the UI can tell the user why they don't see every document.
+COLLECTION_PREVIEW_LIMIT = 20
+
+
 @app.get(
     "/api/v1/payment-agent/collection-preview/{collection_name}",
     summary="Collection Preview",
-    description="Return 3 sample documents from an agent-used collection",
+    description=f"Return up to {COLLECTION_PREVIEW_LIMIT} sample documents from an agent-used collection",
 )
 async def collection_preview(collection_name: str):
     if collection_name not in ALLOWED_COLLECTIONS:
@@ -254,7 +260,7 @@ async def collection_preview(collection_name: str):
     try:
         db_service = get_mongodb_service()
         collection = db_service.get_collection(collection_name)
-        docs = list(collection.find({}, limit=5))
+        docs = list(collection.find({}, limit=COLLECTION_PREVIEW_LIMIT))
         for doc in docs:
             doc.pop("_id", None)
             # Truncate embedding vectors: show first 5 values + "..."
@@ -264,6 +270,8 @@ async def collection_preview(collection_name: str):
         return JSONResponse(content={
             "collection": collection_name,
             "sample_count": len(docs),
+            "limit": COLLECTION_PREVIEW_LIMIT,
+            "total_count": collection.estimated_document_count(),
             "documents": docs,
         })
     except Exception as e:
