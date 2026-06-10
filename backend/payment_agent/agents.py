@@ -288,7 +288,7 @@ AVAILABLE TOOLS:
 
 1. atlas_search(collection: str, query: str, search_fields: list, fuzzy: bool = True)
    - KEYWORD-BASED database lookup
-   - Collections: "bankDetails" (has name_english, name_katakana), "ifscCodes", "registeredEntities"
+   - Collections: "bankDetails" (has nameEnglish, nameKatakana), "ifscCodes", "registeredEntities"
    - fuzzy=False: exact match (confidence: 1.0)
    - fuzzy=True: typo-tolerant (confidence: 0.7-0.95)
    - Returns: found (bool), top_result (dict), confidence
@@ -459,10 +459,10 @@ Analyze this problem and use your tools to find the correct value for '{field_na
                         top = result["top_result"]
                         # Try common fields for the value
                         proposed_value = (
-                            top.get("name_katakana") or
+                            top.get("nameKatakana") or
                             top.get("ifsc") or
-                            top.get("legal_name") or
-                            top.get("name_english") or
+                            top.get("legalName") or
+                            top.get("nameEnglish") or
                             ""
                         )
                         if proposed_value:
