@@ -480,7 +480,7 @@ async def _retrieve_canonical(session_id: str, conversion_run_id: str):
         )
 
 
-@router.post(
+@router.get(
     "/PaymentRail/{session_id}/OutboundTransaction/{conversion_run_id}/Retrieve",
     status_code=status.HTTP_200_OK,
 )
@@ -489,7 +489,7 @@ async def outbound_transaction_retrieve(session_id: str, conversion_run_id: str)
     return await _retrieve_canonical(session_id, conversion_run_id)
 
 
-@router.post(
+@router.get(
     "/PaymentRail/{session_id}/InboundTransaction/{conversion_run_id}/Retrieve",
     status_code=status.HTTP_200_OK,
 )

@@ -1,16 +1,15 @@
 // BIAN URL — replaces /api/v1/canonical-json/{conversionRunId}.
-// Body must carry { "conversionRunId": "<uuid>" }.
+// Retrieve is a GET: conversionRunId is a query param (?conversionRunId=<uuid>).
 // Browser → Next.js API → Converter sidecar (127.0.0.1:8001)
-// Backend is BQ-level: PaymentRail/{sessionId}/OutboundTransaction/{id}/Retrieve
+// Backend is BQ-level: GET PaymentRail/{sessionId}/OutboundTransaction/{id}/Retrieve
 // (both BQ Retrieve routes return the same doc; OutboundTransaction is primary).
 
 const CONVERTER_URL = 'http://127.0.0.1:8001';
 const SESSION_ID = 'PRAIL-SESSION-DEFAULT';
 
-export async function POST(request) {
+export async function GET(request) {
   try {
-    const body = await request.json();
-    const conversionRunId = body.conversionRunId;
+    const conversionRunId = new URL(request.url).searchParams.get('conversionRunId');
     if (!conversionRunId) {
       return new Response(JSON.stringify({ error: 'conversionRunId is required' }), {
         status: 400,
@@ -22,7 +21,7 @@ export async function POST(request) {
     const BIAN_URL = `/PaymentRail/${SESSION_ID}/OutboundTransaction/${encodeURIComponent(conversionRunId)}/Retrieve`;
 
     const response = await fetch(`${CONVERTER_URL}${BIAN_URL}`, {
-      method: 'POST',
+      method: 'GET',
       headers: { 'Content-Type': 'application/json' },
     });
 

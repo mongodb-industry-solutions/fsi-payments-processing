@@ -72,11 +72,7 @@ export default function BubbleDetailPanel({ bubbleType, data, stats }) {
         const encodedId = encodeURIComponent(conversionRunId);
         const [diffResponse, fullResponse] = await Promise.all([
           fetch(`/api/canonical-json/${encodedId}/diff`),
-          fetch('/PaymentRail/Retrieve', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ conversionRunId }),
-          }),
+          fetch(`/PaymentRail/Retrieve?conversionRunId=${encodedId}`),
         ]);
 
         if (!diffResponse.ok) {

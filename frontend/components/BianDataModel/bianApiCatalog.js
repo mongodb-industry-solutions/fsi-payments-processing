@@ -140,7 +140,7 @@ export const BIAN_API_CATALOG = {
             },
             {
               id: "outbound_retrieve",
-              method: "POST",
+              method: "GET",
               path: "/PaymentRail/{sessionId}/OutboundTransaction/{conversionRunId}/Retrieve",
               summary:
                 "Return the stored canonicalJsonStorage document for one outbound conversion run.",
@@ -184,7 +184,7 @@ export const BIAN_API_CATALOG = {
             },
             {
               id: "inbound_retrieve",
-              method: "POST",
+              method: "GET",
               path: "/PaymentRail/{sessionId}/InboundTransaction/{conversionRunId}/Retrieve",
               summary:
                 "Return the stored canonicalJsonStorage document for one inbound (message → JSON) conversion run.",
