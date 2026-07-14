@@ -25,6 +25,8 @@ steps:
       repo: industrysolutions/fsi-payments-frontend
       dockerfile: Dockerfile.frontend
       context: .
+      build_args:
+        - BIAN_MODEL_URL=https://leafy-bank-bian-model.industrysolutions.staging.corp.mongodb.com
       tags:
         - git-${DRONE_COMMIT_SHA:0:7}
         - latest
@@ -152,6 +154,8 @@ steps:
       repo: industrysolutions/fsi-payments-frontend-prod
       dockerfile: Dockerfile.frontend
       context: .
+      build_args:
+        - BIAN_MODEL_URL=https://leafy-bank-bian-model.industrysolutions.prod.corp.mongodb.com
       tags:
         - git-${DRONE_COMMIT_SHA:0:7}
         - latest
