@@ -97,11 +97,11 @@ function formatEventMessage(event) {
       return `Stage 2 complete (${event.time?.toFixed(2) || '0'}s) — ${event.detailed_processing?.rules_lane?.total_fields || 0} fields mapped`;
     case 'validation_failed':
       // Show a brief but informative summary
-      const fieldLabel = event.field === 'creditor_name' ? 'beneficiary name' :
-                         event.field === 'creditor_bic' ? 'bank code' :
-                         event.field === 'category_purpose' ? 'purpose code' : event.field || 'field';
+      const fieldLabel = event.field === 'creditorName' ? 'beneficiary name' :
+                         event.field === 'creditorBic' ? 'bank code' :
+                         event.field === 'categoryPurpose' ? 'purpose code' : event.field || 'field';
       // Handle both country-specific and universal rules
-      if (!event.country && event.field === 'category_purpose') {
+      if (!event.country && event.field === 'categoryPurpose') {
         return `ISO 20022 validation: ${fieldLabel} classification required`;
       }
       const countryName = event.country === 'JP' ? 'Japan' :
@@ -342,7 +342,7 @@ function renderEventDetails(event) {
                 ? 'Transaction Agent will transliterate the name to Japanese Katakana script using official transliteration rules.'
                 : event.problem?.toLowerCase().includes('ifsc') || event.problem?.toLowerCase().includes('india')
                 ? 'Transaction Agent will look up the correct IFSC code from India\'s banking database using the bank name and branch information.'
-                : event.problem?.toLowerCase().includes('purpose code') || event.field === 'category_purpose'
+                : event.problem?.toLowerCase().includes('purpose code') || event.field === 'categoryPurpose'
                 ? 'Transaction Agent will classify the payment description into the appropriate ISO 20022 purpose code using semantic vector search.'
                 : 'Transaction Agent will resolve this validation issue automatically.'}
             </Body>
@@ -896,7 +896,7 @@ export default function EventItem({ event, isExpanded, onToggleExpand, collectio
     
     try {
       const response = await fetch(
-        `/api/canonical-json/${event.conversion_run_id}/diff`
+        `/api/canonical-json/${encodeURIComponent(event.conversion_run_id)}/diff`
       );
       
       if (!response.ok) {

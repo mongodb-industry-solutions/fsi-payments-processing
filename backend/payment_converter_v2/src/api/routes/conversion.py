@@ -21,11 +21,30 @@ from src.exceptions import CountryValidationException
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
+# PaymentRail runs a single fixed implicit operating session. The canonical
+# BIAN shape is 1 PaymentRailOperatingSession : N transactions; this demo has
+# no scheduled/batching session, so all conversions belong to one always-on
+# session (1:N collapsed to 1). See bian-data-model bianCardinalityNote.
+PAYMENT_RAIL_SESSION_ID = "PRAIL-SESSION-DEFAULT"
 
-@router.post("/convert/multi-hop/stream", status_code=status.HTTP_200_OK)
-async def convert_multi_hop_stream(request: MultiHopConversionRequest):
-    """
-    Stream multi-hop conversion with real-time SSE updates.
+
+def _validate_session(session_id: str) -> None:
+    """Reject any session id other than the single fixed implicit session."""
+    if session_id != PAYMENT_RAIL_SESSION_ID:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Unknown PaymentRail operating session: {session_id}",
+        )
+
+
+async def _run_conversion_stream(request: MultiHopConversionRequest):
+    """Shared multi-hop conversion streamer (SSE).
+
+    Logic is unchanged from the original /PaymentRail/Initiate handler — only
+    the public routing differs: the conversion is surfaced as an
+    OutboundTransaction or InboundTransaction BQ (chosen by targetFormat). The
+    two hops (source->JSON, JSON->target) are internal processing stages of one
+    transaction, NOT separate BQs.
 
     Events emitted:
     - hop1_start / hop1_complete
@@ -42,21 +61,21 @@ async def convert_multi_hop_stream(request: MultiHopConversionRequest):
         agent_correction = None
 
         try:
-            logger.info(f"Starting streaming multi-hop: {request.source_format} → {request.target_format}")
+            logger.info(f"Starting streaming multi-hop: {request.sourceFormat} → {request.targetFormat}")
 
             yield f"data: {json.dumps({'type': 'start', 'conversion_run_id': conversion_run_id})}\n\n"
 
             # Hop 1: Source → JSON (country validation deferred)
-            yield f"data: {json.dumps({'type': 'hop1_start', 'source': request.source_format, 'target': 'JSON'})}\n\n"
+            yield f"data: {json.dumps({'type': 'hop1_start', 'source': request.sourceFormat, 'target': 'JSON'})}\n\n"
 
             hop1_start = time.time()
 
             hop1_result = await converter.convert(
-                source_format=request.source_format,
+                source_format=request.sourceFormat,
                 target_format="JSON",
                 message=request.message,
                 conversion_run_id=conversion_run_id,
-                use_ai=request.use_ai,
+                use_ai=request.useAi,
                 validate_country=False
             )
 
@@ -68,18 +87,18 @@ async def convert_multi_hop_stream(request: MultiHopConversionRequest):
             ai_lane_data = hop1_result.get('detailed_processing', {}).get('ai_lane', {})
             ai_fields = ai_lane_data.get('fields', [])
 
-            logger.info(f"AI Review Check: use_ai={request.use_ai}, fields_for_review={fields_for_review}, ai_lane_total={ai_lane_data.get('total_fields', 0)}, ai_fields_count={len(ai_fields)}")
+            logger.info(f"AI Review Check: use_ai={request.useAi}, fields_for_review={fields_for_review}, ai_lane_total={ai_lane_data.get('total_fields', 0)}, ai_fields_count={len(ai_fields)}")
 
-            if fields_for_review and request.use_ai and ai_fields:
+            if fields_for_review and request.useAi and ai_fields:
                 logger.info(f"AI review required for {len(ai_fields)} fields")
 
                 pending_ai_reviews.set(conversion_run_id, {
                     'hop1_result': hop1_result,
                     'request': {
-                        'source_format': request.source_format,
-                        'target_format': request.target_format,
+                        'source_format': request.sourceFormat,
+                        'target_format': request.targetFormat,
                         'message': request.message,
-                        'use_ai': request.use_ai
+                        'use_ai': request.useAi
                     },
                     'conversion_run_id': conversion_run_id,
                     'start_time': start_time,
@@ -94,8 +113,8 @@ async def convert_multi_hop_stream(request: MultiHopConversionRequest):
                 from src.validators.country_rules import validate_country_rules
                 validate_country_rules(
                     canonical_json=json.loads(hop1_result['converted_message']),
-                    conversion_id=f"{request.source_format}_to_JSON",
-                    source_format=request.source_format,
+                    conversion_id=f"{request.sourceFormat}_to_JSON",
+                    source_format=request.sourceFormat,
                     target_format="JSON",
                     conversion_run_id=conversion_run_id,
                     detailed_processing=hop1_result.get('detailed_processing', {})
@@ -175,10 +194,10 @@ async def convert_multi_hop_stream(request: MultiHopConversionRequest):
                         hop1_details = e.conversion_context.get('detailed_processing', {})
                         pending_conversions.set(event.get("thread_id"), {
                             "conversion_run_id": conversion_run_id,
-                            "source_format": request.source_format,
-                            "target_format": request.target_format,
+                            "source_format": request.sourceFormat,
+                            "target_format": request.targetFormat,
                             "original_message": request.message,
-                            "use_ai": request.use_ai,
+                            "use_ai": request.useAi,
                             "validation_exception": {
                                 "problem": e.problem,
                                 "field_name": e.field_name,
@@ -211,12 +230,12 @@ async def convert_multi_hop_stream(request: MultiHopConversionRequest):
 
                 cached_json = await mongodb_service.get_canonical_json(request.message, conversion_run_id=conversion_run_id)
                 hop1_result = {
-                    'conversion_id': f"{request.source_format}_to_JSON",
-                    'converted_message': cached_json['json_data'],
+                    'conversion_id': f"{request.sourceFormat}_to_JSON",
+                    'converted_message': cached_json['jsonData'],
                     'processing_stats': {'lane_distribution': {'RULES': 0, 'AI': 0, 'HUMAN': 0}},
                     'confidence_scores': {},
                     'human_review_required': False,
-                    'metadata': {'source_format': request.source_format, 'target_format': "JSON"},
+                    'metadata': {'source_format': request.sourceFormat, 'target_format': "JSON"},
                     'detailed_processing': e.conversion_context.get('detailed_processing', {})
                 }
 
@@ -227,18 +246,18 @@ async def convert_multi_hop_stream(request: MultiHopConversionRequest):
             hop1_json = json.loads(hop1_result['converted_message']) if isinstance(hop1_result['converted_message'], str) else hop1_result['converted_message']
 
             is_crypto_settlement = (
-                hop1_json.get('crypto_blockchain') is not None and
-                hop1_json.get('crypto_receiver_wallet') is not None
+                hop1_json.get('cryptoBlockchain') is not None and
+                hop1_json.get('cryptoReceiverWallet') is not None
             )
 
             if is_crypto_settlement and solana_service:
                 # Crypto settlement flow
-                blockchain = hop1_json.get('crypto_blockchain')
-                receiver_wallet = hop1_json.get('crypto_receiver_wallet')
+                blockchain = hop1_json.get('cryptoBlockchain')
+                receiver_wallet = hop1_json.get('cryptoReceiverWallet')
                 amount_sol = 0.001
 
-                yield f"data: {json.dumps({'type': 'crypto_start', 'detail': 'Initiating Solana blockchain settlement using canonical JSON fields', 'dropdown': {'title': 'Canonical JSON → Blockchain Bridge', 'items': ['Canonical JSON serves as universal payment format', f'Blockchain: {blockchain}', 'Receiver wallet extracted from crypto_receiver_wallet field', 'Solana SDK initialized with devnet RPC endpoint', 'Transaction will be recorded on immutable blockchain ledger']}})}\n\n"
-                yield f"data: {json.dumps({'type': 'crypto_wallet_extract', 'receiver': receiver_wallet, 'detail': 'Extracted receiver wallet from canonical JSON', 'dropdown': {'title': 'Wallet Extraction Details', 'items': [f'Source field: canonical_json.crypto_receiver_wallet', f'Receiver: {receiver_wallet}', 'Wallet validated as valid Solana public key (Base58)', 'Service wallet will execute transfer on behalf of payer']}})}\n\n"
+                yield f"data: {json.dumps({'type': 'crypto_start', 'detail': 'Initiating Solana blockchain settlement using canonical JSON fields', 'dropdown': {'title': 'Canonical JSON → Blockchain Bridge', 'items': ['Canonical JSON serves as universal payment format', f'Blockchain: {blockchain}', 'Receiver wallet extracted from cryptoReceiverWallet field', 'Solana SDK initialized with devnet RPC endpoint', 'Transaction will be recorded on immutable blockchain ledger']}})}\n\n"
+                yield f"data: {json.dumps({'type': 'crypto_wallet_extract', 'receiver': receiver_wallet, 'detail': 'Extracted receiver wallet from canonical JSON', 'dropdown': {'title': 'Wallet Extraction Details', 'items': [f'Source field: canonical_json.cryptoReceiverWallet', f'Receiver: {receiver_wallet}', 'Wallet validated as valid Solana public key (Base58)', 'Service wallet will execute transfer on behalf of payer']}})}\n\n"
                 yield f"data: {json.dumps({'type': 'crypto_tx_build', 'detail': 'Building Solana transfer instruction', 'dropdown': {'title': 'Transaction Construction', 'items': ['Fetching latest blockhash from Solana RPC', 'Creating SystemProgram.transfer instruction', 'From: Service wallet (custodial)', f'To: {receiver_wallet[:16]}...', f'Amount: {amount_sol} SOL (demo proof-of-settlement)', 'Compiling MessageV0 with transfer instruction']}})}\n\n"
                 yield f"data: {json.dumps({'type': 'crypto_tx_sign', 'detail': 'Signing transaction with service wallet', 'dropdown': {'title': 'Cryptographic Signing', 'items': ['Loading service keypair from secure storage', 'Creating VersionedTransaction with MessageV0', 'Signing with Ed25519 signature algorithm', 'Transaction signature generated (64 bytes)']}})}\n\n"
                 yield f"data: {json.dumps({'type': 'crypto_tx_submit', 'detail': 'Broadcasting to Solana devnet', 'dropdown': {'title': 'Network Broadcast', 'items': ['RPC Endpoint: https://api.devnet.solana.com', 'Method: sendRawTransaction', 'Commitment level: confirmed', 'Waiting for validator confirmation...']}})}\n\n"
@@ -282,16 +301,16 @@ async def convert_multi_hop_stream(request: MultiHopConversionRequest):
 
             else:
                 # Standard Hop 2: JSON → Target format
-                yield f"data: {json.dumps({'type': 'hop2_start', 'source': 'JSON', 'target': request.target_format})}\n\n"
+                yield f"data: {json.dumps({'type': 'hop2_start', 'source': 'JSON', 'target': request.targetFormat})}\n\n"
 
                 hop2_start = time.time()
                 hop2_result = await converter.convert(
                     source_format="JSON",
-                    target_format=request.target_format,
+                    target_format=request.targetFormat,
                     message=hop1_result['converted_message'],
                     original_source_message=request.message,
                     conversion_run_id=conversion_run_id,
-                    use_ai=request.use_ai
+                    use_ai=request.useAi
                 )
 
                 hop2_time = time.time() - hop2_start
@@ -326,12 +345,68 @@ async def convert_multi_hop_stream(request: MultiHopConversionRequest):
     )
 
 
-@router.get("/canonical-json/{conversion_run_id}/diff", status_code=status.HTTP_200_OK)
+@router.post(
+    "/PaymentRail/{session_id}/OutboundTransaction/Initiate",
+    status_code=status.HTTP_200_OK,
+)
+async def outbound_transaction_initiate(
+    session_id: str, request: MultiHopConversionRequest
+):
+    """BIAN PaymentRail · OutboundTransaction.Initiate.
+
+    Format/emit a payment message to send (canonical/source -> wire format).
+    targetFormat must be a wire format (not JSON). The source->JSON->target
+    hops are internal processing of this one OutboundTransaction.
+    """
+    _validate_session(session_id)
+    if request.targetFormat.strip().upper() == "JSON":
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=(
+                "OutboundTransaction requires a wire targetFormat "
+                "(e.g. pacs.008, MT103, cain.001, ISO8583). Use "
+                "InboundTransaction for targetFormat=JSON."
+            ),
+        )
+    return await _run_conversion_stream(request)
+
+
+@router.post(
+    "/PaymentRail/{session_id}/InboundTransaction/Initiate",
+    status_code=status.HTTP_200_OK,
+)
+async def inbound_transaction_initiate(
+    session_id: str, request: MultiHopConversionRequest
+):
+    """BIAN PaymentRail · InboundTransaction.Initiate.
+
+    Ingest a received message into canonical form (wire -> JSON). targetFormat
+    must be JSON. This is the single-hop ingest path.
+    """
+    _validate_session(session_id)
+    if request.targetFormat.strip().upper() != "JSON":
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=(
+                "InboundTransaction requires targetFormat=JSON (ingesting a "
+                "received message). Use OutboundTransaction to emit a wire "
+                "format."
+            ),
+        )
+    return await _run_conversion_stream(request)
+
+
+@router.get(
+    "/api/v1/canonical-json/{conversion_run_id}/diff",
+    status_code=status.HTTP_200_OK,
+)
 async def get_canonical_json_diff(conversion_run_id: str):
     """
     Fetch before/after canonical JSON with changes from audit trail.
 
     Reconstructs the before state from audit trail for diff visualization.
+    Admin/observability route — not BIAN-shaped (audit history is not a
+    PaymentRail operation).
     """
     try:
         doc = await mongodb_service.json_storage_collection.find_one({"_id": conversion_run_id})
@@ -342,21 +417,24 @@ async def get_canonical_json_diff(conversion_run_id: str):
                 detail=f"Canonical JSON document not found for conversion_run_id: {conversion_run_id}"
             )
 
-        after_json = doc.get("json_data", {})
-        audit_trail = doc.get("metadata", {}).get("audit_trail", {})
+        # Storage is camelCase end-to-end now; read directly.
+        after_json = doc.get("jsonData", {})
+        audit_trail = doc.get("metadata", {}).get("auditTrail", {})
 
         before_json = after_json.copy()
         for field_name, changes in audit_trail.items():
-            before_json[field_name] = changes.get("old_value", "")
+            before_json[field_name] = changes.get("oldValue", "")
 
         changed_fields = list(audit_trail.keys())
         logger.info(f"Retrieved canonical JSON diff for {conversion_run_id}: {len(changed_fields)} fields changed")
 
         return {
-            "conversion_run_id": conversion_run_id,
-            "before_json": before_json,
-            "after_json": after_json,
-            "changed_fields": changed_fields
+            "conversionRunId": conversion_run_id,
+            "diff": {
+                "beforeJson": before_json,
+                "afterJson": after_json,
+                "changedFields": changed_fields,
+            },
         }
 
     except HTTPException:
@@ -369,13 +447,14 @@ async def get_canonical_json_diff(conversion_run_id: str):
         )
 
 
-@router.get("/canonical-json/{conversion_run_id}", status_code=status.HTTP_200_OK)
-async def get_canonical_json_full(conversion_run_id: str):
-    """
-    Fetch the full canonical JSON document from MongoDB.
+async def _retrieve_canonical(session_id: str, conversion_run_id: str):
+    """Fetch one stored conversion by id (shared by both BQ Retrieve routes).
 
-    Returns the complete document including metadata and audit trails.
+    The BQ segment in the URL is cosmetic — both directions look the doc up by
+    _id and return the same envelope. Storage is camelCase end-to-end; the doc
+    IS the canonical JSON.
     """
+    _validate_session(session_id)
     try:
         doc = await mongodb_service.json_storage_collection.find_one({"_id": conversion_run_id})
 
@@ -386,7 +465,10 @@ async def get_canonical_json_full(conversion_run_id: str):
             )
 
         logger.info(f"Retrieved full canonical JSON document for {conversion_run_id}")
-        return doc
+        return {
+            "conversionRunId": conversion_run_id,
+            "canonicalJson": doc,
+        }
 
     except HTTPException:
         raise
@@ -396,3 +478,21 @@ async def get_canonical_json_full(conversion_run_id: str):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch canonical JSON document: {str(e)}"
         )
+
+
+@router.get(
+    "/PaymentRail/{session_id}/OutboundTransaction/{conversion_run_id}/Retrieve",
+    status_code=status.HTTP_200_OK,
+)
+async def outbound_transaction_retrieve(session_id: str, conversion_run_id: str):
+    """BIAN PaymentRail · OutboundTransaction.Retrieve — fetch one stored conversion."""
+    return await _retrieve_canonical(session_id, conversion_run_id)
+
+
+@router.get(
+    "/PaymentRail/{session_id}/InboundTransaction/{conversion_run_id}/Retrieve",
+    status_code=status.HTTP_200_OK,
+)
+async def inbound_transaction_retrieve(session_id: str, conversion_run_id: str):
+    """BIAN PaymentRail · InboundTransaction.Retrieve — fetch one stored conversion."""
+    return await _retrieve_canonical(session_id, conversion_run_id)

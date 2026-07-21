@@ -156,9 +156,9 @@ def atlas_search(
     3. If still not found, use transliterate_text for AI generation
 
     Supported Collections:
-    - "bank_details": Company names, Katakana translations, bank info
-    - "ifsc_codes": Indian bank IFSC codes, branches, cities
-    - "registered_entities": Legal names and trading names for name verification
+    - "bankDetails": Company names, Katakana translations, bank info
+    - "ifscCodes": Indian bank IFSC codes, branches, cities
+    - "registeredEntities": Legal names and trading names for name verification
 
     Fuzzy Matching:
     - Handles typos like "DENSOO" → "DENSO CORPORATION"
@@ -166,9 +166,9 @@ def atlas_search(
     - Handles partial matches like "Toyota Motor" → "TOYOTA MOTOR CORPORATION"
 
     Args:
-        collection: Collection name ("bank_details" or "ifsc_codes")
+        collection: Collection name ("bankDetails" or "ifscCodes")
         query: Search text (e.g., "DENSOO", "HDFC Connaught Delhi")
-        search_fields: Fields to search in (e.g., ["name_english"] or ["bank", "branch", "city"])
+        search_fields: Fields to search in (e.g., ["nameEnglish"] or ["bank", "branch", "city"])
         return_fields: Fields to return (optional, returns matched fields if not specified)
         fuzzy: Enable fuzzy matching for typo tolerance (default: True)
         limit: Max results to return (default: 3)
@@ -185,16 +185,16 @@ def atlas_search(
 
     Examples:
         # Find company with typo in name
-        >>> atlas_search("bank_details", "DENSOO CORP", ["name_english"])
-        {"found": True, "top_result": {"name_english": "DENSO CORPORATION", ...}, ...}
+        >>> atlas_search("bankDetails", "DENSOO CORP", ["nameEnglish"])
+        {"found": True, "top_result": {"nameEnglish": "DENSO CORPORATION", ...}, ...}
 
         # Find IFSC with partial bank/branch info
-        >>> atlas_search("ifsc_codes", "HDFC Connaught Delhi", ["bank", "branch", "city"])
+        >>> atlas_search("ifscCodes", "HDFC Connaught Delhi", ["bank", "branch", "city"])
         {"found": True, "top_result": {"ifsc": "HDFC0000001", ...}, ...}
 
         # Find legal name from trading name
-        >>> atlas_search("registered_entities", "Acme Co.", ["legal_name", "trading_names"])
-        {"found": True, "top_result": {"legal_name": "Acme Corporation Limited", ...}, ...}
+        >>> atlas_search("registeredEntities", "Acme Co.", ["legalName", "tradingNames"])
+        {"found": True, "top_result": {"legalName": "Acme Corporation Limited", ...}, ...}
     """
     from services.mongodb_service import get_mongodb_service
     from config.settings import settings
@@ -214,11 +214,17 @@ def atlas_search(
             "error": "Atlas Search is disabled"
         }
 
-    # Map collection to its search index name
+    # Map collection (logical name) to its Atlas Search index.
+    # bankDetails + ifscCodes were merged into correspondentBanks; registeredEntities
+    # was renamed to legalEntities. The old logical keys are kept as aliases so the
+    # agent prompt is unchanged. Physical collection resolution happens in
+    # MongoDBService.get_collection. See collection-mapping-and-demo-changes.md.
     index_map = {
-        "bank_details": "bank_details_search",
-        "ifsc_codes": "ifsc_codes_search",
-        "registered_entities": "registered_entities_search"
+        "bankDetails": "correspondentBanksSearch",       # alias → merged collection
+        "ifscCodes": "correspondentBanksSearch",         # alias → merged collection
+        "correspondentBanks": "correspondentBanksSearch",
+        "registeredEntities": "legalEntitiesSearch",     # alias → renamed collection
+        "legalEntities": "legalEntitiesSearch",
     }
     index_name = index_map.get(collection)
 
@@ -367,7 +373,7 @@ def vector_search(
     - vector_search: Query is natural language that needs conceptual matching
 
     Args:
-        collection: Any MongoDB collection with embeddings (e.g., "purpose_codes", "products", "faqs")
+        collection: Any MongoDB collection with embeddings (e.g., "purposeCodes", "products", "faqs")
         query: Free-text description to match semantically
         index_name: Vector search index name (default: "{collection}_vector")
         embedding_field: Field containing embeddings (default: "embedding")
@@ -387,7 +393,7 @@ def vector_search(
 
     Examples:
         # Classify payment description
-        >>> vector_search("purpose_codes", "paying monthly salaries to staff")
+        >>> vector_search("purposeCodes", "paying monthly salaries to staff")
         {"found": True, "top_result": {"code": "SALA", "name": "Salary Payment"}, ...}
 
         # Search product catalog
@@ -421,8 +427,8 @@ def vector_search(
             "error": "Vector Search is disabled"
         }
 
-    # Use provided index_name or derive from collection name
-    vector_index_name = index_name or f"{collection}_vector"
+    # Use provided index_name or derive from collection name (camelCase + "Vector" suffix)
+    vector_index_name = index_name or f"{collection}Vector"
 
     try:
         # Generate query embedding
@@ -457,7 +463,7 @@ def vector_search(
             "score": {"$meta": "vectorSearchScore"},
             "_id": 0,
             "embedding": 0,  # Don't return large embedding arrays
-            "embedding_text": 0
+            "embeddingText": 0
         }
         if return_fields:
             # Reset projection and only include specified fields + score
@@ -534,8 +540,8 @@ def update_payment_field(payment_id: str, field_name: str, new_value: str) -> Di
     the correct value for a field.
 
     Common use cases:
-    - Update creditor_name with transliterated Japanese text
-    - Add IFSC code to creditor_bank field
+    - Update creditorName with transliterated Japanese text
+    - Add IFSC code to creditorBic field
     - Correct any payment field based on resolution findings
     - Enrich missing information in payment data
 
@@ -545,7 +551,7 @@ def update_payment_field(payment_id: str, field_name: str, new_value: str) -> Di
     3. The update is successfully applied
 
     Args:
-        payment_id: Unique identifier for the payment (e.g., conversion_id or transaction_ref)
+        payment_id: Unique identifier for the payment (e.g., conversionId or transactionRef)
         field_name: Name of the field to update (must be from canonical JSON vocabulary)
         new_value: The new value to set for the field
 
@@ -562,12 +568,12 @@ def update_payment_field(payment_id: str, field_name: str, new_value: str) -> Di
     Example:
         >>> update_payment_field(
         ...     payment_id="MT103_to_pacs008_12345",
-        ...     field_name="creditor_name",
+        ...     field_name="creditorName",
         ...     new_value="トヨタ自動車株式会社"
         ... )
         {
             "payment_id": "MT103_to_pacs008_12345",
-            "field_name": "creditor_name",
+            "field_name": "creditorName",
             "old_value": "Toyota Motor Corporation",
             "new_value": "トヨタ自動車株式会社",
             "updated": True,
@@ -582,24 +588,24 @@ def update_payment_field(payment_id: str, field_name: str, new_value: str) -> Di
     # Define canonical JSON field vocabulary for validation
     VALID_FIELDS = {
         # Required fields
-        "transaction_ref", "amount", "currency", "value_date",
+        "transactionRef", "amount", "currency", "valueDate",
         # Party fields
-        "debtor_name", "debtor_account", "debtor_address", "debtor_country",
-        "debtor_agent", "debtor_agent_bic",
-        "creditor_name", "creditor_account", "creditor_address", "creditor_country",
-        "creditor_agent", "creditor_bic", "creditor_bank",
-        "intermediary_agent", "intermediary_agent_bic",
+        "debtorName", "debtorAccount", "debtorAddress", "debtorCountry",
+        "debtorAgent", "debtorAgentBic",
+        "creditorName", "creditorAccount", "creditorAddress", "creditorCountry",
+        "creditorAgent", "creditorBic", "creditorBank",
+        "intermediaryAgent", "intermediaryAgentBic",
         # Payment details
-        "remittance_info", "payment_purpose", "instruction_code",
-        "end_to_end_id", "instruction_id", "message_id",
-        "charge_bearer", "charges", "exchange_rate",
+        "remittanceInfo", "paymentPurpose", "instructionCode",
+        "endToEndId", "instructionId", "messageId",
+        "chargeBearer", "charges", "exchangeRate",
         # Additional fields
-        "priority", "payment_method", "service_level",
-        "local_instrument", "category_purpose",
-        "regulatory_reporting", "related_reference",
-        "creditor_agent_name", "creditor_agent_address",
-        "debtor_agent_name", "debtor_agent_address",
-        "ultimate_debtor", "ultimate_creditor"
+        "priority", "paymentMethod", "serviceLevel",
+        "localInstrument", "categoryPurpose",
+        "regulatoryReporting", "relatedReference",
+        "creditorAgentName", "creditorAgentAddress",
+        "debtorAgentName", "debtorAgentAddress",
+        "ultimateDebtor", "ultimateCreditor"
     }
 
     try:
@@ -616,7 +622,7 @@ def update_payment_field(payment_id: str, field_name: str, new_value: str) -> Di
             }
 
         mongo = get_mongodb_service()
-        collection = mongo.get_collection("canonical_json_storage")
+        collection = mongo.get_collection("canonicalJsonStorage")
 
         # Determine search field based on payment_id format
         # If payment_id is a UUID (36 chars with hyphens), search by _id (conversion_run_id)
@@ -626,8 +632,8 @@ def update_payment_field(payment_id: str, field_name: str, new_value: str) -> Di
             query = {"_id": payment_id}
             logger.info(f"Searching by conversion_run_id: {payment_id[:16]}...")
         else:
-            # This is a conversion_id (e.g., "MT103_to_JSON")
-            query = {"conversion_id": payment_id}
+            # This is a conversion_id (e.g., "MT103_to_JSON").
+            query = {"conversionId": payment_id}
             logger.info(f"Searching by conversion_id: {payment_id}")
 
         # Find the payment record
@@ -644,26 +650,25 @@ def update_payment_field(payment_id: str, field_name: str, new_value: str) -> Di
                 "error": "Payment record not found"
             }
 
-        # Get old value for audit (json_data contains the canonical JSON)
-        json_data = payment_record.get("json_data", {})
+        # Storage shape is camelCase end-to-end now — no translation needed.
+        json_data = payment_record.get("jsonData", {})
         old_value = json_data.get(field_name, "")
 
-        # Update the field
+        # Build $set with camelCase dotted paths directly.
         now = datetime.now(timezone.utc).isoformat()
+        set_dict = {
+            f"jsonData.{field_name}": new_value,
+            "metadata.lastUpdated": now,
+            f"metadata.auditTrail.{field_name}": {
+                "oldValue": old_value,
+                "newValue": new_value,
+                "updatedAt": now,
+                "updatedBy": "payment_agent",
+            },
+        }
         update_result = collection.update_one(
-            query,  # Use same query as find_one (either by _id or conversion_id)
-            {
-                "$set": {
-                    f"json_data.{field_name}": new_value,
-                    "metadata.last_updated": now,
-                    f"metadata.audit_trail.{field_name}": {
-                        "old_value": old_value,
-                        "new_value": new_value,
-                        "updated_at": now,
-                        "updated_by": "payment_agent"
-                    }
-                }
-            }
+            query,  # Use same query as find_one (either by _id or conversionId)
+            {"$set": set_dict},
         )
 
         if update_result.modified_count > 0:

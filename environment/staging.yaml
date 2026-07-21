@@ -76,6 +76,11 @@ sidecarContainers:
           secretKeyRef:
             name: fsi-payments
             key: MONGODB_URI
+      - name: DATABASE_NAME
+        valueFrom:
+          secretKeyRef:
+            name: fsi-payments
+            key: DATABASE_NAME
       - name: VOYAGE_API_KEY
         valueFrom:
           secretKeyRef:

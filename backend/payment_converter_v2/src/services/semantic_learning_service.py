@@ -29,13 +29,14 @@ class SemanticLearningService:
     SWIFT_FIELD_PATTERN = r':(\d{2}[A-Z]?):([^\n]*(?:\n(?!:)[^\n]*)*)'
 
     # ISO8583 pipe-delimited format (demo): 0200|bitmap|pan|proc_code|amount|...
-    # Field positions: mti(0), bitmap(1), pan(2), proc_code(3), amount(4), datetime(5),
-    #                  stan(6), time(7), date(8), rrn(9), terminal(10), merchant_id(11),
-    #                  merchant_info(12), currency(13)
+    # Field positions: mti(0), bitmap(1), pan(2), processingCode(3), amount(4),
+    #                  transmissionDateTime(5), stan(6), localTime(7), localDate(8),
+    #                  rrn(9), terminalId(10), merchantId(11), merchantInfo(12),
+    #                  currencyCode(13). Field IDs are camelCase to match canonical JSON.
     ISO8583_FIELD_NAMES = [
-        "mti", "bitmap", "pan", "processing_code", "amount", "transmission_datetime",
-        "stan", "local_time", "local_date", "rrn", "terminal_id", "merchant_id",
-        "merchant_info", "currency_code"
+        "mti", "bitmap", "pan", "processingCode", "amount", "transmissionDateTime",
+        "stan", "localTime", "localDate", "rrn", "terminalId", "merchantId",
+        "merchantInfo", "currencyCode"
     ]
 
     # ISO 20022 XML detection patterns
@@ -189,19 +190,19 @@ class SemanticLearningService:
         confidence = (target_fields_mapped + target_fields_ai) / target_fields_required if target_fields_required > 0 else 0
 
         return {
-            "configuration_id": new_config["_id"],
+            "configurationId": new_config["_id"],
             "config": new_config,
             "confidence": round(confidence, 2),
-            "source_fields_identified": len(detected_fields),
-            "target_fields_required": target_fields_required,
-            "target_fields_mapped": target_fields_mapped,
-            "target_fields_ai": target_fields_ai,
-            "matched_fields": source_matched_fields,
-            "unknown_fields": unknown,
-            "learned_from": learned_from,
-            "not_covered_fields": not_covered_fields,
+            "sourceFieldsIdentified": len(detected_fields),
+            "targetFieldsRequired": target_fields_required,
+            "targetFieldsMapped": target_fields_mapped,
+            "targetFieldsAi": target_fields_ai,
+            "matchedFields": source_matched_fields,
+            "unknownFields": unknown,
+            "learnedFrom": learned_from,
+            "notCoveredFields": not_covered_fields,
             "suggestions": suggestions,
-            "llm_prompt_info": prompt_info
+            "llmPromptInfo": prompt_info
         }
 
     async def _build_combined_lookup(self) -> None:
@@ -346,7 +347,7 @@ class SemanticLearningService:
             message: ISO 20022 XML message
 
         Returns:
-            Dictionary of field_id -> value (e.g., {"message_id": "MSG001", "RtrId": "RTN001"})
+            Dictionary of field_id -> value (e.g., {"messageId": "MSG001", "RtrId": "RTN001"})
         """
         fields = {}
         extracted_values = set()  # Track values already extracted to avoid duplicates
@@ -615,7 +616,7 @@ class SemanticLearningService:
 
             # Normalize 'to' field
             if key == "to":
-                # AI fields use string format (e.g., "to": "remittance_info", "ai": "remittance")
+                # AI fields use string format (e.g., "to": "remittanceInfo", "ai": "remittance")
                 if "ai" in mapping:
                     new_mapping[key] = value
                 # All other fields use array format

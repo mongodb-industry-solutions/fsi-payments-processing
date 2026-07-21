@@ -50,8 +50,8 @@ class Transformer:
 
         Example:
             mappings = [
-                {"from": "20", "to": "transaction_ref"},  # RULES
-                {"from": "70", "to": ["payment_purpose", "invoice_number", "details"],
+                {"from": "20", "to": "transactionRef"},  # RULES
+                {"from": "70", "to": ["paymentPurpose", "invoiceNumber", "details"],
                  "ai": "remittance", "patterns": {...}}  # AI or RULES based on use_ai
             ]
         """
@@ -309,7 +309,7 @@ class Transformer:
         Apply regex patterns to extract structured data from unstructured text.
 
         This is the rules-based alternative to AI extraction, using regex patterns
-        defined in the config to extract fields like payment_purpose, invoice_number, etc.
+        defined in the config to extract fields like paymentPurpose, invoiceNumber, etc.
 
         Args:
             value: Source field value (e.g., field 70 content)
@@ -321,8 +321,8 @@ class Transformer:
 
         Example:
             patterns = {
-                "payment_purpose": {"regex": "^(INVOICE|PAYMENT)", "group": 1, "default": "PAYMENT"},
-                "invoice_number": {"regex": "([A-Z]{2,}-[A-Z0-9-]+)", "group": 1, "default": ""},
+                "paymentPurpose": {"regex": "^(INVOICE|PAYMENT)", "group": 1, "default": "PAYMENT"},
+                "invoiceNumber": {"regex": "([A-Z]{2,}-[A-Z0-9-]+)", "group": 1, "default": ""},
                 "details": {"join_lines": ". ", "strip": True}
             }
         """
@@ -391,10 +391,10 @@ class Transformer:
 
         Example:
             ai_results = {
-                "remittance_info": {"confidence": 0.75, "data": {...}},
-                ("payment_purpose", "invoice_number"): {"confidence": 0.90, "data": {...}}
+                "remittanceInfo": {"confidence": 0.75, "data": {...}},
+                ("paymentPurpose", "invoiceNumber"): {"confidence": 0.90, "data": {...}}
             }
-            Returns: ["remittance_info"]  # Below 0.8 threshold
+            Returns: ["remittanceInfo"]  # Below 0.8 threshold
         """
         human_review_fields = []
 

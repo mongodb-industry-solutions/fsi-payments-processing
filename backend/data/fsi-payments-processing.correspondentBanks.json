@@ -1,0 +1,424 @@
+[
+  {
+    "recordType": "JP_ENTITY_BANK",
+    "country": "JP",
+    "nameEnglish": "SONY CORPORATION",
+    "nameKatakana": "ソニー",
+    "nameHiragana": "そにー",
+    "bankName": "Mizuho Bank",
+    "bankNameKatakana": "みずほ銀行",
+    "swiftCode": "MHCBJPJT",
+    "city": "Tokyo",
+    "identification": {
+      "scheme": "BIC",
+      "value": "MHCBJPJT"
+    }
+  },
+  {
+    "recordType": "JP_ENTITY_BANK",
+    "country": "JP",
+    "nameEnglish": "HONDA MOTOR CO LTD",
+    "nameKatakana": "ホンダ",
+    "nameHiragana": "ほんだ",
+    "bankName": "Bank of Tokyo-Mitsubishi UFJ",
+    "bankNameKatakana": "三菱UFJ銀行",
+    "swiftCode": "BOTKJPJT",
+    "city": "Tokyo",
+    "identification": {
+      "scheme": "BIC",
+      "value": "BOTKJPJT"
+    }
+  },
+  {
+    "recordType": "JP_ENTITY_BANK",
+    "country": "JP",
+    "nameEnglish": "MITSUBISHI CORPORATION",
+    "nameKatakana": "三菱商事",
+    "nameHiragana": "みつびししょうじ",
+    "bankName": "Bank of Tokyo-Mitsubishi UFJ",
+    "bankNameKatakana": "三菱UFJ銀行",
+    "swiftCode": "BOTKJPJT",
+    "city": "Tokyo",
+    "identification": {
+      "scheme": "BIC",
+      "value": "BOTKJPJT"
+    }
+  },
+  {
+    "recordType": "JP_ENTITY_BANK",
+    "country": "JP",
+    "nameEnglish": "DENSO CORPORATION",
+    "nameKatakana": "デンソー・コーポレーション",
+    "nameHiragana": "でんそー・こーぽれーしょん",
+    "bankName": "Bank of Tokyo-Mitsubishi UFJ",
+    "bankNameKatakana": "三菱UFJ銀行",
+    "swiftCode": "BOTKJPJT",
+    "city": "Tokyo",
+    "identification": {
+      "scheme": "BIC",
+      "value": "BOTKJPJT"
+    }
+  },
+  {
+    "recordType": "JP_ENTITY_BANK",
+    "country": "DE",
+    "nameEnglish": "VOLKSWAGEN AG",
+    "nameKatakana": "フォルクスワーゲン",
+    "nameHiragana": "ふぉるくすわーげん",
+    "bankName": "Deutsche Bank",
+    "bankNameKatakana": null,
+    "swiftCode": "DEUTDEFFXXX",
+    "city": "Berlin",
+    "identification": {
+      "scheme": "BIC",
+      "value": "DEUTDEFFXXX"
+    }
+  },
+  {
+    "recordType": "JP_ENTITY_BANK",
+    "country": "JP",
+    "nameEnglish": "TOYOTA MOTOR CORPORATION",
+    "nameKatakana": "トヨタ自動車",
+    "nameHiragana": "とよたじどうしゃ",
+    "bankName": "Sumitomo Mitsui Banking Corporation",
+    "bankNameKatakana": "三井住友銀行",
+    "swiftCode": "SMBCJPJT",
+    "city": "Tokyo",
+    "identification": {
+      "scheme": "BIC",
+      "value": "SMBCJPJT"
+    }
+  },
+  {
+    "recordType": "JP_ENTITY_BANK",
+    "country": "JP",
+    "nameEnglish": "NISSAN MOTOR CO LTD",
+    "nameKatakana": "ニッサン",
+    "nameHiragana": "にっさん",
+    "bankName": "Sumitomo Mitsui Banking Corporation",
+    "bankNameKatakana": "三井住友銀行",
+    "swiftCode": "SMBCJPJT",
+    "city": "Yokohama",
+    "identification": {
+      "scheme": "BIC",
+      "value": "SMBCJPJT"
+    }
+  },
+  {
+    "recordType": "JP_ENTITY_BANK",
+    "country": "JP",
+    "nameEnglish": "PANASONIC CORPORATION",
+    "nameKatakana": "パナソニック",
+    "nameHiragana": "ぱなそにっく",
+    "bankName": "Mizuho Bank",
+    "bankNameKatakana": "みずほ銀行",
+    "swiftCode": "MHCBJPJT",
+    "city": "Osaka",
+    "identification": {
+      "scheme": "BIC",
+      "value": "MHCBJPJT"
+    }
+  },
+  {
+    "recordType": "JP_ENTITY_BANK",
+    "country": "IN",
+    "nameEnglish": "INFOSYS LIMITED",
+    "nameKatakana": null,
+    "nameHiragana": null,
+    "bankName": "HDFC Bank",
+    "bankNameKatakana": null,
+    "swiftCode": "HDFCINBBXXX",
+    "city": "Mumbai",
+    "identification": {
+      "scheme": "BIC",
+      "value": "HDFCINBBXXX"
+    }
+  },
+  {
+    "recordType": "JP_ENTITY_BANK",
+    "country": "US",
+    "nameEnglish": "GOOGLE LLC",
+    "nameKatakana": "グーグル",
+    "nameHiragana": "ぐーぐる",
+    "bankName": "JPMorgan Chase",
+    "bankNameKatakana": null,
+    "swiftCode": "CHASUS33XXX",
+    "city": "Mountain View",
+    "identification": {
+      "scheme": "BIC",
+      "value": "CHASUS33XXX"
+    }
+  },
+  {
+    "recordType": "IN_BRANCH",
+    "country": "IN",
+    "ifsc": "HDFC0000300",
+    "bank": "HDFC Bank",
+    "branch": "Fort",
+    "city": "Mumbai",
+    "district": "Mumbai",
+    "state": "Maharashtra",
+    "address": "Fort Branch, Mumbai 400001",
+    "contact": "022-22661234",
+    "micr": "400240003",
+    "identification": {
+      "scheme": "INFSC",
+      "value": "HDFC0000300"
+    }
+  },
+  {
+    "recordType": "IN_BRANCH",
+    "country": "IN",
+    "ifsc": "ICIC0000104",
+    "bank": "ICICI Bank",
+    "branch": "Anna Nagar",
+    "city": "Chennai",
+    "district": "Chennai",
+    "state": "Tamil Nadu",
+    "address": "Anna Nagar, Chennai 600040",
+    "contact": "044-26213456",
+    "micr": "600229002",
+    "identification": {
+      "scheme": "INFSC",
+      "value": "ICIC0000104"
+    }
+  },
+  {
+    "recordType": "IN_BRANCH",
+    "country": "IN",
+    "ifsc": "UTIB0000001",
+    "bank": "Axis Bank",
+    "branch": "Kasturba Gandhi Marg",
+    "city": "New Delhi",
+    "district": "New Delhi",
+    "state": "Delhi",
+    "address": "Kasturba Gandhi Marg, New Delhi 110001",
+    "contact": "011-23321234",
+    "micr": "110211001",
+    "identification": {
+      "scheme": "INFSC",
+      "value": "UTIB0000001"
+    }
+  },
+  {
+    "recordType": "IN_BRANCH",
+    "country": "IN",
+    "ifsc": "KKBK0000123",
+    "bank": "Kotak Mahindra Bank",
+    "branch": "Connaught Place",
+    "city": "New Delhi",
+    "district": "New Delhi",
+    "state": "Delhi",
+    "address": "Connaught Place, New Delhi 110001",
+    "contact": "011-42323456",
+    "micr": "110485001",
+    "identification": {
+      "scheme": "INFSC",
+      "value": "KKBK0000123"
+    }
+  },
+  {
+    "recordType": "IN_BRANCH",
+    "country": "IN",
+    "ifsc": "HDFC0000001",
+    "bank": "HDFC Bank",
+    "branch": "Connaught Place",
+    "city": "New Delhi",
+    "district": "New Delhi",
+    "state": "Delhi",
+    "address": "Jeevan Bharti Building, Connaught Circus, New Delhi 110001",
+    "contact": "011-23414895",
+    "micr": "110240001",
+    "identification": {
+      "scheme": "INFSC",
+      "value": "HDFC0000001"
+    }
+  },
+  {
+    "recordType": "IN_BRANCH",
+    "country": "IN",
+    "ifsc": "ICIC0000103",
+    "bank": "ICICI Bank",
+    "branch": "MG Road",
+    "city": "Bangalore",
+    "district": "Bangalore",
+    "state": "Karnataka",
+    "address": "MG Road, Bangalore 560001",
+    "contact": "080-25587890",
+    "micr": "560229001",
+    "identification": {
+      "scheme": "INFSC",
+      "value": "ICIC0000103"
+    }
+  },
+  {
+    "recordType": "IN_BRANCH",
+    "country": "IN",
+    "ifsc": "SBIN0001234",
+    "bank": "State Bank of India",
+    "branch": "MG Road",
+    "city": "Bangalore",
+    "district": "Bangalore",
+    "state": "Karnataka",
+    "address": "MG Road, Bangalore 560001",
+    "contact": "080-25584466",
+    "micr": "560002001",
+    "identification": {
+      "scheme": "INFSC",
+      "value": "SBIN0001234"
+    }
+  },
+  {
+    "recordType": "IN_BRANCH",
+    "country": "IN",
+    "ifsc": "KKBK0000456",
+    "bank": "Kotak Mahindra Bank",
+    "branch": "Anna Nagar",
+    "city": "Chennai",
+    "district": "Chennai",
+    "state": "Tamil Nadu",
+    "address": "Anna Nagar, Chennai 600040",
+    "contact": "044-26264567",
+    "micr": "600485002",
+    "identification": {
+      "scheme": "INFSC",
+      "value": "KKBK0000456"
+    }
+  },
+  {
+    "recordType": "IN_BRANCH",
+    "country": "IN",
+    "ifsc": "HDFC0000123",
+    "bank": "HDFC Bank",
+    "branch": "Anna Nagar",
+    "city": "Chennai",
+    "district": "Chennai",
+    "state": "Tamil Nadu",
+    "address": "No 1, First Main Road, Anna Nagar, Chennai 600040",
+    "contact": "044-26264646",
+    "micr": "600240002",
+    "identification": {
+      "scheme": "INFSC",
+      "value": "HDFC0000123"
+    }
+  },
+  {
+    "recordType": "IN_BRANCH",
+    "country": "IN",
+    "ifsc": "HDFC0000240",
+    "bank": "HDFC Bank",
+    "branch": "MG Road",
+    "city": "Bangalore",
+    "district": "Bangalore",
+    "state": "Karnataka",
+    "address": "MG Road, Bangalore 560001",
+    "contact": "080-25584157",
+    "micr": "560240001",
+    "identification": {
+      "scheme": "INFSC",
+      "value": "HDFC0000240"
+    }
+  },
+  {
+    "recordType": "IN_BRANCH",
+    "country": "IN",
+    "ifsc": "ICIC0000001",
+    "bank": "ICICI Bank",
+    "branch": "Connaught Place",
+    "city": "New Delhi",
+    "district": "New Delhi",
+    "state": "Delhi",
+    "address": "Connaught Place, New Delhi 110001",
+    "contact": "011-41412345",
+    "micr": "110229001",
+    "identification": {
+      "scheme": "INFSC",
+      "value": "ICIC0000001"
+    }
+  },
+  {
+    "recordType": "IN_BRANCH",
+    "country": "IN",
+    "ifsc": "SBIN0000001",
+    "bank": "State Bank of India",
+    "branch": "Parliament Street",
+    "city": "New Delhi",
+    "district": "New Delhi",
+    "state": "Delhi",
+    "address": "11 Parliament Street, New Delhi 110001",
+    "contact": "011-23748088",
+    "micr": "110002001",
+    "identification": {
+      "scheme": "INFSC",
+      "value": "SBIN0000001"
+    }
+  },
+  {
+    "recordType": "IN_BRANCH",
+    "country": "IN",
+    "ifsc": "SBIN0000123",
+    "bank": "State Bank of India",
+    "branch": "Anna Nagar",
+    "city": "Chennai",
+    "district": "Chennai",
+    "state": "Tamil Nadu",
+    "address": "Anna Nagar West, Chennai 600040",
+    "contact": "044-26180500",
+    "micr": "600002002",
+    "identification": {
+      "scheme": "INFSC",
+      "value": "SBIN0000123"
+    }
+  },
+  {
+    "recordType": "IN_BRANCH",
+    "country": "IN",
+    "ifsc": "PUNB0000100",
+    "bank": "Punjab National Bank",
+    "branch": "Parliament Street",
+    "city": "New Delhi",
+    "district": "New Delhi",
+    "state": "Delhi",
+    "address": "7 Parliament Street, New Delhi 110001",
+    "contact": "011-23325252",
+    "micr": "110024001",
+    "identification": {
+      "scheme": "INFSC",
+      "value": "PUNB0000100"
+    }
+  },
+  {
+    "recordType": "IN_BRANCH",
+    "country": "IN",
+    "ifsc": "UTIB0000345",
+    "bank": "Axis Bank",
+    "branch": "T Nagar",
+    "city": "Chennai",
+    "district": "Chennai",
+    "state": "Tamil Nadu",
+    "address": "T Nagar, Chennai 600017",
+    "contact": "044-28341234",
+    "micr": "600211002",
+    "identification": {
+      "scheme": "INFSC",
+      "value": "UTIB0000345"
+    }
+  },
+  {
+    "recordType": "IN_BRANCH",
+    "country": "IN",
+    "ifsc": "PUNB0001200",
+    "bank": "Punjab National Bank",
+    "branch": "Anna Salai",
+    "city": "Chennai",
+    "district": "Chennai",
+    "state": "Tamil Nadu",
+    "address": "Anna Salai, Chennai 600002",
+    "contact": "044-28523456",
+    "micr": "600024002",
+    "identification": {
+      "scheme": "INFSC",
+      "value": "PUNB0001200"
+    }
+  }
+]

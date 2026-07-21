@@ -1,1154 +1,1156 @@
-[{
-  "_id": "JSON_to_cain.001",
-  "extract": {
-    "message_type": "\"message_type\"\\s*:\\s*\"([^\"]+)\"",
-    "creation_datetime": "\"creation_datetime\"\\s*:\\s*\"([^\"]+)\"",
-    "transaction_ref": "\"transaction_ref\"\\s*:\\s*\"([^\"]+)\"",
-    "end_to_end_id": "\"end_to_end_id\"\\s*:\\s*\"([^\"]+)\"",
-    "card_number": "\"card_number\"\\s*:\\s*\"([^\"]+)\"",
-    "processing_code": "\"processing_code\"\\s*:\\s*\"([^\"]+)\"",
-    "amount": "\"amount\"\\s*:\\s*\"([^\"]+)\"",
-    "currency": "\"currency\"\\s*:\\s*\"([^\"]+)\"",
-    "transaction_time": "\"transaction_time\"\\s*:\\s*\"([^\"]+)\"",
-    "value_date": "\"value_date\"\\s*:\\s*\"([^\"]+)\"",
-    "terminal_id": "\"terminal_id\"\\s*:\\s*\"([^\"]+)\"",
-    "merchant_id": "\"merchant_id\"\\s*:\\s*\"([^\"]+)\"",
-    "merchant_name": "\"merchant_name\"\\s*:\\s*\"([^\"]+)\"",
-    "merchant_city": "\"merchant_city\"\\s*:\\s*\"([^\"]+)\"",
-    "merchant_country": "\"merchant_country\"\\s*:\\s*\"([^\"]+)\""
-  },
-  "map": [
-    {
-      "from": "message_type",
-      "to": [
-        "message_type"
-      ]
+[
+  {
+    "_id": "JSON_to_cain.001",
+    "extract": {
+      "messageType": "\"messageType\"\\s*:\\s*\"([^\"]+)\"",
+      "creationDateTime": "\"creationDateTime\"\\s*:\\s*\"([^\"]+)\"",
+      "transactionRef": "\"transactionRef\"\\s*:\\s*\"([^\"]+)\"",
+      "endToEndId": "\"endToEndId\"\\s*:\\s*\"([^\"]+)\"",
+      "cardNumber": "\"cardNumber\"\\s*:\\s*\"([^\"]+)\"",
+      "processingCode": "\"processingCode\"\\s*:\\s*\"([^\"]+)\"",
+      "amount": "\"amount\"\\s*:\\s*\"([^\"]+)\"",
+      "currency": "\"currency\"\\s*:\\s*\"([^\"]+)\"",
+      "transactionTime": "\"transactionTime\"\\s*:\\s*\"([^\"]+)\"",
+      "valueDate": "\"valueDate\"\\s*:\\s*\"([^\"]+)\"",
+      "terminalId": "\"terminalId\"\\s*:\\s*\"([^\"]+)\"",
+      "merchantId": "\"merchantId\"\\s*:\\s*\"([^\"]+)\"",
+      "merchantName": "\"merchantName\"\\s*:\\s*\"([^\"]+)\"",
+      "merchantCity": "\"merchantCity\"\\s*:\\s*\"([^\"]+)\"",
+      "merchantCountry": "\"merchantCountry\"\\s*:\\s*\"([^\"]+)\""
     },
-    {
-      "from": "creation_datetime",
-      "to": [
-        "creation_datetime"
-      ]
-    },
-    {
-      "from": "transaction_ref",
-      "to": [
-        "transaction_ref"
-      ]
-    },
-    {
-      "from": "end_to_end_id",
-      "to": [
-        "end_to_end_id"
-      ]
-    },
-    {
-      "from": "card_number",
-      "to": [
-        "card_number"
-      ]
-    },
-    {
-      "from": "processing_code",
-      "to": [
-        "processing_code"
-      ]
-    },
-    {
-      "from": "amount",
-      "to": [
-        "amount"
-      ]
-    },
-    {
-      "from": "currency",
-      "to": [
-        "currency"
-      ]
-    },
-    {
-      "from": "transaction_time",
-      "to": [
-        "transaction_time"
-      ]
-    },
-    {
-      "from": "value_date",
-      "to": [
-        "value_date"
-      ]
-    },
-    {
-      "from": "terminal_id",
-      "to": [
-        "terminal_id"
-      ]
-    },
-    {
-      "from": "merchant_id",
-      "to": [
-        "merchant_id"
-      ]
-    },
-    {
-      "from": "merchant_name",
-      "to": [
-        "merchant_name"
-      ]
-    },
-    {
-      "from": "merchant_city",
-      "to": [
-        "merchant_city"
-      ]
-    },
-    {
-      "from": "merchant_country",
-      "to": [
-        "merchant_country"
-      ]
+    "map": [
+      {
+        "from": "messageType",
+        "to": [
+          "messageType"
+        ]
+      },
+      {
+        "from": "creationDateTime",
+        "to": [
+          "creationDateTime"
+        ]
+      },
+      {
+        "from": "transactionRef",
+        "to": [
+          "transactionRef"
+        ]
+      },
+      {
+        "from": "endToEndId",
+        "to": [
+          "endToEndId"
+        ]
+      },
+      {
+        "from": "cardNumber",
+        "to": [
+          "cardNumber"
+        ]
+      },
+      {
+        "from": "processingCode",
+        "to": [
+          "processingCode"
+        ]
+      },
+      {
+        "from": "amount",
+        "to": [
+          "amount"
+        ]
+      },
+      {
+        "from": "currency",
+        "to": [
+          "currency"
+        ]
+      },
+      {
+        "from": "transactionTime",
+        "to": [
+          "transactionTime"
+        ]
+      },
+      {
+        "from": "valueDate",
+        "to": [
+          "valueDate"
+        ]
+      },
+      {
+        "from": "terminalId",
+        "to": [
+          "terminalId"
+        ]
+      },
+      {
+        "from": "merchantId",
+        "to": [
+          "merchantId"
+        ]
+      },
+      {
+        "from": "merchantName",
+        "to": [
+          "merchantName"
+        ]
+      },
+      {
+        "from": "merchantCity",
+        "to": [
+          "merchantCity"
+        ]
+      },
+      {
+        "from": "merchantCountry",
+        "to": [
+          "merchantCountry"
+        ]
+      }
+    ],
+    "output": {
+      "creationDateTime": "Document.CardTx.GrpHdr.CreDtTm",
+      "transactionRef": "Document.CardTx.Tx.TxId.TxRef",
+      "endToEndId": "Document.CardTx.Tx.TxId.RtrvlRefNb",
+      "messageType": "Document.CardTx.Tx.MsgTp",
+      "amount": "Document.CardTx.Tx.TxAmt.Amt",
+      "currency": "Document.CardTx.Tx.TxAmt.Ccy",
+      "valueDate": "Document.CardTx.Tx.AccptrTxDtTm",
+      "transactionTime": "Document.CardTx.Tx.TxDtTm",
+      "cardNumber": "Document.CardTx.Card.PAN",
+      "terminalId": "Document.CardTx.Cntxt.PtOfIntractn.Id.Id",
+      "processingCode": "Document.CardTx.Cntxt.TxCntxt.TxChanl",
+      "merchantId": "Document.CardTx.Envt.Mrchnt.Id.Id",
+      "merchantName": "Document.CardTx.Envt.Mrchnt.Nm",
+      "merchantCity": "Document.CardTx.Envt.Mrchnt.Adr.TwnNm",
+      "merchantCountry": "Document.CardTx.Envt.Mrchnt.Adr.Ctry"
     }
-  ],
-  "output": {
-    "creation_datetime": "Document.CardTx.GrpHdr.CreDtTm",
-    "transaction_ref": "Document.CardTx.Tx.TxId.TxRef",
-    "end_to_end_id": "Document.CardTx.Tx.TxId.RtrvlRefNb",
-    "message_type": "Document.CardTx.Tx.MsgTp",
-    "amount": "Document.CardTx.Tx.TxAmt.Amt",
-    "currency": "Document.CardTx.Tx.TxAmt.Ccy",
-    "value_date": "Document.CardTx.Tx.AccptrTxDtTm",
-    "transaction_time": "Document.CardTx.Tx.TxDtTm",
-    "card_number": "Document.CardTx.Card.PAN",
-    "terminal_id": "Document.CardTx.Cntxt.PtOfIntractn.Id.Id",
-    "processing_code": "Document.CardTx.Cntxt.TxCntxt.TxChanl",
-    "merchant_id": "Document.CardTx.Envt.Mrchnt.Id.Id",
-    "merchant_name": "Document.CardTx.Envt.Mrchnt.Nm",
-    "merchant_city": "Document.CardTx.Envt.Mrchnt.Adr.TwnNm",
-    "merchant_country": "Document.CardTx.Envt.Mrchnt.Adr.Ctry"
-  }
-},
-{
-  "_id": "JSON_to_pacs.008",
-  "extract": {
-    "transaction_ref": "\"transaction_ref\"\\s*:\\s*\"([^\"]+)\"",
-    "bank_operation_code": "\"bank_operation_code\"\\s*:\\s*\"([^\"]+)\"",
-    "message_id": "\"message_id\"\\s*:\\s*\"([^\"]+)\"",
-    "creation_datetime": "\"creation_datetime\"\\s*:\\s*\"([^\"]+)\"",
-    "number_of_transactions": "\"number_of_transactions\"\\s*:\\s*\"([^\"]+)\"",
-    "settlement_method": "\"settlement_method\"\\s*:\\s*\"([^\"]+)\"",
-    "end_to_end_id": "\"end_to_end_id\"\\s*:\\s*\"([^\"]+)\"",
-    "amount": "\"amount\"\\s*:\\s*\"([^\"]+)\"",
-    "currency": "\"currency\"\\s*:\\s*\"([^\"]+)\"",
-    "value_date": "\"value_date\"\\s*:\\s*\"([^\"]+)\"",
-    "debtor_name": "\"debtor_name\"\\s*:\\s*\"([^\"]+)\"",
-    "debtor_account": "\"debtor_account\"\\s*:\\s*\"([^\"]+)\"",
-    "debtor_address": "\"debtor_address\"\\s*:\\s*\"([^\"]+)\"",
-    "debtor_bank": "\"debtor_bank\"\\s*:\\s*\"([^\"]+)\"",
-    "creditor_name": "\"creditor_name\"\\s*:\\s*\"([^\"]+)\"",
-    "creditor_account": "\"creditor_account\"\\s*:\\s*\"([^\"]+)\"",
-    "creditor_address": "\"creditor_address\"\\s*:\\s*\"([^\"]+)\"",
-    "creditor_bank": "\"creditor_bank\"\\s*:\\s*\"([^\"]+)\"",
-    "creditor_bic": "\"creditor_bic\"\\s*:\\s*\"([^\"]+)\"",
-    "remittance_info": "\"remittance_info\"\\s*:\\s*\"([^\"]+)\"",
-    "payment_purpose": "\"payment_purpose\"\\s*:\\s*\"([^\"]+)\"",
-    "invoice_number": "\"invoice_number\"\\s*:\\s*\"([^\"]+)\"",
-    "details": "\"details\"\\s*:\\s*\"([^\"]+)\"",
-    "charge_bearer": "\"charge_bearer\"\\s*:\\s*\"([^\"]+)\"",
-    "category_purpose": "\"category_purpose\"\\s*:\\s*\"([^\"]+)\""
   },
-  "map": [
-    {
-      "from": "transaction_ref",
-      "to": [
-        "transaction_ref"
-      ]
+  {
+    "_id": "JSON_to_pacs.008",
+    "extract": {
+      "transactionRef": "\"transactionRef\"\\s*:\\s*\"([^\"]+)\"",
+      "bankOperationCode": "\"bankOperationCode\"\\s*:\\s*\"([^\"]+)\"",
+      "messageId": "\"messageId\"\\s*:\\s*\"([^\"]+)\"",
+      "creationDateTime": "\"creationDateTime\"\\s*:\\s*\"([^\"]+)\"",
+      "numberOfTransactions": "\"numberOfTransactions\"\\s*:\\s*\"([^\"]+)\"",
+      "settlementMethod": "\"settlementMethod\"\\s*:\\s*\"([^\"]+)\"",
+      "endToEndId": "\"endToEndId\"\\s*:\\s*\"([^\"]+)\"",
+      "amount": "\"amount\"\\s*:\\s*\"([^\"]+)\"",
+      "currency": "\"currency\"\\s*:\\s*\"([^\"]+)\"",
+      "valueDate": "\"valueDate\"\\s*:\\s*\"([^\"]+)\"",
+      "debtorName": "\"debtorName\"\\s*:\\s*\"([^\"]+)\"",
+      "debtorAccount": "\"debtorAccount\"\\s*:\\s*\"([^\"]+)\"",
+      "debtorAddress": "\"debtorAddress\"\\s*:\\s*\"([^\"]+)\"",
+      "debtorBank": "\"debtorBank\"\\s*:\\s*\"([^\"]+)\"",
+      "creditorName": "\"creditorName\"\\s*:\\s*\"([^\"]+)\"",
+      "creditorAccount": "\"creditorAccount\"\\s*:\\s*\"([^\"]+)\"",
+      "creditorAddress": "\"creditorAddress\"\\s*:\\s*\"([^\"]+)\"",
+      "creditorBank": "\"creditorBank\"\\s*:\\s*\"([^\"]+)\"",
+      "creditorBic": "\"creditorBic\"\\s*:\\s*\"([^\"]+)\"",
+      "remittanceInfo": "\"remittanceInfo\"\\s*:\\s*\"([^\"]+)\"",
+      "paymentPurpose": "\"paymentPurpose\"\\s*:\\s*\"([^\"]+)\"",
+      "invoiceNumber": "\"invoiceNumber\"\\s*:\\s*\"([^\"]+)\"",
+      "details": "\"details\"\\s*:\\s*\"([^\"]+)\"",
+      "chargeBearer": "\"chargeBearer\"\\s*:\\s*\"([^\"]+)\"",
+      "categoryPurpose": "\"categoryPurpose\"\\s*:\\s*\"([^\"]+)\""
     },
-    {
-      "from": "bank_operation_code",
-      "to": [
-        "bank_operation_code"
-      ]
-    },
-    {
-      "from": "message_id",
-      "to": [
-        "message_id"
-      ]
-    },
-    {
-      "from": "creation_datetime",
-      "to": [
-        "creation_datetime"
-      ]
-    },
-    {
-      "from": "number_of_transactions",
-      "to": [
-        "number_of_transactions"
-      ]
-    },
-    {
-      "from": "settlement_method",
-      "to": [
-        "settlement_method"
-      ]
-    },
-    {
-      "from": "end_to_end_id",
-      "to": [
-        "end_to_end_id"
-      ]
-    },
-    {
-      "from": "amount",
-      "to": [
-        "amount"
-      ]
-    },
-    {
-      "from": "currency",
-      "to": [
-        "currency"
-      ]
-    },
-    {
-      "from": "value_date",
-      "to": [
-        "value_date"
-      ]
-    },
-    {
-      "from": "debtor_name",
-      "to": [
-        "debtor_name"
-      ]
-    },
-    {
-      "from": "debtor_account",
-      "to": [
-        "debtor_account"
-      ]
-    },
-    {
-      "from": "debtor_address",
-      "to": [
-        "debtor_address"
-      ]
-    },
-    {
-      "from": "debtor_bank",
-      "to": [
-        "debtor_bank"
-      ]
-    },
-    {
-      "from": "creditor_name",
-      "to": [
-        "creditor_name"
-      ]
-    },
-    {
-      "from": "creditor_account",
-      "to": [
-        "creditor_account"
-      ]
-    },
-    {
-      "from": "creditor_address",
-      "to": [
-        "creditor_address"
-      ]
-    },
-    {
-      "from": "creditor_bank",
-      "to": [
-        "creditor_bank"
-      ]
-    },
-    {
-      "from": "creditor_bic",
-      "to": [
-        "creditor_bic"
-      ]
-    },
-    {
-      "from": "remittance_info",
-      "to": [
-        "remittance_info"
-      ]
-    },
-    {
-      "from": "payment_purpose",
-      "to": [
-        "payment_purpose"
-      ]
-    },
-    {
-      "from": "invoice_number",
-      "to": [
-        "invoice_number"
-      ]
-    },
-    {
-      "from": "details",
-      "to": [
-        "details"
-      ]
-    },
-    {
-      "from": "charge_bearer",
-      "to": [
-        "charge_bearer"
-      ]
-    },
-    {
-      "from": "category_purpose",
-      "to": [
-        "category_purpose"
-      ]
+    "map": [
+      {
+        "from": "transactionRef",
+        "to": [
+          "transactionRef"
+        ]
+      },
+      {
+        "from": "bankOperationCode",
+        "to": [
+          "bankOperationCode"
+        ]
+      },
+      {
+        "from": "messageId",
+        "to": [
+          "messageId"
+        ]
+      },
+      {
+        "from": "creationDateTime",
+        "to": [
+          "creationDateTime"
+        ]
+      },
+      {
+        "from": "numberOfTransactions",
+        "to": [
+          "numberOfTransactions"
+        ]
+      },
+      {
+        "from": "settlementMethod",
+        "to": [
+          "settlementMethod"
+        ]
+      },
+      {
+        "from": "endToEndId",
+        "to": [
+          "endToEndId"
+        ]
+      },
+      {
+        "from": "amount",
+        "to": [
+          "amount"
+        ]
+      },
+      {
+        "from": "currency",
+        "to": [
+          "currency"
+        ]
+      },
+      {
+        "from": "valueDate",
+        "to": [
+          "valueDate"
+        ]
+      },
+      {
+        "from": "debtorName",
+        "to": [
+          "debtorName"
+        ]
+      },
+      {
+        "from": "debtorAccount",
+        "to": [
+          "debtorAccount"
+        ]
+      },
+      {
+        "from": "debtorAddress",
+        "to": [
+          "debtorAddress"
+        ]
+      },
+      {
+        "from": "debtorBank",
+        "to": [
+          "debtorBank"
+        ]
+      },
+      {
+        "from": "creditorName",
+        "to": [
+          "creditorName"
+        ]
+      },
+      {
+        "from": "creditorAccount",
+        "to": [
+          "creditorAccount"
+        ]
+      },
+      {
+        "from": "creditorAddress",
+        "to": [
+          "creditorAddress"
+        ]
+      },
+      {
+        "from": "creditorBank",
+        "to": [
+          "creditorBank"
+        ]
+      },
+      {
+        "from": "creditorBic",
+        "to": [
+          "creditorBic"
+        ]
+      },
+      {
+        "from": "remittanceInfo",
+        "to": [
+          "remittanceInfo"
+        ]
+      },
+      {
+        "from": "paymentPurpose",
+        "to": [
+          "paymentPurpose"
+        ]
+      },
+      {
+        "from": "invoiceNumber",
+        "to": [
+          "invoiceNumber"
+        ]
+      },
+      {
+        "from": "details",
+        "to": [
+          "details"
+        ]
+      },
+      {
+        "from": "chargeBearer",
+        "to": [
+          "chargeBearer"
+        ]
+      },
+      {
+        "from": "categoryPurpose",
+        "to": [
+          "categoryPurpose"
+        ]
+      }
+    ],
+    "output": {
+      "messageId": "Document.FIToFICstmrCdtTrf.GrpHdr.MsgId",
+      "creationDateTime": "Document.FIToFICstmrCdtTrf.GrpHdr.CreDtTm",
+      "numberOfTransactions": "Document.FIToFICstmrCdtTrf.GrpHdr.NbOfTxs",
+      "settlementMethod": "Document.FIToFICstmrCdtTrf.GrpHdr.SttlmInf.SttlmMtd",
+      "valueDate": "Document.FIToFICstmrCdtTrf.GrpHdr.IntrBkSttlmDt",
+      "transactionRef": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.PmtId.InstrId",
+      "endToEndId": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.PmtId.EndToEndId",
+      "bankOperationCode": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.PmtTpInf.SvcLvl.Cd",
+      "amount": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.IntrBkSttlmAmt.#text",
+      "currency": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.IntrBkSttlmAmt.@Ccy",
+      "debtorName": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.Dbtr.Nm",
+      "debtorAccount": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.DbtrAcct.Id.IBAN",
+      "debtorAddress": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.Dbtr.PstlAdr.AdrLine",
+      "debtorBank": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.DbtrAgt.FinInstnId.BICFI",
+      "creditorName": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.Cdtr.Nm",
+      "creditorAccount": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.CdtrAcct.Id.IBAN",
+      "creditorAddress": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.Cdtr.PstlAdr.AdrLine",
+      "creditorBank": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.CdtrAgt.FinInstnId.BICFI",
+      "creditorBic": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.CdtrAgt.FinInstnId.BICFI",
+      "remittanceInfo": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.RmtInf.Ustrd",
+      "paymentPurpose": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.RmtInf.Strd.RfrdDocInf.Tp.CdOrPrtry.Prtry",
+      "invoiceNumber": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.RmtInf.Strd.RfrdDocInf.Nb",
+      "details": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.RmtInf.Strd.AddtlRmtInf",
+      "chargeBearer": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.ChrgBr",
+      "categoryPurpose": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.Purp.Cd"
     }
-  ],
-  "output": {
-    "message_id": "Document.FIToFICstmrCdtTrf.GrpHdr.MsgId",
-    "creation_datetime": "Document.FIToFICstmrCdtTrf.GrpHdr.CreDtTm",
-    "number_of_transactions": "Document.FIToFICstmrCdtTrf.GrpHdr.NbOfTxs",
-    "settlement_method": "Document.FIToFICstmrCdtTrf.GrpHdr.SttlmInf.SttlmMtd",
-    "value_date": "Document.FIToFICstmrCdtTrf.GrpHdr.IntrBkSttlmDt",
-    "transaction_ref": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.PmtId.InstrId",
-    "end_to_end_id": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.PmtId.EndToEndId",
-    "bank_operation_code": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.PmtTpInf.SvcLvl.Cd",
-    "amount": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.IntrBkSttlmAmt.#text",
-    "currency": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.IntrBkSttlmAmt.@Ccy",
-    "debtor_name": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.Dbtr.Nm",
-    "debtor_account": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.DbtrAcct.Id.IBAN",
-    "debtor_address": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.Dbtr.PstlAdr.AdrLine",
-    "debtor_bank": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.DbtrAgt.FinInstnId.BICFI",
-    "creditor_name": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.Cdtr.Nm",
-    "creditor_account": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.CdtrAcct.Id.IBAN",
-    "creditor_address": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.Cdtr.PstlAdr.AdrLine",
-    "creditor_bank": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.CdtrAgt.FinInstnId.BICFI",
-    "creditor_bic": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.CdtrAgt.FinInstnId.BICFI",
-    "remittance_info": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.RmtInf.Ustrd",
-    "payment_purpose": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.RmtInf.Strd.RfrdDocInf.Tp.CdOrPrtry.Prtry",
-    "invoice_number": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.RmtInf.Strd.RfrdDocInf.Nb",
-    "details": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.RmtInf.Strd.AddtlRmtInf",
-    "charge_bearer": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.ChrgBr",
-    "category_purpose": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.Purp.Cd"
-  }
-},
-{
-  "_id": "MT103_to_pacs.008",
-  "extract": {
-    "20": ":20:([^\\n:]+)",
-    "59": ":59:([^\\n]*(?:\\n(?!:)[^\\n]*)*)",
-    "70": ":70:([\\s\\S]*?)(?=\\n:[0-9]|\\n-\\})",
-    "23B": ":23B:([^\\n:]+)",
-    "32A": ":32A:([^\\n:]+)",
-    "50K": ":50K:([^\\n]*(?:\\n(?!:)[^\\n]*)*)",
-    "52A": ":52A:([^\\n:]+)",
-    "71A": ":71A:([^\\n:]+)"
   },
-  "map": [
-    {
-      "from": "20",
-      "to": "transaction_ref"
+  {
+    "_id": "MT103_to_pacs.008",
+    "extract": {
+      "20": ":20:([^\\n:]+)",
+      "59": ":59:([^\\n]*(?:\\n(?!:)[^\\n]*)*)",
+      "70": ":70:([\\s\\S]*?)(?=\\n:[0-9]|\\n-\\})",
+      "23B": ":23B:([^\\n:]+)",
+      "32A": ":32A:([^\\n:]+)",
+      "50K": ":50K:([^\\n]*(?:\\n(?!:)[^\\n]*)*)",
+      "52A": ":52A:([^\\n:]+)",
+      "71A": ":71A:([^\\n:]+)"
     },
-    {
-      "from": "23B",
-      "to": "bank_operation_code"
+    "map": [
+      {
+        "from": "20",
+        "to": "transactionRef"
+      },
+      {
+        "from": "23B",
+        "to": "bankOperationCode"
+      },
+      {
+        "from": "32A",
+        "to": [
+          "valueDate",
+          "currency",
+          "amount"
+        ],
+        "split": [
+          6,
+          9
+        ]
+      },
+      {
+        "from": "50K",
+        "to": [
+          "debtorAccount",
+          "debtorName",
+          "debtorAddress"
+        ],
+        "multiline": true
+      },
+      {
+        "from": "52A",
+        "to": "orderingInstitution"
+      },
+      {
+        "from": "59",
+        "to": [
+          "creditorAccount",
+          "creditorName",
+          "creditorAddress"
+        ],
+        "multiline": true
+      },
+      {
+        "from": "70",
+        "to": [
+          "paymentPurpose",
+          "invoiceNumber",
+          "details"
+        ],
+        "ai": "remittance",
+        "patterns": {
+          "paymentPurpose": {
+            "regex": "^(INVOICE|PAYMENT|CONTRACT|ORDER|TRANSFER|SALARY|DIVIDEND|FEE)",
+            "group": 1,
+            "default": "PAYMENT"
+          },
+          "invoiceNumber": {
+            "regex": "([A-Z]{2,}-[A-Z0-9-]+-\\d{2,}|INV-[A-Z0-9-]+|REF[:\\s]*[A-Z0-9-]+)",
+            "group": 1,
+            "default": ""
+          },
+          "details": {
+            "join_lines": ". ",
+            "strip": true
+          }
+        }
+      },
+      {
+        "from": "71A",
+        "to": "chargesCode"
+      }
+    ],
+    "output": {
+      "transactionRef": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.PmtId.InstrId",
+      "bankOperationCode": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.PmtTpInf.SvcLvl.Cd",
+      "valueDate": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.IntrBkSttlmDt",
+      "currency": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.IntrBkSttlmAmt.@Ccy",
+      "amount": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.IntrBkSttlmAmt.#text",
+      "debtorAccount": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.Dbtr.Id.OrgId.Othr.Id",
+      "debtorName": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.Dbtr.Nm",
+      "debtorAddress": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.Dbtr.PstlAdr.AdrLine",
+      "orderingInstitution": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.InstgAgt.FinInstnId.BICFI",
+      "creditorAccount": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.Cdtr.Id.OrgId.Othr.Id",
+      "creditorName": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.Cdtr.Nm",
+      "creditorAddress": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.Cdtr.PstlAdr.AdrLine",
+      "paymentPurpose": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.RmtInf.Strd.RfrdDocInf.Tp.CdOrPrtry.Prtry",
+      "invoiceNumber": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.RmtInf.Strd.RfrdDocInf.Nb",
+      "details": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.RmtInf.Ustrd",
+      "chargesCode": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.ChrgBr"
+    }
+  },
+  {
+    "_id": "MT103_to_JSON",
+    "extract": {
+      "20": ":20:([^\\n:]+)",
+      "59": ":59:([^\\n]*(?:\\n(?!:)[^\\n]*)*)",
+      "70": ":70:([^\\n]*(?:\\n(?!:[0-9])[^\\n]*)*)",
+      "72": ":72:([\\s\\S]*?)(?=:[0-9]|$|-})",
+      "23B": ":23B:([^\\n:]+)",
+      "32A": ":32A:([^\\n:]+)",
+      "33B": ":33B:([^\\n:]+)",
+      "50K": ":50K:([^\\n]*(?:\\n(?!:)[^\\n]*)*)",
+      "52A": ":52A:([^\\n:]+)",
+      "53A": ":53A:([^\\n:]+)",
+      "56A": ":56A:([^\\n:]+)",
+      "57A": ":57A:([^\\n:]+)",
+      "57D": ":57D:([^\\n]*(?:\\n(?!:)[^\\n]*)*)",
+      "71A": ":71A:([^\\n:]+)"
     },
-    {
-      "from": "32A",
-      "to": [
-        "value_date",
-        "currency",
-        "amount"
-      ],
-      "split": [
-        6,
-        9
-      ]
+    "map": [
+      {
+        "from": "20",
+        "to": [
+          "transactionRef"
+        ]
+      },
+      {
+        "from": "23B",
+        "to": [
+          "bankOperationCode"
+        ]
+      },
+      {
+        "from": "32A",
+        "to": [
+          "valueDate",
+          "currency",
+          "amount"
+        ],
+        "split": [
+          6,
+          9
+        ]
+      },
+      {
+        "from": "33B",
+        "to": [
+          "originalCurrency",
+          "originalAmount"
+        ],
+        "split": [
+          3
+        ]
+      },
+      {
+        "from": "50K",
+        "to": [
+          "debtorAccount",
+          "debtorName",
+          "debtorAddress"
+        ],
+        "multiline": true
+      },
+      {
+        "from": "59",
+        "to": [
+          "creditorAccount",
+          "creditorName",
+          "creditorAddress"
+        ],
+        "multiline": true
+      },
+      {
+        "from": "52A",
+        "to": [
+          "debtorBank"
+        ]
+      },
+      {
+        "from": "53A",
+        "to": [
+          "senderCorrespondent"
+        ]
+      },
+      {
+        "from": "56A",
+        "to": [
+          "intermediaryBank"
+        ]
+      },
+      {
+        "from": "57A",
+        "to": [
+          "creditorBank"
+        ]
+      },
+      {
+        "from": "57D",
+        "to": [
+          "creditorBank"
+        ]
+      },
+      {
+        "from": "70",
+        "to": [
+          "paymentPurpose",
+          "invoiceNumber",
+          "details"
+        ],
+        "ai": "remittance",
+        "patterns": {
+          "paymentPurpose": {
+            "regex": "^(INVOICE|PAYMENT|CONTRACT|ORDER|TRANSFER|SALARY|DIVIDEND|FEE)",
+            "group": 1,
+            "default": "PAYMENT"
+          },
+          "invoiceNumber": {
+            "regex": "([A-Z]{2,}-[A-Z0-9-]+-\\d{2,}|INV-[A-Z0-9-]+|REF[:\\s]*[A-Z0-9-]+)",
+            "group": 1,
+            "default": ""
+          },
+          "details": {
+            "join_lines": ". ",
+            "strip": true
+          }
+        }
+      },
+      {
+        "from": "71A",
+        "to": [
+          "chargeBearer"
+        ]
+      },
+      {
+        "from": "72",
+        "to": [
+          "instructionInfo"
+        ]
+      },
+      {
+        "from": "valueDate",
+        "to": [
+          "valueDate"
+        ],
+        "dateFormat": "%y%m%d->%Y-%m-%d"
+      }
+    ],
+    "output": {
+      "transactionRef": "transactionRef",
+      "bankOperationCode": "bankOperationCode",
+      "amount": "amount",
+      "currency": "currency",
+      "originalAmount": "originalAmount",
+      "originalCurrency": "originalCurrency",
+      "valueDate": "valueDate",
+      "debtorAccount": "debtorAccount",
+      "debtorName": "debtorName",
+      "debtorAddress": "debtorAddress",
+      "debtorBank": "debtorBank",
+      "senderCorrespondent": "senderCorrespondent",
+      "intermediaryBank": "intermediaryBank",
+      "creditorBank": "creditorBank",
+      "creditorAccount": "creditorAccount",
+      "creditorName": "creditorName",
+      "creditorAddress": "creditorAddress",
+      "remittanceInfo": "remittanceInfo",
+      "paymentPurpose": "paymentPurpose",
+      "invoiceNumber": "invoiceNumber",
+      "details": "details",
+      "chargeBearer": "chargeBearer",
+      "instructionInfo": "instructionInfo"
+    }
+  },
+  {
+    "_id": "pacs.008_to_JSON",
+    "extract": {
+      "messageId": "<MsgId>([^<]+)</MsgId>",
+      "creationDateTime": "<CreDtTm>([^<]+)</CreDtTm>",
+      "numberOfTransactions": "<NbOfTxs>([^<]+)</NbOfTxs>",
+      "settlementMethod": "<SttlmMtd>([^<]+)</SttlmMtd>",
+      "settlementDate": "<IntrBkSttlmDt>([^<]+)</IntrBkSttlmDt>",
+      "instructionId": "<InstrId>([^<]+)</InstrId>",
+      "endToEndId": "<EndToEndId>([^<]+)</EndToEndId>",
+      "serviceLevel": "<SvcLvl>\\s*<Cd>([^<]+)</Cd>",
+      "amount": "<IntrBkSttlmAmt[^>]*>([^<]+)</IntrBkSttlmAmt>",
+      "currency": "<IntrBkSttlmAmt[^>]*Ccy=\"([^\"]+)\"",
+      "originalAmount": "<InstdAmt[^>]*>([^<]+)</InstdAmt>",
+      "originalCurrency": "<InstdAmt[^>]*Ccy=\"([^\"]+)\"",
+      "debtorName": "<Dbtr>\\s*<Nm>([^<]+)</Nm>",
+      "debtorAccount": "<DbtrAcct>.*?<IBAN>([^<]+)</IBAN>",
+      "debtorAddress": "<Dbtr>.*?<PstlAdr>.*?<AdrLine>([^<]+)</AdrLine>",
+      "debtorCountry": "<Dbtr>.*?<PstlAdr>.*?<Ctry>([^<]+)</Ctry>",
+      "debtorCity": "<Dbtr>.*?<PstlAdr>.*?<TwnNm>([^<]+)</TwnNm>",
+      "debtorBic": "<DbtrAgt>.*?<BICFI>([^<]+)</BICFI>",
+      "creditorName": "<Cdtr>\\s*<Nm>([^<]+)</Nm>",
+      "creditorAccount": "<CdtrAcct>.*?<IBAN>([^<]+)</IBAN>",
+      "creditorAddress": "<Cdtr>.*?<PstlAdr>.*?<AdrLine>([^<]+)</AdrLine>",
+      "creditorCountry": "<Cdtr>.*?<PstlAdr>.*?<Ctry>([^<]+)</Ctry>",
+      "creditorCity": "<Cdtr>.*?<PstlAdr>.*?<TwnNm>([^<]+)</TwnNm>",
+      "creditorBic": "<CdtrAgt>.*?<BICFI>([^<]+)</BICFI>",
+      "remittanceUnstructured": "<Ustrd>([^<]+)</Ustrd>",
+      "invoiceNumber": "<RfrdDocInf>.*?<Nb>([^<]+)</Nb>",
+      "paymentPurpose": "<Prtry>([^<]+)</Prtry>",
+      "details": "<AddtlRmtInf>([^<]+)</AddtlRmtInf>",
+      "chargeBearer": "<ChrgBr>([^<]+)</ChrgBr>",
+      "crypto_marker": "<Ustrd>/CRYPTO/([^<]+)</Ustrd>",
+      "cryptoReceiverWallet": "<Ustrd>/RECEIVER/([A-Za-z0-9]+)</Ustrd>",
+      "crypto_amount_sol": "<Ustrd>/AMOUNT_SOL/([0-9.]+)</Ustrd>"
     },
-    {
-      "from": "50K",
-      "to": [
-        "debtor_account",
-        "debtor_name",
-        "debtor_address"
-      ],
-      "multiline": true
+    "map": [
+      {
+        "from": "messageId",
+        "to": [
+          "messageId"
+        ]
+      },
+      {
+        "from": "creationDateTime",
+        "to": [
+          "creationDateTime"
+        ]
+      },
+      {
+        "from": "numberOfTransactions",
+        "to": [
+          "numberOfTransactions"
+        ]
+      },
+      {
+        "from": "settlementMethod",
+        "to": [
+          "settlementMethod"
+        ]
+      },
+      {
+        "from": "settlementDate",
+        "to": [
+          "valueDate"
+        ]
+      },
+      {
+        "from": "instructionId",
+        "to": [
+          "transactionRef"
+        ]
+      },
+      {
+        "from": "endToEndId",
+        "to": [
+          "endToEndId"
+        ]
+      },
+      {
+        "from": "serviceLevel",
+        "to": [
+          "bankOperationCode"
+        ]
+      },
+      {
+        "from": "amount",
+        "to": [
+          "amount"
+        ]
+      },
+      {
+        "from": "currency",
+        "to": [
+          "currency"
+        ]
+      },
+      {
+        "from": "originalAmount",
+        "to": [
+          "originalAmount"
+        ]
+      },
+      {
+        "from": "originalCurrency",
+        "to": [
+          "originalCurrency"
+        ]
+      },
+      {
+        "from": "debtorName",
+        "to": [
+          "debtorName"
+        ]
+      },
+      {
+        "from": "debtorAccount",
+        "to": [
+          "debtorAccount"
+        ]
+      },
+      {
+        "from": "debtorAddress",
+        "to": [
+          "debtorAddress"
+        ]
+      },
+      {
+        "from": "debtorCountry",
+        "to": [
+          "debtorCountry"
+        ]
+      },
+      {
+        "from": "debtorCity",
+        "to": [
+          "debtorCity"
+        ]
+      },
+      {
+        "from": "debtorBic",
+        "to": [
+          "debtorBank"
+        ]
+      },
+      {
+        "from": "creditorName",
+        "to": [
+          "creditorName"
+        ]
+      },
+      {
+        "from": "creditorAccount",
+        "to": [
+          "creditorAccount"
+        ]
+      },
+      {
+        "from": "creditorAddress",
+        "to": [
+          "creditorAddress"
+        ]
+      },
+      {
+        "from": "creditorCountry",
+        "to": [
+          "creditorCountry"
+        ]
+      },
+      {
+        "from": "creditorCity",
+        "to": [
+          "creditorCity"
+        ]
+      },
+      {
+        "from": "creditorBic",
+        "to": [
+          "creditorBank",
+          "creditorBic"
+        ]
+      },
+      {
+        "from": "remittanceUnstructured",
+        "to": [
+          "remittanceInfo"
+        ]
+      },
+      {
+        "from": "invoiceNumber",
+        "to": [
+          "invoiceNumber"
+        ]
+      },
+      {
+        "from": "paymentPurpose",
+        "to": [
+          "paymentPurpose"
+        ]
+      },
+      {
+        "from": "details",
+        "to": [
+          "details"
+        ]
+      },
+      {
+        "from": "chargeBearer",
+        "to": [
+          "chargeBearer"
+        ]
+      },
+      {
+        "from": "crypto_marker",
+        "to": [
+          "cryptoBlockchain"
+        ]
+      },
+      {
+        "from": "cryptoReceiverWallet",
+        "to": [
+          "cryptoReceiverWallet"
+        ]
+      },
+      {
+        "from": "crypto_amount_sol",
+        "to": [
+          "cryptoAmount"
+        ]
+      }
+    ],
+    "output": {
+      "messageId": "messageId",
+      "creationDateTime": "creationDateTime",
+      "numberOfTransactions": "numberOfTransactions",
+      "settlementMethod": "settlementMethod",
+      "valueDate": "valueDate",
+      "transactionRef": "transactionRef",
+      "endToEndId": "endToEndId",
+      "bankOperationCode": "bankOperationCode",
+      "amount": "amount",
+      "currency": "currency",
+      "originalAmount": "originalAmount",
+      "originalCurrency": "originalCurrency",
+      "debtorName": "debtorName",
+      "debtorAccount": "debtorAccount",
+      "debtorAddress": "debtorAddress",
+      "debtorCountry": "debtorCountry",
+      "debtorCity": "debtorCity",
+      "debtorBank": "debtorBank",
+      "creditorName": "creditorName",
+      "creditorAccount": "creditorAccount",
+      "creditorAddress": "creditorAddress",
+      "creditorCountry": "creditorCountry",
+      "creditorCity": "creditorCity",
+      "creditorBank": "creditorBank",
+      "creditorBic": "creditorBic",
+      "remittanceInfo": "remittanceInfo",
+      "invoiceNumber": "invoiceNumber",
+      "paymentPurpose": "paymentPurpose",
+      "details": "details",
+      "chargeBearer": "chargeBearer",
+      "cryptoBlockchain": "cryptoBlockchain",
+      "cryptoReceiverWallet": "cryptoReceiverWallet",
+      "cryptoAmount": "cryptoAmount"
+    }
+  },
+  {
+    "_id": "pacs.009_to_JSON",
+    "extract": {
+      "messageId": "<MsgId>([^<]+)</MsgId>",
+      "creationDateTime": "<CreDtTm>([^<]+)</CreDtTm>",
+      "numberOfTransactions": "<NbOfTxs>([^<]+)</NbOfTxs>",
+      "settlementMethod": "<SttlmMtd>([^<]+)</SttlmMtd>",
+      "instructionId": "<InstrId>([^<]+)</InstrId>",
+      "endToEndId": "<EndToEndId>([^<]+)</EndToEndId>",
+      "transactionId": "<TxId>([^<]+)</TxId>",
+      "settlementDate": "<IntrBkSttlmDt>([^<]+)</IntrBkSttlmDt>",
+      "amount": "<IntrBkSttlmAmt[^>]*>([^<]+)</IntrBkSttlmAmt>",
+      "currency": "<IntrBkSttlmAmt[^>]*Ccy=\"([^\"]+)\"",
+      "instructingAgentBic": "<InstgAgt>.*?<BICFI>([^<]+)</BICFI>",
+      "instructedAgentBic": "<InstdAgt>.*?<BICFI>([^<]+)</BICFI>",
+      "intermediaryAgentBic": "<IntrmyAgt1>.*?<BICFI>([^<]+)</BICFI>",
+      "instructionInfo": "<InstrForNxtAgt>.*?<InstrInf>([^<]+)</InstrInf>",
+      "chargeBearer": "<ChrgBr>([^<]+)</ChrgBr>",
+      "remittanceUnstructured": "<Ustrd>([^<]+)</Ustrd>"
     },
-    {
-      "from": "52A",
-      "to": "ordering_institution"
+    "map": [
+      {
+        "from": "messageId",
+        "to": [
+          "messageId"
+        ]
+      },
+      {
+        "from": "creationDateTime",
+        "to": [
+          "creationDateTime"
+        ]
+      },
+      {
+        "from": "numberOfTransactions",
+        "to": [
+          "numberOfTransactions"
+        ]
+      },
+      {
+        "from": "settlementMethod",
+        "to": [
+          "settlementMethod"
+        ]
+      },
+      {
+        "from": "instructionId",
+        "to": [
+          "transactionRef"
+        ]
+      },
+      {
+        "from": "endToEndId",
+        "to": [
+          "endToEndId"
+        ]
+      },
+      {
+        "from": "transactionId",
+        "to": [
+          "relatedRef"
+        ]
+      },
+      {
+        "from": "settlementDate",
+        "to": [
+          "valueDate"
+        ]
+      },
+      {
+        "from": "amount",
+        "to": [
+          "amount"
+        ]
+      },
+      {
+        "from": "currency",
+        "to": [
+          "currency"
+        ]
+      },
+      {
+        "from": "instructingAgentBic",
+        "to": [
+          "debtorBank"
+        ]
+      },
+      {
+        "from": "instructedAgentBic",
+        "to": [
+          "creditorBank"
+        ]
+      },
+      {
+        "from": "intermediaryAgentBic",
+        "to": [
+          "intermediaryBank"
+        ]
+      },
+      {
+        "from": "instructionInfo",
+        "to": [
+          "instructionInfo"
+        ]
+      },
+      {
+        "from": "chargeBearer",
+        "to": [
+          "chargeBearer"
+        ]
+      },
+      {
+        "from": "remittanceUnstructured",
+        "to": [
+          "remittanceInfo"
+        ]
+      }
+    ],
+    "output": {
+      "messageId": "messageId",
+      "creationDateTime": "creationDateTime",
+      "numberOfTransactions": "numberOfTransactions",
+      "settlementMethod": "settlementMethod",
+      "transactionRef": "transactionRef",
+      "endToEndId": "endToEndId",
+      "relatedRef": "relatedRef",
+      "valueDate": "valueDate",
+      "amount": "amount",
+      "currency": "currency",
+      "debtorBank": "debtorBank",
+      "creditorBank": "creditorBank",
+      "intermediaryBank": "intermediaryBank",
+      "instructionInfo": "instructionInfo",
+      "chargeBearer": "chargeBearer",
+      "remittanceInfo": "remittanceInfo"
+    }
+  },
+  {
+    "_id": "ISO8583_0200_to_JSON",
+    "extract": {
+      "mti": "^(0200)",
+      "pan": "0200\\|[^|]+\\|(\\d{13,19})\\|",
+      "processingCode": "0200\\|[^|]+\\|[^|]+\\|(\\d{6})\\|",
+      "amount": "0200\\|[^|]+\\|[^|]+\\|[^|]+\\|(\\d{12})\\|",
+      "transmissionDateTime": "0200\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|(\\d{10})\\|",
+      "stan": "0200\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|(\\d{6})\\|",
+      "localTime": "0200\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|(\\d{6})\\|",
+      "localDate": "0200\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|(\\d{4})\\|",
+      "rrn": "0200\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|([A-Z0-9]{12})\\|",
+      "terminalId": "0200\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|([A-Z0-9]{8})\\|",
+      "merchantId": "0200\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|([A-Z0-9]{15})\\|",
+      "merchantInfo": "0200\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|([^|]+)\\|",
+      "currencyCode": "0200\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|(\\d{3})$"
     },
-    {
-      "from": "59",
-      "to": [
-        "creditor_account",
-        "creditor_name",
-        "creditor_address"
-      ],
-      "multiline": true
-    },
-    {
-      "from": "70",
-      "to": [
-        "payment_purpose",
-        "invoice_number",
-        "details"
-      ],
-      "ai": "remittance",
-      "patterns": {
-        "payment_purpose": {
-          "regex": "^(INVOICE|PAYMENT|CONTRACT|ORDER|TRANSFER|SALARY|DIVIDEND|FEE)",
-          "group": 1,
-          "default": "PAYMENT"
-        },
-        "invoice_number": {
-          "regex": "([A-Z]{2,}-[A-Z0-9-]+-\\d{2,}|INV-[A-Z0-9-]+|REF[:\\s]*[A-Z0-9-]+)",
-          "group": 1,
-          "default": ""
-        },
-        "details": {
-          "join_lines": ". ",
-          "strip": true
+    "map": [
+      {
+        "from": "mti",
+        "to": [
+          "messageType"
+        ]
+      },
+      {
+        "from": "stan",
+        "to": [
+          "transactionRef"
+        ]
+      },
+      {
+        "from": "rrn",
+        "to": [
+          "endToEndId"
+        ]
+      },
+      {
+        "from": "pan",
+        "to": [
+          "cardNumber"
+        ]
+      },
+      {
+        "from": "processingCode",
+        "to": [
+          "processingCode"
+        ]
+      },
+      {
+        "from": "amount",
+        "to": [
+          "amount"
+        ]
+      },
+      {
+        "from": "currencyCode",
+        "to": [
+          "currency"
+        ]
+      },
+      {
+        "from": "transmissionDateTime",
+        "to": [
+          "creationDateTime"
+        ]
+      },
+      {
+        "from": "localTime",
+        "to": [
+          "transactionTime"
+        ]
+      },
+      {
+        "from": "localDate",
+        "to": [
+          "valueDate"
+        ]
+      },
+      {
+        "from": "terminalId",
+        "to": [
+          "terminalId"
+        ]
+      },
+      {
+        "from": "merchantId",
+        "to": [
+          "merchantId"
+        ]
+      },
+      {
+        "from": "merchantInfo",
+        "to": [
+          "merchantName",
+          "merchantCity",
+          "merchantCountry"
+        ],
+        "ai": "merchant_details",
+        "patterns": {
+          "merchantName": {
+            "regex": "^(.+?)\\s{2,}",
+            "group": 1,
+            "default": ""
+          },
+          "merchantCity": {
+            "regex": "\\s{2,}([A-Z][A-Za-z\\s]*?)\\s{2,}",
+            "group": 1,
+            "default": ""
+          },
+          "merchantCountry": {
+            "regex": "\\s{2,}([A-Z]{2,3})\\s*$",
+            "group": 1,
+            "default": ""
+          }
         }
       }
-    },
-    {
-      "from": "71A",
-      "to": "charges_code"
+    ],
+    "output": {
+      "messageType": "messageType",
+      "transactionRef": "transactionRef",
+      "endToEndId": "endToEndId",
+      "cardNumber": "cardNumber",
+      "processingCode": "processingCode",
+      "amount": "amount",
+      "currency": "currency",
+      "creationDateTime": "creationDateTime",
+      "transactionTime": "transactionTime",
+      "valueDate": "valueDate",
+      "terminalId": "terminalId",
+      "merchantId": "merchantId",
+      "merchantInfo": "merchantInfo",
+      "merchantName": "merchantName",
+      "merchantCity": "merchantCity",
+      "merchantCountry": "merchantCountry"
     }
-  ],
-  "output": {
-    "transaction_ref": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.PmtId.InstrId",
-    "bank_operation_code": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.PmtTpInf.SvcLvl.Cd",
-    "value_date": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.IntrBkSttlmDt",
-    "currency": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.IntrBkSttlmAmt.@Ccy",
-    "amount": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.IntrBkSttlmAmt.#text",
-    "debtor_account": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.Dbtr.Id.OrgId.Othr.Id",
-    "debtor_name": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.Dbtr.Nm",
-    "debtor_address": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.Dbtr.PstlAdr.AdrLine",
-    "ordering_institution": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.InstgAgt.FinInstnId.BICFI",
-    "creditor_account": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.Cdtr.Id.OrgId.Othr.Id",
-    "creditor_name": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.Cdtr.Nm",
-    "creditor_address": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.Cdtr.PstlAdr.AdrLine",
-    "payment_purpose": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.RmtInf.Strd.RfrdDocInf.Tp.CdOrPrtry.Prtry",
-    "invoice_number": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.RmtInf.Strd.RfrdDocInf.Nb",
-    "details": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.RmtInf.Ustrd",
-    "charges_code": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.ChrgBr"
   }
-},
-{
-  "_id": "MT103_to_JSON",
-  "extract": {
-    "20": ":20:([^\\n:]+)",
-    "59": ":59:([^\\n]*(?:\\n(?!:)[^\\n]*)*)",
-    "70": ":70:([^\\n]*(?:\\n(?!:[0-9])[^\\n]*)*)",
-    "72": ":72:([\\s\\S]*?)(?=:[0-9]|$|-})",
-    "23B": ":23B:([^\\n:]+)",
-    "32A": ":32A:([^\\n:]+)",
-    "33B": ":33B:([^\\n:]+)",
-    "50K": ":50K:([^\\n]*(?:\\n(?!:)[^\\n]*)*)",
-    "52A": ":52A:([^\\n:]+)",
-    "53A": ":53A:([^\\n:]+)",
-    "56A": ":56A:([^\\n:]+)",
-    "57A": ":57A:([^\\n:]+)",
-    "57D": ":57D:([^\\n]*(?:\\n(?!:)[^\\n]*)*)",
-    "71A": ":71A:([^\\n:]+)"
-  },
-  "map": [
-    {
-      "from": "20",
-      "to": [
-        "transaction_ref"
-      ]
-    },
-    {
-      "from": "23B",
-      "to": [
-        "bank_operation_code"
-      ]
-    },
-    {
-      "from": "32A",
-      "to": [
-        "value_date",
-        "currency",
-        "amount"
-      ],
-      "split": [
-        6,
-        9
-      ]
-    },
-    {
-      "from": "33B",
-      "to": [
-        "original_currency",
-        "original_amount"
-      ],
-      "split": [
-        3
-      ]
-    },
-    {
-      "from": "50K",
-      "to": [
-        "debtor_account",
-        "debtor_name",
-        "debtor_address"
-      ],
-      "multiline": true
-    },
-    {
-      "from": "59",
-      "to": [
-        "creditor_account",
-        "creditor_name",
-        "creditor_address"
-      ],
-      "multiline": true
-    },
-    {
-      "from": "52A",
-      "to": [
-        "debtor_bank"
-      ]
-    },
-    {
-      "from": "53A",
-      "to": [
-        "sender_correspondent"
-      ]
-    },
-    {
-      "from": "56A",
-      "to": [
-        "intermediary_bank"
-      ]
-    },
-    {
-      "from": "57A",
-      "to": [
-        "creditor_bank"
-      ]
-    },
-    {
-      "from": "57D",
-      "to": [
-        "creditor_bank"
-      ]
-    },
-    {
-      "from": "70",
-      "to": [
-        "payment_purpose",
-        "invoice_number",
-        "details"
-      ],
-      "ai": "remittance",
-      "patterns": {
-        "payment_purpose": {
-          "regex": "^(INVOICE|PAYMENT|CONTRACT|ORDER|TRANSFER|SALARY|DIVIDEND|FEE)",
-          "group": 1,
-          "default": "PAYMENT"
-        },
-        "invoice_number": {
-          "regex": "([A-Z]{2,}-[A-Z0-9-]+-\\d{2,}|INV-[A-Z0-9-]+|REF[:\\s]*[A-Z0-9-]+)",
-          "group": 1,
-          "default": ""
-        },
-        "details": {
-          "join_lines": ". ",
-          "strip": true
-        }
-      }
-    },
-    {
-      "from": "71A",
-      "to": [
-        "charge_bearer"
-      ]
-    },
-    {
-      "from": "72",
-      "to": [
-        "instruction_info"
-      ]
-    },
-    {
-      "from": "value_date",
-      "to": [
-        "value_date"
-      ],
-      "dateFormat": "%y%m%d->%Y-%m-%d"
-    }
-  ],
-  "output": {
-    "transaction_ref": "transaction_ref",
-    "bank_operation_code": "bank_operation_code",
-    "amount": "amount",
-    "currency": "currency",
-    "original_amount": "original_amount",
-    "original_currency": "original_currency",
-    "value_date": "value_date",
-    "debtor_account": "debtor_account",
-    "debtor_name": "debtor_name",
-    "debtor_address": "debtor_address",
-    "debtor_bank": "debtor_bank",
-    "sender_correspondent": "sender_correspondent",
-    "intermediary_bank": "intermediary_bank",
-    "creditor_bank": "creditor_bank",
-    "creditor_account": "creditor_account",
-    "creditor_name": "creditor_name",
-    "creditor_address": "creditor_address",
-    "remittance_info": "remittance_info",
-    "payment_purpose": "payment_purpose",
-    "invoice_number": "invoice_number",
-    "details": "details",
-    "charge_bearer": "charge_bearer",
-    "instruction_info": "instruction_info"
-  }
-},
-{
-  "_id": "pacs.008_to_JSON",
-  "extract": {
-    "message_id": "<MsgId>([^<]+)</MsgId>",
-    "creation_datetime": "<CreDtTm>([^<]+)</CreDtTm>",
-    "number_of_transactions": "<NbOfTxs>([^<]+)</NbOfTxs>",
-    "settlement_method": "<SttlmMtd>([^<]+)</SttlmMtd>",
-    "settlement_date": "<IntrBkSttlmDt>([^<]+)</IntrBkSttlmDt>",
-    "instruction_id": "<InstrId>([^<]+)</InstrId>",
-    "end_to_end_id": "<EndToEndId>([^<]+)</EndToEndId>",
-    "service_level": "<SvcLvl>\\s*<Cd>([^<]+)</Cd>",
-    "amount": "<IntrBkSttlmAmt[^>]*>([^<]+)</IntrBkSttlmAmt>",
-    "currency": "<IntrBkSttlmAmt[^>]*Ccy=\"([^\"]+)\"",
-    "original_amount": "<InstdAmt[^>]*>([^<]+)</InstdAmt>",
-    "original_currency": "<InstdAmt[^>]*Ccy=\"([^\"]+)\"",
-    "debtor_name": "<Dbtr>\\s*<Nm>([^<]+)</Nm>",
-    "debtor_account": "<DbtrAcct>.*?<IBAN>([^<]+)</IBAN>",
-    "debtor_address": "<Dbtr>.*?<PstlAdr>.*?<AdrLine>([^<]+)</AdrLine>",
-    "debtor_country": "<Dbtr>.*?<PstlAdr>.*?<Ctry>([^<]+)</Ctry>",
-    "debtor_city": "<Dbtr>.*?<PstlAdr>.*?<TwnNm>([^<]+)</TwnNm>",
-    "debtor_bic": "<DbtrAgt>.*?<BICFI>([^<]+)</BICFI>",
-    "creditor_name": "<Cdtr>\\s*<Nm>([^<]+)</Nm>",
-    "creditor_account": "<CdtrAcct>.*?<IBAN>([^<]+)</IBAN>",
-    "creditor_address": "<Cdtr>.*?<PstlAdr>.*?<AdrLine>([^<]+)</AdrLine>",
-    "creditor_country": "<Cdtr>.*?<PstlAdr>.*?<Ctry>([^<]+)</Ctry>",
-    "creditor_city": "<Cdtr>.*?<PstlAdr>.*?<TwnNm>([^<]+)</TwnNm>",
-    "creditor_bic": "<CdtrAgt>.*?<BICFI>([^<]+)</BICFI>",
-    "remittance_unstructured": "<Ustrd>([^<]+)</Ustrd>",
-    "invoice_number": "<RfrdDocInf>.*?<Nb>([^<]+)</Nb>",
-    "payment_purpose": "<Prtry>([^<]+)</Prtry>",
-    "details": "<AddtlRmtInf>([^<]+)</AddtlRmtInf>",
-    "charge_bearer": "<ChrgBr>([^<]+)</ChrgBr>",
-    "crypto_marker": "<Ustrd>/CRYPTO/([^<]+)</Ustrd>",
-    "crypto_receiver_wallet": "<Ustrd>/RECEIVER/([A-Za-z0-9]+)</Ustrd>",
-    "crypto_amount_sol": "<Ustrd>/AMOUNT_SOL/([0-9.]+)</Ustrd>"
-  },
-  "map": [
-    {
-      "from": "message_id",
-      "to": [
-        "message_id"
-      ]
-    },
-    {
-      "from": "creation_datetime",
-      "to": [
-        "creation_datetime"
-      ]
-    },
-    {
-      "from": "number_of_transactions",
-      "to": [
-        "number_of_transactions"
-      ]
-    },
-    {
-      "from": "settlement_method",
-      "to": [
-        "settlement_method"
-      ]
-    },
-    {
-      "from": "settlement_date",
-      "to": [
-        "value_date"
-      ]
-    },
-    {
-      "from": "instruction_id",
-      "to": [
-        "transaction_ref"
-      ]
-    },
-    {
-      "from": "end_to_end_id",
-      "to": [
-        "end_to_end_id"
-      ]
-    },
-    {
-      "from": "service_level",
-      "to": [
-        "bank_operation_code"
-      ]
-    },
-    {
-      "from": "amount",
-      "to": [
-        "amount"
-      ]
-    },
-    {
-      "from": "currency",
-      "to": [
-        "currency"
-      ]
-    },
-    {
-      "from": "original_amount",
-      "to": [
-        "original_amount"
-      ]
-    },
-    {
-      "from": "original_currency",
-      "to": [
-        "original_currency"
-      ]
-    },
-    {
-      "from": "debtor_name",
-      "to": [
-        "debtor_name"
-      ]
-    },
-    {
-      "from": "debtor_account",
-      "to": [
-        "debtor_account"
-      ]
-    },
-    {
-      "from": "debtor_address",
-      "to": [
-        "debtor_address"
-      ]
-    },
-    {
-      "from": "debtor_country",
-      "to": [
-        "debtor_country"
-      ]
-    },
-    {
-      "from": "debtor_city",
-      "to": [
-        "debtor_city"
-      ]
-    },
-    {
-      "from": "debtor_bic",
-      "to": [
-        "debtor_bank"
-      ]
-    },
-    {
-      "from": "creditor_name",
-      "to": [
-        "creditor_name"
-      ]
-    },
-    {
-      "from": "creditor_account",
-      "to": [
-        "creditor_account"
-      ]
-    },
-    {
-      "from": "creditor_address",
-      "to": [
-        "creditor_address"
-      ]
-    },
-    {
-      "from": "creditor_country",
-      "to": [
-        "creditor_country"
-      ]
-    },
-    {
-      "from": "creditor_city",
-      "to": [
-        "creditor_city"
-      ]
-    },
-    {
-      "from": "creditor_bic",
-      "to": [
-        "creditor_bank",
-        "creditor_bic"
-      ]
-    },
-    {
-      "from": "remittance_unstructured",
-      "to": [
-        "remittance_info"
-      ]
-    },
-    {
-      "from": "invoice_number",
-      "to": [
-        "invoice_number"
-      ]
-    },
-    {
-      "from": "payment_purpose",
-      "to": [
-        "payment_purpose"
-      ]
-    },
-    {
-      "from": "details",
-      "to": [
-        "details"
-      ]
-    },
-    {
-      "from": "charge_bearer",
-      "to": [
-        "charge_bearer"
-      ]
-    },
-    {
-      "from": "crypto_marker",
-      "to": [
-        "crypto_blockchain"
-      ]
-    },
-    {
-      "from": "crypto_receiver_wallet",
-      "to": [
-        "crypto_receiver_wallet"
-      ]
-    },
-    {
-      "from": "crypto_amount_sol",
-      "to": [
-        "crypto_amount"
-      ]
-    }
-  ],
-  "output": {
-    "message_id": "message_id",
-    "creation_datetime": "creation_datetime",
-    "number_of_transactions": "number_of_transactions",
-    "settlement_method": "settlement_method",
-    "value_date": "value_date",
-    "transaction_ref": "transaction_ref",
-    "end_to_end_id": "end_to_end_id",
-    "bank_operation_code": "bank_operation_code",
-    "amount": "amount",
-    "currency": "currency",
-    "original_amount": "original_amount",
-    "original_currency": "original_currency",
-    "debtor_name": "debtor_name",
-    "debtor_account": "debtor_account",
-    "debtor_address": "debtor_address",
-    "debtor_country": "debtor_country",
-    "debtor_city": "debtor_city",
-    "debtor_bank": "debtor_bank",
-    "creditor_name": "creditor_name",
-    "creditor_account": "creditor_account",
-    "creditor_address": "creditor_address",
-    "creditor_country": "creditor_country",
-    "creditor_city": "creditor_city",
-    "creditor_bank": "creditor_bank",
-    "creditor_bic": "creditor_bic",
-    "remittance_info": "remittance_info",
-    "invoice_number": "invoice_number",
-    "payment_purpose": "payment_purpose",
-    "details": "details",
-    "charge_bearer": "charge_bearer",
-    "crypto_blockchain": "crypto_blockchain",
-    "crypto_receiver_wallet": "crypto_receiver_wallet",
-    "crypto_amount": "crypto_amount"
-  }
-},
-{
-  "_id": "pacs.009_to_JSON",
-  "extract": {
-    "message_id": "<MsgId>([^<]+)</MsgId>",
-    "creation_datetime": "<CreDtTm>([^<]+)</CreDtTm>",
-    "number_of_transactions": "<NbOfTxs>([^<]+)</NbOfTxs>",
-    "settlement_method": "<SttlmMtd>([^<]+)</SttlmMtd>",
-    "instruction_id": "<InstrId>([^<]+)</InstrId>",
-    "end_to_end_id": "<EndToEndId>([^<]+)</EndToEndId>",
-    "transaction_id": "<TxId>([^<]+)</TxId>",
-    "settlement_date": "<IntrBkSttlmDt>([^<]+)</IntrBkSttlmDt>",
-    "amount": "<IntrBkSttlmAmt[^>]*>([^<]+)</IntrBkSttlmAmt>",
-    "currency": "<IntrBkSttlmAmt[^>]*Ccy=\"([^\"]+)\"",
-    "instructing_agent_bic": "<InstgAgt>.*?<BICFI>([^<]+)</BICFI>",
-    "instructed_agent_bic": "<InstdAgt>.*?<BICFI>([^<]+)</BICFI>",
-    "intermediary_agent_bic": "<IntrmyAgt1>.*?<BICFI>([^<]+)</BICFI>",
-    "instruction_info": "<InstrForNxtAgt>.*?<InstrInf>([^<]+)</InstrInf>",
-    "charge_bearer": "<ChrgBr>([^<]+)</ChrgBr>",
-    "remittance_unstructured": "<Ustrd>([^<]+)</Ustrd>"
-  },
-  "map": [
-    {
-      "from": "message_id",
-      "to": [
-        "message_id"
-      ]
-    },
-    {
-      "from": "creation_datetime",
-      "to": [
-        "creation_datetime"
-      ]
-    },
-    {
-      "from": "number_of_transactions",
-      "to": [
-        "number_of_transactions"
-      ]
-    },
-    {
-      "from": "settlement_method",
-      "to": [
-        "settlement_method"
-      ]
-    },
-    {
-      "from": "instruction_id",
-      "to": [
-        "transaction_ref"
-      ]
-    },
-    {
-      "from": "end_to_end_id",
-      "to": [
-        "end_to_end_id"
-      ]
-    },
-    {
-      "from": "transaction_id",
-      "to": [
-        "related_ref"
-      ]
-    },
-    {
-      "from": "settlement_date",
-      "to": [
-        "value_date"
-      ]
-    },
-    {
-      "from": "amount",
-      "to": [
-        "amount"
-      ]
-    },
-    {
-      "from": "currency",
-      "to": [
-        "currency"
-      ]
-    },
-    {
-      "from": "instructing_agent_bic",
-      "to": [
-        "debtor_bank"
-      ]
-    },
-    {
-      "from": "instructed_agent_bic",
-      "to": [
-        "creditor_bank"
-      ]
-    },
-    {
-      "from": "intermediary_agent_bic",
-      "to": [
-        "intermediary_bank"
-      ]
-    },
-    {
-      "from": "instruction_info",
-      "to": [
-        "instruction_info"
-      ]
-    },
-    {
-      "from": "charge_bearer",
-      "to": [
-        "charge_bearer"
-      ]
-    },
-    {
-      "from": "remittance_unstructured",
-      "to": [
-        "remittance_info"
-      ]
-    }
-  ],
-  "output": {
-    "message_id": "message_id",
-    "creation_datetime": "creation_datetime",
-    "number_of_transactions": "number_of_transactions",
-    "settlement_method": "settlement_method",
-    "transaction_ref": "transaction_ref",
-    "end_to_end_id": "end_to_end_id",
-    "related_ref": "related_ref",
-    "value_date": "value_date",
-    "amount": "amount",
-    "currency": "currency",
-    "debtor_bank": "debtor_bank",
-    "creditor_bank": "creditor_bank",
-    "intermediary_bank": "intermediary_bank",
-    "instruction_info": "instruction_info",
-    "charge_bearer": "charge_bearer",
-    "remittance_info": "remittance_info"
-  }
-},
-{
-  "_id": "ISO8583_0200_to_JSON",
-  "extract": {
-    "mti": "^(0200)",
-    "pan": "0200\\|[^|]+\\|(\\d{13,19})\\|",
-    "processing_code": "0200\\|[^|]+\\|[^|]+\\|(\\d{6})\\|",
-    "amount": "0200\\|[^|]+\\|[^|]+\\|[^|]+\\|(\\d{12})\\|",
-    "transmission_datetime": "0200\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|(\\d{10})\\|",
-    "stan": "0200\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|(\\d{6})\\|",
-    "local_time": "0200\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|(\\d{6})\\|",
-    "local_date": "0200\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|(\\d{4})\\|",
-    "rrn": "0200\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|([A-Z0-9]{12})\\|",
-    "terminal_id": "0200\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|([A-Z0-9]{8})\\|",
-    "merchant_id": "0200\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|([A-Z0-9]{15})\\|",
-    "merchant_info": "0200\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|([^|]+)\\|",
-    "currency_code": "0200\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|[^|]+\\|(\\d{3})$"
-  },
-  "map": [
-    {
-      "from": "mti",
-      "to": [
-        "message_type"
-      ]
-    },
-    {
-      "from": "stan",
-      "to": [
-        "transaction_ref"
-      ]
-    },
-    {
-      "from": "rrn",
-      "to": [
-        "end_to_end_id"
-      ]
-    },
-    {
-      "from": "pan",
-      "to": [
-        "card_number"
-      ]
-    },
-    {
-      "from": "processing_code",
-      "to": [
-        "processing_code"
-      ]
-    },
-    {
-      "from": "amount",
-      "to": [
-        "amount"
-      ]
-    },
-    {
-      "from": "currency_code",
-      "to": [
-        "currency"
-      ]
-    },
-    {
-      "from": "transmission_datetime",
-      "to": [
-        "creation_datetime"
-      ]
-    },
-    {
-      "from": "local_time",
-      "to": [
-        "transaction_time"
-      ]
-    },
-    {
-      "from": "local_date",
-      "to": [
-        "value_date"
-      ]
-    },
-    {
-      "from": "terminal_id",
-      "to": [
-        "terminal_id"
-      ]
-    },
-    {
-      "from": "merchant_id",
-      "to": [
-        "merchant_id"
-      ]
-    },
-    {
-      "from": "merchant_info",
-      "to": [
-        "merchant_name",
-        "merchant_city",
-        "merchant_country"
-      ],
-      "ai": "merchant_details",
-      "patterns": {
-        "merchant_name": {
-          "regex": "^(.+?)\\s{2,}",
-          "group": 1,
-          "default": ""
-        },
-        "merchant_city": {
-          "regex": "\\s{2,}([A-Z][A-Za-z\\s]*?)\\s{2,}",
-          "group": 1,
-          "default": ""
-        },
-        "merchant_country": {
-          "regex": "\\s{2,}([A-Z]{2,3})\\s*$",
-          "group": 1,
-          "default": ""
-        }
-      }
-    }
-  ],
-  "output": {
-    "message_type": "message_type",
-    "transaction_ref": "transaction_ref",
-    "end_to_end_id": "end_to_end_id",
-    "card_number": "card_number",
-    "processing_code": "processing_code",
-    "amount": "amount",
-    "currency": "currency",
-    "creation_datetime": "creation_datetime",
-    "transaction_time": "transaction_time",
-    "value_date": "value_date",
-    "terminal_id": "terminal_id",
-    "merchant_id": "merchant_id",
-    "merchant_info": "merchant_info",
-    "merchant_name": "merchant_name",
-    "merchant_city": "merchant_city",
-    "merchant_country": "merchant_country"
-  }
-}]
+]
