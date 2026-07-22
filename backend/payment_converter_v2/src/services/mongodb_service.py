@@ -30,11 +30,11 @@ class MongoDBService:
         """
         self.client: AsyncIOMotorClient = AsyncIOMotorClient(mongodb_uri)
         self.db: AsyncIOMotorDatabase = self.client[database_name]
-        self.configs_collection = self.db["conversion_configs"]
-        self.prompts_collection = self.db["ai_prompts"]
-        self.json_storage_collection = self.db["canonical_json_storage"]
-        self.temp_configs_collection = self.db["temp_configs"]
-        self.format_specs_collection = self.db["format_specifications"]
+        self.configs_collection = self.db["conversionConfigs"]
+        self.prompts_collection = self.db["aiPrompts"]
+        self.json_storage_collection = self.db["canonicalJsonStorage"]
+        self.temp_configs_collection = self.db["tempConfigs"]
+        self.format_specs_collection = self.db["formatSpecifications"]
 
         logger.info(f"MongoDB service initialized for database: {database_name}")
     
@@ -184,7 +184,7 @@ class MongoDBService:
                 expireAfterSeconds=0,  # Delete when expires_at timestamp is reached
                 sparse=True  # Only index documents that have expires_at field
             )
-            logger.info("TTL index ensured on conversion_configs.expires_at")
+            logger.info("TTL index ensured on conversionConfigs.expires_at")
         except Exception as e:
             # Index might already exist, that's fine
             logger.debug(f"TTL index creation note: {e}")
@@ -455,10 +455,10 @@ class MongoDBService:
 
             doc = {
                 "_id": doc_id,
-                "conversion_id": conversion_id,
-                "json_data": json_dict,  # Store as dict/object, not string
+                "conversionId": conversion_id,
+                "jsonData": json_dict,  # Store as dict/object, not string
                 "metadata": metadata,
-                "created_at": datetime.utcnow()
+                "createdAt": datetime.utcnow()
             }
 
             # Upsert to handle duplicate conversions
@@ -505,10 +505,10 @@ class MongoDBService:
             if cached:
                 logger.debug(f"Cache HIT for ID: {doc_id[:16]}...")
 
-                # Convert json_data dict back to string for converter compatibility
-                # Use ensure_ascii=False to preserve Unicode characters (Japanese, etc.)
-                if isinstance(cached.get('json_data'), dict):
-                    cached['json_data'] = json.dumps(cached['json_data'], ensure_ascii=False)
+                # Convert jsonData dict back to string for converter compatibility.
+                # Use ensure_ascii=False to preserve Unicode (Japanese, etc.).
+                if isinstance(cached.get('jsonData'), dict):
+                    cached['jsonData'] = json.dumps(cached['jsonData'], ensure_ascii=False)
 
             else:
                 logger.debug(f"Cache MISS for ID: {doc_id[:16]}...")

@@ -49,7 +49,7 @@ app.add_middleware(
 )
 
 # Include routers
-app.include_router(router, prefix="/api/v1")
+app.include_router(router)
 
 # Root endpoint
 @app.get("/")

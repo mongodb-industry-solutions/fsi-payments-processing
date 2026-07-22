@@ -203,8 +203,8 @@ FIELD INFORMATION:
 - Current Value: {original_value}
 
 PAYMENT CONTEXT:
-- Debtor: {payment_data.get('debtor_name', 'N/A')}
-- Creditor: {payment_data.get('creditor_name', 'N/A')}
+- Debtor: {payment_data.get('debtorName', 'N/A')}
+- Creditor: {payment_data.get('creditorName', 'N/A')}
 - Amount: {payment_data.get('amount', 'N/A')} {payment_data.get('currency', '')}
 - Source Format: {conversion_context.get('source_format', 'N/A')}
 - Target Format: {conversion_context.get('target_format', 'N/A')}
@@ -288,7 +288,7 @@ AVAILABLE TOOLS:
 
 1. atlas_search(collection: str, query: str, search_fields: list, fuzzy: bool = True)
    - KEYWORD-BASED database lookup
-   - Collections: "bank_details" (has name_english, name_katakana), "ifsc_codes", "registered_entities"
+   - Collections: "bankDetails" (has nameEnglish, nameKatakana), "ifscCodes", "registeredEntities"
    - fuzzy=False: exact match (confidence: 1.0)
    - fuzzy=True: typo-tolerant (confidence: 0.7-0.95)
    - Returns: found (bool), top_result (dict), confidence
@@ -370,11 +370,11 @@ FIELD TO RESOLVE: {field_name}
 CURRENT VALUE: {original_value}
 
 PAYMENT CONTEXT:
-- Transaction Reference: {payment_data.get('transaction_ref', 'N/A')}
-- Debtor: {payment_data.get('debtor_name', 'N/A')}
-- Creditor: {payment_data.get('creditor_name', 'N/A')}
+- Transaction Reference: {payment_data.get('transactionRef', 'N/A')}
+- Debtor: {payment_data.get('debtorName', 'N/A')}
+- Creditor: {payment_data.get('creditorName', 'N/A')}
 - Amount: {payment_data.get('amount', 'N/A')} {payment_data.get('currency', '')}
-- Creditor Bank: {payment_data.get('creditor_bank', 'N/A')}
+- Creditor Bank: {payment_data.get('creditorBank', 'N/A')}
 
 Analyze this problem and use your tools to find the correct value for '{field_name}'.
 """
@@ -459,10 +459,10 @@ Analyze this problem and use your tools to find the correct value for '{field_na
                         top = result["top_result"]
                         # Try common fields for the value
                         proposed_value = (
-                            top.get("name_katakana") or
+                            top.get("nameKatakana") or
                             top.get("ifsc") or
-                            top.get("legal_name") or
-                            top.get("name_english") or
+                            top.get("legalName") or
+                            top.get("nameEnglish") or
                             ""
                         )
                         if proposed_value:
@@ -629,7 +629,7 @@ When you've completed the update, summarize:
         # Get payment ID from conversion context
         # Use conversion_run_id (UUID) if available (new behavior for independence)
         # Otherwise fall back to conversion_id (backward compatibility)
-        payment_id = conversion_context.get("conversion_run_id") or conversion_context.get("conversion_id", payment_data.get("transaction_ref", "unknown"))
+        payment_id = conversion_context.get("conversion_run_id") or conversion_context.get("conversion_id", payment_data.get("transactionRef", "unknown"))
 
         # Get proposed value from solution
         proposed_value = solution.get("proposed_value", "")

@@ -425,16 +425,16 @@ export default function AgenticAIPage() {
     }
 
     try {
-      const response = await fetch('/api/convert/multi-hop/stream', {
+      const response = await fetch('/PaymentRail/Initiate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          source_format: scenario.sourceFormat,
-          target_format: scenario.targetFormat,
+          sourceFormat: scenario.sourceFormat,
+          targetFormat: scenario.targetFormat,
           message: scenario.message,
-          use_ai: useAI
+          useAi: useAI
         })
       });
 

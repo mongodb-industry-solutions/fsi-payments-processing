@@ -153,16 +153,16 @@ class AILaneService:
                 "```\n\n"
                 "Expected JSON:\n"
                 "{{\n"
-                '  "payment_purpose": "INVOICE",\n'
-                '  "invoice_number": "INV-2024-001",\n'
+                '  "paymentPurpose": "INVOICE",\n'
+                '  "invoiceNumber": "INV-2024-001",\n'
                 '  "details": "MEDICAL EQUIPMENT AND SUPPLIES. URGENT DELIVERY REQUIRED"\n'
                 "}}\n"
                 "</example>\n\n"
                 "Now extract from this input:\n"
                 "```\n{input}\n```\n\n"
                 "Rules:\n"
-                "1. payment_purpose = first keyword from line 1\n"
-                "2. invoice_number = reference number from line 1\n"
+                "1. paymentPurpose = first keyword from line 1\n"
+                "2. invoiceNumber = reference number from line 1\n"
                 "3. details = join ALL text from lines after line 1 with periods\n\n"
                 "Output JSON only:"
             ),
@@ -186,26 +186,26 @@ class AILaneService:
                 "Input: STARBUCKS STORE #123         LONDON        GBR\n"
                 "Expected JSON:\n"
                 "{{\n"
-                '  "merchant_name": "STARBUCKS STORE #123",\n'
-                '  "merchant_city": "LONDON",\n'
-                '  "merchant_country": "GBR"\n'
+                '  "merchantName": "STARBUCKS STORE #123",\n'
+                '  "merchantCity": "LONDON",\n'
+                '  "merchantCountry": "GBR"\n'
                 "}}\n"
                 "</example>\n\n"
                 "<example>\n"
                 "Input: SINGAPORE ELECTRONICS PTE    SINGAPORE  SG\n"
                 "Expected JSON:\n"
                 "{{\n"
-                '  "merchant_name": "SINGAPORE ELECTRONICS PTE",\n'
-                '  "merchant_city": "SINGAPORE",\n'
-                '  "merchant_country": "SG"\n'
+                '  "merchantName": "SINGAPORE ELECTRONICS PTE",\n'
+                '  "merchantCity": "SINGAPORE",\n'
+                '  "merchantCountry": "SG"\n'
                 "}}\n"
                 "</example>\n\n"
                 "Now extract from this input:\n"
                 "```\n{input}\n```\n\n"
                 "Rules:\n"
-                "1. merchant_name = first ~25 chars (trim trailing spaces)\n"
-                "2. merchant_city = next ~13 chars (trim spaces)\n"
-                "3. merchant_country = last 2-3 chars (country code)\n\n"
+                "1. merchantName = first ~25 chars (trim trailing spaces)\n"
+                "2. merchantCity = next ~13 chars (trim spaces)\n"
+                "3. merchantCountry = last 2-3 chars (country code)\n\n"
                 "Output JSON only:"
             )
         }

@@ -25,6 +25,8 @@ steps:
       repo: industrysolutions/fsi-payments-frontend
       dockerfile: Dockerfile.frontend
       context: .
+      build_args:
+        - BIAN_MODEL_URL=https://leafy-bank-bian-model.industrysolutions.staging.corp.mongodb.com
       tags:
         - git-${DRONE_COMMIT_SHA:0:7}
         - latest
@@ -149,9 +151,11 @@ steps:
     settings:
       create_repository: true
       registry: 795250896452.dkr.ecr.us-east-1.amazonaws.com
-      repo: industrysolutions/fsi-payments-frontend-prod
+      repo: industrysolutions/fsi-payments-processing-bian-frontend
       dockerfile: Dockerfile.frontend
       context: .
+      build_args:
+        - BIAN_MODEL_URL=https://leafy-bank-bian-model.industrysolutions.prod.corp.mongodb.com
       tags:
         - git-${DRONE_COMMIT_SHA:0:7}
         - latest
@@ -169,7 +173,7 @@ steps:
     settings:
       create_repository: true
       registry: 795250896452.dkr.ecr.us-east-1.amazonaws.com
-      repo: industrysolutions/fsi-payments-converter-prod
+      repo: industrysolutions/fsi-payments-processing-bian-converter
       dockerfile: Dockerfile.converter
       context: .
       tags:
@@ -189,7 +193,7 @@ steps:
     settings:
       create_repository: true
       registry: 795250896452.dkr.ecr.us-east-1.amazonaws.com
-      repo: industrysolutions/fsi-payments-agent-prod
+      repo: industrysolutions/fsi-payments-processing-bian-agent
       dockerfile: Dockerfile.agent
       context: .
       tags:
@@ -211,19 +215,19 @@ steps:
       chart_version: 4.30.0
       add_repos: [mongodb=https://10gen.github.io/helm-charts]
       namespace: industrysolutions
-      release: fsi-payments-processing-prod
+      release: fsi-payments-processing-bian-prod
       values_files: ["environment/production.yaml"]
       values:
         # Frontend (main container) image
         - "image.tag=git-${DRONE_COMMIT_SHA:0:7}"
-        - "image.repository=795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-frontend-prod"
+        - "image.repository=795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-processing-bian-frontend"
         # Converter sidecar image
-        - "sidecarContainers[0].image=795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-converter-prod:git-${DRONE_COMMIT_SHA:0:7}"
+        - "sidecarContainers[0].image=795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-processing-bian-converter:git-${DRONE_COMMIT_SHA:0:7}"
         # Agent sidecar image
-        - "sidecarContainers[1].image=795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-agent-prod:git-${DRONE_COMMIT_SHA:0:7}"
+        - "sidecarContainers[1].image=795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-processing-bian-agent:git-${DRONE_COMMIT_SHA:0:7}"
         # Ingress
         - "ingress.enabled=true"
-        - "ingress.hosts[0]=fsi-payments-processing.industrysolutions.prod.corp.mongodb.com"
+        - "ingress.hosts[0]=fsi-payments-processing-bian.industrysolutions.prod.corp.mongodb.com"
         # Service mesh
         - "mesh.enabled=true"
         # Frontend resources (reduced based on observed usage)

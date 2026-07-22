@@ -1,17 +1,16 @@
-"""Health check and format listing endpoints."""
+"""Health check endpoints (operational — kept outside the BIAN URL convention)."""
 
 from fastapi import APIRouter, HTTPException, status
-from typing import List
 import logging
 
-from src.api.models import HealthResponse, FormatInfo
+from src.api.models import HealthResponse
 from src.api.dependencies import mongodb_service, bedrock_service, solana_service
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-@router.get("/health", response_model=HealthResponse, status_code=status.HTTP_200_OK)
+@router.get("/api/v1/health", response_model=HealthResponse, status_code=status.HTTP_200_OK)
 async def health_check() -> HealthResponse:
     """
     Health check endpoint.
@@ -38,7 +37,7 @@ async def health_check() -> HealthResponse:
         )
 
 
-@router.get("/solana/health", status_code=status.HTTP_200_OK)
+@router.get("/api/v1/solana/health", status_code=status.HTTP_200_OK)
 async def solana_health_check():
     """Check Solana devnet RPC connectivity and wallet status."""
     if solana_service is None:
@@ -70,35 +69,3 @@ async def solana_health_check():
         }
 
 
-@router.get("/formats", response_model=List[FormatInfo], status_code=status.HTTP_200_OK)
-async def list_formats() -> List[FormatInfo]:
-    """
-    List all available conversion formats.
-
-    Returns configured conversions with source/target format names.
-    """
-    try:
-        configs = await mongodb_service.list_configs()
-
-        formats = []
-        for config in configs:
-            conversion_id = config.get("_id", "")
-            parts = conversion_id.split("_to_")
-            source_format = parts[0] if len(parts) > 0 else "unknown"
-            target_format = parts[1] if len(parts) > 1 else "unknown"
-
-            formats.append(FormatInfo(
-                conversion_id=conversion_id,
-                source_format=source_format,
-                target_format=target_format,
-                description=config.get("description")
-            ))
-
-        return formats
-
-    except Exception as e:
-        logger.error(f"Failed to list formats: {str(e)}", exc_info=True)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to list formats: {str(e)}"
-        )

@@ -28,7 +28,7 @@ class ProcessPaymentRequest(BaseModel):
     field_name: str = Field(
         ...,
         description="Name of field to modify in payment data",
-        examples=["creditor_name", "creditor_bank", "creditor_account"]
+        examples=["creditorName", "creditorBank", "creditorAccount"]
     )
 
     original_value: Optional[str] = Field(

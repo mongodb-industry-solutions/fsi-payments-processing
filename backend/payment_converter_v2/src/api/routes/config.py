@@ -1,4 +1,10 @@
-"""Configuration management endpoints (config-builder page)."""
+"""Configuration management endpoints (config-builder page).
+
+These are converter admin routes — they don't represent a banking control record,
+so they live under /api/v1/* rather than the BIAN URL surface. Request and
+response bodies remain camelCase with `extra="forbid"` (matches the rest of the
+service).
+"""
 
 from fastapi import APIRouter, HTTPException, status
 from datetime import datetime, timedelta
@@ -16,13 +22,12 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-@router.get("/configs", status_code=status.HTTP_200_OK)
+@router.get(
+    "/api/v1/configs",
+    status_code=status.HTTP_200_OK,
+)
 async def list_all_configs():
-    """
-    List all conversion configurations with full details.
-
-    Returns complete config documents from MongoDB for the Config Builder UI.
-    """
+    """List all conversion configurations with full details."""
     try:
         configs = await mongodb_service.list_configs()
         return {"configs": configs}
@@ -34,13 +39,12 @@ async def list_all_configs():
         )
 
 
-@router.get("/format-specifications", status_code=status.HTTP_200_OK)
+@router.get(
+    "/api/v1/format-specifications",
+    status_code=status.HTTP_200_OK,
+)
 async def list_format_specifications():
-    """
-    List all target format specifications.
-
-    Returns format specs from MongoDB for the Config Builder target format dropdown.
-    """
+    """List all target format specifications."""
     try:
         specs = await mongodb_service.list_format_specifications()
         return {"specifications": specs}
@@ -52,7 +56,11 @@ async def list_format_specifications():
         )
 
 
-@router.post("/auto-configure", response_model=AutoConfigureResponse, status_code=status.HTTP_200_OK)
+@router.post(
+    "/api/v1/auto-configure",
+    response_model=AutoConfigureResponse,
+    status_code=status.HTTP_200_OK,
+)
 async def auto_configure(request: AutoConfigureRequest) -> AutoConfigureResponse:
     """
     Auto-generate a conversion configuration by learning from existing configs.
@@ -62,15 +70,15 @@ async def auto_configure(request: AutoConfigureRequest) -> AutoConfigureResponse
     Stored temporarily (5 min TTL) for review.
     """
     try:
-        logger.info(f"Auto-configure: {request.source_format} → {request.target_format}")
+        logger.info(f"Auto-configure: {request.sourceFormat} → {request.targetFormat}")
 
         result = await semantic_learning_service.generate_config(
-            source_format=request.source_format,
-            target_format=request.target_format,
-            sample_message=request.sample_message
+            source_format=request.sourceFormat,
+            target_format=request.targetFormat,
+            sample_message=request.sampleMessage
         )
 
-        config_id = result["configuration_id"]
+        config_id = result["configurationId"]
         await mongodb_service.save_temp_config(
             config_id=config_id,
             config=result["config"],
@@ -79,28 +87,14 @@ async def auto_configure(request: AutoConfigureRequest) -> AutoConfigureResponse
 
         logger.info(
             f"Generated config {config_id}: "
-            f"source={result['source_fields_identified']}, "
-            f"target_required={result['target_fields_required']}, "
-            f"mapped={result['target_fields_mapped']}, "
-            f"ai={result['target_fields_ai']}, "
+            f"source={result['sourceFieldsIdentified']}, "
+            f"target_required={result['targetFieldsRequired']}, "
+            f"mapped={result['targetFieldsMapped']}, "
+            f"ai={result['targetFieldsAi']}, "
             f"confidence={result['confidence']}"
         )
 
-        return AutoConfigureResponse(
-            configuration_id=result["configuration_id"],
-            config=result["config"],
-            confidence=result["confidence"],
-            source_fields_identified=result["source_fields_identified"],
-            target_fields_required=result["target_fields_required"],
-            target_fields_mapped=result["target_fields_mapped"],
-            target_fields_ai=result["target_fields_ai"],
-            matched_fields=result["matched_fields"],
-            unknown_fields=result["unknown_fields"],
-            learned_from=result["learned_from"],
-            not_covered_fields=result.get("not_covered_fields", []),
-            suggestions=result.get("suggestions", []),
-            llm_prompt_info=result.get("llm_prompt_info")
-        )
+        return AutoConfigureResponse(**result)
 
     except ValueError as e:
         logger.error(f"Auto-configure validation error: {str(e)}")
@@ -116,48 +110,48 @@ async def auto_configure(request: AutoConfigureRequest) -> AutoConfigureResponse
         )
 
 
-@router.post("/auto-configure/{config_id}/approve", response_model=ApproveConfigResponse, status_code=status.HTTP_200_OK)
-async def approve_config(config_id: str) -> ApproveConfigResponse:
+@router.post(
+    "/api/v1/auto-configure/{configuration_id}/approve",
+    response_model=ApproveConfigResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def approve_config(configuration_id: str) -> ApproveConfigResponse:
     """
     Approve and save an auto-generated configuration with 10-minute TTL.
 
-    Moves config from temporary storage to conversion_configs collection.
+    Moves config from temporary storage to conversionConfigs collection.
     A unique session suffix prevents ID conflicts between users.
     """
     try:
-        logger.info(f"Approving config: {config_id}")
+        logger.info(f"Approving config: {configuration_id}")
 
-        temp_config = await mongodb_service.get_temp_config(config_id)
+        temp_config = await mongodb_service.get_temp_config(configuration_id)
         if not temp_config:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Config not found or expired: {config_id}"
+                detail=f"Config not found or expired: {configuration_id}"
             )
 
-        # Clean up temp markers
         if "map" in temp_config:
             for mapping in temp_config["map"]:
                 mapping.pop("_unknown", None)
 
-        # Generate unique ID (session-unique)
         unique_suffix = uuid.uuid4().hex[:8]
-        unique_config_id = f"{config_id}_{unique_suffix}"
+        unique_config_id = f"{configuration_id}_{unique_suffix}"
         temp_config["_id"] = unique_config_id
 
-        # Add 10-minute TTL for config-builder configs
         temp_config["expires_at"] = datetime.utcnow() + timedelta(minutes=10)
 
-        # Ensure TTL index exists (idempotent)
         await mongodb_service.ensure_configs_ttl_index()
 
         await mongodb_service.insert_config(temp_config)
-        await mongodb_service.delete_temp_config(config_id)
+        await mongodb_service.delete_temp_config(configuration_id)
 
         logger.info(f"Config {unique_config_id} approved and saved (expires in 10 min)")
 
         return ApproveConfigResponse(
+            configurationId=unique_config_id,
             status="approved",
-            configuration_id=unique_config_id
         )
 
     except HTTPException:

@@ -164,12 +164,12 @@ const FORMAT_INFO = {
     type: 'Internal',
     description: 'Universal bridge format - all payment formats convert through this intermediate structure.',
     keyFields: [
-      { field: 'transaction_ref', desc: 'Transaction Reference' },
+      { field: 'transactionRef', desc: 'Transaction Reference' },
       { field: 'amount/currency', desc: 'Payment Amount' },
-      { field: 'value_date', desc: 'Settlement Date' },
-      { field: 'debtor_*', desc: 'Debtor Information' },
-      { field: 'creditor_*', desc: 'Creditor Information' },
-      { field: 'remittance_info', desc: 'Payment Details' }
+      { field: 'valueDate', desc: 'Settlement Date' },
+      { field: 'debtor*', desc: 'Debtor Information' },
+      { field: 'creditor*', desc: 'Creditor Information' },
+      { field: 'remittanceInfo', desc: 'Payment Details' }
     ]
   },
   TARGET2: {
@@ -206,7 +206,7 @@ const FORMAT_INFO = {
       { field: 'processing_code', desc: 'Processing Code' },
       { field: 'amount', desc: 'Transaction Amount' },
       { field: 'stan', desc: 'System Trace Audit Number' },
-      { field: 'merchant_info', desc: 'Card Acceptor Name/Location' }
+      { field: 'merchantInfo', desc: 'Card Acceptor Name/Location' }
     ]
   },
   'cain.001': {
@@ -663,9 +663,9 @@ export default function ConfigBuilderPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          source_format: sourceFormat,
-          target_format: targetFormat,
-          sample_message: sampleMessage
+          sourceFormat: sourceFormat,
+          targetFormat: targetFormat,
+          sampleMessage: sampleMessage
         })
       });
 
@@ -691,8 +691,11 @@ export default function ConfigBuilderPage() {
       setGenerateError(null);
 
       const response = await fetch(
-        `/api/auto-configure/${generatedConfig.configuration_id}/approve`,
-        { method: 'POST' }
+        `/api/auto-configure/${encodeURIComponent(generatedConfig.configurationId)}/approve`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+        }
       );
 
       if (!response.ok) {
@@ -701,7 +704,7 @@ export default function ConfigBuilderPage() {
       }
 
       const data = await response.json();
-      const uniqueConfigId = data.configuration_id; // Backend returns unique ID with suffix
+      const uniqueConfigId = data.configurationId; // Backend returns unique ID with suffix
 
       setSessionConfigId(uniqueConfigId); // Track this session's config
       setSchemaConfigId(uniqueConfigId); // Auto-select in Schema Reference dropdown
@@ -1460,7 +1463,7 @@ export default function ConfigBuilderPage() {
                       </p>
                       <div className="schema-card-code">
                         <pre>{`"output": {
-  "ref": "transaction_ref",
+  "ref": "transactionRef",
   "amount": "amount"
 }`}</pre>
                       </div>
@@ -1489,43 +1492,43 @@ export default function ConfigBuilderPage() {
                     <div className="canonical-field-group">
                       <div className="canonical-field-title">Required Fields</div>
                       <div className="canonical-fields">
-                        <span className="canonical-field required">transaction_ref</span>
+                        <span className="canonical-field required">transactionRef</span>
                         <span className="canonical-field required">amount</span>
                         <span className="canonical-field required">currency</span>
-                        <span className="canonical-field required">value_date</span>
+                        <span className="canonical-field required">valueDate</span>
                       </div>
                     </div>
 
                     <div className="canonical-field-group">
                       <div className="canonical-field-title">Party Information</div>
                       <div className="canonical-fields">
-                        <span className="canonical-field">debtor_name</span>
-                        <span className="canonical-field">debtor_account</span>
-                        <span className="canonical-field">debtor_bank</span>
-                        <span className="canonical-field">creditor_name</span>
-                        <span className="canonical-field">creditor_account</span>
-                        <span className="canonical-field">creditor_bank</span>
+                        <span className="canonical-field">debtorName</span>
+                        <span className="canonical-field">debtorAccount</span>
+                        <span className="canonical-field">debtorBank</span>
+                        <span className="canonical-field">creditorName</span>
+                        <span className="canonical-field">creditorAccount</span>
+                        <span className="canonical-field">creditorBank</span>
                       </div>
                     </div>
 
                     <div className="canonical-field-group">
                       <div className="canonical-field-title">Payment Details</div>
                       <div className="canonical-fields">
-                        <span className="canonical-field">remittance_info</span>
-                        <span className="canonical-field">charge_bearer</span>
-                        <span className="canonical-field">bank_operation_code</span>
-                        <span className="canonical-field">end_to_end_id</span>
-                        <span className="canonical-field">instruction_id</span>
+                        <span className="canonical-field">remittanceInfo</span>
+                        <span className="canonical-field">chargeBearer</span>
+                        <span className="canonical-field">bankOperationCode</span>
+                        <span className="canonical-field">endToEndId</span>
+                        <span className="canonical-field">instructionId</span>
                       </div>
                     </div>
 
                     <div className="canonical-field-group">
                       <div className="canonical-field-title">Crypto Settlement (Optional)</div>
                       <div className="canonical-fields">
-                        <span className="canonical-field">crypto_enabled</span>
-                        <span className="canonical-field">crypto_blockchain</span>
-                        <span className="canonical-field">crypto_sender_wallet</span>
-                        <span className="canonical-field">crypto_receiver_wallet</span>
+                        <span className="canonical-field">cryptoEnabled</span>
+                        <span className="canonical-field">cryptoBlockchain</span>
+                        <span className="canonical-field">cryptoSenderWallet</span>
+                        <span className="canonical-field">cryptoReceiverWallet</span>
                       </div>
                     </div>
                   </div>
@@ -1662,7 +1665,7 @@ export default function ConfigBuilderPage() {
             <div className="result-section">
               <div className="section-title">
                 <span>Generated Config</span>
-                <Badge variant="green">{generatedConfig.configuration_id}</Badge>
+                <Badge variant="green">{generatedConfig.configurationId}</Badge>
               </div>
 
               <div className="confidence-bar">
@@ -1680,14 +1683,14 @@ export default function ConfigBuilderPage() {
 
               <div style={{ marginBottom: '12px' }}>
                 <span style={{ fontSize: '13px', color: 'var(--gray-dark1)' }}>
-                  Source Fields: {generatedConfig.source_fields_identified} | Target Coverage: {(generatedConfig.target_fields_mapped || 0) + (generatedConfig.target_fields_ai || 0)}/{generatedConfig.target_fields_required || 0}
+                  Source Fields: {generatedConfig.sourceFieldsIdentified} | Target Coverage: {(generatedConfig.targetFieldsMapped || 0) + (generatedConfig.targetFieldsAi || 0)}/{generatedConfig.targetFieldsRequired || 0}
                 </span>
               </div>
 
-              {generatedConfig.matched_fields?.length > 0 && (
+              {generatedConfig.matchedFields?.length > 0 && (
                 <div className="field-badges">
                   <span style={{ fontSize: '12px', color: 'var(--gray-dark1)' }}>Mapped fields:</span>
-                  {generatedConfig.matched_fields.flatMap((f) => {
+                  {generatedConfig.matchedFields.flatMap((f) => {
                     const mapping = generatedConfig.config?.map?.find(m => m.from === f);
                     const targets = mapping?.to || [];
                     if (targets.length <= 1) {
@@ -1706,10 +1709,10 @@ export default function ConfigBuilderPage() {
                 </div>
               )}
 
-              {generatedConfig.unknown_fields?.length > 0 && (
+              {generatedConfig.unknownFields?.length > 0 && (
                 <div className="field-badges">
                   <span style={{ fontSize: '12px', color: 'var(--gray-dark1)' }}>Uncertain fields:</span>
-                  {generatedConfig.unknown_fields.map((f) => (
+                  {generatedConfig.unknownFields.map((f) => (
                     <Badge key={f} variant="yellow">{f}</Badge>
                   ))}
                 </div>
@@ -1752,17 +1755,17 @@ export default function ConfigBuilderPage() {
                 </div>
               )}
 
-              {generatedConfig.not_covered_fields?.length > 0 && (
+              {generatedConfig.notCoveredFields?.length > 0 && (
                 <div className="field-badges">
                   <span style={{ fontSize: '12px', color: 'var(--gray-dark1)' }}>Unresolvable Target Fields:</span>
-                  {generatedConfig.not_covered_fields.map((f) => (
+                  {generatedConfig.notCoveredFields.map((f) => (
                     <Badge key={f} variant="lightgray">{f}</Badge>
                   ))}
                 </div>
               )}
 
               {/* LLM Prompt Construction Details */}
-              {generatedConfig.llm_prompt_info && (
+              {generatedConfig.llmPromptInfo && (
                 <div className="expandable-section" style={{ marginTop: '16px' }}>
                   <div
                     className="expandable-header"
@@ -1781,16 +1784,16 @@ export default function ConfigBuilderPage() {
                   </div>
                   {showPromptDetails && (
                     <div className="expandable-content">
-                      <LLMPromptDetails promptInfo={generatedConfig.llm_prompt_info} />
+                      <LLMPromptDetails promptInfo={generatedConfig.llmPromptInfo} />
                     </div>
                   )}
                 </div>
               )}
 
-              {generatedConfig.learned_from?.length > 0 && (
+              {generatedConfig.learnedFrom?.length > 0 && (
                 <div style={{ marginBottom: '12px' }}>
                   <span style={{ fontSize: '12px', color: 'var(--gray-dark1)' }}>Learned from: </span>
-                  {generatedConfig.learned_from.map((c) => (
+                  {generatedConfig.learnedFrom.map((c) => (
                     <Badge key={c} variant="lightgray" style={{ marginRight: '4px' }}>{c}</Badge>
                   ))}
                 </div>

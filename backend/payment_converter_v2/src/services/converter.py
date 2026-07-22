@@ -109,7 +109,7 @@ class Converter:
             cached = await self._get_cached_json(original_source_message, conversion_run_id)
             if cached:
                 logger.info("✅ Using cached canonical JSON from previous hop")
-                message = cached['json_data']
+                message = cached['jsonData']
         
         try:
             # Step 1: Load configuration from MongoDB
@@ -319,7 +319,7 @@ class Converter:
 
         Returns:
             Dictionary of target_field -> {confidence, data}
-            Note: When target is a list (e.g., ["payment_purpose", "invoice_number"]),
+            Note: When target is a list (e.g., ["paymentPurpose", "invoiceNumber"]),
             it's stored as a tuple key for hashability.
         """
         ai_results = {}

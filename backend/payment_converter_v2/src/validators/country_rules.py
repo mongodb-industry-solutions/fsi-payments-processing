@@ -42,8 +42,8 @@ def validate_country_rules(
 
     # Extract country indicators
     currency = canonical_json.get("currency", "")
-    creditor_country = canonical_json.get("creditor_country", "")
-    debtor_country = canonical_json.get("debtor_country", "")
+    creditor_country = canonical_json.get("creditorCountry", "")
+    debtor_country = canonical_json.get("debtorCountry", "")
 
     # Determine target country (where money is going)
     target_country = creditor_country or _infer_country_from_currency(currency)
@@ -84,7 +84,7 @@ def validate_japan_rules(
     - Creditor name must be in katakana/hiragana (Japanese characters)
     """
 
-    creditor_name = canonical_json.get("creditor_name", "")
+    creditor_name = canonical_json.get("creditorName", "")
 
     # Check if creditor name contains Western characters
     if creditor_name and _contains_western_text(creditor_name):
@@ -96,7 +96,7 @@ def validate_japan_rules(
                 f"Japanese entities). The payment cannot proceed until the name is converted "
                 f"to the appropriate Japanese script format."
             ),
-            field_name="creditor_name",
+            field_name="creditorName",
             original_value=creditor_name,
             payment_data=canonical_json,
             conversion_context={
@@ -130,8 +130,8 @@ def validate_india_rules(
     - Format: XXXX0YYYYYY (4 alpha, 1 zero, 6 alphanumeric)
     """
 
-    creditor_bic = canonical_json.get("creditor_bic", "")
-    creditor_bank = canonical_json.get("creditor_bank", "")
+    creditor_bic = canonical_json.get("creditorBic", "")
+    creditor_bank = canonical_json.get("creditorBank", "")
 
     # Check if IFSC code is missing
     if not creditor_bic:
@@ -139,11 +139,11 @@ def validate_india_rules(
             problem=(
                 f"Indian payment regulations require an IFSC (Indian Financial System Code) "
                 f"to identify the beneficiary's bank branch. The current payment is missing "
-                f"this code in the creditor_bic field. The bank information available "
+                f"this code in the creditorBic field. The bank information available "
                 f"is: '{creditor_bank}'. An IFSC code needs to be looked up or determined "
                 f"based on the bank name, branch, and location information."
             ),
-            field_name="creditor_bic",
+            field_name="creditorBic",
             original_value="",
             payment_data=canonical_json,
             conversion_context={
@@ -155,7 +155,7 @@ def validate_india_rules(
                 "additional_context": {
                     "country": "IN",
                     "currency": canonical_json.get("currency", "INR"),
-                    "creditor_bank": creditor_bank,
+                    "creditorBank": creditor_bank,
                     "validation_rule": "ifsc_required"
                 }
             }
@@ -170,7 +170,7 @@ def validate_india_rules(
                 f"6 alphanumeric (branch code). Example: HDFC0001234. "
                 f"The correct IFSC code needs to be determined for the bank: '{creditor_bank}'."
             ),
-            field_name="creditor_bic",
+            field_name="creditorBic",
             original_value=creditor_bic,
             payment_data=canonical_json,
             conversion_context={
@@ -181,7 +181,7 @@ def validate_india_rules(
                 "detailed_processing": detailed_processing or {},
                 "additional_context": {
                     "country": "IN",
-                    "creditor_bank": creditor_bank,
+                    "creditorBank": creditor_bank,
                     "validation_rule": "ifsc_format"
                 }
             }
@@ -203,7 +203,7 @@ def validate_name_verification_rules(
     should be resolved to their full legal names for compliance.
     """
 
-    creditor_name = canonical_json.get("creditor_name", "")
+    creditor_name = canonical_json.get("creditorName", "")
 
     if creditor_name and _looks_like_trading_name(creditor_name):
         raise CountryValidationException(
@@ -215,7 +215,7 @@ def validate_name_verification_rules(
                 f"'International Business Machines Corporation'). The correct legal name "
                 f"needs to be verified against registered entity databases."
             ),
-            field_name="creditor_name",
+            field_name="creditorName",
             original_value=creditor_name,
             payment_data=canonical_json,
             conversion_context={
@@ -255,7 +255,7 @@ def validate_purpose_code_rules(
 
     # Skip validation for crypto settlement messages
     # These have crypto markers and use blockchain settlement flow
-    if canonical_json.get("crypto_blockchain") or canonical_json.get("crypto_receiver_wallet"):
+    if canonical_json.get("cryptoBlockchain") or canonical_json.get("cryptoReceiverWallet"):
         return
 
     # Skip validation when source is already ISO 20022 format
@@ -266,35 +266,35 @@ def validate_purpose_code_rules(
         return
 
     # Check for ISO 20022 purpose code (standardized 4-letter code like SALA, SUPP, SCVE)
-    # Note: payment_purpose from AI lane is free-text extraction, NOT a standardized code
+    # Note: paymentPurpose from AI lane is free-text extraction, NOT a standardized code
     purpose_code = (
-        canonical_json.get("category_purpose", "") or
-        canonical_json.get("purpose_code", "")
+        canonical_json.get("categoryPurpose", "") or
+        canonical_json.get("purposeCode", "")
     )
 
     # Extract remittance text from multiple possible sources
     remittance_text = ""
 
-    # Source 1: Top-level fields from AI lane (payment_purpose, invoice_number, details)
+    # Source 1: Top-level fields from AI lane (paymentPurpose, invoiceNumber, details)
     ai_parts = []
-    if canonical_json.get("payment_purpose"):
-        ai_parts.append(str(canonical_json["payment_purpose"]))
-    if canonical_json.get("invoice_number"):
-        ai_parts.append(str(canonical_json["invoice_number"]))
+    if canonical_json.get("paymentPurpose"):
+        ai_parts.append(str(canonical_json["paymentPurpose"]))
+    if canonical_json.get("invoiceNumber"):
+        ai_parts.append(str(canonical_json["invoiceNumber"]))
     if canonical_json.get("details"):
         ai_parts.append(str(canonical_json["details"]))
     if ai_parts:
         remittance_text = " ".join(ai_parts)
 
-    # Source 2: remittance_info field (could be dict, string, or list)
+    # Source 2: remittanceInfo field (could be dict, string, or list)
     if not remittance_text:
-        remittance_info = canonical_json.get("remittance_info", "")
+        remittance_info = canonical_json.get("remittanceInfo", "")
         if isinstance(remittance_info, dict):
             parts = []
-            if remittance_info.get("payment_purpose"):
-                parts.append(str(remittance_info["payment_purpose"]))
-            if remittance_info.get("invoice_number"):
-                parts.append(str(remittance_info["invoice_number"]))
+            if remittance_info.get("paymentPurpose"):
+                parts.append(str(remittance_info["paymentPurpose"]))
+            if remittance_info.get("invoiceNumber"):
+                parts.append(str(remittance_info["invoiceNumber"]))
             if remittance_info.get("details"):
                 parts.append(str(remittance_info["details"]))
             remittance_text = " ".join(parts)
@@ -315,7 +315,7 @@ def validate_purpose_code_rules(
                 f"The payment description needs to be classified into the appropriate "
                 f"ISO 20022 purpose code using semantic matching against the purpose code registry."
             ),
-            field_name="category_purpose",
+            field_name="categoryPurpose",
             original_value="",
             payment_data=canonical_json,
             conversion_context={
@@ -326,8 +326,8 @@ def validate_purpose_code_rules(
                 "detailed_processing": detailed_processing or {},
                 "additional_context": {
                     "validation_rule": "purpose_code_classification",
-                    "remittance_info": remittance_text,
-                    "search_collection": "purpose_codes"
+                    "remittanceInfo": remittance_text,
+                    "search_collection": "purposeCodes"
                 }
             }
         )

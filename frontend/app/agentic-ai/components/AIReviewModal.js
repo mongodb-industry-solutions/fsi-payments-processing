@@ -64,7 +64,7 @@ export default function AIReviewModal({
     const typeMap = {
       'remittance': 'Remittance Info',
       'instructions': 'Bank Instructions',
-      'merchant_info': 'Merchant Details',
+      'merchantInfo': 'Merchant Details',
       'purpose': 'Payment Purpose'
     };
     return typeMap[fieldType] || fieldType?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Unknown';
