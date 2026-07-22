@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import UserMenu from "./UserMenu";
 
 export default function Navigation({ bianModelUrl }) {
   const pathname = usePathname();
@@ -67,6 +68,7 @@ export default function Navigation({ bianModelUrl }) {
             </svg>
             <span>Documentation</span>
           </Link>
+          <UserMenu />
         </div>
       </div>
     </nav>
