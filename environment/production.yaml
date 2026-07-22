@@ -1,5 +1,6 @@
-# FSI Payments Processing - Production Environment
+# FSI Payments Processing - Production Environment (ist-prod / BIAN)
 # Single-pod sidecar deployment: Frontend (main) + Converter + Agent (sidecars)
+# Sidecars point at the ist-prod cluster via the fsi-payments-bian secret group.
 
 env:
   NODE_ENV: production
@@ -23,7 +24,7 @@ serviceAccount:
 sidecarContainers:
   # Payment Converter V2 (port 8001)
   - name: converter
-    image: 795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-converter-prod:latest
+    image: 795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-processing-bian-converter:latest
     ports:
       - containerPort: 8001
         name: converter
@@ -31,42 +32,42 @@ sidecarContainers:
       - name: MONGODB_URI
         valueFrom:
           secretKeyRef:
-            name: fsi-payments
+            name: fsi-payments-bian
             key: MONGODB_URI
       - name: DATABASE_NAME
         valueFrom:
           secretKeyRef:
-            name: fsi-payments
+            name: fsi-payments-bian
             key: DATABASE_NAME
       - name: VOYAGE_API_KEY
         valueFrom:
           secretKeyRef:
-            name: fsi-payments
+            name: fsi-payments-bian
             key: VOYAGE_API_KEY
       - name: SOLANA_RPC_ENDPOINT
         valueFrom:
           secretKeyRef:
-            name: fsi-payments
+            name: fsi-payments-bian
             key: SOLANA_RPC_ENDPOINT
       - name: SOLANA_PRIVATE_KEY
         valueFrom:
           secretKeyRef:
-            name: fsi-payments
+            name: fsi-payments-bian
             key: SOLANA_PRIVATE_KEY
       - name: SOLANA_PRIVATE_KEY_2
         valueFrom:
           secretKeyRef:
-            name: fsi-payments
+            name: fsi-payments-bian
             key: SOLANA_PRIVATE_KEY_2
       - name: SOLANA_NETWORK
         valueFrom:
           secretKeyRef:
-            name: fsi-payments
+            name: fsi-payments-bian
             key: SOLANA_NETWORK
 
   # Payment Agent (port 8002)
   - name: agent
-    image: 795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-agent-prod:latest
+    image: 795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-processing-bian-agent:latest
     ports:
       - containerPort: 8002
         name: agent
@@ -74,10 +75,15 @@ sidecarContainers:
       - name: MONGODB_URI
         valueFrom:
           secretKeyRef:
-            name: fsi-payments
+            name: fsi-payments-bian
             key: MONGODB_URI
+      - name: DATABASE_NAME
+        valueFrom:
+          secretKeyRef:
+            name: fsi-payments-bian
+            key: DATABASE_NAME
       - name: VOYAGE_API_KEY
         valueFrom:
           secretKeyRef:
-            name: fsi-payments
+            name: fsi-payments-bian
             key: VOYAGE_API_KEY

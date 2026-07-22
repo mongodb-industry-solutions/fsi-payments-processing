@@ -36,9 +36,9 @@ class Builder:
             Formatted output message string
             
         Example:
-            internal_fields = {"transaction_ref": "REF123", "amount": "10000"}
+            internal_fields = {"transactionRef": "REF123", "amount": "10000"}
             output_paths = {
-                "transaction_ref": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.PmtId.InstrId",
+                "transactionRef": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.PmtId.InstrId",
                 "amount": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.IntrBkSttlmAmt.#text"
             }
             result = builder.build(internal_fields, output_paths, "xml")

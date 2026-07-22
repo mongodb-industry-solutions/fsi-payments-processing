@@ -59,12 +59,13 @@ export default function HumanReviewModal({
   };
   const taskLabel = getTaskLabel(problem);
 
-  // Format field name for display
-  const fieldLabel = field === 'creditor_name'
+  // Format field name for display. Canonical fields are camelCase; the fallback
+  // splits camelCase into spaced Title Case (e.g. "creditorBank" → "Creditor Bank").
+  const fieldLabel = field === 'creditorName'
     ? 'Beneficiary Name'
-    : field === 'creditor_bic'
+    : field === 'creditorBic'
     ? 'Bank Code (IFSC)'
-    : field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    : field.replace(/([A-Z])/g, ' $1').replace(/^./, l => l.toUpperCase()).trim();
 
   const handleApprove = () => {
     if (isEditing && modifiedValue.trim()) {

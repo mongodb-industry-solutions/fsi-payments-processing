@@ -7,14 +7,14 @@ from functools import lru_cache
 
 class Settings(BaseSettings):
     """Application settings loaded from environment variables"""
-    
+
     # MongoDB Configuration
     mongodb_uri: str = Field(..., description="MongoDB connection URI")
-    database_name: str = Field(default="fsi-payments-processing", description="Database name")
-    
+    database_name: str = Field(default="fin_migration", description="Database name")
+
     # AWS Configuration (boto3 uses default credential chain)
     aws_default_region: str = Field(default="us-east-1", description="AWS Region")
-    
+
     # AI Configuration
     ai_confidence_threshold: float = Field(default=0.8, description="AI confidence threshold for human review")
     ai_model_haiku: str = Field(
@@ -25,7 +25,7 @@ class Settings(BaseSettings):
         default="arn:aws:bedrock:us-east-1:275662791714:application-inference-profile/pbsav3g2fr8d",
         description="Sonnet model ID for complex AI tasks"
     )
-    
+
     # Service Configuration
     log_level: str = Field(default="INFO", description="Logging level")
     api_port: int = Field(default=8001, description="API port")
@@ -68,7 +68,7 @@ class Settings(BaseSettings):
         case_sensitive=False,
         extra="ignore"  # Ignore extra fields from converter_service .env
     )
-    
+
     @property
     def cors_origins_list(self) -> list[str]:
         """Parse CORS origins as a list"""

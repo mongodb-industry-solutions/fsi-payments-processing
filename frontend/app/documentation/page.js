@@ -17,6 +17,7 @@ export default function Documentation() {
   const [showDbExplorer, setShowDbExplorer] = useState(false);
   const [selectedDbCollection, setSelectedDbCollection] = useState(null);
   const [collectionDocs, setCollectionDocs] = useState(null);
+  const [collectionMeta, setCollectionMeta] = useState(null);
   const [collectionLoading, setCollectionLoading] = useState(false);
 
   useEffect(() => {
@@ -24,13 +25,12 @@ export default function Documentation() {
   }, []);
 
   const dbCollections = [
-    { name: 'bank_details', icon: 'Building' },
-    { name: 'ifsc_codes', icon: 'MagnifyingGlass' },
-    { name: 'purpose_codes', icon: 'Sparkle' },
-    { name: 'registered_entities', icon: 'Shield' },
-    { name: 'conversion_configs', icon: 'CurlyBraces' },
-    { name: 'format_specifications', icon: 'Apps' },
-    { name: 'canonical_json_storage', icon: 'Array' },
+    { name: 'canonicalJsonStorage', icon: 'Array' },
+    { name: 'correspondentBanks', icon: 'Building' },
+    { name: 'legalEntities', icon: 'Shield' },
+    { name: 'purposeCodes', icon: 'Sparkle' },
+    { name: 'conversionConfigs', icon: 'CurlyBraces' },
+    { name: 'formatSpecifications', icon: 'Apps' },
   ];
 
   const handleCollectionSelect = async (collectionName) => {
@@ -38,11 +38,13 @@ export default function Documentation() {
     setSelectedDbCollection(collectionName);
     setCollectionLoading(true);
     setCollectionDocs(null);
+    setCollectionMeta(null);
     try {
       const res = await fetch(`/api/collection-preview/${collectionName}`);
       if (!res.ok) throw new Error(res.statusText);
       const data = await res.json();
       setCollectionDocs(data.documents);
+      setCollectionMeta({ limit: data.limit, total: data.total_count });
     } catch (err) {
       console.error('Collection fetch error:', err);
       setCollectionDocs([]);
@@ -397,13 +399,13 @@ Third-party Gateway (JSON wrapper):
     "50K": ":50K:([\\\\s\\\\S]*?)(?=:[0-9])"
   },
   "map": [
-    {"from": "20", "to": ["transaction_ref"]},
-    {"from": "32A", "to": ["value_date", "currency", "amount"], "split": [6, 9]},
-    {"from": "50K", "to": ["debtor_account", "debtor_name"], "multiline": true},
-    {"from": "70", "to": "remittance_info", "ai": "remittance"}
+    {"from": "20", "to": ["transactionRef"]},
+    {"from": "32A", "to": ["valueDate", "currency", "amount"], "split": [6, 9]},
+    {"from": "50K", "to": ["debtorAccount", "debtorName"], "multiline": true},
+    {"from": "70", "to": "remittanceInfo", "ai": "remittance"}
   ],
   "output": {
-    "transaction_ref": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.PmtId.InstrId",
+    "transactionRef": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.PmtId.InstrId",
     "amount": "Document.FIToFICstmrCdtTrf.CdtTrfTxInf.IntrBkSttlmAmt.#text"
   }
 }`}</pre>
@@ -415,21 +417,21 @@ Third-party Gateway (JSON wrapper):
                   <div className={styles.canonicalJsonSection}>
                     <H3 className={styles.archSectionTitle}>Canonical JSON</H3>
                     <pre className={styles.canonicalJsonCode}>{`{
-  "transaction_ref": "MED-CH-ZA-2024-001",
+  "transactionRef": "MED-CH-ZA-2024-001",
   "amount": "180000.00",
   "currency": "CHF",
-  "value_date": "2024-12-15",
+  "valueDate": "2024-12-15",
 
-  "debtor_name": "SWISS PHARMA AG",
-  "debtor_account": "CH930076201162...",
-  "debtor_bank": "UBSWCHZH80A",
+  "debtorName": "SWISS PHARMA AG",
+  "debtorAccount": "CH930076201162...",
+  "debtorBank": "UBSWCHZH80A",
 
-  "creditor_name": "SA HEALTH SUPPLIES",
-  "creditor_account": "ZA12345678901...",
-  "creditor_bank": "ABSAZAJJXXX",
+  "creditorName": "SA HEALTH SUPPLIES",
+  "creditorAccount": "ZA12345678901...",
+  "creditorBank": "ABSAZAJJXXX",
 
-  "remittance_info": "INVOICE MED-ZA-2024-5678",
-  "charge_bearer": "SHA"
+  "remittanceInfo": "INVOICE MED-ZA-2024-5678",
+  "chargeBearer": "SHA"
 }`}</pre>
                     <Body className={styles.canonicalJsonExplanation}>
                       Every payment format maps to a single, flat JSON structure. MT103, ISO 8583, pacs.008, blockchain transactions—they all share the same field names for equivalent concepts. This universal bridge enables multi-hop routing (e.g., MT103 → JSON → pacs.009) and preserves ISO 20022's full data richness without truncation.
@@ -654,7 +656,14 @@ Third-party Gateway (JSON wrapper):
             <div className={styles.dbPanelHeader}>
               <div className={styles.dbPanelHeaderLeft}>
                 <Icon glyph="Database" size="small" />
-                <H3>MongoDB Explorer</H3>
+                <div className={styles.dbPanelHeaderText}>
+                  <H3>MongoDB Explorer</H3>
+                  {collectionMeta && (
+                    <span className={styles.dbPanelSubtitle}>
+                      Sample preview — up to {collectionMeta.limit} documents per collection
+                    </span>
+                  )}
+                </div>
               </div>
               <button className={styles.dbCloseBtn} onClick={() => setShowDbExplorer(false)}>
                 <Icon glyph="X" size="small" />
@@ -685,8 +694,17 @@ Third-party Gateway (JSON wrapper):
                   <>
                     <div className={styles.dbContentHeader}>
                       <Body weight="medium">{selectedDbCollection}</Body>
-                      <Badge variant="darkgray">{collectionDocs.length} documents</Badge>
+                      <Badge variant="darkgray">
+                        {collectionMeta && collectionMeta.total > collectionDocs.length
+                          ? `Showing ${collectionDocs.length} of ${collectionMeta.total}`
+                          : `${collectionDocs.length} documents`}
+                      </Badge>
                     </div>
+                    {collectionMeta && collectionMeta.total > collectionDocs.length && (
+                      <Body className={styles.dbCapNote}>
+                        Preview capped at {collectionMeta.limit} documents — this collection has {collectionMeta.total} in total.
+                      </Body>
+                    )}
                     <div className={styles.dbDocsList}>
                       {collectionDocs.map((doc, idx) => (
                         <pre key={idx} className={styles.dbDocJson}>
