@@ -212,17 +212,23 @@ body {
   align-items: center;
 }
 
+/* Compact vertical action buttons — glyph on top, small label beneath. */
 .nav-button-secondary {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: var(--spacing-2);
-  padding: var(--space-sm, 10px) var(--space-lg, 18px);
+  justify-content: center;
+  gap: 2px;
+  padding: 6px 10px;
+  min-width: 56px;
   background: transparent;
   color: var(--gray-dark1);
   border: 1px solid var(--gray-light1);
   border-radius: 8px;
-  font-size: clamp(0.875rem, 0.8rem + 0.2vw, 1rem);
+  font-size: 0.6875rem;
   font-weight: 500;
+  line-height: 1.1;
+  text-align: center;
   cursor: pointer;
   transition: var(--transition-fast);
   font-family: inherit;
@@ -232,12 +238,6 @@ body {
   background: var(--gray-light3);
   border-color: var(--gray-base);
   color: var(--black);
-}
-
-/* Icon-only variant (e.g. BIAN Data Model book glyph) — square, no label gap */
-.nav-button-icon {
-  padding: var(--space-sm, 10px);
-  gap: 0;
 }
 
 /* Main Content */

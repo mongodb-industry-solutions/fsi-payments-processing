@@ -27,7 +27,16 @@ const SECTIONS = [
         id: "65a546ae4a8f64e8f88fb89e",
         name: "Frida",
         role: "Leafy Bank Customer",
-        url: LEAFY_BANK_HOME,
+        // Deep-link the persona so the Leafy Bank UI auto-selects Frida and
+        // skips its login modal (the `?user=` param carries the choice across
+        // origins). Value is Frida's backend bankUsername.
+        url: `${LEAFY_BANK_HOME}?user=fridaklo`,
+      },
+      {
+        id: "66fe219d625d93a100528224",
+        name: "Grace",
+        role: "Leafy Bank Customer",
+        url: `${LEAFY_BANK_HOME}?user=gracehop`,
       },
     ],
   },

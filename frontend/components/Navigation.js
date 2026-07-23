@@ -49,7 +49,7 @@ export default function Navigation({ bianModelUrl }) {
             href={`${bianModelUrl}/bian-data-model?demo=payments`}
             target="_blank"
             rel="noopener noreferrer"
-            className="nav-button-secondary nav-button-icon"
+            className="nav-button-secondary"
             aria-label="BIAN Data Model"
             title="BIAN Data Model"
           >
@@ -57,6 +57,7 @@ export default function Navigation({ bianModelUrl }) {
               <path d="M8 4C6.5 3 4.5 3 2.5 3.5v9c2-0.5 4-0.5 5.5 0.5 1.5-1 3.5-1 5.5-0.5v-9C11.5 3 9.5 3 8 4z" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinejoin="round"/>
               <path d="M8 4v9" stroke="currentColor" strokeWidth="1.5"/>
             </svg>
+            <span>Data Model</span>
           </a>
           <Link
             href="/documentation"
