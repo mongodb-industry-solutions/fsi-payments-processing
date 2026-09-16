@@ -21,7 +21,7 @@ steps:
     image: node:22
     commands:
       - cd frontend 
-      - npm install
+      - npm install --legacy-peer-deps
       - npm run build
       
     
