@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { EnvironmentHelper } from '../../../utils/environment-helper.js';
+import { EnvironmentHelper } from 'utils/environment-helper.js';
 
 /**
  * Agentic Payments Platform (fsi-payments-processing) E2E smoke tests.
