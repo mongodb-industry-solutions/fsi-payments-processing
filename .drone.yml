@@ -23,7 +23,7 @@ steps:
       - cd frontend 
       - npm install --legacy-peer-deps
       - npm run build
-      - npm install -D @playwright/test
+      - npm install -D @playwright/test --legacy-peer-deps
       - npx playwright test tests/ 
       - npx playwright show-report
       
