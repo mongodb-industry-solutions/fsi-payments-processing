@@ -23,6 +23,8 @@ steps:
       - cd frontend 
       - npm install --legacy-peer-deps
       - npm run build
+      - npx playwright test tests/ 
+      - npx playwright show-report
       
     
 #   - name: publish-frontend
