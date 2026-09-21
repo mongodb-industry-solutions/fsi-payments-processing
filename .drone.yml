@@ -34,7 +34,7 @@ steps:
     settings:
       bucket: e2e-test-results
       region: us-east-1
-      #endpoint: https://s3.us-east-1.amazonaws.com
+      endpoint: https://s3.us-east-1.amazonaws.com
       access_key:
         from_secret: s3_access_key
       secret_key:
