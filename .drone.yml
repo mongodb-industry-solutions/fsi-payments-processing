@@ -18,17 +18,31 @@ trigger:
 steps:
   # Step 1: Build Frontend code and run QA Tests
   - name: Build & Test
-  # image: node:22
-    image: mcr.microsoft.com/playwright:v1.48.0-jammy
+    image: node:22
     commands:
       - cd frontend 
       - npm install --legacy-peer-deps
       - npm run build
-      # - npm install -D @playwright/test --legacy-peer-deps
-      # - npx playwright install-deps chromium
-      # - npx playwright install --with-deps chromium
+      - npm install -D @playwright/test --legacy-peer-deps
+      - npx playwright install-deps chromium
+      - npx playwright install --with-deps chromium
       - npx playwright test tests/
-      
+
+  # Step 2: Upload report to S3    
+  - name: upload-report
+    image: plugins/s3
+    settings:
+      bucket: e2e-test-results
+      region: us-east-1
+      access_key:
+        from_secret: ecr_access_key
+      secret_key:
+        from_secret: ecr_secret_key
+      source: playwright-report/**/*
+      target: /qa-test/${DRONE_REPO_NAME}/${DRONE_BUILD_NUMBER}/
+      strip_prefix: playwright-report/
+    when:
+      status: [success, failure]      
     
 #   - name: publish-frontend
 #     image: plugins/kaniko-ecr
