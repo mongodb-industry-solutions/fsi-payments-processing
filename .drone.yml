@@ -26,24 +26,35 @@ steps:
       - npm install -D @playwright/test --legacy-peer-deps
       - npx playwright install-deps chromium
       - npx playwright install --with-deps chromium
-      - npx playwright test tests/
+      - npx playwright test tests/ --reporter=html,json
 
   # Step 2: Upload report to S3    
   - name: upload-report
-    image: plugins/s3
-    settings:
-      bucket: e2e-test-results
-      region: us-east-1
-      endpoint: https://s3.us-east-1.amazonaws.com
-      access_key:
+    image: amazon/aws-cli:latest
+    environment:
+      AWS_ACCESS_KEY_ID:
         from_secret: s3_access_key
-      secret_key:
+      AWS_SECRET_ACCESS_KEY:
         from_secret: s3_secret_key
-      source: frontend/playwright-report/**/*
-      target: /qa-test/${DRONE_REPO_NAME}/${DRONE_BUILD_NUMBER}/
-      strip_prefix: playwright-report/
+      AWS_DEFAULT_REGION: us-east-1
+    commands:
+      - |
+        REPORT_DIR="frontend/playwright-report"
+        BUCKET="e2e-test-results"
+        TARGET="qa-test/${DRONE_REPO_NAME}/${DRONE_BUILD_NUMBER}"
+
+        if [ ! -d "$REPORT_DIR" ]; then
+          echo "⚠️  No report directory at $REPORT_DIR — skipping upload"
+          exit 0
+        fi
+
+        echo "Uploading $REPORT_DIR → s3://$BUCKET/$TARGET/"
+        aws s3 sync "$REPORT_DIR/" "s3://$BUCKET/$TARGET/" --region us-east-1 --no-progress
+        echo ""
+        echo "📊 Report: https://$BUCKET.s3.us-east-1.amazonaws.com/$TARGET/index.html"
     when:
-      status: [success, failure]      
+      status: [success, failure]
+      
     
 #   - name: publish-frontend
 #     image: plugins/kaniko-ecr
