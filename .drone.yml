@@ -24,7 +24,7 @@ steps:
       - npm install --legacy-peer-deps
       - npm run build
       - npm install -D @playwright/test --legacy-peer-deps
-      - npx playwright install chromium
+      - npx playwright install --with-deps chromium
       - npx playwright test tests/ 
       - npx playwright show-report
       
