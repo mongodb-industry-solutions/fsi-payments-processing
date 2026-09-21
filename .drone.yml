@@ -34,11 +34,11 @@ steps:
     settings:
       bucket: e2e-test-results
       region: us-east-1
-      endpoint: https://s3.us-east-1.amazonaws.com
+      #endpoint: https://s3.us-east-1.amazonaws.com
       access_key:
-        from_secret: ecr_access_key
+        from_secret: s3_access_key
       secret_key:
-        from_secret: ecr_secret_key
+        from_secret: s3_secret_key
       source: frontend/playwright-report/**/*
       target: /qa-test/${DRONE_REPO_NAME}/${DRONE_BUILD_NUMBER}/
       strip_prefix: playwright-report/
