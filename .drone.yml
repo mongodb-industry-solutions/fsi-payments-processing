@@ -34,6 +34,7 @@ steps:
     settings:
       bucket: e2e-test-results
       region: us-east-1
+      endpoint: s3://ist-e2e-test-results
       access_key:
         from_secret: ecr_access_key
       secret_key:
