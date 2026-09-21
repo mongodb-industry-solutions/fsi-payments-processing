@@ -26,8 +26,7 @@ steps:
       - npm install -D @playwright/test --legacy-peer-deps
       - npx playwright install-deps chromium
       - npx playwright install --with-deps chromium
-      - npx playwright test tests/ 
-      - npx playwright show-report
+      - npx playwright test tests/
       
     
 #   - name: publish-frontend
