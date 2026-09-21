@@ -56,6 +56,16 @@ export default defineConfig({
     },
   ],
 
+  /* Run the production build before tests. Locally reuses a server you
+     already started (npm run dev / start); in CI it boots `next start`
+     against the build the pipeline just produced, then tears it down. */
+  webServer: {
+    command: 'npm run start',
+    url: 'http://localhost:3000',
+    reuseExistingServer: !process.env.CI,
+    timeout: 120_000,
+  },
+
   /* Output directory for test artifacts */
   outputDir: 'test-results/',
 

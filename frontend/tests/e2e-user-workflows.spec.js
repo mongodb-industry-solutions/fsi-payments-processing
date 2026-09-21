@@ -124,6 +124,10 @@ test.describe('Agentic Payments Platform - E2E User Workflows', () => {
   });
 
   test('FS-AP-04: Selecting a Scenario and Simulating Starts the Streaming Pipeline', async ({ page }) => {
+    // FS-AP-04 drives the real LangGraph streaming pipeline (Bedrock + Atlas
+    // Search + Voyage AI). Those credentials aren't available in the hermetic
+    // CI container, so skip it there; it runs in the nightly staging job.
+    test.skip(process.env.CI, 'requires live backend (Bedrock/Atlas/Voyage) — run in nightly staging job');
     test.setTimeout(90_000); // AI pipeline is slow; allow up to 90s
     await page.goto(url('/agentic-ai'));
     await page.waitForLoadState('networkidle');
