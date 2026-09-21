@@ -16,16 +16,17 @@ trigger:
       - backend/data/**
 
 steps:
-  # Step 1: Build and publish Frontend Docker image
-  - name: npm
-    image: node:22
+  # Step 1: Build Frontend code and run QA Tests
+  - name: Build & Test
+  # image: node:22
+    image: mcr.microsoft.com/playwright:v1.48.0-jammy
     commands:
       - cd frontend 
       - npm install --legacy-peer-deps
       - npm run build
-      - npm install -D @playwright/test --legacy-peer-deps
-      - npx playwright install-deps chromium
-      - npx playwright install --with-deps chromium
+      # - npm install -D @playwright/test --legacy-peer-deps
+      # - npx playwright install-deps chromium
+      # - npx playwright install --with-deps chromium
       - npx playwright test tests/
       
     
