@@ -38,7 +38,7 @@ steps:
       aws_session_token: 
         from_secret: s3_session_token
       aws_region: us-east-1 
-    ommands:
+    commands:
       - |
         aws sts get-caller-identity  
   # # Step 2: Upload report to S3    
