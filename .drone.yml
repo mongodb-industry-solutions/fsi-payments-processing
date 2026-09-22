@@ -26,7 +26,7 @@ steps:
       - npm install -D @playwright/test --legacy-peer-deps
       - npx playwright install-deps chromium
       - npx playwright install --with-deps chromium
-      - npx playwright test tests/ --reporter=html,json
+      - npx playwright test tests/ --reporter=json,html  > ./playwright-report/results.json 
 
   # Step 2: Upload report to S3    
   - name: upload-report
