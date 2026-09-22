@@ -39,19 +39,20 @@ steps:
       AWS_DEFAULT_REGION: us-east-1
     commands:
       - |
+        aws sts get-caller-identity
         REPORT_DIR="frontend/playwright-report"
         BUCKET="e2e-test-results"
         TARGET="qa-test/${DRONE_REPO_NAME}/${DRONE_BUILD_NUMBER}"
 
         if [ ! -d "$REPORT_DIR" ]; then
-          echo "⚠️  No report directory at $REPORT_DIR — skipping upload"
+          echo "No report directory at $REPORT_DIR — skipping upload"
           exit 0
         fi
 
-        echo "Uploading $REPORT_DIR → s3://$BUCKET/$TARGET/"
+        echo "Uploading $REPORT_DIR s3://$BUCKET/$TARGET/"
         aws s3 sync "$REPORT_DIR/" "s3://$BUCKET/$TARGET/" --region us-east-1 --no-progress
         echo ""
-        echo "📊 Report: https://$BUCKET.s3.us-east-1.amazonaws.com/$TARGET/index.html"
+        echo "Report: https://$BUCKET.s3.us-east-1.amazonaws.com/$TARGET/index.html"
     when:
       status: [success, failure]
       
