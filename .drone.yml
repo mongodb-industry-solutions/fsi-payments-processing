@@ -39,6 +39,8 @@ steps:
       AWS_SESSION_TOKEN:
         from_secret: s3_session_token
       AWS_DEFAULT_REGION: us-east-1
+      AWS_REQUEST_CHECKSUM_CALCULATION: when_required
+      AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
     commands:
       - |
         aws configure set aws_access_key_id "$AWS_ACCESS_KEY_ID" --profile ist-s3
@@ -57,7 +59,7 @@ steps:
         fi
         
         echo "Uploading $REPORT_DIR s3://$BUCKET/$TARGET/"
-        aws s3 cp "$REPORT_DIR/" "s3://$BUCKET/$TARGET/" --profile ist-s3 
+        aws s3 cp "$REPORT_DIR/" "s3://$BUCKET/$TARGET/" --profile ist-s3 --recursive --no-progress
         
         echo ""
         echo "Report: https://$BUCKET.s3.us-east-1.amazonaws.com/$TARGET/index.html"
