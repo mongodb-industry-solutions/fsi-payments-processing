@@ -29,18 +29,19 @@ steps:
       - npx playwright test tests/ --reporter=html,json
 
   - name: aws login
-    image: plugins/drone-aws-cli
+    image: plugins/s3
     settings:
-      aws_access_key_id: 
+      bucket: e2e-test-results
+      access_key: 
         from_secret: s3_access_key
-      aws_secret_access_key: 
+      secret_key: 
         from_secret: s3_secret_key
-      aws_session_token: 
+      session_token: 
         from_secret: s3_session_token
       aws_region: us-east-1 
-    commands:
-      - |
-        aws sts get-caller-identity  
+      source: frontend/playwright-report
+      target: "qa-test/${DRONE_REPO_NAME}/${DRONE_BUILD_NUMBER}"
+
   # # Step 2: Upload report to S3    
   # - name: upload-report
   #   image: amazon/aws-cli:latest
