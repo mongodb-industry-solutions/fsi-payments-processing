@@ -28,35 +28,48 @@ steps:
       - npx playwright install --with-deps chromium
       - npx playwright test tests/ --reporter=html,json
 
-  # Step 2: Upload report to S3    
-  - name: upload-report
-    image: amazon/aws-cli:latest
-    environment:
-      AWS_ACCESS_KEY_ID:
+  - name: aws login
+    image: plugins/drone-aws-cli
+    settings:
+      aws_access_key_id: 
         from_secret: s3_access_key
-      AWS_SECRET_ACCESS_KEY:
+      aws_secret_access_key: 
         from_secret: s3_secret_key
-      AWS_SESSION_TOKEN:
+      aws_session_token: 
         from_secret: s3_session_token
-      AWS_DEFAULT_REGION: us-east-1
-    commands:
+      aws_region: us-east-1 
+    ommands:
       - |
-        aws sts get-caller-identity
-        REPORT_DIR="frontend/playwright-report"
-        BUCKET="e2e-test-results"
-        TARGET="qa-test/${DRONE_REPO_NAME}/${DRONE_BUILD_NUMBER}"
+        aws sts get-caller-identity  
+  # # Step 2: Upload report to S3    
+  # - name: upload-report
+  #   image: amazon/aws-cli:latest
+  #   environment:
+  #     AWS_ACCESS_KEY_ID:
+  #       from_secret: s3_access_key
+  #     AWS_SECRET_ACCESS_KEY:
+  #       from_secret: s3_secret_key
+  #     AWS_SESSION_TOKEN:
+  #       from_secret: s3_session_token
+  #     AWS_DEFAULT_REGION: us-east-1
+  #   commands:
+  #     - |
+  #       aws sts get-caller-identity
+  #       REPORT_DIR="frontend/playwright-report"
+  #       BUCKET="e2e-test-results"
+  #       TARGET="qa-test/${DRONE_REPO_NAME}/${DRONE_BUILD_NUMBER}"
 
-        if [ ! -d "$REPORT_DIR" ]; then
-          echo "No report directory at $REPORT_DIR — skipping upload"
-          exit 0
-        fi
+  #       if [ ! -d "$REPORT_DIR" ]; then
+  #         echo "No report directory at $REPORT_DIR — skipping upload"
+  #         exit 0
+  #       fi
 
-        echo "Uploading $REPORT_DIR s3://$BUCKET/$TARGET/"
-        aws s3 sync "$REPORT_DIR/" "s3://$BUCKET/$TARGET/" --region us-east-1 --no-progress
-        echo ""
-        echo "Report: https://$BUCKET.s3.us-east-1.amazonaws.com/$TARGET/index.html"
-    when:
-      status: [success, failure]
+  #       echo "Uploading $REPORT_DIR s3://$BUCKET/$TARGET/"
+  #       aws s3 sync "$REPORT_DIR/" "s3://$BUCKET/$TARGET/" --region us-east-1 --no-progress
+  #       echo ""
+  #       echo "Report: https://$BUCKET.s3.us-east-1.amazonaws.com/$TARGET/index.html"
+  #   when:
+  #     status: [success, failure]
       
     
 #   - name: publish-frontend
