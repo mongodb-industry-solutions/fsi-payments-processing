@@ -39,8 +39,8 @@ steps:
       session_token: 
         from_secret: s3_session_token
       aws_region: us-east-1 
-      source: frontend/playwright-report
-      target: "qa-test/${DRONE_REPO_NAME}/${DRONE_BUILD_NUMBER}"
+      source: frontend/playwright-report/**
+      target: "qa-test/${DRONE_REPO_NAME}/${DRONE_BUILD_NUMBER}/"
 
   # # Step 2: Upload report to S3    
   # - name: upload-report
