@@ -20,6 +20,9 @@ serviceAccount:
     accountId: "275662791714"
     roleName: "kanopy-prod-cicd-irsa"
 
+image:
+  repository: 795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-frontend
+  tag: git-e49c3bf
 # Sidecar containers configuration
 sidecarContainers:
   # Payment Converter V2 (port 8001)
