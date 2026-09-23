@@ -203,6 +203,47 @@ steps:
           aws ecr put-image --repository-name "$REPO" --image-tag "$PROD_TAG" --image-manifest "$MANIFEST_AGENT" >/dev/null 2>&1 || echo "⚠️  $PROD_TAG already exists (ok)"
           aws ecr put-image --repository-name "$REPO" --image-tag "$PROD_TAG" --image-manifest "$MANIFEST_CONVERTER" >/dev/null 2>&1 || echo "⚠️  $PROD_TAG already exists (ok)"
           echo "✅ Retagged $QA_TAG as $PROD_TAG"
+
+  - name: update-image-tag
+    image: alpine/git:latest
+    environment:
+      GIT_TOKEN:
+        from_secret: git_push_token
+    commands:
+      - |
+        set -e
+        NEW_TAG="prod-${DRONE_COMMIT_SHA:0:7}-${DRONE_BUILD_NUMBER}"
+        MANIFEST_FILE="environment/production.yaml"
+
+        # Install yq for safe YAML edits
+        apk add --no-cache yq
+
+        # Configure git
+        git config --global user.name  "drone-ci[bot]"
+        git config --global user.email "drone-ci[bot]@users.noreply.github.com"
+
+        # Clone the repo fresh (Drone's workspace is a shallow read-only checkout)
+        git clone https://x-access-token:${GIT_TOKEN}@github.com/${DRONE_REPO}.git repo
+        cd repo
+        git checkout ${DRONE_COMMIT_BRANCH}
+
+        # Update the image tag in the manifest
+        # Adjust the yq path to match your file's structure
+        yq -i ".image.tag = \"${NEW_TAG}\"" $MANIFEST_FILE
+        yq -i ".sidecarContainers[0].image = \"795250896452.dkr.ecr.us-east-1.amazonaws.com/fsi-payments-agent:${NEW_TAG}\"" $MANIFEST_FILE
+        yq -i ".sidecarContainers[0].image = \"795250896452.dkr.ecr.us-east-1.amazonaws.com/fsi-payments-converter:${NEW_TAG}\"" $MANIFEST_FILE
+        # Check if anything actually changed
+        if git diff --quiet; then
+          echo "No changes — image tag already up to date"
+          exit 0
+        fi
+
+        # Commit and push
+        git add $MANIFEST_FILE
+        git commit -m "ISTISO-13: promote fsi-pp to ${NEW_TAG} [CI SKIP]"
+        git push origin ${DRONE_COMMIT_BRANCH}
+
+        echo "✅ Pushed image tag update to ${DRONE_COMMIT_BRANCH}"          
               
               
 
