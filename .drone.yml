@@ -16,67 +16,67 @@ trigger:
       - backend/data/**
 
 steps:
-  # # Step 1: Build and publish Frontend Docker image
-  # - name: publish-frontend
-  #   image: plugins/kaniko-ecr
-  #   settings:
-  #     create_repository: true
-  #     registry: 795250896452.dkr.ecr.us-east-1.amazonaws.com
-  #     repo: industrysolutions/fsi-payments-frontend
-  #     dockerfile: Dockerfile.frontend
-  #     context: .
-  #     build_args:
-  #       - BIAN_MODEL_URL=https://leafy-bank-bian-model.industrysolutions.staging.corp.mongodb.com
-  #     tags:
-  #       - git-${DRONE_COMMIT_SHA:0:7}
-  #       - latest
-  #     access_key:
-  #       from_secret: ecr_access_key
-  #     secret_key:
-  #       from_secret: ecr_secret_key
-  #   when:
-  #     event:
-  #       - push
+  # Step 1: Build and publish Frontend Docker image
+  - name: publish-frontend
+    image: plugins/kaniko-ecr
+    settings:
+      create_repository: true
+      registry: 795250896452.dkr.ecr.us-east-1.amazonaws.com
+      repo: industrysolutions/fsi-payments-frontend
+      dockerfile: Dockerfile.frontend
+      context: .
+      build_args:
+        - BIAN_MODEL_URL=https://leafy-bank-bian-model.industrysolutions.staging.corp.mongodb.com
+      tags:
+        - git-${DRONE_COMMIT_SHA:0:7}-${DRONE_BUILD_NUMBER}
+      #  - latest
+      access_key:
+        from_secret: ecr_access_key
+      secret_key:
+        from_secret: ecr_secret_key
+    when:
+      event:
+        - push
 
-  # # Step 2: Build and publish Converter Docker image
-  # - name: publish-converter
-  #   image: plugins/kaniko-ecr
-  #   settings:
-  #     create_repository: true
-  #     registry: 795250896452.dkr.ecr.us-east-1.amazonaws.com
-  #     repo: industrysolutions/fsi-payments-converter
-  #     dockerfile: Dockerfile.converter
-  #     context: .
-  #     tags:
-  #       - git-${DRONE_COMMIT_SHA:0:7}
-  #       - latest
-  #     access_key:
-  #       from_secret: ecr_access_key
-  #     secret_key:
-  #       from_secret: ecr_secret_key
-  #   when:
-  #     event:
-  #       - push
+  # Step 2: Build and publish Converter Docker image
+  - name: publish-converter
+    image: plugins/kaniko-ecr
+    settings:
+      create_repository: true
+      registry: 795250896452.dkr.ecr.us-east-1.amazonaws.com
+      repo: industrysolutions/fsi-payments-converter
+      dockerfile: Dockerfile.converter
+      context: .
+      tags:
+        - git-${DRONE_COMMIT_SHA:0:7}-${DRONE_BUILD_NUMBER}
+       # - latest
+      access_key:
+        from_secret: ecr_access_key
+      secret_key:
+        from_secret: ecr_secret_key
+    when:
+      event:
+        - push
 
-  # # Step 3: Build and publish Agent Docker image
-  # - name: publish-agent
-  #   image: plugins/kaniko-ecr
-  #   settings:
-  #     create_repository: true
-  #     registry: 795250896452.dkr.ecr.us-east-1.amazonaws.com
-  #     repo: industrysolutions/fsi-payments-agent
-  #     dockerfile: Dockerfile.agent
-  #     context: .
-  #     tags:
-  #       - git-${DRONE_COMMIT_SHA:0:7}
-  #       - latest
-  #     access_key:
-  #       from_secret: ecr_access_key
-  #     secret_key:
-  #       from_secret: ecr_secret_key
-  #   when:
-  #     event:
-  #       - push
+  # Step 3: Build and publish Agent Docker image
+  - name: publish-agent
+    image: plugins/kaniko-ecr
+    settings:
+      create_repository: true
+      registry: 795250896452.dkr.ecr.us-east-1.amazonaws.com
+      repo: industrysolutions/fsi-payments-agent
+      dockerfile: Dockerfile.agent
+      context: .
+      tags:
+        - git-${DRONE_COMMIT_SHA:0:7}-${DRONE_BUILD_NUMBER}
+      #  - latest
+      access_key:
+        from_secret: ecr_access_key
+      secret_key:
+        from_secret: ecr_secret_key
+    when:
+      event:
+        - push
 
   # # Step 4: Deploy combined pod (frontend + converter sidecar + agent sidecar)
   # - name: deploy-combined-staging
@@ -140,39 +140,6 @@ steps:
       - cp -r results.json playwright-report/
 
   # Step 6: Upload report to S3    
-  # - name: upload-report
-  #   image: amazon/aws-cli:latest
-  #   environment:
-  #     AWS_ACCESS_KEY_ID:
-  #       from_secret: s3_access_key
-  #     AWS_SECRET_ACCESS_KEY:
-  #       from_secret: s3_secret_key
-  #     AWS_DEFAULT_REGION: us-east-1
-  #     AWS_REQUEST_CHECKSUM_CALCULATION: when_required
-  #     AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
-  #   commands:
-  #     - |
-  #       aws configure set aws_access_key_id "$AWS_ACCESS_KEY_ID" --profile ist-s3
-  #       aws configure set aws_secret_access_key "$AWS_SECRET_ACCESS_KEY" --profile ist-s3
-  #       aws configure set region "us-east-1" --profile ist-s3
-  #       aws configure set output "json" --profile ist-s3
-
-
-  #       REPORT_DIR="frontend/playwright-report"
-  #       BUCKET="ist-e2e-test-results"
-  #       TARGET="qa-test/${DRONE_REPO_NAME}/${DRONE_BUILD_NUMBER}"
-
-  #       if [ ! -d "$REPORT_DIR" ]; then
-  #         echo "No report directory at $REPORT_DIR — skipping upload"
-  #         exit 0
-  #       fi
-        
-  #       echo "Uploading $REPORT_DIR s3://$BUCKET/$TARGET/"
-  #       aws s3 cp "$REPORT_DIR/" "s3://$BUCKET/$TARGET/" --profile ist-s3 --recursive --no-progress
-  #       echo ""
-  #       echo "Report: https://$BUCKET.s3.us-east-1.amazonaws.com/$TARGET/index.html"
-  #   when:
-  #     status: [success, failure]
   - name: upload-report
     image: plugins/s3
     settings:
@@ -183,7 +150,6 @@ steps:
         from_secret: s3_secret_key
       source: "frontend/playwright-report/**"
       target: "qa-test/${DRONE_REPO_NAME}/${DRONE_BUILD_NUMBER}"
-      
       
   # Step 7: Analyse the QA Test Results 
   - name: quality-gate
@@ -201,7 +167,68 @@ steps:
           echo "❌ Too many failures — blocking downstream steps"
           exit 1
         fi
-        echo "✅ Within tolerance — allowing deploy"      
+        echo "✅ Within tolerance — allowing deploy"   
+
+  - name: retag-image-for-prod
+    image: amazon/aws-cli:latest
+    environment:
+      AWS_ACCESS_KEY_ID:
+        from_secret: ecr_access_key
+      AWS_SECRET_ACCESS_KEY:
+        from_secret: ecr_secret_key
+      AWS_DEFAULT_REGION: us-east-1
+    commands:
+      - |
+        set -e
+        REGISTRY="795250896452.dkr.ecr.us-east-1.amazonaws.com"
+        REPO="industrysolutions"
+        QA_TAG="git-${DRONE_COMMIT_SHA:0:7}-${DRONE_BUILD_NUMBER}"
+        PROD_TAG="prod-${DRONE_COMMIT_SHA:0:7}-${DRONE_BUILD_NUMBER}"
+        #PROD_LATEST="prod-latest"
+
+        echo "Retagging $REGISTRY/$REPO/fsi-payments-frontend:$QA_TAG → $PROD_TAG"
+
+        # Get the manifest of the QA image
+        MANIFEST_FRONTEND=$(aws ecr batch-get-image \
+          --repository-name "$REPO/fsi-payments-frontend" \
+          --image-ids imageTag="$QA_TAG" \
+          --query 'images[0].imageManifest' \
+          --output text)
+       MANIFEST_AGENT=$(aws ecr batch-get-image \
+          --repository-name "$REPO/fsi-payments-agent" \
+          --image-ids imageTag="$QA_TAG" \
+          --query 'images[0].imageManifest' \
+          --output text)
+       MANIFEST_CONVERTER=$(aws ecr batch-get-image \
+          --repository-name "$REPO/fsi-payments-converter" \
+          --image-ids imageTag="$QA_TAG" \
+          --query 'images[0].imageManifest' \
+          --output text)   
+
+        if [ -z "$MANIFEST_FRONTEND" ] || [ "$MANIFEST" = "None" ]; then
+          echo "❌ QA image $QA_TAG not found in ECR"
+          exit 1
+        fi
+
+        # Put the same manifest under the prod tags (no re-upload of layers)
+        aws ecr put-image \
+          --repository-name "$REPO" \
+          --image-tag "$PROD_TAG" \
+          --image-manifest "$MANIFEST_FRONTEND" \
+          >/dev/null 2>&1 || echo "⚠️  $PROD_TAG already exists (ok)"
+        aws ecr put-image \
+          --repository-name "$REPO" \
+          --image-tag "$PROD_TAG" \
+          --image-manifest "$MANIFEST_AGENT" \
+          >/dev/null 2>&1 || echo "⚠️  $PROD_TAG already exists (ok)"
+        aws ecr put-image \
+          --repository-name "$REPO" \
+          --image-tag "$PROD_TAG" \
+          --image-manifest "$MANIFEST_CONVERTER" \
+          >/dev/null 2>&1 || echo "⚠️  $PROD_TAG already exists (ok)"
+
+        echo "✅ Retagged $QA_TAG as $PROD_TAG"
+              
               
 
 # ---
