@@ -237,10 +237,10 @@ steps:
             echo "No changes — image tag already up to date"
             exit 0
           fi
-  
+          COMMIT_MSG="ISTISO-13 promote fsi-pp to ${NEW_TAG} [CI SKIP]"
           # Commit and push
           git add $MANIFEST_FILE
-          git commit -m "ISTISO-13: promote fsi-pp to ${NEW_TAG} [CI SKIP]"
+          git commit -m "$COMMIT_MSG"
           git push origin ${DRONE_COMMIT_BRANCH}
   
           echo "✅ Pushed image tag update to ${DRONE_COMMIT_BRANCH}"          
