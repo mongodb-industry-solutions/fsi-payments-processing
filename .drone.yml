@@ -179,55 +179,55 @@ steps:
       AWS_DEFAULT_REGION: us-east-1
     commands:
       - |
-        set -e
-        REGISTRY="795250896452.dkr.ecr.us-east-1.amazonaws.com"
-        REPO="industrysolutions"
-        QA_TAG="git-${DRONE_COMMIT_SHA:0:7}-${DRONE_BUILD_NUMBER}"
-        PROD_TAG="prod-${DRONE_COMMIT_SHA:0:7}-${DRONE_BUILD_NUMBER}"
-        #PROD_LATEST="prod-latest"
-
-        echo "Retagging $REGISTRY/$REPO/fsi-payments-frontend:$QA_TAG → $PROD_TAG"
-
-        # Get the manifest of the QA image
-        MANIFEST_FRONTEND=$(aws ecr batch-get-image \
-          --repository-name "$REPO/fsi-payments-frontend" \
-          --image-ids imageTag="$QA_TAG" \
-          --query 'images[0].imageManifest' \
-          --output text)
-       MANIFEST_AGENT=$(aws ecr batch-get-image \
-          --repository-name "$REPO/fsi-payments-agent" \
-          --image-ids imageTag="$QA_TAG" \
-          --query 'images[0].imageManifest' \
-          --output text)
-       MANIFEST_CONVERTER=$(aws ecr batch-get-image \
-          --repository-name "$REPO/fsi-payments-converter" \
-          --image-ids imageTag="$QA_TAG" \
-          --query 'images[0].imageManifest' \
-          --output text)   
-
-        if [ -z "$MANIFEST_FRONTEND" ] || [ "$MANIFEST" = "None" ]; then
-          echo "❌ QA image $QA_TAG not found in ECR"
-          exit 1
-        fi
-
-        # Put the same manifest under the prod tags (no re-upload of layers)
-        aws ecr put-image \
-          --repository-name "$REPO" \
-          --image-tag "$PROD_TAG" \
-          --image-manifest "$MANIFEST_FRONTEND" \
-          >/dev/null 2>&1 || echo "⚠️  $PROD_TAG already exists (ok)"
-        aws ecr put-image \
-          --repository-name "$REPO" \
-          --image-tag "$PROD_TAG" \
-          --image-manifest "$MANIFEST_AGENT" \
-          >/dev/null 2>&1 || echo "⚠️  $PROD_TAG already exists (ok)"
-        aws ecr put-image \
-          --repository-name "$REPO" \
-          --image-tag "$PROD_TAG" \
-          --image-manifest "$MANIFEST_CONVERTER" \
-          >/dev/null 2>&1 || echo "⚠️  $PROD_TAG already exists (ok)"
-
-        echo "✅ Retagged $QA_TAG as $PROD_TAG"
+          set -e
+          REGISTRY="795250896452.dkr.ecr.us-east-1.amazonaws.com"
+          REPO="industrysolutions"
+          QA_TAG="git-${DRONE_COMMIT_SHA:0:7}-${DRONE_BUILD_NUMBER}"
+          PROD_TAG="prod-${DRONE_COMMIT_SHA:0:7}-${DRONE_BUILD_NUMBER}"
+          #PROD_LATEST="prod-latest"
+  
+          echo "Retagging $REGISTRY/$REPO/fsi-payments-frontend:$QA_TAG → $PROD_TAG"
+  
+          # Get the manifest of the QA image
+          MANIFEST_FRONTEND=$(aws ecr batch-get-image \
+            --repository-name "$REPO/fsi-payments-frontend" \
+            --image-ids imageTag="$QA_TAG" \
+            --query 'images[0].imageManifest' \
+            --output text)
+          MANIFEST_AGENT=$(aws ecr batch-get-image \
+            --repository-name "$REPO/fsi-payments-agent" \
+            --image-ids imageTag="$QA_TAG" \
+            --query 'images[0].imageManifest' \
+            --output text)
+           MANIFEST_CONVERTER=$(aws ecr batch-get-image \
+            --repository-name "$REPO/fsi-payments-converter" \
+            --image-ids imageTag="$QA_TAG" \
+            --query 'images[0].imageManifest' \
+            --output text)   
+    
+           if [ -z "$MANIFEST_FRONTEND" ] || [ "$MANIFEST" = "None" ]; then
+             echo "❌ QA image $QA_TAG not found in ECR"
+             exit 1
+           fi
+    
+            # Put the same manifest under the prod tags (no re-upload of layers)
+           aws ecr put-image \
+            --repository-name "$REPO" \
+            --image-tag "$PROD_TAG" \
+            --image-manifest "$MANIFEST_FRONTEND" \
+            >/dev/null 2>&1 || echo "⚠️  $PROD_TAG already exists (ok)"
+           aws ecr put-image \
+            --repository-name "$REPO" \
+            --image-tag "$PROD_TAG" \
+            --image-manifest "$MANIFEST_AGENT" \
+            >/dev/null 2>&1 || echo "⚠️  $PROD_TAG already exists (ok)"
+           aws ecr put-image \
+            --repository-name "$REPO" \
+            --image-tag "$PROD_TAG" \
+            --image-manifest "$MANIFEST_CONVERTER" \
+            >/dev/null 2>&1 || echo "⚠️  $PROD_TAG already exists (ok)"
+    
+           echo "✅ Retagged $QA_TAG as $PROD_TAG"
               
               
 
