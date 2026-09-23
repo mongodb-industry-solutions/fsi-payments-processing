@@ -179,30 +179,27 @@ steps:
       AWS_DEFAULT_REGION: us-east-1
     commands:
       - |
-          set -e
-          REGISTRY="795250896452.dkr.ecr.us-east-1.amazonaws.com"
-          REPO="industrysolutions"
-          QA_TAG="git-${DRONE_COMMIT_SHA:0:7}-${DRONE_BUILD_NUMBER}"
-          PROD_TAG="prod-${DRONE_COMMIT_SHA:0:7}-${DRONE_BUILD_NUMBER}"
-          #PROD_LATEST="prod-latest"
-  
-          echo "Retagging $REGISTRY/$REPO/fsi-payments-frontend:$QA_TAG → $PROD_TAG"
-  
-          # Get the manifest of the QA image
-          MANIFEST_FRONTEND=$(aws ecr batch-get-image --repository-name "$REPO/fsi-payments-frontend" --image-ids imageTag="$QA_TAG" --query 'images[0].imageManifest' --output text)
-          MANIFEST_AGENT=$(aws ecr batch-get-image --repository-name "$REPO/fsi-payments-agent" --image-ids imageTag="$QA_TAG" --query 'images[0].imageManifest' --output text)
-          MANIFEST_CONVERTER=$(aws ecr batch-get-image --repository-name "$REPO/fsi-payments-converter" --image-ids imageTag="$QA_TAG" --query 'images[0].imageManifest' --output text)   
-    
-          if [ -z "$MANIFEST_FRONTEND" ] || [ "$MANIFEST" = "None" ]; then
-            echo "❌ QA image $QA_TAG not found in ECR"
-            exit 1
-          fi
-    
-          # Put the same manifest under the prod tags (no re-upload of layers)
-          aws ecr put-image --repository-name "$REPO" --image-tag "$PROD_TAG" --image-manifest "$MANIFEST_FRONTEND" >/dev/null 2>&1 || echo "⚠️  $PROD_TAG already exists (ok)"
-          aws ecr put-image --repository-name "$REPO" --image-tag "$PROD_TAG" --image-manifest "$MANIFEST_AGENT" >/dev/null 2>&1 || echo "⚠️  $PROD_TAG already exists (ok)"
-          aws ecr put-image --repository-name "$REPO" --image-tag "$PROD_TAG" --image-manifest "$MANIFEST_CONVERTER" >/dev/null 2>&1 || echo "⚠️  $PROD_TAG already exists (ok)"
-          echo "✅ Retagged $QA_TAG as $PROD_TAG"
+        set -e
+        REGISTRY="795250896452.dkr.ecr.us-east-1.amazonaws.com"
+        REPO="industrysolutions"
+        QA_TAG="git-${DRONE_COMMIT_SHA:0:7}-${DRONE_BUILD_NUMBER}"
+        PROD_TAG="prod-${DRONE_COMMIT_SHA:0:7}-${DRONE_BUILD_NUMBER}"
+
+        echo "Retagging $REGISTRY/$REPO/fsi-payments-frontend:$QA_TAG → $PROD_TAG"
+
+        MANIFEST_FRONTEND=$(aws ecr batch-get-image --repository-name "$REPO/fsi-payments-frontend" --image-ids imageTag="$QA_TAG" --query 'images[0].imageManifest' --output text)
+        MANIFEST_AGENT=$(aws ecr batch-get-image --repository-name "$REPO/fsi-payments-agent" --image-ids imageTag="$QA_TAG" --query 'images[0].imageManifest' --output text)
+        MANIFEST_CONVERTER=$(aws ecr batch-get-image --repository-name "$REPO/fsi-payments-converter" --image-ids imageTag="$QA_TAG" --query 'images[0].imageManifest' --output text)
+
+        if [ -z "$MANIFEST_FRONTEND" ] || [ "$MANIFEST_FRONTEND" = "None" ]; then
+          echo "❌ QA image $QA_TAG not found in ECR"
+          exit 1
+        fi
+
+        aws ecr put-image --repository-name "$REPO/fsi-payments-frontend" --image-tag "$PROD_TAG" --image-manifest "$MANIFEST_FRONTEND" >/dev/null 2>&1 || echo "⚠️  $PROD_TAG already exists (ok)"
+        aws ecr put-image --repository-name "$REPO/fsi-payments-agent" --image-tag "$PROD_TAG" --image-manifest "$MANIFEST_AGENT" >/dev/null 2>&1 || echo "⚠️  $PROD_TAG already exists (ok)"
+        aws ecr put-image --repository-name "$REPO/fsi-payments-converter" --image-tag "$PROD_TAG" --image-manifest "$MANIFEST_CONVERTER" >/dev/null 2>&1 || echo "⚠️  $PROD_TAG already exists (ok)"
+        echo "✅ Retagged $QA_TAG as $PROD_TAG"
 
   - name: update-image-tag
     image: alpine/git:latest
@@ -211,36 +208,31 @@ steps:
         from_secret: git_push_token
     commands:
       - |
-          set -e
-          NEW_TAG="prod-${DRONE_COMMIT_SHA:0:7}-${DRONE_BUILD_NUMBER}"
-          MANIFEST_FILE="environment/production.yaml"
-  
-          # Install yq for safe YAML edits
-          apk add --no-cache yq
-  
-          # Configure git
-          git config --global user.name  "drone-ci[bot]"
-          git config --global user.email "drone-ci[bot]@users.noreply.github.com"
-  
-          # Clone the repo fresh (Drone's workspace is a shallow read-only checkout)
-          git clone https://x-access-token:${GIT_TOKEN}@github.com/${DRONE_REPO}.git repo
-          cd repo
-          git checkout ${DRONE_COMMIT_BRANCH}
-  
-          # Update the image tag in the manifest
-          # Adjust the yq path to match your file's structure
-          yq -i ".image.tag = \"${NEW_TAG}\"" $MANIFEST_FILE
-          yq -i ".sidecarContainers[0].image = \"795250896452.dkr.ecr.us-east-1.amazonaws.com/fsi-payments-agent:${NEW_TAG}\"" $MANIFEST_FILE
-          yq -i ".sidecarContainers[0].image = \"795250896452.dkr.ecr.us-east-1.amazonaws.com/fsi-payments-converter:${NEW_TAG}\"" $MANIFEST_FILE
-          # Check if anything actually changed
-          if git diff --quiet; then
-            echo "No changes — image tag already up to date"
-            exit 0
-          fi
-          COMMIT_MSG="ISTISO-13 promote fsi-pp to ${NEW_TAG} [CI SKIP]"
-          # Commit and push
-          git add $MANIFEST_FILE
-          git commit -m "$COMMIT_MSG"
-          git push origin ${DRONE_COMMIT_BRANCH}
-  
-          echo "✅ Pushed image tag update to ${DRONE_COMMIT_BRANCH}" 
+        set -e
+        NEW_TAG="prod-${DRONE_COMMIT_SHA:0:7}-${DRONE_BUILD_NUMBER}"
+        MANIFEST_FILE="environment/production.yaml"
+
+        apk add --no-cache yq
+
+        git config --global user.name  "drone-ci[bot]"
+        git config --global user.email "drone-ci[bot]@users.noreply.github.com"
+
+        git clone https://x-access-token:${GIT_TOKEN}@github.com/${DRONE_REPO}.git repo
+        cd repo
+        git checkout ${DRONE_COMMIT_BRANCH}
+
+        yq -i ".image.tag = \"${NEW_TAG}\"" $MANIFEST_FILE
+        yq -i ".sidecarContainers[0].image = \"795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-agent:${NEW_TAG}\"" $MANIFEST_FILE
+        yq -i ".sidecarContainers[1].image = \"795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-converter:${NEW_TAG}\"" $MANIFEST_FILE
+
+        if git diff --quiet; then
+          echo "No changes — image tag already up to date"
+          exit 0
+        fi
+
+        COMMIT_MSG="ISTISO-13: promote fsi-pp to ${NEW_TAG} [CI SKIP]"
+        git add $MANIFEST_FILE
+        git commit -m "$COMMIT_MSG"
+        git push origin ${DRONE_COMMIT_BRANCH}
+
+        echo "✅ Pushed image tag update to ${DRONE_COMMIT_BRANCH}"
