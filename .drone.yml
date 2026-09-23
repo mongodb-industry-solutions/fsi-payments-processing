@@ -206,6 +206,8 @@ steps:
     environment:
       GIT_TOKEN:
         from_secret: git_push_token
+      GIT_USER:
+        from_secret: git_user 
     commands:
       - |
         set -e
@@ -217,7 +219,7 @@ steps:
         git config --global user.name  "drone-ci[bot]"
         git config --global user.email "drone-ci[bot]@users.noreply.github.com"
 
-        git clone https://${GIT_TOKEN}:${GIT_TOKEN}@github.com/${DRONE_REPO}.git repo
+        git clone https://${GIT_USER}:${GIT_TOKEN}@github.com/${DRONE_REPO}.git repo
         cd repo
         git checkout ${DRONE_COMMIT_BRANCH}
 
