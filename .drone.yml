@@ -283,17 +283,16 @@ steps:
         echo "NEW_TAG: $NEW_TAG"
 
         apk add --no-cache yq
+        BASIC_AUTH=$(printf '%s' "x-access-token:${GIT_TOKEN}" | base64 | tr -d '\n')
 
+        # Set auth GLOBALLY and BEFORE clone so it applies to both clone AND push
+        git config --global http.https://github.com/.extraheader "AUTHORIZATION: basic ${BASIC_AUTH}"
         git config --global user.name  "CI[bot]"
         git config --global user.email "CI[bot]@users.noreply.github.com"
 
         # Clone
         git clone https://github.com/${DRONE_REPO}.git repo
         cd repo
-
-        # Set auth on the local repo (survives clone + push)
-        git config http.https://github.com/.extraheader "Authorization: Bearer $GIT_TOKEN"
-
         git checkout ${DRONE_COMMIT_BRANCH}
 
         yq -i ".image.tag = \"${NEW_TAG}\"" $MANIFEST_FILE
