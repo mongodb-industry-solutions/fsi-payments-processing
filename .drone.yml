@@ -55,7 +55,9 @@ steps:
           "https://api.github.com/app/installations/$INSTALLATION_ID/access_tokens" \
           | jq -r .token \
           | tr -d '\n' > .git-token
-
+        echo "This is the PWD"  
+        pwd
+        ls -al
         rm /tmp/key.pem
 
         # Verify — check length without exposing content
