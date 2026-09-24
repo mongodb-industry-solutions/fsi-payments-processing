@@ -56,7 +56,6 @@ steps:
           | jq -r .token \
           | tr -d '\n' > .git-token
         rm /tmp/key.pem
-
         # Verify — check length without exposing content
         SIZE=$(wc -c < .git-token)
         FIRST=$(head -c 4 .git-token)
@@ -66,7 +65,6 @@ steps:
           echo "❌ Token too short"
           exit 1
         fi
-
         if [ "$FIRST" != "ghs_" ]; then
           echo "❌ Token doesn't start with 'ghs_'"
           exit 1
@@ -267,8 +265,7 @@ steps:
         GIT_TOKEN=$(tr -d '[:space:]' < .git-token)
         SIZE=${#GIT_TOKEN}
         echo "Token size: $SIZE chars, prefix: ${GIT_TOKEN:0:4}"
-
-        echo "This is the PWD"  
+        echo "The working dir:"
         pwd
         ls -al
         #NEW_TAG="prod-${DRONE_COMMIT_SHA:0:7}-${DRONE_BUILD_NUMBER}"
