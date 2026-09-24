@@ -24,59 +24,109 @@ steps:
       GIT_APP_PRIVATE_KEY:
         from_secret: git_app_private_key
     commands:
+      - apk add --no-cache openssl jq curl
       - |
-        set -e
-        apk add --no-cache openssl jq curl
+        set -euo pipefail
 
-        # Save private key to a file
-        echo "$GIT_APP_PRIVATE_KEY" > /tmp/private-key.pem
+        echo "=== Verify inputs ==="
+        echo "APP_ID length: ${#GIT_APP_ID}"
+        echo "APP_ID value: ${GIT_APP_ID}"
+        echo "Private key length: ${#GIT_APP_PRIVATE_KEY}"
+        echo "Private key starts with: $(echo "$GIT_APP_PRIVATE_KEY" | head -c 30)"
+
+        if [ -z "$GIT_APP_ID" ]; then
+          echo "❌ GIT_APP_ID secret is empty"
+          exit 1
+        fi
+
+        if [ -z "$GIT_APP_PRIVATE_KEY" ]; then
+          echo "❌ GIT_APP_PRIVATE_KEY secret is empty"
+          exit 1
+        fi
+
+        echo "$GIT_APP_PRIVATE_KEY" > /tmp/key.pem
+        chmod 600 /tmp/key.pem
+
+        # Verify key is valid PEM
+        if ! openssl rsa -in /tmp/key.pem -check -noout 2>/dev/null; then
+          echo "❌ Private key is not a valid RSA PEM"
+          echo "First few lines:"
+          head -3 /tmp/key.pem
+          exit 1
+        fi
+        echo "✅ Private key valid"
 
         # Build JWT
         NOW=$(date +%s)
         IAT=$((NOW - 60))
-        EXP=$((NOW + 540))   # max 10 min
+        EXP=$((NOW + 540))
 
-        HEADER=$(echo -n '{"alg":"RS256","typ":"JWT"}' \
-          | openssl base64 -A | tr '+/' '-_' | tr -d '=')
-        PAYLOAD=$(echo -n "{\"iat\":$IAT,\"exp\":$EXP,\"iss\":\"$GIT_APP_ID\"}" \
-          | openssl base64 -A | tr '+/' '-_' | tr -d '=')
-        SIG=$(echo -n "$HEADER.$PAYLOAD" \
-          | openssl dgst -sha256 -sign /tmp/private-key.pem -binary \
-          | openssl base64 -A | tr '+/' '-_' | tr -d '=')
+        HEADER=$(printf '{"alg":"RS256","typ":"JWT"}' | openssl base64 -A | tr '+/' '-_' | tr -d '=')
+        PAYLOAD=$(printf '{"iat":%d,"exp":%d,"iss":"%s"}' "$IAT" "$EXP" "$GIT_APP_ID" | openssl base64 -A | tr '+/' '-_' | tr -d '=')
+        SIG=$(printf '%s' "$HEADER.$PAYLOAD" | openssl dgst -sha256 -sign /tmp/key.pem -binary | openssl base64 -A | tr '+/' '-_' | tr -d '=')
         JWT="$HEADER.$PAYLOAD.$SIG"
+        echo "JWT length: ${#JWT}"
 
-        # Find installation ID for this repo
-        INSTALLATION_ID=$(curl -s \
+        # Find installation for this repo
+        echo ""
+        echo "=== Looking up installation for ${DRONE_REPO} ==="
+        INSTALL_RESPONSE=$(curl -s -w "\n%{http_code}" \
           -H "Authorization: Bearer $JWT" \
           -H "Accept: application/vnd.github+json" \
-          "https://api.github.com/repos/${DRONE_REPO}/installation" \
-          | jq -r '.id')
+          "https://api.github.com/repos/${DRONE_REPO}/installation")
 
-        if [ -z "$INSTALLATION_ID" ] || [ "$INSTALLATION_ID" = "null" ]; then
-          echo "❌ Could not find installation ID — is the app installed on ${DRONE_REPO}?"
+        HTTP_CODE=$(echo "$INSTALL_RESPONSE" | tail -1)
+        BODY=$(echo "$INSTALL_RESPONSE" | head -n -1)
+
+        echo "HTTP status: $HTTP_CODE"
+        echo "Response body: $BODY"
+
+        if [ "$HTTP_CODE" != "200" ]; then
+          echo "❌ Failed to find installation (HTTP $HTTP_CODE)"
+          echo "Most likely causes:"
+          echo "  - App not installed on this repo"
+          echo "  - App_id incorrect"
+          echo "  - Private key doesn't match app_id"
           exit 1
         fi
+
+        INSTALLATION_ID=$(echo "$BODY" | jq -r .id)
+        echo "✅ Installation ID: $INSTALLATION_ID"
 
         # Exchange JWT for installation token
-        INSTALLATION_TOKEN=$(curl -s -X POST \
+        echo ""
+        echo "=== Requesting installation token ==="
+        TOKEN_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
           -H "Authorization: Bearer $JWT" \
           -H "Accept: application/vnd.github+json" \
-          "https://api.github.com/app/installations/$INSTALLATION_ID/access_tokens" \
-          | jq -r '.token')
+          "https://api.github.com/app/installations/$INSTALLATION_ID/access_tokens")
 
-        if [ -z "$INSTALLATION_TOKEN" ] || [ "$INSTALLATION_TOKEN" = "null" ]; then
+        HTTP_CODE=$(echo "$TOKEN_RESPONSE" | tail -1)
+        BODY=$(echo "$TOKEN_RESPONSE" | head -n -1)
+
+        echo "HTTP status: $HTTP_CODE"
+
+        if [ "$HTTP_CODE" != "201" ]; then
           echo "❌ Failed to get installation token"
+          echo "Response: $BODY"
           exit 1
         fi
 
-        # Write token to workspace file so next step can consume it
-        echo "$INSTALLATION_TOKEN" > .git-token
+        TOKEN=$(echo "$BODY" | jq -r .token)
+
+        if [ -z "$TOKEN" ] || [ "$TOKEN" = "null" ]; then
+          echo "❌ Token missing from response"
+          echo "Response: $BODY"
+          exit 1
+        fi
+
+        # Write token to file (no trailing newline)
+        printf '%s' "$TOKEN" > .git-token
         chmod 600 .git-token
+        rm /tmp/key.pem
 
-        # Cleanup
-        rm /tmp/private-key.pem
-
-        echo "✅ Generated installation token (${#INSTALLATION_TOKEN} chars, valid 1 hour)"
+        echo "✅ Token written: ${#TOKEN} chars, prefix: ${TOKEN:0:4}"
+        echo "File size: $(wc -c < .git-token) bytes"
         
   # # Step 1: Build and publish Frontend Docker image
   # - name: publish-frontend
