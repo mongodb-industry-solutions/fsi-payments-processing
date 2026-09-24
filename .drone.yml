@@ -287,8 +287,9 @@ steps:
 
         # Use extraheader — sticks through clone AND push
         
-        git config --global http.https://github.com/.extraheader Authorization: "Bearer $GIT_TOKEN"
-
+        #git config --global http.https://github.com/.extraheader Authorization: "Bearer $GIT_TOKEN"
+        git remote set-url origin https://x-access-token:$GIT_TOKEN@://github.com
+      
         # ─── Clone with clean URL ───
         git clone https://github.com/${DRONE_REPO}.git repo
         cd repo
@@ -308,7 +309,8 @@ steps:
         COMMIT_MSG="ISTISO-13: promote fsi-pp to latest staging tag [CI SKIP]"
         git add $MANIFEST_FILE
         git commit -m "$COMMIT_MSG"
-        git push "https://x-access-token:${GIT_TOKEN}@github.com/${DRONE_REPO}.git" ${DRONE_COMMIT_BRANCH}
+        git remote set-url origin https://x-access-token:$GIT_TOKEN@://github.com
+        git push origin ${DRONE_COMMIT_BRANCH}
 
         # Cleanup
         git config --global --unset http.https://github.com/.extraheader
