@@ -265,32 +265,28 @@ steps:
       - |
         set -euo pipefail
 
-        # Read the app-generated token
         GIT_TOKEN=$(tr -d '[:space:]' < .git-token)
-        if [ -z "$GIT_TOKEN" ]; then
-          echo "❌ .git-token is empty — check the generate-git-app-token step"
+        SIZE=${#GIT_TOKEN}
+        echo "Token size: $SIZE chars, prefix: ${GIT_TOKEN:0:4}"
+
+        if [ -z "$GIT_TOKEN" ] || [ "$SIZE" -lt 30 ]; then
+          echo "❌ Token invalid"
           exit 1
         fi
-        echo "Token: ${GIT_TOKEN:0:4}... (${#GIT_TOKEN} chars)"
+
 
         #NEW_TAG="prod-${DRONE_COMMIT_SHA:0:7}-${DRONE_BUILD_NUMBER}"
         NEW_TAG="prod-${DRONE_COMMIT_SHA:0:7}-223"
         
         MANIFEST_FILE="environment/production.yaml"
         echo "NEW_TAG: $NEW_TAG"
-
-        apk add --no-cache yq
-        
-        # Set auth GLOBALLY and BEFORE clone so it applies to both clone AND push
-        git config --global http.https://github.com/.extraheader "AUTHORIZATION: basic ${BASIC_AUTH}"
-        git config --global user.name  "CI[bot]"
-        git config --global user.email "CI[bot]@users.noreply.github.com"
         REPO_URL="https://x-access-token:${GIT_TOKEN}@github.com/${DRONE_REPO}.git"
-        # Re-set remote URL with token (clone strips creds from saved URL)
-        git remote set-url origin "$REPO_URL"
-        # Clone
+        apk add --no-cache yq
         git clone "$REPO_URL" repo
         cd repo
+        git remote set-url origin "$REPO_URL"
+        git config --global user.name  "CI[bot]"
+        git config --global user.email "CI[bot]@users.noreply.github.com"
         git checkout ${DRONE_COMMIT_BRANCH}
 
         yq -i ".image.tag = \"${NEW_TAG}\"" $MANIFEST_FILE
