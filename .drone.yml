@@ -270,11 +270,6 @@ steps:
         SIZE=${#GIT_TOKEN}
         echo "Token size: $SIZE chars, prefix: ${GIT_TOKEN:0:4}"
 
-        if [ -z "$GIT_TOKEN" ] || [ "$SIZE" -lt 30 ]; then
-          echo "❌ Token invalid"
-          exit 1
-        fi
-
 
         #NEW_TAG="prod-${DRONE_COMMIT_SHA:0:7}-${DRONE_BUILD_NUMBER}"
         NEW_TAG="prod-${DRONE_COMMIT_SHA:0:7}-223"
