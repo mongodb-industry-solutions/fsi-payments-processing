@@ -190,6 +190,9 @@ steps:
       - cd frontend
       - npm install --legacy-peer-deps
       - npm run build
+      - npm install -D @playwright/test --legacy-peer-deps
+      - npx playwright install-deps chromium
+      - npx playwright install --with-deps chromium
       - npx playwright test tests/
       - npx playwright test tests/ --reporter=json  > results.json 
       - cp -r results.json playwright-report/
