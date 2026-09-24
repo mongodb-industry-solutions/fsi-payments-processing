@@ -28,105 +28,56 @@ steps:
       - |
         set -euo pipefail
 
-        echo "=== Verify inputs ==="
-        echo "APP_ID length: ${#GIT_APP_ID}"
-        echo "APP_ID value: ${GIT_APP_ID}"
-        echo "Private key length: ${#GIT_APP_PRIVATE_KEY}"
-        echo "Private key starts with: $(echo "$GIT_APP_PRIVATE_KEY" | head -c 30)"
-
-        if [ -z "$GIT_APP_ID" ]; then
-          echo "❌ GIT_APP_ID secret is empty"
-          exit 1
-        fi
-
-        if [ -z "$GIT_APP_PRIVATE_KEY" ]; then
-          echo "❌ GIT_APP_PRIVATE_KEY secret is empty"
-          exit 1
-        fi
-
         echo "$GIT_APP_PRIVATE_KEY" > /tmp/key.pem
         chmod 600 /tmp/key.pem
 
-        # Verify key is valid PEM
-        if ! openssl rsa -in /tmp/key.pem -check -noout 2>/dev/null; then
-          echo "❌ Private key is not a valid RSA PEM"
-          echo "First few lines:"
-          head -3 /tmp/key.pem
-          exit 1
-        fi
-        echo "✅ Private key valid"
-
         # Build JWT
         NOW=$(date +%s)
-        IAT=$((NOW - 60))
-        EXP=$((NOW + 540))
-
         HEADER=$(printf '{"alg":"RS256","typ":"JWT"}' | openssl base64 -A | tr '+/' '-_' | tr -d '=')
-        PAYLOAD=$(printf '{"iat":%d,"exp":%d,"iss":"%s"}' "$IAT" "$EXP" "$GIT_APP_ID" | openssl base64 -A | tr '+/' '-_' | tr -d '=')
+        PAYLOAD=$(printf '{"iat":%d,"exp":%d,"iss":"%s"}' $((NOW-60)) $((NOW+540)) "$GIT_APP_ID" | openssl base64 -A | tr '+/' '-_' | tr -d '=')
         SIG=$(printf '%s' "$HEADER.$PAYLOAD" | openssl dgst -sha256 -sign /tmp/key.pem -binary | openssl base64 -A | tr '+/' '-_' | tr -d '=')
         JWT="$HEADER.$PAYLOAD.$SIG"
-        echo "JWT length: ${#JWT}"
 
-        # Find installation for this repo
-        echo ""
-        echo "=== Looking up installation for ${DRONE_REPO} ==="
-        INSTALL_RESPONSE=$(curl -s -w "\n%{http_code}" \
+        # Get installation ID
+        INSTALLATION_ID=$(curl -sf \
           -H "Authorization: Bearer $JWT" \
           -H "Accept: application/vnd.github+json" \
-          "https://api.github.com/repos/${DRONE_REPO}/installation")
+          "https://api.github.com/repos/${DRONE_REPO}/installation" \
+          | jq -r .id)
 
-        HTTP_CODE=$(echo "$INSTALL_RESPONSE" | tail -1)
-        BODY=$(echo "$INSTALL_RESPONSE" | head -n -1)
+        echo "Installation ID: $INSTALLATION_ID"
 
-        echo "HTTP status: $HTTP_CODE"
-        echo "Response body: $BODY"
-
-        if [ "$HTTP_CODE" != "200" ]; then
-          echo "❌ Failed to find installation (HTTP $HTTP_CODE)"
-          echo "Most likely causes:"
-          echo "  - App not installed on this repo"
-          echo "  - App_id incorrect"
-          echo "  - Private key doesn't match app_id"
-          exit 1
-        fi
-
-        INSTALLATION_ID=$(echo "$BODY" | jq -r .id)
-        echo "✅ Installation ID: $INSTALLATION_ID"
-
-        # Exchange JWT for installation token
-        echo ""
-        echo "=== Requesting installation token ==="
-        TOKEN_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+        # Get token — pipe DIRECTLY from curl to jq to file
+        # No intermediate variable capture that Drone might mask/corrupt
+        curl -sf -X POST \
           -H "Authorization: Bearer $JWT" \
           -H "Accept: application/vnd.github+json" \
-          "https://api.github.com/app/installations/$INSTALLATION_ID/access_tokens")
+          "https://api.github.com/app/installations/$INSTALLATION_ID/access_tokens" \
+          | jq -r .token \
+          | tr -d '\n' > .git-token
 
-        HTTP_CODE=$(echo "$TOKEN_RESPONSE" | tail -1)
-        BODY=$(echo "$TOKEN_RESPONSE" | head -n -1)
-
-        echo "HTTP status: $HTTP_CODE"
-
-        if [ "$HTTP_CODE" != "201" ]; then
-          echo "❌ Failed to get installation token"
-          echo "Response: $BODY"
-          exit 1
-        fi
-
-        TOKEN=$(echo "$BODY" | jq -r .token)
-
-        if [ -z "$TOKEN" ] || [ "$TOKEN" = "null" ]; then
-          echo "❌ Token missing from response"
-          echo "Response: $BODY"
-          exit 1
-        fi
-
-        # Write token to file (no trailing newline)
-        printf '%s' "$TOKEN" > .git-token
-        chmod 600 .git-token
         rm /tmp/key.pem
 
-        echo "✅ Token written: ${#TOKEN} chars, prefix: ${TOKEN:0:4}"
-        echo "File size: $(wc -c < .git-token) bytes"
+        # Verify — check length without exposing content
+        SIZE=$(wc -c < .git-token)
+        FIRST=$(head -c 4 .git-token)
+        echo "Token file: $SIZE bytes, starts with: $FIRST"
+
+        if [ "$SIZE" -lt 30 ] || [ "$SIZE" -gt 100 ]; then
+          echo "❌ Token size unexpected — should be ~40 chars"
+          echo "File contents (first 100 bytes):"
+          head -c 100 .git-token
+          exit 1
+        fi
+
+        if [ "$FIRST" != "ghs_" ]; then
+          echo "❌ Token doesn't start with 'ghs_'"
+          echo "File contents (first 100 bytes):"
+          head -c 100 .git-token
+          exit 1
+        fi
+
+        echo "✅ Token generated correctly"
         
   # # Step 1: Build and publish Frontend Docker image
   # - name: publish-frontend
