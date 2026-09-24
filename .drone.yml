@@ -5,7 +5,7 @@ name: staging-combined
 
 trigger:
   branch:
-    - qa-automation-poc
+    - staging
   paths:
     exclude:
       - README.md
@@ -16,6 +16,7 @@ trigger:
       - backend/data/**
 
 steps:
+  # Step 1: Generate github_token
   - name: generate-git-app-token
     image: alpine:latest
     environment:
@@ -71,7 +72,7 @@ steps:
         fi
         echo "✅ Token generated correctly"
         
-  # Step 1: Build and publish Frontend Docker image
+  # Step 2: Build and publish Frontend Docker image
   - name: publish-frontend
     image: plugins/kaniko-ecr
     settings:
@@ -84,7 +85,7 @@ steps:
         - BIAN_MODEL_URL=https://leafy-bank-bian-model.industrysolutions.staging.corp.mongodb.com
       tags:
         - git-${DRONE_COMMIT_SHA:0:7}-${DRONE_BUILD_NUMBER}
-      #  - latest
+        - latest
       access_key:
         from_secret: ecr_access_key
       secret_key:
@@ -93,7 +94,7 @@ steps:
       event:
         - push
 
-  # Step 2: Build and publish Converter Docker image
+  # Step 3: Build and publish Converter Docker image
   - name: publish-converter
     image: plugins/kaniko-ecr
     settings:
@@ -104,7 +105,7 @@ steps:
       context: .
       tags:
         - git-${DRONE_COMMIT_SHA:0:7}-${DRONE_BUILD_NUMBER}
-       # - latest
+        - latest
       access_key:
         from_secret: ecr_access_key
       secret_key:
@@ -113,7 +114,7 @@ steps:
       event:
         - push
 
-  # Step 3: Build and publish Agent Docker image
+  # Step 4: Build and publish Agent Docker image
   - name: publish-agent
     image: plugins/kaniko-ecr
     settings:
@@ -124,7 +125,7 @@ steps:
       context: .
       tags:
         - git-${DRONE_COMMIT_SHA:0:7}-${DRONE_BUILD_NUMBER}
-      #  - latest
+        - latest
       access_key:
         from_secret: ecr_access_key
       secret_key:
@@ -133,54 +134,54 @@ steps:
       event:
         - push
 
-  # # Step 4: Deploy combined pod (frontend + converter sidecar + agent sidecar)
-  # - name: deploy-combined-staging
-  #   image: public.ecr.aws/kanopy/drone-helm:v3
-  #   settings:
-  #     chart: mongodb/web-app
-  #     chart_version: 4.30.0
-  #     add_repos: [mongodb=https://10gen.github.io/helm-charts]
-  #     namespace: industrysolutions
-  #     release: fsi-payments-processing
-  #     values_files: ["environment/staging.yaml"]
-  #     values:
-  #       # Frontend (main container) image
-  #       - "image.tag=git-${DRONE_COMMIT_SHA:0:7}"
-  #       - "image.repository=795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-frontend"
-  #       # Converter sidecar image
-  #       - "sidecarContainers[0].image=795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-converter:git-${DRONE_COMMIT_SHA:0:7}"
-  #       # Agent sidecar image
-  #       - "sidecarContainers[1].image=795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-agent:git-${DRONE_COMMIT_SHA:0:7}"
-  #       # Ingress
-  #       - "ingress.enabled=true"
-  #       - "ingress.hosts[0]=fsi-payments-processing.industrysolutions.staging.corp.mongodb.com"
-  #       # Service mesh
-  #       - "mesh.enabled=true"
-  #       # Frontend resources (reduced based on observed usage)
-  #       - "resources.limits.cpu=500m"
-  #       - "resources.limits.memory=512Mi"
-  #       - "resources.requests.cpu=100m"
-  #       - "resources.requests.memory=256Mi"
-  #       # Converter sidecar resources (reduced based on observed usage)
-  #       - "sidecarContainers[0].resources.limits.cpu=500m"
-  #       - "sidecarContainers[0].resources.limits.memory=512Mi"
-  #       - "sidecarContainers[0].resources.requests.cpu=100m"
-  #       - "sidecarContainers[0].resources.requests.memory=256Mi"
-  #       # Agent sidecar resources (reduced based on observed usage)
-  #       - "sidecarContainers[1].resources.limits.cpu=250m"
-  #       - "sidecarContainers[1].resources.limits.memory=256Mi"
-  #       - "sidecarContainers[1].resources.requests.cpu=50m"
-  #       - "sidecarContainers[1].resources.requests.memory=128Mi"
-  #     api_server: https://api.staging.corp.mongodb.com
-  #     kubernetes_token:
-  #       from_secret: staging_kubernetes_token
-  #   when:
-  #     branch:
-  #       - staging
-  #     event:
-  #       - push
+  # Step 5: Deploy combined pod (frontend + converter sidecar + agent sidecar)
+  - name: deploy-combined-staging
+    image: public.ecr.aws/kanopy/drone-helm:v3
+    settings:
+      chart: mongodb/web-app
+      chart_version: 4.30.0
+      add_repos: [mongodb=https://10gen.github.io/helm-charts]
+      namespace: industrysolutions
+      release: fsi-payments-processing
+      values_files: ["environment/staging.yaml"]
+      values:
+        # Frontend (main container) image
+        - "image.tag=git-${DRONE_COMMIT_SHA:0:7}-${DRONE_BUILD_NUMBER}"
+        - "image.repository=795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-frontend"
+        # Converter sidecar image
+        - "sidecarContainers[0].image=795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-converter:git-${DRONE_COMMIT_SHA:0:7}-${DRONE_BUILD_NUMBER}"
+        # Agent sidecar image
+        - "sidecarContainers[1].image=795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-agent:git-${DRONE_COMMIT_SHA:0:7}-${DRONE_BUILD_NUMBER}"
+        # Ingress
+        - "ingress.enabled=true"
+        - "ingress.hosts[0]=fsi-payments-processing.industrysolutions.staging.corp.mongodb.com"
+        # Service mesh
+        - "mesh.enabled=true"
+        # Frontend resources (reduced based on observed usage)
+        - "resources.limits.cpu=500m"
+        - "resources.limits.memory=512Mi"
+        - "resources.requests.cpu=100m"
+        - "resources.requests.memory=256Mi"
+        # Converter sidecar resources (reduced based on observed usage)
+        - "sidecarContainers[0].resources.limits.cpu=500m"
+        - "sidecarContainers[0].resources.limits.memory=512Mi"
+        - "sidecarContainers[0].resources.requests.cpu=100m"
+        - "sidecarContainers[0].resources.requests.memory=256Mi"
+        # Agent sidecar resources (reduced based on observed usage)
+        - "sidecarContainers[1].resources.limits.cpu=250m"
+        - "sidecarContainers[1].resources.limits.memory=256Mi"
+        - "sidecarContainers[1].resources.requests.cpu=50m"
+        - "sidecarContainers[1].resources.requests.memory=128Mi"
+      api_server: https://api.staging.corp.mongodb.com
+      kubernetes_token:
+        from_secret: staging_kubernetes_token
+    when:
+      branch:
+        - staging
+      event:
+        - push
 
-  # Step 5: Build Frontend code and run QA Tests
+  # Step 6: Build Frontend code and run QA Tests
   - name: Build & Test
     image: node:22
     commands:
@@ -194,7 +195,7 @@ steps:
       - npx playwright test tests/ --reporter=json  > results.json 
       - cp -r results.json playwright-report/
 
-  # Step 6: Upload report to S3    
+  # Step 7: Upload report to S3    
   - name: upload-report
     image: plugins/s3
     settings:
@@ -206,7 +207,7 @@ steps:
       source: "frontend/playwright-report/**"
       target: "qa-test/${DRONE_REPO_NAME}/${DRONE_BUILD_NUMBER}"
       
-  # Step 7: Analyse the QA Test Results 
+  # Step 8: Analyse the QA Test Results 
   - name: quality-gate
     image: alpine
     commands:
@@ -222,8 +223,9 @@ steps:
           echo "❌ Too many failures — blocking downstream steps"
           exit 1
         fi
-        echo "✅ Within tolerance — allowing deploy"   
-
+        echo "✅ Within tolerance — allowing deploy"
+        
+  # Step 9: Retag the staging docker images and promote them to prod
   - name: retag-image-for-prod
     image: amazon/aws-cli:latest
     environment:
@@ -255,6 +257,8 @@ steps:
         aws ecr put-image --repository-name "$REPO/fsi-payments-agent" --image-tag "$PROD_TAG" --image-manifest "$MANIFEST_AGENT" >/dev/null 2>&1 || echo "⚠️  $PROD_TAG already exists (ok)"
         aws ecr put-image --repository-name "$REPO/fsi-payments-converter" --image-tag "$PROD_TAG" --image-manifest "$MANIFEST_CONVERTER" >/dev/null 2>&1 || echo "⚠️  $PROD_TAG already exists (ok)"
         echo "✅ Retagged $QA_TAG as $PROD_TAG"
+
+  # Step 10: Update the image tags in kubernetes manifest for prod        
   - name: update-image-tag
     image: alpine/git:latest
     commands:
@@ -301,3 +305,63 @@ steps:
         rm -f /drone/src/.git-token
 
         echo "✅ Pushed image tag update to ${DRONE_COMMIT_BRANCH}"
+
+---
+kind: pipeline
+type: kubernetes
+name: production-combined
+
+trigger:
+  branch:
+    - main
+  event:
+    - push
+  paths:
+    exclude:
+      - README.md
+      - THIRD-PARTY-NOTICES.md
+      - .gitignore
+      - EXAMPLE.env
+      - LICENSE
+      - backend/data/**
+
+steps:
+  # Step 1: Deploy combined pod to production
+  - name: deploy-combined-prod
+    image: public.ecr.aws/kanopy/drone-helm:v3
+    settings:
+      chart: mongodb/web-app
+      chart_version: 4.30.0
+      add_repos: [mongodb=https://10gen.github.io/helm-charts]
+      namespace: industrysolutions
+      release: fsi-payments-processing-bian-prod
+      values_files: ["environment/production.yaml"]
+      values:
+        # Ingress
+        - "ingress.enabled=true"
+        - "ingress.hosts[0]=fsi-payments-processing-bian.industrysolutions.prod.corp.mongodb.com"
+        # Service mesh
+        - "mesh.enabled=true"
+        # Frontend resources (reduced based on observed usage)
+        - "resources.limits.cpu=500m"
+        - "resources.limits.memory=512Mi"
+        - "resources.requests.cpu=100m"
+        - "resources.requests.memory=256Mi"
+        # Converter sidecar resources (reduced based on observed usage)
+        - "sidecarContainers[0].resources.limits.cpu=500m"
+        - "sidecarContainers[0].resources.limits.memory=512Mi"
+        - "sidecarContainers[0].resources.requests.cpu=100m"
+        - "sidecarContainers[0].resources.requests.memory=256Mi"
+        # Agent sidecar resources (reduced based on observed usage)
+        - "sidecarContainers[1].resources.limits.cpu=250m"
+        - "sidecarContainers[1].resources.limits.memory=256Mi"
+        - "sidecarContainers[1].resources.requests.cpu=50m"
+        - "sidecarContainers[1].resources.requests.memory=128Mi"
+      api_server: https://api.prod.corp.mongodb.com
+      kubernetes_token:
+        from_secret: prod_kubernetes_token
+    when:
+      branch:
+        - main
+      event:
+        - push        
