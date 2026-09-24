@@ -77,63 +77,6 @@ steps:
         rm /tmp/private-key.pem
 
         echo "✅ Generated installation token (${#INSTALLATION_TOKEN} chars, valid 1 hour)"
-
-  - name: update-image-tag
-    image: alpine/git:latest
-    commands:
-      - |
-        set -euo pipefail
-
-        # Read the app-generated token from the previous step
-        GIT_TOKEN=$(cat .git-token)
-
-        if [ -z "$GIT_TOKEN" ]; then
-          echo "❌ .git-token is empty — check the generate-git-app-token step"
-          exit 1
-        fi
-       # NEW_TAG="prod-${DRONE_COMMIT_SHA:0:7}-${DRONE_BUILD_NUMBER}"
-        NEW_TAG="prod-${DRONE_COMMIT_SHA:0:7}-223"
-        MANIFEST_FILE="environment/production.yaml"
-
-        apk add --no-cache yq
-
-        git config --global user.name  "CI[bot]"
-        git config --global user.email "CI[bot]@users.noreply.github.com"
-
-        # Use extraheader — sticks through clone AND push
-        
-        git config --global http.https://github.com/.extraheader "Authorization: Bearer $GIT_TOKEN"
-
-        # ─── Clone with clean URL ───
-        git clone https://github.com/${DRONE_REPO}.git repo
-        cd repo
-        git checkout ${DRONE_COMMIT_BRANCH}
-
-        # yq -i ".image.tag = \"${NEW_TAG}\"" $MANIFEST_FILE
-        # yq -i ".sidecarContainers[0].image = \"795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-agent:${NEW_TAG}\"" $MANIFEST_FILE
-        # yq -i ".sidecarContainers[1].image = \"795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-converter:${NEW_TAG}\"" $MANIFEST_FILE
-        yq -i ".image.tag = \"${NEW_TAG}\"" $MANIFEST_FILE
-        yq -i ".sidecarContainers[0].image = \"795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-agent:${NEW_TAG}\"" $MANIFEST_FILE
-        yq -i ".sidecarContainers[1].image = \"795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-converter:${NEW_TAG}\"" $MANIFEST_FILE
-        
-        if git diff --quiet; then
-          echo "No changes — image tag already up to date"
-          cd ..
-          rm -f .git-token
-          exit 0
-        fi
-
-        COMMIT_MSG="ISTISO-13: promote fsi-pp to latest staging tag [CI SKIP]"
-        git add $MANIFEST_FILE
-        git commit -m "$COMMIT_MSG"
-        git push "https://x-access-token:${GIT_TOKEN}@github.com/${DRONE_REPO}.git" ${DRONE_COMMIT_BRANCH}
-        #git push origin ${DRONE_COMMIT_BRANCH}
-
-        # Cleanup
-        git config --global --unset http.https://github.com/.extraheader
-        
-        echo "✅ Pushed image tag update to ${DRONE_COMMIT_BRANCH}"
-        
         
   # # Step 1: Build and publish Frontend Docker image
   # - name: publish-frontend
@@ -320,3 +263,54 @@ steps:
   #       aws ecr put-image --repository-name "$REPO/fsi-payments-converter" --image-tag "$PROD_TAG" --image-manifest "$MANIFEST_CONVERTER" >/dev/null 2>&1 || echo "⚠️  $PROD_TAG already exists (ok)"
   #       echo "✅ Retagged $QA_TAG as $PROD_TAG"
 
+  - name: update-image-tag
+    image: alpine/git:latest
+    commands:
+      - |
+        set -euo pipefail
+
+        # Read the app-generated token from the previous step
+        GIT_TOKEN=$(cat .git-token)
+
+        if [ -z "$GIT_TOKEN" ]; then
+          echo "❌ .git-token is empty — check the generate-git-app-token step"
+          exit 1
+        fi
+        #NEW_TAG="prod-${DRONE_COMMIT_SHA:0:7}-${DRONE_BUILD_NUMBER}"
+        NEW_TAG="prod-${DRONE_COMMIT_SHA:0:7}-223"
+        MANIFEST_FILE="environment/production.yaml"
+
+        apk add --no-cache yq
+
+        git config --global user.name  "CI[bot]"
+        git config --global user.email "CI[bot]@users.noreply.github.com"
+
+        # Use extraheader — sticks through clone AND push
+        
+        git config --global http.https://github.com/.extraheader Authorization: "Bearer $GIT_TOKEN"
+
+        # ─── Clone with clean URL ───
+        git clone https://github.com/${DRONE_REPO}.git repo
+        cd repo
+        git checkout ${DRONE_COMMIT_BRANCH}
+
+        yq -i ".image.tag = \"${NEW_TAG}\"" $MANIFEST_FILE
+        yq -i ".sidecarContainers[0].image = \"795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-agent:${NEW_TAG}\"" $MANIFEST_FILE
+        yq -i ".sidecarContainers[1].image = \"795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-converter:${NEW_TAG}\"" $MANIFEST_FILE
+
+        if git diff --quiet; then
+          echo "No changes — image tag already up to date"
+          cd ..
+          rm -f .git-token
+          exit 0
+        fi
+
+        COMMIT_MSG="ISTISO-13: promote fsi-pp to latest staging tag [CI SKIP]"
+        git add $MANIFEST_FILE
+        git commit -m "$COMMIT_MSG"
+        git push "https://x-access-token:${GIT_TOKEN}@github.com/${DRONE_REPO}.git" ${DRONE_COMMIT_BRANCH}
+
+        # Cleanup
+        git config --global --unset http.https://github.com/.extraheader
+        
+        echo "✅ Pushed image tag update to ${DRONE_COMMIT_BRANCH}"
