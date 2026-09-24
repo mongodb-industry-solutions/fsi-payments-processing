@@ -17,7 +17,7 @@ serviceAccount:
     accountId: "275662791714"
     roleName: "kanopy-prod-cicd-irsa"
 image:
-  tag: "prod-78633bc-223"
+  tag: prod-78633bc-223
   repository: 795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-frontend
 # Sidecar containers configuration
 sidecarContainers:
