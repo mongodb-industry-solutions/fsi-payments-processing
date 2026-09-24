@@ -71,190 +71,190 @@ steps:
         fi
         echo "✅ Token generated correctly"
         
-  # # Step 1: Build and publish Frontend Docker image
-  # - name: publish-frontend
-  #   image: plugins/kaniko-ecr
+  # Step 1: Build and publish Frontend Docker image
+  - name: publish-frontend
+    image: plugins/kaniko-ecr
+    settings:
+      create_repository: true
+      registry: 795250896452.dkr.ecr.us-east-1.amazonaws.com
+      repo: industrysolutions/fsi-payments-frontend
+      dockerfile: Dockerfile.frontend
+      context: .
+      build_args:
+        - BIAN_MODEL_URL=https://leafy-bank-bian-model.industrysolutions.staging.corp.mongodb.com
+      tags:
+        - git-${DRONE_COMMIT_SHA:0:7}-${DRONE_BUILD_NUMBER}
+      #  - latest
+      access_key:
+        from_secret: ecr_access_key
+      secret_key:
+        from_secret: ecr_secret_key
+    when:
+      event:
+        - push
+
+  # Step 2: Build and publish Converter Docker image
+  - name: publish-converter
+    image: plugins/kaniko-ecr
+    settings:
+      create_repository: true
+      registry: 795250896452.dkr.ecr.us-east-1.amazonaws.com
+      repo: industrysolutions/fsi-payments-converter
+      dockerfile: Dockerfile.converter
+      context: .
+      tags:
+        - git-${DRONE_COMMIT_SHA:0:7}-${DRONE_BUILD_NUMBER}
+       # - latest
+      access_key:
+        from_secret: ecr_access_key
+      secret_key:
+        from_secret: ecr_secret_key
+    when:
+      event:
+        - push
+
+  # Step 3: Build and publish Agent Docker image
+  - name: publish-agent
+    image: plugins/kaniko-ecr
+    settings:
+      create_repository: true
+      registry: 795250896452.dkr.ecr.us-east-1.amazonaws.com
+      repo: industrysolutions/fsi-payments-agent
+      dockerfile: Dockerfile.agent
+      context: .
+      tags:
+        - git-${DRONE_COMMIT_SHA:0:7}-${DRONE_BUILD_NUMBER}
+      #  - latest
+      access_key:
+        from_secret: ecr_access_key
+      secret_key:
+        from_secret: ecr_secret_key
+    when:
+      event:
+        - push
+
+  # # Step 4: Deploy combined pod (frontend + converter sidecar + agent sidecar)
+  # - name: deploy-combined-staging
+  #   image: public.ecr.aws/kanopy/drone-helm:v3
   #   settings:
-  #     create_repository: true
-  #     registry: 795250896452.dkr.ecr.us-east-1.amazonaws.com
-  #     repo: industrysolutions/fsi-payments-frontend
-  #     dockerfile: Dockerfile.frontend
-  #     context: .
-  #     build_args:
-  #       - BIAN_MODEL_URL=https://leafy-bank-bian-model.industrysolutions.staging.corp.mongodb.com
-  #     tags:
-  #       - git-${DRONE_COMMIT_SHA:0:7}-${DRONE_BUILD_NUMBER}
-  #     #  - latest
-  #     access_key:
-  #       from_secret: ecr_access_key
-  #     secret_key:
-  #       from_secret: ecr_secret_key
+  #     chart: mongodb/web-app
+  #     chart_version: 4.30.0
+  #     add_repos: [mongodb=https://10gen.github.io/helm-charts]
+  #     namespace: industrysolutions
+  #     release: fsi-payments-processing
+  #     values_files: ["environment/staging.yaml"]
+  #     values:
+  #       # Frontend (main container) image
+  #       - "image.tag=git-${DRONE_COMMIT_SHA:0:7}"
+  #       - "image.repository=795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-frontend"
+  #       # Converter sidecar image
+  #       - "sidecarContainers[0].image=795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-converter:git-${DRONE_COMMIT_SHA:0:7}"
+  #       # Agent sidecar image
+  #       - "sidecarContainers[1].image=795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-agent:git-${DRONE_COMMIT_SHA:0:7}"
+  #       # Ingress
+  #       - "ingress.enabled=true"
+  #       - "ingress.hosts[0]=fsi-payments-processing.industrysolutions.staging.corp.mongodb.com"
+  #       # Service mesh
+  #       - "mesh.enabled=true"
+  #       # Frontend resources (reduced based on observed usage)
+  #       - "resources.limits.cpu=500m"
+  #       - "resources.limits.memory=512Mi"
+  #       - "resources.requests.cpu=100m"
+  #       - "resources.requests.memory=256Mi"
+  #       # Converter sidecar resources (reduced based on observed usage)
+  #       - "sidecarContainers[0].resources.limits.cpu=500m"
+  #       - "sidecarContainers[0].resources.limits.memory=512Mi"
+  #       - "sidecarContainers[0].resources.requests.cpu=100m"
+  #       - "sidecarContainers[0].resources.requests.memory=256Mi"
+  #       # Agent sidecar resources (reduced based on observed usage)
+  #       - "sidecarContainers[1].resources.limits.cpu=250m"
+  #       - "sidecarContainers[1].resources.limits.memory=256Mi"
+  #       - "sidecarContainers[1].resources.requests.cpu=50m"
+  #       - "sidecarContainers[1].resources.requests.memory=128Mi"
+  #     api_server: https://api.staging.corp.mongodb.com
+  #     kubernetes_token:
+  #       from_secret: staging_kubernetes_token
   #   when:
+  #     branch:
+  #       - staging
   #     event:
   #       - push
 
-  # # Step 2: Build and publish Converter Docker image
-  # - name: publish-converter
-  #   image: plugins/kaniko-ecr
-  #   settings:
-  #     create_repository: true
-  #     registry: 795250896452.dkr.ecr.us-east-1.amazonaws.com
-  #     repo: industrysolutions/fsi-payments-converter
-  #     dockerfile: Dockerfile.converter
-  #     context: .
-  #     tags:
-  #       - git-${DRONE_COMMIT_SHA:0:7}-${DRONE_BUILD_NUMBER}
-  #      # - latest
-  #     access_key:
-  #       from_secret: ecr_access_key
-  #     secret_key:
-  #       from_secret: ecr_secret_key
-  #   when:
-  #     event:
-  #       - push
+  # Step 5: Build Frontend code and run QA Tests
+  - name: Build & Test
+    image: node:22
+    commands:
+      - cd frontend 
+      - npm install --legacy-peer-deps
+      - npm run build
+      - npm install -D @playwright/test --legacy-peer-deps
+      - npx playwright install-deps chromium
+      - npx playwright install --with-deps chromium
+      - npx playwright test tests/
+      - npx playwright test tests/ --reporter=json  > results.json 
+      - cp -r results.json playwright-report/
 
-  # # Step 3: Build and publish Agent Docker image
-  # - name: publish-agent
-  #   image: plugins/kaniko-ecr
-  #   settings:
-  #     create_repository: true
-  #     registry: 795250896452.dkr.ecr.us-east-1.amazonaws.com
-  #     repo: industrysolutions/fsi-payments-agent
-  #     dockerfile: Dockerfile.agent
-  #     context: .
-  #     tags:
-  #       - git-${DRONE_COMMIT_SHA:0:7}-${DRONE_BUILD_NUMBER}
-  #     #  - latest
-  #     access_key:
-  #       from_secret: ecr_access_key
-  #     secret_key:
-  #       from_secret: ecr_secret_key
-  #   when:
-  #     event:
-  #       - push
-
-  # # # Step 4: Deploy combined pod (frontend + converter sidecar + agent sidecar)
-  # # - name: deploy-combined-staging
-  # #   image: public.ecr.aws/kanopy/drone-helm:v3
-  # #   settings:
-  # #     chart: mongodb/web-app
-  # #     chart_version: 4.30.0
-  # #     add_repos: [mongodb=https://10gen.github.io/helm-charts]
-  # #     namespace: industrysolutions
-  # #     release: fsi-payments-processing
-  # #     values_files: ["environment/staging.yaml"]
-  # #     values:
-  # #       # Frontend (main container) image
-  # #       - "image.tag=git-${DRONE_COMMIT_SHA:0:7}"
-  # #       - "image.repository=795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-frontend"
-  # #       # Converter sidecar image
-  # #       - "sidecarContainers[0].image=795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-converter:git-${DRONE_COMMIT_SHA:0:7}"
-  # #       # Agent sidecar image
-  # #       - "sidecarContainers[1].image=795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-agent:git-${DRONE_COMMIT_SHA:0:7}"
-  # #       # Ingress
-  # #       - "ingress.enabled=true"
-  # #       - "ingress.hosts[0]=fsi-payments-processing.industrysolutions.staging.corp.mongodb.com"
-  # #       # Service mesh
-  # #       - "mesh.enabled=true"
-  # #       # Frontend resources (reduced based on observed usage)
-  # #       - "resources.limits.cpu=500m"
-  # #       - "resources.limits.memory=512Mi"
-  # #       - "resources.requests.cpu=100m"
-  # #       - "resources.requests.memory=256Mi"
-  # #       # Converter sidecar resources (reduced based on observed usage)
-  # #       - "sidecarContainers[0].resources.limits.cpu=500m"
-  # #       - "sidecarContainers[0].resources.limits.memory=512Mi"
-  # #       - "sidecarContainers[0].resources.requests.cpu=100m"
-  # #       - "sidecarContainers[0].resources.requests.memory=256Mi"
-  # #       # Agent sidecar resources (reduced based on observed usage)
-  # #       - "sidecarContainers[1].resources.limits.cpu=250m"
-  # #       - "sidecarContainers[1].resources.limits.memory=256Mi"
-  # #       - "sidecarContainers[1].resources.requests.cpu=50m"
-  # #       - "sidecarContainers[1].resources.requests.memory=128Mi"
-  # #     api_server: https://api.staging.corp.mongodb.com
-  # #     kubernetes_token:
-  # #       from_secret: staging_kubernetes_token
-  # #   when:
-  # #     branch:
-  # #       - staging
-  # #     event:
-  # #       - push
-
-  # # Step 5: Build Frontend code and run QA Tests
-  # - name: Build & Test
-  #   image: node:22
-  #   commands:
-  #     - cd frontend 
-  #     - npm install --legacy-peer-deps
-  #     - npm run build
-  #     - npm install -D @playwright/test --legacy-peer-deps
-  #     - npx playwright install-deps chromium
-  #     - npx playwright install --with-deps chromium
-  #     - npx playwright test tests/
-  #     - npx playwright test tests/ --reporter=json  > results.json 
-  #     - cp -r results.json playwright-report/
-
-  # # Step 6: Upload report to S3    
-  # - name: upload-report
-  #   image: plugins/s3
-  #   settings:
-  #     bucket: ist-e2e-test-results
-  #     access_key:
-  #       from_secret: s3_access_key
-  #     secret_key:
-  #       from_secret: s3_secret_key
-  #     source: "frontend/playwright-report/**"
-  #     target: "qa-test/${DRONE_REPO_NAME}/${DRONE_BUILD_NUMBER}"
+  # Step 6: Upload report to S3    
+  - name: upload-report
+    image: plugins/s3
+    settings:
+      bucket: ist-e2e-test-results
+      access_key:
+        from_secret: s3_access_key
+      secret_key:
+        from_secret: s3_secret_key
+      source: "frontend/playwright-report/**"
+      target: "qa-test/${DRONE_REPO_NAME}/${DRONE_BUILD_NUMBER}"
       
-  # # Step 7: Analyse the QA Test Results 
-  # - name: quality-gate
-  #   image: alpine
-  #   commands:
-  #     - apk add --no-cache jq
-  #     - |
-  #       FAILED=$(jq '.stats.unexpected' frontend/playwright-report/results.json)
-  #       FLAKY=$(jq '.stats.flaky' frontend/playwright-report/results.json)
-  #       THRESHOLD=2
+  # Step 7: Analyse the QA Test Results 
+  - name: quality-gate
+    image: alpine
+    commands:
+      - apk add --no-cache jq
+      - |
+        FAILED=$(jq '.stats.unexpected' frontend/playwright-report/results.json)
+        FLAKY=$(jq '.stats.flaky' frontend/playwright-report/results.json)
+        THRESHOLD=2
 
-  #       echo "Failed: $FAILED, Flaky: $FLAKY, Threshold: $THRESHOLD"
+        echo "Failed: $FAILED, Flaky: $FLAKY, Threshold: $THRESHOLD"
 
-  #       if [ "$FAILED" -gt "$THRESHOLD" ]; then
-  #         echo "❌ Too many failures — blocking downstream steps"
-  #         exit 1
-  #       fi
-  #       echo "✅ Within tolerance — allowing deploy"   
+        if [ "$FAILED" -gt "$THRESHOLD" ]; then
+          echo "❌ Too many failures — blocking downstream steps"
+          exit 1
+        fi
+        echo "✅ Within tolerance — allowing deploy"   
 
-  # - name: retag-image-for-prod
-  #   image: amazon/aws-cli:latest
-  #   environment:
-  #     AWS_ACCESS_KEY_ID:
-  #       from_secret: ecr_access_key
-  #     AWS_SECRET_ACCESS_KEY:
-  #       from_secret: ecr_secret_key
-  #     AWS_DEFAULT_REGION: us-east-1
-  #   commands:
-  #     - |
-  #       set -e
-  #       REGISTRY="795250896452.dkr.ecr.us-east-1.amazonaws.com"
-  #       REPO="industrysolutions"
-  #       QA_TAG="git-${DRONE_COMMIT_SHA:0:7}-${DRONE_BUILD_NUMBER}"
-  #       PROD_TAG="prod-${DRONE_COMMIT_SHA:0:7}-${DRONE_BUILD_NUMBER}"
+  - name: retag-image-for-prod
+    image: amazon/aws-cli:latest
+    environment:
+      AWS_ACCESS_KEY_ID:
+        from_secret: ecr_access_key
+      AWS_SECRET_ACCESS_KEY:
+        from_secret: ecr_secret_key
+      AWS_DEFAULT_REGION: us-east-1
+    commands:
+      - |
+        set -e
+        REGISTRY="795250896452.dkr.ecr.us-east-1.amazonaws.com"
+        REPO="industrysolutions"
+        QA_TAG="git-${DRONE_COMMIT_SHA:0:7}-${DRONE_BUILD_NUMBER}"
+        PROD_TAG="prod-${DRONE_COMMIT_SHA:0:7}-${DRONE_BUILD_NUMBER}"
 
-  #       echo "Retagging $REGISTRY/$REPO/fsi-payments-frontend:$QA_TAG → $PROD_TAG"
+        echo "Retagging $REGISTRY/$REPO/fsi-payments-frontend:$QA_TAG → $PROD_TAG"
 
-  #       MANIFEST_FRONTEND=$(aws ecr batch-get-image --repository-name "$REPO/fsi-payments-frontend" --image-ids imageTag="$QA_TAG" --query 'images[0].imageManifest' --output text)
-  #       MANIFEST_AGENT=$(aws ecr batch-get-image --repository-name "$REPO/fsi-payments-agent" --image-ids imageTag="$QA_TAG" --query 'images[0].imageManifest' --output text)
-  #       MANIFEST_CONVERTER=$(aws ecr batch-get-image --repository-name "$REPO/fsi-payments-converter" --image-ids imageTag="$QA_TAG" --query 'images[0].imageManifest' --output text)
+        MANIFEST_FRONTEND=$(aws ecr batch-get-image --repository-name "$REPO/fsi-payments-frontend" --image-ids imageTag="$QA_TAG" --query 'images[0].imageManifest' --output text)
+        MANIFEST_AGENT=$(aws ecr batch-get-image --repository-name "$REPO/fsi-payments-agent" --image-ids imageTag="$QA_TAG" --query 'images[0].imageManifest' --output text)
+        MANIFEST_CONVERTER=$(aws ecr batch-get-image --repository-name "$REPO/fsi-payments-converter" --image-ids imageTag="$QA_TAG" --query 'images[0].imageManifest' --output text)
 
-  #       if [ -z "$MANIFEST_FRONTEND" ] || [ "$MANIFEST_FRONTEND" = "None" ]; then
-  #         echo "❌ QA image $QA_TAG not found in ECR"
-  #         exit 1
-  #       fi
+        if [ -z "$MANIFEST_FRONTEND" ] || [ "$MANIFEST_FRONTEND" = "None" ]; then
+          echo "❌ QA image $QA_TAG not found in ECR"
+          exit 1
+        fi
 
-  #       aws ecr put-image --repository-name "$REPO/fsi-payments-frontend" --image-tag "$PROD_TAG" --image-manifest "$MANIFEST_FRONTEND" >/dev/null 2>&1 || echo "⚠️  $PROD_TAG already exists (ok)"
-  #       aws ecr put-image --repository-name "$REPO/fsi-payments-agent" --image-tag "$PROD_TAG" --image-manifest "$MANIFEST_AGENT" >/dev/null 2>&1 || echo "⚠️  $PROD_TAG already exists (ok)"
-  #       aws ecr put-image --repository-name "$REPO/fsi-payments-converter" --image-tag "$PROD_TAG" --image-manifest "$MANIFEST_CONVERTER" >/dev/null 2>&1 || echo "⚠️  $PROD_TAG already exists (ok)"
-  #       echo "✅ Retagged $QA_TAG as $PROD_TAG"
+        aws ecr put-image --repository-name "$REPO/fsi-payments-frontend" --image-tag "$PROD_TAG" --image-manifest "$MANIFEST_FRONTEND" >/dev/null 2>&1 || echo "⚠️  $PROD_TAG already exists (ok)"
+        aws ecr put-image --repository-name "$REPO/fsi-payments-agent" --image-tag "$PROD_TAG" --image-manifest "$MANIFEST_AGENT" >/dev/null 2>&1 || echo "⚠️  $PROD_TAG already exists (ok)"
+        aws ecr put-image --repository-name "$REPO/fsi-payments-converter" --image-tag "$PROD_TAG" --image-manifest "$MANIFEST_CONVERTER" >/dev/null 2>&1 || echo "⚠️  $PROD_TAG already exists (ok)"
+        echo "✅ Retagged $QA_TAG as $PROD_TAG"
   - name: update-image-tag
     image: alpine/git:latest
     commands:
@@ -265,8 +265,7 @@ steps:
         GIT_TOKEN=$(tr -d '[:space:]' < /drone/src/.git-token)
         SIZE=${#GIT_TOKEN}
         echo "Token size: $SIZE chars, prefix: ${GIT_TOKEN:0:4}"
-        #NEW_TAG="prod-${DRONE_COMMIT_SHA:0:7}-${DRONE_BUILD_NUMBER}"
-        NEW_TAG="prod-${DRONE_COMMIT_SHA:0:7}-223"
+        NEW_TAG="prod-${DRONE_COMMIT_SHA:0:7}-${DRONE_BUILD_NUMBER}"
         export NEW_TAG
         echo "NEW_TAG at yq time: $NEW_TAG"
         
