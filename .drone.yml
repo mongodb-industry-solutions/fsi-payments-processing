@@ -278,9 +278,9 @@ steps:
         git config --global user.email "CI[bot]@users.noreply.github.com"
         git checkout ${DRONE_COMMIT_BRANCH}
 
-        yq -i ".image.tag = \"${NEW_TAG}\"" $MANIFEST_FILE
-        yq -i ".sidecarContainers[0].image = \"795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-agent:${NEW_TAG}\"" $MANIFEST_FILE
-        yq -i ".sidecarContainers[1].image = \"795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-converter:${NEW_TAG}\"" $MANIFEST_FILE
+        yq -i '.image.tag = strenv(NEW_TAG)' $MANIFEST_FILE
+        yq -i '.sidecarContainers[0].image = "795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-agent:" + strenv(NEW_TAG)' $MANIFEST_FILE
+        yq -i '.sidecarContainers[1].image = "795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-converter:" + strenv(NEW_TAG)' $MANIFEST_FILE
         cat $MANIFEST_FILE
 
         if git diff --quiet; then
