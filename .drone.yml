@@ -262,6 +262,7 @@ steps:
   - name: update-image-tag
     image: alpine/git:latest
     commands:
+      - apk add --no-cache yq
       - |
         set -euo pipefail
 
@@ -281,10 +282,10 @@ steps:
         MANIFEST_FILE="environment/production.yaml"
         echo "NEW_TAG: $NEW_TAG"
         REPO_URL="https://x-access-token:${GIT_TOKEN}@github.com/${DRONE_REPO}.git"
-        apk add --no-cache yq
-        git clone "$REPO_URL" repo
+        echo "Token file size: $(wc -c < .git-token) bytes"
+        git clone "https://x-access-token:$(cat .git-token)@github.com/${DRONE_REPO}.git" repo
         cd repo
-        git remote set-url origin "$REPO_URL"
+        git remote set-url origin "https://x-access-token:$(cat .git-token)@github.com/${DRONE_REPO}.git"
         git config --global user.name  "CI[bot]"
         git config --global user.email "CI[bot]@users.noreply.github.com"
         git checkout ${DRONE_COMMIT_BRANCH}
