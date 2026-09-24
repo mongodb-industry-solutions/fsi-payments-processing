@@ -4,30 +4,27 @@
 
 env:
   NODE_ENV: production
-
 # Kanopy security and ownership (requires web-app chart v4.30.0+)
 security:
   dataClassification: "Internal"
   dataDesignation: ["MI"]
-
 ownership:
   driEmail: kiran.tulsulkar@mongodb.com
-
 # AWS IRSA Service Account
 serviceAccount:
   enabled: true
   irsa:
     accountId: "275662791714"
     roleName: "kanopy-prod-cicd-irsa"
-
 image:
+  tag: ""
   repository: 795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-frontend
   tag: git-e49c3bf
 # Sidecar containers configuration
 sidecarContainers:
   # Payment Converter V2 (port 8001)
   - name: converter
-    image: 795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-processing-bian-converter:latest
+    image: '795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-agent:'
     ports:
       - containerPort: 8001
         name: converter
@@ -67,10 +64,9 @@ sidecarContainers:
           secretKeyRef:
             name: fsi-payments-bian
             key: SOLANA_NETWORK
-
   # Payment Agent (port 8002)
   - name: agent
-    image: 795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-processing-bian-agent:latest
+    image: '795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-converter:'
     ports:
       - containerPort: 8002
         name: agent
