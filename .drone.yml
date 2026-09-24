@@ -185,7 +185,7 @@ steps:
   - name: Running QA Test
     image: mcr.microsoft.com/playwright:v1.48.0-jammy
     environment:
-      BASE_URL: https://fsi-payments-processing.industrysolutions.staging.corp.mongodb.com/
+      frontendUrl: https://fsi-payments-processing.industrysolutions.staging.corp.mongodb.com/
     commands:
       - cd frontend
       - npm install --legacy-peer-deps
