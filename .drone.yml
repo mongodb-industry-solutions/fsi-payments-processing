@@ -262,7 +262,6 @@ steps:
   #       aws ecr put-image --repository-name "$REPO/fsi-payments-agent" --image-tag "$PROD_TAG" --image-manifest "$MANIFEST_AGENT" >/dev/null 2>&1 || echo "⚠️  $PROD_TAG already exists (ok)"
   #       aws ecr put-image --repository-name "$REPO/fsi-payments-converter" --image-tag "$PROD_TAG" --image-manifest "$MANIFEST_CONVERTER" >/dev/null 2>&1 || echo "⚠️  $PROD_TAG already exists (ok)"
   #       echo "✅ Retagged $QA_TAG as $PROD_TAG"
-
   - name: update-image-tag
     image: alpine/git:latest
     commands:
