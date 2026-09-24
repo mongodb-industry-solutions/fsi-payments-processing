@@ -71,9 +71,6 @@ steps:
           echo "❌ Token doesn't start with 'ghs_'"
           exit 1
         fi
-        echo "This is the WD"  
-        pwd
-        ls -al
         echo "✅ Token generated correctly"
         
   # # Step 1: Build and publish Frontend Docker image
@@ -271,7 +268,9 @@ steps:
         SIZE=${#GIT_TOKEN}
         echo "Token size: $SIZE chars, prefix: ${GIT_TOKEN:0:4}"
 
-
+        echo "This is the PWD"  
+        pwd
+        ls -al
         #NEW_TAG="prod-${DRONE_COMMIT_SHA:0:7}-${DRONE_BUILD_NUMBER}"
         NEW_TAG="prod-${DRONE_COMMIT_SHA:0:7}-223"
         
