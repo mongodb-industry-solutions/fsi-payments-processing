@@ -267,6 +267,8 @@ steps:
         echo "Token size: $SIZE chars, prefix: ${GIT_TOKEN:0:4}"
         #NEW_TAG="prod-${DRONE_COMMIT_SHA:0:7}-${DRONE_BUILD_NUMBER}"
         NEW_TAG="prod-${DRONE_COMMIT_SHA:0:7}-223"
+        export NEW_TAG
+        echo "NEW_TAG at yq time: $NEW_TAG"
         
         MANIFEST_FILE="environment/production.yaml"
         echo "NEW_TAG: $NEW_TAG"
