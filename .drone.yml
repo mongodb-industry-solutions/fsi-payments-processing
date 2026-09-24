@@ -265,15 +265,11 @@ steps:
         GIT_TOKEN=$(tr -d '[:space:]' < /drone/src/.git-token)
         SIZE=${#GIT_TOKEN}
         echo "Token size: $SIZE chars, prefix: ${GIT_TOKEN:0:4}"
-        echo "The working dir:"
-        pwd
-        ls -al
         #NEW_TAG="prod-${DRONE_COMMIT_SHA:0:7}-${DRONE_BUILD_NUMBER}"
         NEW_TAG="prod-${DRONE_COMMIT_SHA:0:7}-223"
         
         MANIFEST_FILE="environment/production.yaml"
         echo "NEW_TAG: $NEW_TAG"
-        REPO_URL="https://x-access-token:${GIT_TOKEN}@github.com/${DRONE_REPO}.git"
         echo "Token file size: $(wc -c < .git-token) bytes"
         git clone "https://x-access-token:$(cat /drone/src/.git-token)@github.com/${DRONE_REPO}.git" repo
         cd repo
@@ -285,11 +281,12 @@ steps:
         yq -i ".image.tag = \"${NEW_TAG}\"" $MANIFEST_FILE
         yq -i ".sidecarContainers[0].image = \"795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-agent:${NEW_TAG}\"" $MANIFEST_FILE
         yq -i ".sidecarContainers[1].image = \"795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-converter:${NEW_TAG}\"" $MANIFEST_FILE
+        cat $MANIFEST_FILE
 
         if git diff --quiet; then
           echo "No changes — image tag already up to date"
           cd ..
-          rm -f .git-token
+          rm -f /drone/src/.git-token
           exit 0
         fi
 
@@ -300,6 +297,6 @@ steps:
 
         # Cleanup
         cd ..
-        rm -f .git-token
+        rm -f /drone/src/.git-token
 
         echo "✅ Pushed image tag update to ${DRONE_COMMIT_BRANCH}"
