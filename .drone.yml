@@ -202,13 +202,14 @@ steps:
         echo "✅ Retagged $QA_TAG as $PROD_TAG"
 
   - name: generate-git-app-token
-    image: plugins/github-app-token:latest
-    settings:
-      app_id:
+    image: crazymax/ghtoken:latest
+    environment:
+      APP_ID:
         from_secret: git_app_id
-      private_key:
+      APP_PRIVATE_KEY:
         from_secret: git_app_private_key
-      output_file: .git-token
+    commands:
+      - ghtoken generate --app-id $APP_ID --key <(echo "$APP_PRIVATE_KEY") --file .git-token
 
   - name: update-image-tag
     image: alpine/git:latest
