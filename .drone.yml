@@ -281,14 +281,15 @@ steps:
         MANIFEST_FILE="environment/production.yaml"
 
         apk add --no-cache yq
-
+        ENCODED_TOKEN=$(echo -n "x-access-token:$GIT_TOKEN" | base64)
         git config --global user.name  "CI[bot]"
         git config --global user.email "CI[bot]@users.noreply.github.com"
 
         # Use extraheader — sticks through clone AND push
-        
+        git config --global http.https://github.com "Authorization: Basic ${ENCODED_TOKEN}"
+
         #git config --global http.https://github.com/.extraheader Authorization: "Bearer $GIT_TOKEN"
-        git remote set-url origin https://x-access-token:$GIT_TOKEN@://github.com
+        
       
         # ─── Clone with clean URL ───
         git clone https://github.com/${DRONE_REPO}.git repo
@@ -309,10 +310,9 @@ steps:
         COMMIT_MSG="ISTISO-13: promote fsi-pp to latest staging tag [CI SKIP]"
         git add $MANIFEST_FILE
         git commit -m "$COMMIT_MSG"
-        git remote set-url origin https://x-access-token:$GIT_TOKEN@://github.com
         git push origin ${DRONE_COMMIT_BRANCH}
 
         # Cleanup
-        git config --global --unset http.https://github.com/.extraheader
+       # git config --global --unset http.https://github.com/.extraheader
         
         echo "✅ Pushed image tag update to ${DRONE_COMMIT_BRANCH}"
