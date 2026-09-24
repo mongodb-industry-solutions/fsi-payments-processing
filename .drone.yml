@@ -63,17 +63,13 @@ steps:
         FIRST=$(head -c 4 .git-token)
         echo "Token file: $SIZE bytes, starts with: $FIRST"
 
-        if [ "$SIZE" -lt 30 ] || [ "$SIZE" -gt 100 ]; then
-          echo "❌ Token size unexpected — should be ~40 chars"
-          echo "File contents (first 100 bytes):"
-          head -c 100 .git-token
+        if [ "$SIZE" -lt 30 ]; then
+          echo "❌ Token too short"
           exit 1
         fi
 
         if [ "$FIRST" != "ghs_" ]; then
           echo "❌ Token doesn't start with 'ghs_'"
-          echo "File contents (first 100 bytes):"
-          head -c 100 .git-token
           exit 1
         fi
 
