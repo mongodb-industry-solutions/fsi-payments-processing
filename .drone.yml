@@ -262,7 +262,7 @@ steps:
       - |
         set -euo pipefail
 
-        GIT_TOKEN=$(tr -d '[:space:]' < .git-token)
+        GIT_TOKEN=$(tr -d '[:space:]' < /drone/src/.git-token)
         SIZE=${#GIT_TOKEN}
         echo "Token size: $SIZE chars, prefix: ${GIT_TOKEN:0:4}"
         echo "The working dir:"
@@ -275,9 +275,9 @@ steps:
         echo "NEW_TAG: $NEW_TAG"
         REPO_URL="https://x-access-token:${GIT_TOKEN}@github.com/${DRONE_REPO}.git"
         echo "Token file size: $(wc -c < .git-token) bytes"
-        git clone "https://x-access-token:$(cat .git-token)@github.com/${DRONE_REPO}.git" repo
+        git clone "https://x-access-token:$(cat /drone/src/.git-token)@github.com/${DRONE_REPO}.git" repo
         cd repo
-        git remote set-url origin "https://x-access-token:$(cat .git-token)@github.com/${DRONE_REPO}.git"
+        git remote set-url origin "https://x-access-token:$(cat /drone/src/.git-token)@github.com/${DRONE_REPO}.git"
         git config --global user.name  "CI[bot]"
         git config --global user.email "CI[bot]@users.noreply.github.com"
         git checkout ${DRONE_COMMIT_BRANCH}
