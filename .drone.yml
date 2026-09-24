@@ -5,7 +5,7 @@ name: staging-combined
 
 trigger:
   branch:
-    - staging
+    - qa-automation-poc-v2
   paths:
     exclude:
       - README.md
@@ -134,63 +134,61 @@ steps:
       event:
         - push
 
-  # Step 5: Deploy combined pod (frontend + converter sidecar + agent sidecar)
-  - name: deploy-combined-staging
-    image: public.ecr.aws/kanopy/drone-helm:v3
-    settings:
-      chart: mongodb/web-app
-      chart_version: 4.30.0
-      add_repos: [mongodb=https://10gen.github.io/helm-charts]
-      namespace: industrysolutions
-      release: fsi-payments-processing
-      values_files: ["environment/staging.yaml"]
-      values:
-        # Frontend (main container) image
-        - "image.tag=git-${DRONE_COMMIT_SHA:0:7}-${DRONE_BUILD_NUMBER}"
-        - "image.repository=795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-frontend"
-        # Converter sidecar image
-        - "sidecarContainers[0].image=795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-converter:git-${DRONE_COMMIT_SHA:0:7}-${DRONE_BUILD_NUMBER}"
-        # Agent sidecar image
-        - "sidecarContainers[1].image=795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-agent:git-${DRONE_COMMIT_SHA:0:7}-${DRONE_BUILD_NUMBER}"
-        # Ingress
-        - "ingress.enabled=true"
-        - "ingress.hosts[0]=fsi-payments-processing.industrysolutions.staging.corp.mongodb.com"
-        # Service mesh
-        - "mesh.enabled=true"
-        # Frontend resources (reduced based on observed usage)
-        - "resources.limits.cpu=500m"
-        - "resources.limits.memory=512Mi"
-        - "resources.requests.cpu=100m"
-        - "resources.requests.memory=256Mi"
-        # Converter sidecar resources (reduced based on observed usage)
-        - "sidecarContainers[0].resources.limits.cpu=500m"
-        - "sidecarContainers[0].resources.limits.memory=512Mi"
-        - "sidecarContainers[0].resources.requests.cpu=100m"
-        - "sidecarContainers[0].resources.requests.memory=256Mi"
-        # Agent sidecar resources (reduced based on observed usage)
-        - "sidecarContainers[1].resources.limits.cpu=250m"
-        - "sidecarContainers[1].resources.limits.memory=256Mi"
-        - "sidecarContainers[1].resources.requests.cpu=50m"
-        - "sidecarContainers[1].resources.requests.memory=128Mi"
-      api_server: https://api.staging.corp.mongodb.com
-      kubernetes_token:
-        from_secret: staging_kubernetes_token
-    when:
-      branch:
-        - staging
-      event:
-        - push
+  # # Step 5: Deploy combined pod (frontend + converter sidecar + agent sidecar)
+  # - name: deploy-combined-staging
+  #   image: public.ecr.aws/kanopy/drone-helm:v3
+  #   settings:
+  #     chart: mongodb/web-app
+  #     chart_version: 4.30.0
+  #     add_repos: [mongodb=https://10gen.github.io/helm-charts]
+  #     namespace: industrysolutions
+  #     release: fsi-payments-processing
+  #     values_files: ["environment/staging.yaml"]
+  #     values:
+  #       # Frontend (main container) image
+  #       - "image.tag=git-${DRONE_COMMIT_SHA:0:7}-${DRONE_BUILD_NUMBER}"
+  #       - "image.repository=795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-frontend"
+  #       # Converter sidecar image
+  #       - "sidecarContainers[0].image=795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-converter:git-${DRONE_COMMIT_SHA:0:7}-${DRONE_BUILD_NUMBER}"
+  #       # Agent sidecar image
+  #       - "sidecarContainers[1].image=795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-agent:git-${DRONE_COMMIT_SHA:0:7}-${DRONE_BUILD_NUMBER}"
+  #       # Ingress
+  #       - "ingress.enabled=true"
+  #       - "ingress.hosts[0]=fsi-payments-processing.industrysolutions.staging.corp.mongodb.com"
+  #       # Service mesh
+  #       - "mesh.enabled=true"
+  #       # Frontend resources (reduced based on observed usage)
+  #       - "resources.limits.cpu=500m"
+  #       - "resources.limits.memory=512Mi"
+  #       - "resources.requests.cpu=100m"
+  #       - "resources.requests.memory=256Mi"
+  #       # Converter sidecar resources (reduced based on observed usage)
+  #       - "sidecarContainers[0].resources.limits.cpu=500m"
+  #       - "sidecarContainers[0].resources.limits.memory=512Mi"
+  #       - "sidecarContainers[0].resources.requests.cpu=100m"
+  #       - "sidecarContainers[0].resources.requests.memory=256Mi"
+  #       # Agent sidecar resources (reduced based on observed usage)
+  #       - "sidecarContainers[1].resources.limits.cpu=250m"
+  #       - "sidecarContainers[1].resources.limits.memory=256Mi"
+  #       - "sidecarContainers[1].resources.requests.cpu=50m"
+  #       - "sidecarContainers[1].resources.requests.memory=128Mi"
+  #     api_server: https://api.staging.corp.mongodb.com
+  #     kubernetes_token:
+  #       from_secret: staging_kubernetes_token
+  #   when:
+  #     branch:
+  #       - staging
+  #     event:
+  #       - push
 
   # Step 6: Build Frontend code and run QA Tests
-  - name: Build & Test
-    image: node:22
+  - name: Running QA Test
+    image: mcr.microsoft.com/playwright:v1.48.0-jammy
+    environment:
+      BASE_URL: https://fsi-payments-processing.industrysolutions.staging.corp.mongodb.com/
     commands:
-      - cd frontend 
+      - cd frontend
       - npm install --legacy-peer-deps
-      - npm run build
-      - npm install -D @playwright/test --legacy-peer-deps
-      - npx playwright install-deps chromium
-      - npx playwright install --with-deps chromium
       - npx playwright test tests/
       - npx playwright test tests/ --reporter=json  > results.json 
       - cp -r results.json playwright-report/
