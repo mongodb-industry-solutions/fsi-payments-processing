@@ -284,9 +284,13 @@ steps:
         git config --global user.name  "CI[bot]"
         git config --global user.email "CI[bot]@users.noreply.github.com"
 
-        git clone https://x-access-token:${GIT_TOKEN}@github.com/${DRONE_REPO}.git repo
-        cd repo
+        # Use extraheader — sticks through clone AND push
+        
+        git config --global http.https://github.com/.extraheader Authorization: "Bearer $GIT_TOKEN"
 
+        # ─── Clone with clean URL ───
+        git clone https://github.com/${DRONE_REPO}.git repo
+        cd repo
         git checkout ${DRONE_COMMIT_BRANCH}
 
         yq -i ".image.tag = \"${NEW_TAG}\"" $MANIFEST_FILE
@@ -300,13 +304,12 @@ steps:
           exit 0
         fi
 
-        COMMIT_MSG="ISTISO-13: promote fsi-pp to ${NEW_TAG} [CI SKIP]"
+        COMMIT_MSG="ISTISO-13: promote fsi-pp to latest staging tag [CI SKIP]"
         git add $MANIFEST_FILE
         git commit -m "$COMMIT_MSG"
         git push origin ${DRONE_COMMIT_BRANCH}
 
-        # Clean up token file
-        cd ..
-        rm -f .git-token
+        # Cleanup
+        git config --global --unset http.https://github.com/.extraheader
         
         echo "✅ Pushed image tag update to ${DRONE_COMMIT_BRANCH}"
