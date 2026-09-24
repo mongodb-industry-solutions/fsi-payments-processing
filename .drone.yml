@@ -267,26 +267,33 @@ steps:
     commands:
       - |
         set -euo pipefail
-        # Read the app-generated token from the previous step
-        GIT_TOKEN=$(cat .git-token)
+
+        # Read the app-generated token
+        GIT_TOKEN=$(tr -d '[:space:]' < .git-token)
         if [ -z "$GIT_TOKEN" ]; then
           echo "❌ .git-token is empty — check the generate-git-app-token step"
           exit 1
         fi
+        echo "Token: ${GIT_TOKEN:0:4}... (${#GIT_TOKEN} chars)"
+
         #NEW_TAG="prod-${DRONE_COMMIT_SHA:0:7}-${DRONE_BUILD_NUMBER}"
         NEW_TAG="prod-${DRONE_COMMIT_SHA:0:7}-223"
+        
         MANIFEST_FILE="environment/production.yaml"
+        echo "NEW_TAG: $NEW_TAG"
+
         apk add --no-cache yq
-        ENCODED_TOKEN=$(echo -n "x-access-token:$GIT_TOKEN" | base64)
+
         git config --global user.name  "CI[bot]"
         git config --global user.email "CI[bot]@users.noreply.github.com"
 
-        # Use extraheader — sticks through clone AND push
-        git config --global http.https://github.com "Authorization: Basic ${ENCODED_TOKEN}"
-        #git config --global http.https://github.com/.extraheader Authorization: "Bearer $GIT_TOKEN"
-        # ─── Clone with clean URL ───
+        # Clone
         git clone https://github.com/${DRONE_REPO}.git repo
         cd repo
+
+        # Set auth on the local repo (survives clone + push)
+        git config http.https://github.com/.extraheader "Authorization: Bearer $GIT_TOKEN"
+
         git checkout ${DRONE_COMMIT_BRANCH}
 
         yq -i ".image.tag = \"${NEW_TAG}\"" $MANIFEST_FILE
@@ -299,10 +306,14 @@ steps:
           rm -f .git-token
           exit 0
         fi
-        COMMIT_MSG="ISTISO-13: Promote fsi-pp to latest staging tag [CI SKIP]"
+
+        COMMIT_MSG="ISTISO-13: Promote fsi-pp [CI SKIP]"
         git add $MANIFEST_FILE
         git commit -m "$COMMIT_MSG"
         git push origin ${DRONE_COMMIT_BRANCH}
+
         # Cleanup
-       # git config --global --unset http.https://github.com/.extraheader
+        cd ..
+        rm -f .git-token
+
         echo "✅ Pushed image tag update to ${DRONE_COMMIT_BRANCH}"
