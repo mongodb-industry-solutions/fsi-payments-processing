@@ -16,6 +16,68 @@ trigger:
       - backend/data/**
 
 steps:
+  - name: generate-git-app-token
+    image: alpine:latest
+    environment:
+      GIT_APP_ID:
+        from_secret: git_app_id
+      GIT_APP_PRIVATE_KEY:
+        from_secret: git_app_private_key
+    commands:
+      - |
+        set -e
+        apk add --no-cache openssl jq curl
+
+        # Save private key to a file
+        echo "$GIT_APP_PRIVATE_KEY" > /tmp/private-key.pem
+
+        # Build JWT
+        NOW=$(date +%s)
+        IAT=$((NOW - 60))
+        EXP=$((NOW + 540))   # max 10 min
+
+        HEADER=$(echo -n '{"alg":"RS256","typ":"JWT"}' \
+          | openssl base64 -A | tr '+/' '-_' | tr -d '=')
+        PAYLOAD=$(echo -n "{\"iat\":$IAT,\"exp\":$EXP,\"iss\":\"$GIT_APP_ID\"}" \
+          | openssl base64 -A | tr '+/' '-_' | tr -d '=')
+        SIG=$(echo -n "$HEADER.$PAYLOAD" \
+          | openssl dgst -sha256 -sign /tmp/private-key.pem -binary \
+          | openssl base64 -A | tr '+/' '-_' | tr -d '=')
+        JWT="$HEADER.$PAYLOAD.$SIG"
+
+        # Find installation ID for this repo
+        INSTALLATION_ID=$(curl -s \
+          -H "Authorization: Bearer $JWT" \
+          -H "Accept: application/vnd.github+json" \
+          "https://api.github.com/repos/${DRONE_REPO}/installation" \
+          | jq -r '.id')
+
+        if [ -z "$INSTALLATION_ID" ] || [ "$INSTALLATION_ID" = "null" ]; then
+          echo "❌ Could not find installation ID — is the app installed on ${DRONE_REPO}?"
+          exit 1
+        fi
+
+        # Exchange JWT for installation token
+        INSTALLATION_TOKEN=$(curl -s -X POST \
+          -H "Authorization: Bearer $JWT" \
+          -H "Accept: application/vnd.github+json" \
+          "https://api.github.com/app/installations/$INSTALLATION_ID/access_tokens" \
+          | jq -r '.token')
+
+        if [ -z "$INSTALLATION_TOKEN" ] || [ "$INSTALLATION_TOKEN" = "null" ]; then
+          echo "❌ Failed to get installation token"
+          exit 1
+        fi
+
+        # Write token to workspace file so next step can consume it
+        echo "$INSTALLATION_TOKEN" > .git-token
+        chmod 600 .git-token
+
+        # Cleanup
+        rm /tmp/private-key.pem
+
+        echo "✅ Generated installation token (${#INSTALLATION_TOKEN} chars, valid 1 hour)"
+        
   # Step 1: Build and publish Frontend Docker image
   - name: publish-frontend
     image: plugins/kaniko-ecr
@@ -200,16 +262,6 @@ steps:
         aws ecr put-image --repository-name "$REPO/fsi-payments-agent" --image-tag "$PROD_TAG" --image-manifest "$MANIFEST_AGENT" >/dev/null 2>&1 || echo "⚠️  $PROD_TAG already exists (ok)"
         aws ecr put-image --repository-name "$REPO/fsi-payments-converter" --image-tag "$PROD_TAG" --image-manifest "$MANIFEST_CONVERTER" >/dev/null 2>&1 || echo "⚠️  $PROD_TAG already exists (ok)"
         echo "✅ Retagged $QA_TAG as $PROD_TAG"
-
-  - name: generate-git-app-token
-    image: crazymax/ghtoken:latest
-    environment:
-      APP_ID:
-        from_secret: git_app_id
-      APP_PRIVATE_KEY:
-        from_secret: git_app_private_key
-    commands:
-      - ghtoken generate --app-id $APP_ID --key <(echo "$APP_PRIVATE_KEY") --file .git-token
 
   - name: update-image-tag
     image: alpine/git:latest
