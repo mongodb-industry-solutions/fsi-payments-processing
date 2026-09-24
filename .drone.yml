@@ -201,26 +201,39 @@ steps:
         aws ecr put-image --repository-name "$REPO/fsi-payments-converter" --image-tag "$PROD_TAG" --image-manifest "$MANIFEST_CONVERTER" >/dev/null 2>&1 || echo "⚠️  $PROD_TAG already exists (ok)"
         echo "✅ Retagged $QA_TAG as $PROD_TAG"
 
+  - name: generate-git-app-token
+    image: plugins/github-app-token:latest
+    settings:
+      app_id:
+        from_secret: git_app_id
+      private_key:
+        from_secret: git_app_private_key
+      output_file: .git-token
+
   - name: update-image-tag
     image: alpine/git:latest
-    environment:
-      GIT_TOKEN:
-        from_secret: git_push_token
-      GIT_USER:
-        from_secret: git_user 
     commands:
       - |
-        set -e
+        set -euo pipefail
+
+        # Read the app-generated token from the previous step
+        GIT_TOKEN=$(cat .git-token)
+
+        if [ -z "$GIT_TOKEN" ]; then
+          echo "❌ .git-token is empty — check the generate-git-app-token step"
+          exit 1
+        fi
         NEW_TAG="prod-${DRONE_COMMIT_SHA:0:7}-${DRONE_BUILD_NUMBER}"
         MANIFEST_FILE="environment/production.yaml"
 
         apk add --no-cache yq
 
-        git config --global user.name  "drone-ci[bot]"
-        git config --global user.email "drone-ci[bot]@users.noreply.github.com"
+        git config --global user.name  "CI[bot]"
+        git config --global user.email "CI[bot]@users.noreply.github.com"
 
-        git clone https://${GIT_USER}:${GIT_TOKEN}@github.com/${DRONE_REPO}.git repo
+        git clone https://x-access-token:${GIT_TOKEN}@github.com/${DRONE_REPO}.git repo
         cd repo
+
         git checkout ${DRONE_COMMIT_BRANCH}
 
         yq -i ".image.tag = \"${NEW_TAG}\"" $MANIFEST_FILE
@@ -229,6 +242,8 @@ steps:
 
         if git diff --quiet; then
           echo "No changes — image tag already up to date"
+          cd ..
+          rm -f .git-token
           exit 0
         fi
 
@@ -237,4 +252,8 @@ steps:
         git commit -m "$COMMIT_MSG"
         git push origin ${DRONE_COMMIT_BRANCH}
 
+        # Clean up token file
+        cd ..
+        rm -f .git-token
+        
         echo "✅ Pushed image tag update to ${DRONE_COMMIT_BRANCH}"
