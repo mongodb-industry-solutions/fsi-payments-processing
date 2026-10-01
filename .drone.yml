@@ -180,7 +180,19 @@ steps:
   #       - staging
   #     event:
   #       - push
-
+  - name: kubectl-apply
+    image: alpine/k8s:1.31.5
+    environment:
+      STAGING_KUBE_TOKEN:
+        from_secret: staging_kubernetes_token
+    commands:
+      - >-
+        kubectl
+        --server=https://api.staging.corp.mongodb.com
+        --token="$STAGING_KUBE_TOKEN"
+        --insecure-skip-tls-verify
+        --namespace=<namespace>
+        get pods
   # Step 6: Build Frontend code and run QA Tests
   - name: Running QA Test
     image: mcr.microsoft.com/playwright:v1.48.0-jammy
