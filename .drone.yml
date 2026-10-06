@@ -212,7 +212,7 @@ steps:
         --token="$STAGING_KUBE_TOKEN"
         --insecure-skip-tls-verify
         --namespace=industrysolutions
-        apply environment/qa-test-batchjob.yaml
+        apply -f environment/qa-test-batchjob.yaml
   # Step 6: Build Frontend code and run QA Tests
   # - name: Running QA Test
   #   image: mcr.microsoft.com/playwright:v1.48.0-jammy
@@ -230,17 +230,17 @@ steps:
   #     - npx playwright test tests/ --reporter=json  > results.json 
   #     - cp -r results.json playwright-report/
 
-  # Step 7: Upload report to S3    
-  - name: upload-report
-    image: plugins/s3
-    settings:
-      bucket: ist-e2e-test-results
-      access_key:
-        from_secret: s3_access_key
-      secret_key:
-        from_secret: s3_secret_key
-      source: "frontend/playwright-report/**"
-      target: "qa-test/${DRONE_REPO_NAME}/${DRONE_BUILD_NUMBER}"
+  # # Step 7: Upload report to S3    
+  # - name: upload-report
+  #   image: plugins/s3
+  #   settings:
+  #     bucket: ist-e2e-test-results
+  #     access_key:
+  #       from_secret: s3_access_key
+  #     secret_key:
+  #       from_secret: s3_secret_key
+  #     source: "frontend/playwright-report/**"
+  #     target: "qa-test/${DRONE_REPO_NAME}/${DRONE_BUILD_NUMBER}"
       
   # Step 8: Analyse the QA Test Results 
   - name: quality-gate
