@@ -38,7 +38,7 @@ spec:
               if [ -f /reports/report.json ]; then
                 echo "Uploading report.json to S3..."
                 aws s3 cp /reports/results.json \
-                  "s3://ist-e2e-test-results/agentic-payments/staging/$(date +%Y%m%d-%H%M%S)/results.json" \
+                  "s3://ist-e2e-test-results/qa-test/agentic-payments/staging/$(date +%Y%m%d-%H%M%S)/results.json" \
                   --region us-east-1
                 echo "✅ Upload complete"
               else
@@ -48,13 +48,13 @@ spec:
             - name: AWS_ACCESS_KEY_ID
               valueFrom:
                 secretKeyRef:
-                  name: s3-upload-creds
-                  key: access-key-id
+                  name: ist-qa-test-creds
+                  key: ist-qa-s3-access-key-id
             - name: AWS_SECRET_ACCESS_KEY
               valueFrom:
                 secretKeyRef:
-                  name: s3-upload-creds
-                  key: secret-access-key
+                  name: ist-qa-test-creds
+                  key: ist-qa-s3-secret-key
           volumeMounts:
             - name: reports
               mountPath: /reports
