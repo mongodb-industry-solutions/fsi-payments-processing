@@ -180,6 +180,26 @@ steps:
   #       - staging
   #     event:
   #       - push
+  # Step 2: Build and publish Frontend Docker image
+  - name: publish-qatest
+    image: plugins/kaniko-ecr
+    settings:
+      create_repository: true
+      registry: 795250896452.dkr.ecr.us-east-1.amazonaws.com
+      repo: industrysolutions/fsi-payments-qa-test
+      dockerfile: Dockerfile.test
+      context: .
+      build_args:
+        - BIAN_MODEL_URL=https://leafy-bank-bian-model.industrysolutions.staging.corp.mongodb.com
+      tags:
+        - latest
+      access_key:
+        from_secret: ecr_access_key
+      secret_key:
+        from_secret: ecr_secret_key
+    when:
+      event:
+        - push
   - name: kubectl-apply
     image: alpine/k8s:1.31.5
     environment:
@@ -192,23 +212,23 @@ steps:
         --token="$STAGING_KUBE_TOKEN"
         --insecure-skip-tls-verify
         --namespace=industrysolutions
-        get pods
+        apply environment/qa-test-batchjob.yaml
   # Step 6: Build Frontend code and run QA Tests
-  - name: Running QA Test
-    image: mcr.microsoft.com/playwright:v1.48.0-jammy
-    environment:
-      APP_NAME: agentic-payments
-      ENV_NAME: staging
-    commands:
-      - cd frontend
-      - npm install --legacy-peer-deps
-      - npm run build
-      - npm install -D @playwright/test --legacy-peer-deps
-      - npx playwright install-deps chromium
-      - npx playwright install --with-deps chromium
-      - npx playwright test tests/
-      - npx playwright test tests/ --reporter=json  > results.json 
-      - cp -r results.json playwright-report/
+  # - name: Running QA Test
+  #   image: mcr.microsoft.com/playwright:v1.48.0-jammy
+  #   environment:
+  #     APP_NAME: agentic-payments
+  #     ENV_NAME: staging
+  #   commands:
+  #     - cd frontend
+  #     - npm install --legacy-peer-deps
+  #     - npm run build
+  #     - npm install -D @playwright/test --legacy-peer-deps
+  #     - npx playwright install-deps chromium
+  #     - npx playwright install --with-deps chromium
+  #     - npx playwright test tests/
+  #     - npx playwright test tests/ --reporter=json  > results.json 
+  #     - cp -r results.json playwright-report/
 
   # Step 7: Upload report to S3    
   - name: upload-report
