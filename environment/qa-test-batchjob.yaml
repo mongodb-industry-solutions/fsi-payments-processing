@@ -12,6 +12,7 @@ spec:
   template:
     metadata:
       labels:
+        sidecar.istio.io/inject: "true"
         app: agentic-payments-qatest
     spec:
       serviceAccountName: kanopy-staging-cicd-irsa
@@ -35,14 +36,13 @@ spec:
                 sleep 2
               done
 
-              if [ -f /reports/report.json ]; then
-                echo "Uploading report.json to S3..."
-                aws s3 cp /reports/results.json \
-                  "s3://ist-e2e-test-results/qa-test/agentic-payments/staging/$(date +%Y%m%d-%H%M%S)/results.json" \
-                  --region us-east-1
+              if [ -f /reports/results.json ]; then
+                echo "Uploading results.json to S3..."
+                aws s3 cp /reports/results.json "s3://ist-e2e-test-results/qa-test/agentic-payments/staging/$(date +%Y%m%d-%H%M%S)/results.json" --region us-east-1
                 echo "✅ Upload complete"
               else
-                echo "⚠️  No report.json found — nothing to upload"
+                echo "⚠️  No results.json found — nothing to upload"
+                ls /reports/
               fi
           env:
             - name: AWS_ACCESS_KEY_ID
@@ -55,36 +55,6 @@ spec:
                 secretKeyRef:
                   name: ist-qa-test-creds
                   key: ist-qa-s3-secret-key
-          volumeMounts:
-            - name: reports
-              mountPath: /reports
-
-      containers:
-        - name: qatest
-          image: 795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-qa-test:latest
-          command: ["/bin/sh", "-c"]
-          args:
-            - |
-              # Run tests; capture exit code but don't die yet
-              set +e
-              npx playwright test tests/
-              TEST_EXIT=$?
-              npx playwright test tests/ --reporter=json  > results.json 
-              
-
-              # Copy report into the shared volume
-              cp results.json /reports/results.json 2>/dev/null || echo "No results.json produced"
-
-              # Signal the uploader that we're done
-              touch /reports/.done
-
-              # Exit with the real test result so the Job reflects pass/fail
-              exit $TEST_EXIT
-          env:
-            - name: APP_NAME
-              value: "agentic-payments"
-            - name: ENV_NAME
-              value: "staging"
           volumeMounts:
             - name: reports
               mountPath: /reports
