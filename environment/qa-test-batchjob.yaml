@@ -38,7 +38,8 @@ spec:
 
               if [ -f /reports/results.json ]; then
                 echo "Uploading report.json to S3..."
-                aws s3 cp /reports/results.json "s3://ist-e2e-test-results/qa-test/agentic-payments/staging/$(date +%Y%m%d-%H%M%S)/results.json" --region us-east-1
+                aws s3 cp /reports/results.json "s3://ist-e2e-test-results/qa-test/agentic-payments/staging/$(date +%Y%m%d-%H%M)/results.json" --region us-east-1
+                aws s3 cp /reports/index.html "s3://ist-e2e-test-results/qa-test/agentic-payments/staging/$(date +%Y%m%d-%H%M)/index.html" --region us-east-1
                 echo "✅ Upload complete"
               else
                 echo "⚠️  No results.json found — nothing to upload"
@@ -70,11 +71,11 @@ spec:
               npx playwright test tests/
               TEST_EXIT=$?
               npx playwright test tests/ --reporter=json  > results.json 
+              npx playwright test tests/
               
-
               # Copy report into the shared volume
               cp results.json /reports/results.json 2>/dev/null || echo "No results.json produced"
-
+              cp playwright-report/index.html /reports/ 2>/dev/null 
               # Signal the uploader that we're done
               touch /reports/.done
 
