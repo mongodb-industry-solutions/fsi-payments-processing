@@ -31,13 +31,13 @@ spec:
           args:
             - |
               echo "Uploader waiting for report..."
-              # Wait for the test container to signal completion
+              # Wait for the test container to signal completion	
               while [ ! -f /reports/.done ]; do
                 sleep 2
               done
 
               if [ -f /reports/results.json ]; then
-                echo "Uploading results.json to S3..."
+                echo "Uploading report.json to S3..."
                 aws s3 cp /reports/results.json "s3://ist-e2e-test-results/qa-test/agentic-payments/staging/$(date +%Y%m%d-%H%M%S)/results.json" --region us-east-1
                 echo "✅ Upload complete"
               else
@@ -55,6 +55,43 @@ spec:
                 secretKeyRef:
                   name: ist-qa-test-creds
                   key: ist-qa-s3-secret-key
+          volumeMounts:
+            - name: reports
+              mountPath: /reports
+
+      containers:
+        - name: qatest
+          image: 795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-qa-test:latest
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              # Run tests; capture exit code but don't die yet
+              set +e
+              npx playwright test tests/
+              TEST_EXIT=$?
+              npx playwright test tests/ --reporter=json  > results.json 
+              
+
+              # Copy report into the shared volume
+              cp results.json /reports/results.json 2>/dev/null || echo "No results.json produced"
+
+              # Signal the uploader that we're done
+              touch /reports/.done
+
+              # Exit with the real test result so the Job reflects pass/fail
+              exit $TEST_EXIT
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "500m"
+            limits:
+              memory: "1Gi"
+              cpu: "1"
+          env:
+            - name: APP_NAME
+              value: "agentic-payments"
+            - name: ENV_NAME
+              value: "staging"
           volumeMounts:
             - name: reports
               mountPath: /reports
