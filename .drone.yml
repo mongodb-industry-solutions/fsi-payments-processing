@@ -71,6 +71,9 @@ steps:
           exit 1
         fi
         echo "✅ Token generated correctly"
+    when:
+      event:
+        - push        
         
   # Step 2: Build and publish Frontend Docker image
   - name: publish-frontend
@@ -238,7 +241,10 @@ steps:
           sleep 20
         done
         echo "❌ Timed out waiting for agentic-payments-qatest"
-        exit 1      
+        exit 1
+    when:
+      event:
+        - push
         
   # Step 8: Analyse the QA Test Results 
   - name: quality-gate
@@ -274,6 +280,9 @@ steps:
           exit 1
         fi
         echo "✅ Within tolerance — promoting to prod"
+    when:
+      event:
+        - push        
         
   # Step 9: Retag the staging docker images and promote them to prod
   - name: retag-image-for-prod
@@ -307,6 +316,9 @@ steps:
         aws ecr put-image --repository-name "$REPO/fsi-payments-agent" --image-tag "$PROD_TAG" --image-manifest "$MANIFEST_AGENT" >/dev/null 2>&1 || echo "⚠️  $PROD_TAG already exists (ok)"
         aws ecr put-image --repository-name "$REPO/fsi-payments-converter" --image-tag "$PROD_TAG" --image-manifest "$MANIFEST_CONVERTER" >/dev/null 2>&1 || echo "⚠️  $PROD_TAG already exists (ok)"
         echo "✅ Retagged $QA_TAG as $PROD_TAG"
+    when:
+      event:
+        - push        
 
   # Step 10: Update the image tags in kubernetes manifest for prod        
   - name: update-image-tag
@@ -355,6 +367,9 @@ steps:
         rm -f /drone/src/.git-token
 
         echo "✅ Pushed image tag update to ${DRONE_COMMIT_BRANCH}"
+    when:
+      event:
+        - push        
 
 ---
 kind: pipeline
