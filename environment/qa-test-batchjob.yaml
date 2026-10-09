@@ -38,9 +38,9 @@ spec:
 
               if [ -f /reports/results.json ]; then
                 echo "Uploading report.json to S3..."
-                aws s3 cp /reports/results.json "s3://ist-e2e-test-results/qa-test/agentic-payments/staging/$(date +%Y%m%d-%H%M)/results.json" --region us-east-1
-                aws s3 cp /reports/index.html "s3://ist-e2e-test-results/qa-test/agentic-payments/staging/$(date +%Y%m%d-%H%M)/index.html" --region us-east-1
-                echo "✅ Upload complete"
+                aws s3 cp /reports/results.json "s3://ist-e2e-test-results/qa-test/agentic-payments/staging/__BUILD_NUMBER__/results.json" --region us-east-1
+                aws s3 cp /reports/index.html "s3://ist-e2e-test-results/qa-test/agentic-payments/staging/__BUILD_NUMBER__/index.html" --region us-east-1
+                echo "✅ Upload complete for the build __BUILD_NUMBER__"
               else
                 echo "⚠️  No results.json found — nothing to upload"
                 ls /reports/
