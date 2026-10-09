@@ -25,7 +25,7 @@ spec:
       # auto-terminated when the main container exits
       initContainers:
         - name: report-uploader
-          image: amazon/aws-cli:latest
+          image: public.ecr.aws/aws-cli/aws-cli:latest
           restartPolicy: Always        # ← THIS makes it a native sidecar
           command: ["/bin/sh", "-c"]
           args:
