@@ -68,13 +68,12 @@ spec:
             - |
               # Run tests; capture exit code but don't die yet
               set +e
+              # Single run; json + html reporters are configured in playwright.config.js
               npx playwright test tests/
               TEST_EXIT=$?
-              npx playwright test tests/ --reporter=json  > results.json 
-              npx playwright test tests/
-              
+
               # Copy report into the shared volume
-              cp results.json /reports/results.json 2>/dev/null || echo "No results.json produced"
+              cp test-results/test-results.json /reports/results.json 2>/dev/null || echo "No results.json produced"
               cp playwright-report/index.html /reports/ 2>/dev/null 
               # Signal the uploader that we're done
               touch /reports/.done
@@ -93,6 +92,9 @@ spec:
               value: "agentic-payments"
             - name: ENV_NAME
               value: "staging"
+            # Enables the CI profile in playwright.config.js (1 worker, no video/trace)
+            - name: CI
+              value: "true"
           volumeMounts:
             - name: reports
               mountPath: /reports
