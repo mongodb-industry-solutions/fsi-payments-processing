@@ -207,7 +207,7 @@ steps:
       STAGING_KUBE_TOKEN:
         from_secret: staging_kubernetes_token
     commands:
-      - sed "s/__BUILD_NUMBER__/${DRONE_BUILD_NUMBER}/g" environment/qa-test-batchjob.yaml
+      - sed "s/__BUILD_NUMBER__/${DRONE_BUILD_NUMBER}/g" environment/qa-test-batchjob.yaml > /tmp/job.yaml
       - >-
         kubectl delete job agentic-payments-qatest
         --server=https://api.staging.corp.mongodb.com
@@ -220,7 +220,7 @@ steps:
         --token="$STAGING_KUBE_TOKEN"
         --insecure-skip-tls-verify
         --namespace=industrysolutions
-        apply -f environment/qa-test-batchjob.yaml
+        apply -f /tmp/job.yaml
       - |
         echo "Waiting for agentic-payments-qatest job to complete."
         for i in $(seq 1 60); do            # 90 x 20s = 30 min timeout
