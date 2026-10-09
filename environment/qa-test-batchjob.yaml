@@ -86,8 +86,8 @@ spec:
               memory: "512Mi"
               cpu: "500m"
             limits:
-              memory: "1Gi"
-              cpu: "1"
+              memory: "1.5Gi"
+              cpu: "1.5"
           env:
             - name: APP_NAME
               value: "agentic-payments"
