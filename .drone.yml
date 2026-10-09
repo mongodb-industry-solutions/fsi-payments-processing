@@ -235,8 +235,8 @@ steps:
           fi
           sleep 20
         done
-        # echo "❌ Timed out waiting for JOB"
-        # exit 1
+        echo "❌ Timed out waiting for JOB"
+        exit 1
       
   # Step 8: Analyse the QA Test Results 
   - name: quality-gate
