@@ -223,7 +223,8 @@ steps:
         apply -f environment/qa-test-batchjob.yaml
       - |
         echo "Waiting for agentic-payments-qatest job to complete."
-        for i in $(seq 1 90); do            # 90 x 20s = 30 min timeout
+        for i in $(seq 1 60); do            # 90 x 20s = 30 min timeout
+          echo "Checking status" 
           S=$(kubectl get job agentic-payments-qatest --server=https://api.staging.corp.mongodb.com --token="$STAGING_KUBE_TOKEN" --insecure-skip-tls-verify --namespace=industrysolutions -o jsonpath='{.status.succeeded}')
           F=$(kubectl get job agentic-payments-qatest --server=https://api.staging.corp.mongodb.com --token="$STAGING_KUBE_TOKEN" --insecure-skip-tls-verify --namespace=industrysolutions  -o jsonpath='{.status.failed}')
           if [ "${S:-0}" -ge 1 ]; then echo "✅ Test job completed"; exit 0; fi
