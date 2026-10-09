@@ -200,6 +200,7 @@ steps:
     when:
       event:
         - push
+        
   - name: kubectl-apply
     image: alpine/k8s:1.31.5
     environment:
@@ -220,52 +221,56 @@ steps:
         --insecure-skip-tls-verify
         --namespace=industrysolutions
         apply -f environment/qa-test-batchjob.yaml
-  # Step 6: Build Frontend code and run QA Tests
-  # - name: Running QA Test
-  #   image: mcr.microsoft.com/playwright:v1.48.0-jammy
-  #   environment:
-  #     APP_NAME: agentic-payments
-  #     ENV_NAME: staging
-  #   commands:
-  #     - cd frontend
-  #     - npm install --legacy-peer-deps
-  #     - npm run build
-  #     - npm install -D @playwright/test --legacy-peer-deps
-  #     - npx playwright install-deps chromium
-  #     - npx playwright install --with-deps chromium
-  #     - npx playwright test tests/
-  #     - npx playwright test tests/ --reporter=json  > results.json 
-  #     - cp -r results.json playwright-report/
-
-  # # Step 7: Upload report to S3    
-  # - name: upload-report
-  #   image: plugins/s3
-  #   settings:
-  #     bucket: ist-e2e-test-results
-  #     access_key:
-  #       from_secret: s3_access_key
-  #     secret_key:
-  #       from_secret: s3_secret_key
-  #     source: "frontend/playwright-report/**"
-  #     target: "qa-test/${DRONE_REPO_NAME}/${DRONE_BUILD_NUMBER}"
+      - |
+        echo "Waiting for agentic-payments-qatest job to complete."
+        for i in $(seq 1 90); do            # 90 x 20s = 30 min timeout
+          S=$(kubectl get job agentic-payments-qatest --server=https://api.staging.corp.mongodb.com --token="$STAGING_KUBE_TOKEN" --insecure-skip-tls-verify --namespace=industrysolutions -o jsonpath='{.status.succeeded}')
+          F=$(kubectl get job agentic-payments-qatest --server=https://api.staging.corp.mongodb.com --token="$STAGING_KUBE_TOKEN" --insecure-skip-tls-verify --namespace=industrysolutions  -o jsonpath='{.status.failed}')
+          if [ "${S:-0}" -ge 1 ]; then echo "✅ Test job completed"; exit 0; fi
+          if [ "${F:-0}" -ge 1 ]; then
+            echo "❌ Test job failed."
+            k logs "job/agentic-payments-qatest" -c playwright --tail=200 || true
+            exit 1
+          fi
+          sleep 20
+        done
+        # echo "❌ Timed out waiting for JOB"
+        # exit 1
       
   # Step 8: Analyse the QA Test Results 
   - name: quality-gate
     image: alpine
+    environment:
+      BUCKET: ist-e2e-test-results
+      access_key:
+        from_secret: s3_access_key
+      secret_key:
+        from_secret: s3_secret_key
     commands:
-      - apk add --no-cache jq
+      - apk add --no-cache jq aws-cli
       - |
-        FAILED=$(jq '.stats.unexpected' frontend/playwright-report/results.json)
-        FLAKY=$(jq '.stats.flaky' frontend/playwright-report/results.json)
+        aws s3 cp "s3://$BUCKET/qa-test/agentic-payments/staging/${DRONE_BUILD_NUMBER}/results.json" results.json
+        PASSED=$(jq -e '.stats.expected'   results.json)
+        FAILED=$(jq -e '.stats.unexpected' results.json)
+        FLAKY=$(jq -e '.stats.flaky'       results.json)
+        SKIPPED=$(jq -e '.stats.skipped'   results.json)
         THRESHOLD=2
+        echo "Passed: $PASSED  Failed: $FAILED  Flaky: $FLAKY  Skipped: $SKIPPED  Threshold: $THRESHOLD"
 
-        echo "Failed: $FAILED, Flaky: $FLAKY, Threshold: $THRESHOLD"
+        # Fail closed on anything unexpected
+        for v in "$PASSED" "$FAILED" "$FLAKY"; do
+          case "$v" in ''|*[!0-9]*) echo "❌ Could not parse results"; exit 1;; esac
+        done
+        if [ "$PASSED" -eq 0 ] && [ "$FAILED" -eq 0 ]; then
+          echo "❌ No tests ran"; exit 1
+        fi
 
         if [ "$FAILED" -gt "$THRESHOLD" ]; then
-          echo "❌ Too many failures — blocking downstream steps"
+          echo "❌ $FAILED failures exceeds threshold — blocking prod promotion"
+          jq -r '.. | objects | select(.status? == "unexpected") | .projectName? // empty' results.json >/dev/null || true
           exit 1
         fi
-        echo "✅ Within tolerance — allowing deploy"
+        echo "✅ Within tolerance — promoting to prod"
         
   # Step 9: Retag the staging docker images and promote them to prod
   - name: retag-image-for-prod
