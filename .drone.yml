@@ -72,7 +72,7 @@ steps:
         fi
         echo "✅ Token generated correctly"
         
-  # # Step 2: Build and publish Frontend Docker image
+    # Step 2: Build and publish Frontend Docker image
   # - name: publish-frontend
   #   image: plugins/kaniko-ecr
   #   settings:
@@ -94,7 +94,7 @@ steps:
   #     event:
   #       - push
 
-  # # Step 3: Build and publish Converter Docker image
+    # Step 3: Build and publish Converter Docker image
   # - name: publish-converter
   #   image: plugins/kaniko-ecr
   #   settings:
@@ -114,7 +114,7 @@ steps:
   #     event:
   #       - push
 
-  # # Step 4: Build and publish Agent Docker image
+    # Step 4: Build and publish Agent Docker image
   # - name: publish-agent
   #   image: plugins/kaniko-ecr
   #   settings:
@@ -134,7 +134,7 @@ steps:
   #     event:
   #       - push
 
-  # # Step 5: Deploy combined pod (frontend + converter sidecar + agent sidecar)
+    # Step 5: Deploy combined pod (frontend + converter sidecar + agent sidecar)
   # - name: deploy-combined-staging
   #   image: public.ecr.aws/kanopy/drone-helm:v3
   #   settings:
@@ -180,27 +180,28 @@ steps:
   #       - staging
   #     event:
   #       - push
-  # Step 2: Build and publish Frontend Docker image
-  # - name: publish-qatest
-  #   image: plugins/kaniko-ecr
-  #   settings:
-  #     create_repository: true
-  #     registry: 795250896452.dkr.ecr.us-east-1.amazonaws.com
-  #     repo: industrysolutions/fsi-payments-qa-test
-  #     dockerfile: Dockerfile.test
-  #     context: .
-  #     build_args:
-  #       - BIAN_MODEL_URL=https://leafy-bank-bian-model.industrysolutions.staging.corp.mongodb.com
-  #     tags:
-  #       - latest
-  #     access_key:
-  #       from_secret: ecr_access_key
-  #     secret_key:
-  #       from_secret: ecr_secret_key
-  #   when:
-  #     event:
-  #       - push
+  # Step 6: Build and publish QA Docker image
+  - name: publish-qatest
+    image: plugins/kaniko-ecr
+    settings:
+      create_repository: true
+      registry: 795250896452.dkr.ecr.us-east-1.amazonaws.com
+      repo: industrysolutions/fsi-payments-qa-test
+      dockerfile: Dockerfile.test
+      context: .
+      build_args:
+        - BIAN_MODEL_URL=https://leafy-bank-bian-model.industrysolutions.staging.corp.mongodb.com
+      tags:
+        - latest
+      access_key:
+        from_secret: ecr_access_key
+      secret_key:
+        from_secret: ecr_secret_key
+    when:
+      event:
+        - push
         
+  # Step 7: Apply QA Batch Job on Kanopy    
   - name: kubectl-apply
     image: alpine/k8s:1.31.5
     environment:
@@ -223,7 +224,7 @@ steps:
         apply -f /tmp/job.yaml
       - |
         echo "Waiting for agentic-payments-qatest job to complete."
-        for i in $(seq 1 60); do            # 90 x 20s = 30 min timeout
+        for i in $(seq 1 60); do            # 60 x 20s = 15 min timeout
           echo "Checking status" 
           S=$(kubectl get job agentic-payments-qatest --server=https://api.staging.corp.mongodb.com --token="$STAGING_KUBE_TOKEN" --insecure-skip-tls-verify --namespace=industrysolutions -o jsonpath='{.status.succeeded}')
           F=$(kubectl get job agentic-payments-qatest --server=https://api.staging.corp.mongodb.com --token="$STAGING_KUBE_TOKEN" --insecure-skip-tls-verify --namespace=industrysolutions  -o jsonpath='{.status.failed}')
@@ -238,6 +239,7 @@ steps:
         done
         echo "❌ Timed out waiting for agentic-payments-qatest"
         exit 1      
+        
   # Step 8: Analyse the QA Test Results 
   - name: quality-gate
     image: alpine
