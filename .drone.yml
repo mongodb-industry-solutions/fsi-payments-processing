@@ -227,17 +227,17 @@ steps:
           echo "Checking status" 
           S=$(kubectl get job agentic-payments-qatest --server=https://api.staging.corp.mongodb.com --token="$STAGING_KUBE_TOKEN" --insecure-skip-tls-verify --namespace=industrysolutions -o jsonpath='{.status.succeeded}')
           F=$(kubectl get job agentic-payments-qatest --server=https://api.staging.corp.mongodb.com --token="$STAGING_KUBE_TOKEN" --insecure-skip-tls-verify --namespace=industrysolutions  -o jsonpath='{.status.failed}')
-          if [ "${S:-0}" -ge 1 ]; then echo "✅ Test job completed"; exit 0; fi
-          if [ "${F:-0}" -ge 1 ]; then
+          echo "succeeded=$S failed=$F"
+          if [ "$${S:-0}" -ge 1 ]; then echo "✅ Test job completed"; exit 0; fi
+          if [ "$${F:-0}" -ge 1 ]; then
             echo "❌ Test job failed."
-            k logs "job/agentic-payments-qatest" -c playwright --tail=200 || true
+            kubectl logs job/agentic-payments-qatest -c playwright --tail=200 --server=https://api.staging.corp.mongodb.com --token="$STAGING_KUBE_TOKEN" --insecure-skip-tls-verify --namespace=industrysolutions || true
             exit 1
           fi
           sleep 20
         done
-        echo "❌ Timed out waiting for JOB"
-        exit 1
-      
+        echo "❌ Timed out waiting for agentic-payments-qatest"
+        exit 1      
   # Step 8: Analyse the QA Test Results 
   - name: quality-gate
     image: alpine
