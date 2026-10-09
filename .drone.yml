@@ -181,25 +181,25 @@ steps:
   #     event:
   #       - push
   # Step 2: Build and publish Frontend Docker image
-  - name: publish-qatest
-    image: plugins/kaniko-ecr
-    settings:
-      create_repository: true
-      registry: 795250896452.dkr.ecr.us-east-1.amazonaws.com
-      repo: industrysolutions/fsi-payments-qa-test
-      dockerfile: Dockerfile.test
-      context: .
-      build_args:
-        - BIAN_MODEL_URL=https://leafy-bank-bian-model.industrysolutions.staging.corp.mongodb.com
-      tags:
-        - latest
-      access_key:
-        from_secret: ecr_access_key
-      secret_key:
-        from_secret: ecr_secret_key
-    when:
-      event:
-        - push
+  # - name: publish-qatest
+  #   image: plugins/kaniko-ecr
+  #   settings:
+  #     create_repository: true
+  #     registry: 795250896452.dkr.ecr.us-east-1.amazonaws.com
+  #     repo: industrysolutions/fsi-payments-qa-test
+  #     dockerfile: Dockerfile.test
+  #     context: .
+  #     build_args:
+  #       - BIAN_MODEL_URL=https://leafy-bank-bian-model.industrysolutions.staging.corp.mongodb.com
+  #     tags:
+  #       - latest
+  #     access_key:
+  #       from_secret: ecr_access_key
+  #     secret_key:
+  #       from_secret: ecr_secret_key
+  #   when:
+  #     event:
+  #       - push
         
   - name: kubectl-apply
     image: alpine/k8s:1.31.5
@@ -243,9 +243,9 @@ steps:
     image: alpine
     environment:
       BUCKET: ist-e2e-test-results
-      access_key:
+      AWS_ACCESS_KEY_ID:
         from_secret: s3_access_key
-      secret_key:
+      AWS_SECRET_ACCESS_KEY:
         from_secret: s3_secret_key
     commands:
       - apk add --no-cache jq aws-cli
