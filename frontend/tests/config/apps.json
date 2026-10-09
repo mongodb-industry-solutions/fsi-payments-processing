@@ -1,0 +1,11 @@
+{
+  "agentic-payments": {
+    "name": "Agentic Payments Platform",
+    "local": {
+      "frontend": "http://localhost:3000"
+    },
+    "staging": {
+      "frontend": "http://fsi-payments-processing-web-app:80"
+    }
+  }
+}
