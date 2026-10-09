@@ -414,4 +414,8 @@ steps:
       branch:
         - main
       event:
-        - push        
+        - push
+      paths:
+        include:
+          - "environment/production.yaml"
+  
