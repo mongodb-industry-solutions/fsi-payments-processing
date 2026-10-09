@@ -206,6 +206,13 @@ steps:
       STAGING_KUBE_TOKEN:
         from_secret: staging_kubernetes_token
     commands:
+      - sed "s/__BUILD_NUMBER__/${DRONE_BUILD_NUMBER}/g" environment/qa-test-batchjob.yaml
+      - >-
+        kubectl delete job agentic-payments-qatest
+        --server=https://api.staging.corp.mongodb.com
+        --token="$STAGING_KUBE_TOKEN"
+        --insecure-skip-tls-verify
+        --namespace=industrysolutions --ignore-not-found
       - >-
         kubectl
         --server=https://api.staging.corp.mongodb.com
