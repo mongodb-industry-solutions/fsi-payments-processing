@@ -16,7 +16,66 @@ trigger:
       - backend/data/**
 
 steps:
-  # Step 1: Build and publish Frontend Docker image
+  # Step 1: Generate github_token
+  - name: generate-git-app-token
+    image: alpine:latest
+    environment:
+      GIT_APP_ID:
+        from_secret: git_app_id
+      GIT_APP_PRIVATE_KEY:
+        from_secret: git_app_private_key
+    commands:
+      - apk add --no-cache openssl jq curl
+      - |
+        set -euo pipefail
+
+        echo "$GIT_APP_PRIVATE_KEY" > /tmp/key.pem
+        chmod 600 /tmp/key.pem
+
+        # Build JWT
+        NOW=$(date +%s)
+        HEADER=$(printf '{"alg":"RS256","typ":"JWT"}' | openssl base64 -A | tr '+/' '-_' | tr -d '=')
+        PAYLOAD=$(printf '{"iat":%d,"exp":%d,"iss":"%s"}' $((NOW-60)) $((NOW+540)) "$GIT_APP_ID" | openssl base64 -A | tr '+/' '-_' | tr -d '=')
+        SIG=$(printf '%s' "$HEADER.$PAYLOAD" | openssl dgst -sha256 -sign /tmp/key.pem -binary | openssl base64 -A | tr '+/' '-_' | tr -d '=')
+        JWT="$HEADER.$PAYLOAD.$SIG"
+
+        # Get installation ID
+        INSTALLATION_ID=$(curl -sf \
+          -H "Authorization: Bearer $JWT" \
+          -H "Accept: application/vnd.github+json" \
+          "https://api.github.com/repos/${DRONE_REPO}/installation" \
+          | jq -r .id)
+
+        echo "Installation ID: $INSTALLATION_ID"
+
+        # Get token — pipe DIRECTLY from curl to jq to file
+        # No intermediate variable capture that Drone might mask/corrupt
+        curl -sf -X POST \
+          -H "Authorization: Bearer $JWT" \
+          -H "Accept: application/vnd.github+json" \
+          "https://api.github.com/app/installations/$INSTALLATION_ID/access_tokens" \
+          | jq -r .token \
+          | tr -d '\n' > .git-token
+        rm /tmp/key.pem
+        # Verify — check length without exposing content
+        SIZE=$(wc -c < .git-token)
+        FIRST=$(head -c 4 .git-token)
+        echo "Token file: $SIZE bytes, starts with: $FIRST"
+
+        if [ "$SIZE" -lt 30 ]; then
+          echo "❌ Token too short"
+          exit 1
+        fi
+        if [ "$FIRST" != "ghs_" ]; then
+          echo "❌ Token doesn't start with 'ghs_'"
+          exit 1
+        fi
+        echo "✅ Token generated correctly"
+    when:
+      event:
+        - push        
+        
+  # Step 2: Build and publish Frontend Docker image
   - name: publish-frontend
     image: plugins/kaniko-ecr
     settings:
@@ -28,7 +87,7 @@ steps:
       build_args:
         - BIAN_MODEL_URL=https://leafy-bank-bian-model.industrysolutions.staging.corp.mongodb.com
       tags:
-        - git-${DRONE_COMMIT_SHA:0:7}
+        - git-${DRONE_COMMIT_SHA:0:7}-${DRONE_BUILD_NUMBER}
         - latest
       access_key:
         from_secret: ecr_access_key
@@ -38,7 +97,7 @@ steps:
       event:
         - push
 
-  # Step 2: Build and publish Converter Docker image
+  # Step 3: Build and publish Converter Docker image
   - name: publish-converter
     image: plugins/kaniko-ecr
     settings:
@@ -48,7 +107,7 @@ steps:
       dockerfile: Dockerfile.converter
       context: .
       tags:
-        - git-${DRONE_COMMIT_SHA:0:7}
+        - git-${DRONE_COMMIT_SHA:0:7}-${DRONE_BUILD_NUMBER}
         - latest
       access_key:
         from_secret: ecr_access_key
@@ -58,7 +117,7 @@ steps:
       event:
         - push
 
-  # Step 3: Build and publish Agent Docker image
+  # Step 4: Build and publish Agent Docker image
   - name: publish-agent
     image: plugins/kaniko-ecr
     settings:
@@ -68,7 +127,7 @@ steps:
       dockerfile: Dockerfile.agent
       context: .
       tags:
-        - git-${DRONE_COMMIT_SHA:0:7}
+        - git-${DRONE_COMMIT_SHA:0:7}-${DRONE_BUILD_NUMBER}
         - latest
       access_key:
         from_secret: ecr_access_key
@@ -78,7 +137,7 @@ steps:
       event:
         - push
 
-  # Step 4: Deploy combined pod (frontend + converter sidecar + agent sidecar)
+  # Step 5: Deploy combined pod (frontend + converter sidecar + agent sidecar)
   - name: deploy-combined-staging
     image: public.ecr.aws/kanopy/drone-helm:v3
     settings:
@@ -90,12 +149,12 @@ steps:
       values_files: ["environment/staging.yaml"]
       values:
         # Frontend (main container) image
-        - "image.tag=git-${DRONE_COMMIT_SHA:0:7}"
+        - "image.tag=git-${DRONE_COMMIT_SHA:0:7}-${DRONE_BUILD_NUMBER}"
         - "image.repository=795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-frontend"
         # Converter sidecar image
-        - "sidecarContainers[0].image=795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-converter:git-${DRONE_COMMIT_SHA:0:7}"
+        - "sidecarContainers[0].image=795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-converter:git-${DRONE_COMMIT_SHA:0:7}-${DRONE_BUILD_NUMBER}"
         # Agent sidecar image
-        - "sidecarContainers[1].image=795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-agent:git-${DRONE_COMMIT_SHA:0:7}"
+        - "sidecarContainers[1].image=795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-agent:git-${DRONE_COMMIT_SHA:0:7}-${DRONE_BUILD_NUMBER}"
         # Ingress
         - "ingress.enabled=true"
         - "ingress.hosts[0]=fsi-payments-processing.industrysolutions.staging.corp.mongodb.com"
@@ -124,6 +183,193 @@ steps:
         - staging
       event:
         - push
+  # Step 6: Build and publish QA Docker image
+  - name: publish-qatest
+    image: plugins/kaniko-ecr
+    settings:
+      create_repository: true
+      registry: 795250896452.dkr.ecr.us-east-1.amazonaws.com
+      repo: industrysolutions/fsi-payments-qa-test
+      dockerfile: Dockerfile.test
+      context: .
+      build_args:
+        - BIAN_MODEL_URL=https://leafy-bank-bian-model.industrysolutions.staging.corp.mongodb.com
+      tags:
+        - latest
+      access_key:
+        from_secret: ecr_access_key
+      secret_key:
+        from_secret: ecr_secret_key
+    when:
+      event:
+        - push
+        
+  # Step 7: Apply QA Batch Job on Kanopy    
+  - name: kubectl-apply
+    image: alpine/k8s:1.31.5
+    environment:
+      STAGING_KUBE_TOKEN:
+        from_secret: staging_kubernetes_token
+    commands:
+      - sed "s/__BUILD_NUMBER__/${DRONE_BUILD_NUMBER}/g" environment/qa-test-batchjob.yaml > /tmp/job.yaml
+      - >-
+        kubectl delete job agentic-payments-qatest
+        --server=https://api.staging.corp.mongodb.com
+        --token="$STAGING_KUBE_TOKEN"
+        --insecure-skip-tls-verify
+        --namespace=industrysolutions --ignore-not-found
+      - >-
+        kubectl
+        --server=https://api.staging.corp.mongodb.com
+        --token="$STAGING_KUBE_TOKEN"
+        --insecure-skip-tls-verify
+        --namespace=industrysolutions
+        apply -f /tmp/job.yaml
+      - |
+        echo "Waiting for agentic-payments-qatest job to complete."
+        for i in $(seq 1 60); do            # 60 x 20s = 15 min timeout
+          echo "Checking status" 
+          S=$(kubectl get job agentic-payments-qatest --server=https://api.staging.corp.mongodb.com --token="$STAGING_KUBE_TOKEN" --insecure-skip-tls-verify --namespace=industrysolutions -o jsonpath='{.status.succeeded}')
+          F=$(kubectl get job agentic-payments-qatest --server=https://api.staging.corp.mongodb.com --token="$STAGING_KUBE_TOKEN" --insecure-skip-tls-verify --namespace=industrysolutions  -o jsonpath='{.status.failed}')
+          echo "succeeded=$S failed=$F"
+          if [ "$${S:-0}" -ge 1 ]; then echo "✅ Test job completed"; exit 0; fi
+          if [ "$${F:-0}" -ge 1 ]; then
+            echo "❌ Test job failed."
+            kubectl logs job/agentic-payments-qatest -c playwright --tail=200 --server=https://api.staging.corp.mongodb.com --token="$STAGING_KUBE_TOKEN" --insecure-skip-tls-verify --namespace=industrysolutions || true
+            exit 1
+          fi
+          sleep 20
+        done
+        echo "❌ Timed out waiting for agentic-payments-qatest"
+        exit 1
+    when:
+      event:
+        - push
+        
+  # Step 8: Analyse the QA Test Results 
+  - name: quality-gate
+    image: alpine
+    environment:
+      BUCKET: ist-e2e-test-results
+      AWS_ACCESS_KEY_ID:
+        from_secret: s3_access_key
+      AWS_SECRET_ACCESS_KEY:
+        from_secret: s3_secret_key
+    commands:
+      - apk add --no-cache jq aws-cli
+      - |
+        aws s3 cp "s3://$BUCKET/qa-test/agentic-payments/staging/${DRONE_BUILD_NUMBER}/results.json" results.json
+        PASSED=$(jq -e '.stats.expected'   results.json)
+        FAILED=$(jq -e '.stats.unexpected' results.json)
+        FLAKY=$(jq -e '.stats.flaky'       results.json)
+        SKIPPED=$(jq -e '.stats.skipped'   results.json)
+        THRESHOLD=2
+        echo "Passed: $PASSED  Failed: $FAILED  Flaky: $FLAKY  Skipped: $SKIPPED  Threshold: $THRESHOLD"
+
+        # Fail closed on anything unexpected
+        for v in "$PASSED" "$FAILED" "$FLAKY"; do
+          case "$v" in ''|*[!0-9]*) echo "❌ Could not parse results"; exit 1;; esac
+        done
+        if [ "$PASSED" -eq 0 ] && [ "$FAILED" -eq 0 ]; then
+          echo "❌ No tests ran"; exit 1
+        fi
+
+        if [ "$FAILED" -gt "$THRESHOLD" ]; then
+          echo "❌ $FAILED failures exceeds threshold — blocking prod promotion"
+          jq -r '.. | objects | select(.status? == "unexpected") | .projectName? // empty' results.json >/dev/null || true
+          exit 1
+        fi
+        echo "✅ Within tolerance — promoting to prod"
+    when:
+      event:
+        - push        
+        
+  # Step 9: Retag the staging docker images and promote them to prod
+  - name: retag-image-for-prod
+    image: amazon/aws-cli:latest
+    environment:
+      AWS_ACCESS_KEY_ID:
+        from_secret: ecr_access_key
+      AWS_SECRET_ACCESS_KEY:
+        from_secret: ecr_secret_key
+      AWS_DEFAULT_REGION: us-east-1
+    commands:
+      - |
+        set -e
+        REGISTRY="795250896452.dkr.ecr.us-east-1.amazonaws.com"
+        REPO="industrysolutions"
+        QA_TAG="git-${DRONE_COMMIT_SHA:0:7}-${DRONE_BUILD_NUMBER}"
+        PROD_TAG="prod-${DRONE_COMMIT_SHA:0:7}-${DRONE_BUILD_NUMBER}"
+
+        echo "Retagging $REGISTRY/$REPO/fsi-payments-frontend:$QA_TAG → $PROD_TAG"
+
+        MANIFEST_FRONTEND=$(aws ecr batch-get-image --repository-name "$REPO/fsi-payments-frontend" --image-ids imageTag="$QA_TAG" --query 'images[0].imageManifest' --output text)
+        MANIFEST_AGENT=$(aws ecr batch-get-image --repository-name "$REPO/fsi-payments-agent" --image-ids imageTag="$QA_TAG" --query 'images[0].imageManifest' --output text)
+        MANIFEST_CONVERTER=$(aws ecr batch-get-image --repository-name "$REPO/fsi-payments-converter" --image-ids imageTag="$QA_TAG" --query 'images[0].imageManifest' --output text)
+
+        if [ -z "$MANIFEST_FRONTEND" ] || [ "$MANIFEST_FRONTEND" = "None" ]; then
+          echo "❌ QA image $QA_TAG not found in ECR"
+          exit 1
+        fi
+
+        aws ecr put-image --repository-name "$REPO/fsi-payments-frontend" --image-tag "$PROD_TAG" --image-manifest "$MANIFEST_FRONTEND" >/dev/null 2>&1 || echo "⚠️  $PROD_TAG already exists (ok)"
+        aws ecr put-image --repository-name "$REPO/fsi-payments-agent" --image-tag "$PROD_TAG" --image-manifest "$MANIFEST_AGENT" >/dev/null 2>&1 || echo "⚠️  $PROD_TAG already exists (ok)"
+        aws ecr put-image --repository-name "$REPO/fsi-payments-converter" --image-tag "$PROD_TAG" --image-manifest "$MANIFEST_CONVERTER" >/dev/null 2>&1 || echo "⚠️  $PROD_TAG already exists (ok)"
+        echo "✅ Retagged $QA_TAG as $PROD_TAG"
+    when:
+      event:
+        - push        
+
+  # Step 10: Update the image tags in kubernetes manifest for prod        
+  - name: update-image-tag
+    image: alpine/git:latest
+    commands:
+      - apk add --no-cache yq
+      - |
+        set -euo pipefail
+
+        GIT_TOKEN=$(tr -d '[:space:]' < /drone/src/.git-token)
+        SIZE=${#GIT_TOKEN}
+        echo "Token size: $SIZE chars, prefix: ${GIT_TOKEN:0:4}"
+        NEW_TAG="prod-${DRONE_COMMIT_SHA:0:7}-${DRONE_BUILD_NUMBER}"
+        export NEW_TAG
+        echo "NEW_TAG at yq time: $NEW_TAG"
+        
+        MANIFEST_FILE="environment/production.yaml"
+        echo "NEW_TAG: $NEW_TAG"
+        echo "Token file size: $(wc -c < .git-token) bytes"
+        git clone "https://x-access-token:$(cat /drone/src/.git-token)@github.com/${DRONE_REPO}.git" repo
+        cd repo
+        git remote set-url origin "https://x-access-token:$(cat /drone/src/.git-token)@github.com/${DRONE_REPO}.git"
+        git config --global user.name  "CI[bot]"
+        git config --global user.email "CI[bot]@users.noreply.github.com"
+        git checkout ${DRONE_COMMIT_BRANCH}
+
+        yq -i '.image.tag = strenv(NEW_TAG)' $MANIFEST_FILE
+        yq -i '.sidecarContainers[0].image = "795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-agent:" + strenv(NEW_TAG)' $MANIFEST_FILE
+        yq -i '.sidecarContainers[1].image = "795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-converter:" + strenv(NEW_TAG)' $MANIFEST_FILE
+        cat $MANIFEST_FILE
+
+        if git diff --quiet; then
+          echo "No changes — image tag already up to date"
+          cd ..
+          rm -f /drone/src/.git-token
+          exit 0
+        fi
+
+        COMMIT_MSG="ISTISO-13: Promote fsi-pp [CI SKIP]"
+        git add $MANIFEST_FILE
+        git commit -m "$COMMIT_MSG"
+        git push origin ${DRONE_COMMIT_BRANCH}
+
+        # Cleanup
+        cd ..
+        rm -f /drone/src/.git-token
+
+        echo "✅ Pushed image tag update to ${DRONE_COMMIT_BRANCH}"
+    when:
+      event:
+        - push        
 
 ---
 kind: pipeline
@@ -145,69 +391,7 @@ trigger:
       - backend/data/**
 
 steps:
-  # Step 1: Build and publish Frontend Docker image
-  - name: publish-frontend-prod
-    image: plugins/kaniko-ecr
-    settings:
-      create_repository: true
-      registry: 795250896452.dkr.ecr.us-east-1.amazonaws.com
-      repo: industrysolutions/fsi-payments-processing-bian-frontend
-      dockerfile: Dockerfile.frontend
-      context: .
-      build_args:
-        - BIAN_MODEL_URL=https://leafy-bank-bian-model.industrysolutions.prod.corp.mongodb.com
-      tags:
-        - git-${DRONE_COMMIT_SHA:0:7}
-        - latest
-      access_key:
-        from_secret: ecr_access_key
-      secret_key:
-        from_secret: ecr_secret_key
-    when:
-      event:
-        - push
-
-  # Step 2: Build and publish Converter Docker image
-  - name: publish-converter-prod
-    image: plugins/kaniko-ecr
-    settings:
-      create_repository: true
-      registry: 795250896452.dkr.ecr.us-east-1.amazonaws.com
-      repo: industrysolutions/fsi-payments-processing-bian-converter
-      dockerfile: Dockerfile.converter
-      context: .
-      tags:
-        - git-${DRONE_COMMIT_SHA:0:7}
-        - latest
-      access_key:
-        from_secret: ecr_access_key
-      secret_key:
-        from_secret: ecr_secret_key
-    when:
-      event:
-        - push
-
-  # Step 3: Build and publish Agent Docker image
-  - name: publish-agent-prod
-    image: plugins/kaniko-ecr
-    settings:
-      create_repository: true
-      registry: 795250896452.dkr.ecr.us-east-1.amazonaws.com
-      repo: industrysolutions/fsi-payments-processing-bian-agent
-      dockerfile: Dockerfile.agent
-      context: .
-      tags:
-        - git-${DRONE_COMMIT_SHA:0:7}
-        - latest
-      access_key:
-        from_secret: ecr_access_key
-      secret_key:
-        from_secret: ecr_secret_key
-    when:
-      event:
-        - push
-
-  # Step 4: Deploy combined pod to production
+  # Step 1: Deploy combined pod to production
   - name: deploy-combined-prod
     image: public.ecr.aws/kanopy/drone-helm:v3
     settings:
@@ -218,13 +402,6 @@ steps:
       release: fsi-payments-processing-bian-prod
       values_files: ["environment/production.yaml"]
       values:
-        # Frontend (main container) image
-        - "image.tag=git-${DRONE_COMMIT_SHA:0:7}"
-        - "image.repository=795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-processing-bian-frontend"
-        # Converter sidecar image
-        - "sidecarContainers[0].image=795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-processing-bian-converter:git-${DRONE_COMMIT_SHA:0:7}"
-        # Agent sidecar image
-        - "sidecarContainers[1].image=795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-processing-bian-agent:git-${DRONE_COMMIT_SHA:0:7}"
         # Ingress
         - "ingress.enabled=true"
         - "ingress.hosts[0]=fsi-payments-processing-bian.industrysolutions.prod.corp.mongodb.com"
@@ -253,3 +430,7 @@ steps:
         - main
       event:
         - push
+      paths:
+        include:
+          - "environment/production.yaml"
+  
