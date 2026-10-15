@@ -375,8 +375,8 @@ steps:
           echo "No changes — image tag already up to date"
           exit 0
         fi
- 
-        git commit -am "$TITLE" $MANIFEST_FILE
+        git add $MANIFEST_FILE
+        git commit -m "$TITLE" $MANIFEST_FILE
         git push origin "$PR_BRANCH"
  
         # 2. Open the PR
