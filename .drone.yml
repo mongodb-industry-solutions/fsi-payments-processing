@@ -117,7 +117,7 @@ steps:
       event:
         - push
 
-  # Step 4: Build and publish Agent Docker image
+  # # Step 4: Build and publish Agent Docker image
   - name: publish-agent
     image: plugins/kaniko-ecr
     settings:
@@ -324,49 +324,98 @@ steps:
   - name: update-image-tag
     image: alpine/git:latest
     commands:
-      - apk add --no-cache yq
+      - apk add --no-cache yq curl jq
       - |
         set -euo pipefail
-
+        trap 'rm -f /drone/src/.git-token' EXIT
+ 
+        if [ ! -s /drone/src/.git-token ]; then
+          echo "❌ /drone/src/.git-token is missing or empty — check the token step"; exit 1
+        fi
         GIT_TOKEN=$(tr -d '[:space:]' < /drone/src/.git-token)
-        SIZE=${#GIT_TOKEN}
-        echo "Token size: $SIZE chars, prefix: ${GIT_TOKEN:0:4}"
+ 
+        # Installation tokens expire after 1 hour; verify before using it
+        CHECK=$(curl -s -o /dev/null -w '%{http_code}' \
+          -H "Authorization: Bearer $GIT_TOKEN" -H "Accept: application/vnd.github+json" \
+          https://api.github.com/installation/repositories)
+        if [ "$CHECK" != "200" ]; then
+          echo "❌ GitHub token rejected (HTTP $CHECK) — expired or invalid"; exit 1
+        fi
+        echo "✅ GitHub token valid"
+ 
         NEW_TAG="prod-${DRONE_COMMIT_SHA:0:7}-${DRONE_BUILD_NUMBER}"
         export NEW_TAG
-        echo "NEW_TAG at yq time: $NEW_TAG"
-        
+        BASE="${DRONE_COMMIT_BRANCH}"
+        PR_BRANCH="promote/$NEW_TAG"
         MANIFEST_FILE="environment/production.yaml"
-        echo "NEW_TAG: $NEW_TAG"
-        echo "Token file size: $(wc -c < .git-token) bytes"
-        git clone "https://x-access-token:$(cat /drone/src/.git-token)@github.com/${DRONE_REPO}.git" repo
+        REG="795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions"
+        TITLE="ISTISO-13: Promote fsi-pp $NEW_TAG [CI SKIP]"
+        API="https://api.github.com/repos/${DRONE_REPO}"
+ 
+        ghapi() {
+          curl -s -H "Authorization: Bearer $GIT_TOKEN" \
+               -H "Accept: application/vnd.github+json" "$@"
+        }
+ 
+        # 1. Create the tag-bump commit on a temporary branch
+        git clone "https://x-access-token:$GIT_TOKEN@github.com/${DRONE_REPO}.git" repo
         cd repo
-        git remote set-url origin "https://x-access-token:$(cat /drone/src/.git-token)@github.com/${DRONE_REPO}.git"
         git config --global user.name  "CI[bot]"
         git config --global user.email "CI[bot]@users.noreply.github.com"
-        git checkout ${DRONE_COMMIT_BRANCH}
-
+        git checkout "$BASE"
+        git checkout -b "$PR_BRANCH"
+ 
         yq -i '.image.tag = strenv(NEW_TAG)' $MANIFEST_FILE
-        yq -i '.sidecarContainers[0].image = "795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-agent:" + strenv(NEW_TAG)' $MANIFEST_FILE
-        yq -i '.sidecarContainers[1].image = "795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-converter:" + strenv(NEW_TAG)' $MANIFEST_FILE
-        cat $MANIFEST_FILE
-
+        yq -i ".sidecarContainers[0].image = \"$REG/fsi-payments-agent:\" + strenv(NEW_TAG)" $MANIFEST_FILE
+        yq -i ".sidecarContainers[1].image = \"$REG/fsi-payments-converter:\" + strenv(NEW_TAG)" $MANIFEST_FILE
+ 
         if git diff --quiet; then
           echo "No changes — image tag already up to date"
-          cd ..
-          rm -f /drone/src/.git-token
           exit 0
         fi
-
-        COMMIT_MSG="ISTISO-13: Promote fsi-pp [CI SKIP]"
         git add $MANIFEST_FILE
-        git commit -m "$COMMIT_MSG"
-        git push origin ${DRONE_COMMIT_BRANCH}
-
-        # Cleanup
+        git commit -m "$TITLE" $MANIFEST_FILE
+        git push origin "$PR_BRANCH"
+ 
+        # 2. Open the PR
+        jq -n --arg title "$TITLE" --arg head "$PR_BRANCH" --arg base "$BASE" \
+              --arg body "Automated promotion after QA gate passed. Build: ${DRONE_BUILD_LINK}" \
+              '{title:$title, head:$head, base:$base, body:$body}' > /tmp/pr.json
+        STATUS=$(ghapi -o /tmp/pr-resp.json -w '%{http_code}' -X POST "$API/pulls" -d @/tmp/pr.json)
+        if [ "$STATUS" != "201" ]; then
+          echo "❌ Failed to create PR (HTTP $STATUS)"; cat /tmp/pr-resp.json; exit 1
+        fi
+        PR=$(jq -r .number /tmp/pr-resp.json)
+        echo "Opened PR #$PR: $(jq -r .html_url /tmp/pr-resp.json)"
+ 
+        # 3. Wait for GitHub to compute mergeability (null = still computing)
+        MERGEABLE=null
+        for i in $(seq 1 12); do
+          MERGEABLE=$(ghapi "$API/pulls/$PR" | jq -r .mergeable)
+          [ "$MERGEABLE" != "null" ] && break
+          sleep 5
+        done
+        if [ "$MERGEABLE" != "true" ]; then
+          echo "❌ PR #$PR is not mergeable (mergeable=$MERGEABLE), e.g. a conflict"; exit 1
+        fi
+ 
+        # 4. Squash-merge as the app. GitHub signs the squash commit,
+        #    and the commit title keeps [CI SKIP].
+        jq -n --arg t "$TITLE" '{merge_method:"squash", commit_title:$t}' > /tmp/merge.json
+        STATUS=$(ghapi -o /tmp/merge-resp.json -w '%{http_code}' -X PUT "$API/pulls/$PR/merge" -d @/tmp/merge.json)
+        if [ "$STATUS" != "200" ]; then
+          echo "❌ Merge blocked (HTTP $STATUS):"; cat /tmp/merge-resp.json
+          echo "Check the ruleset's required approvals and the app's bypass mode."
+          exit 1
+        fi
+        echo "✅ Merged PR #$PR into $BASE"
+ 
+        # 5. Clean up the temporary branch
+        ghapi -X DELETE "$API/git/refs/heads/$PR_BRANCH" > /dev/null || true
+        echo "✅ Pushed image tag update to ${DRONE_COMMIT_BRANCH}"
         cd ..
         rm -f /drone/src/.git-token
-
-        echo "✅ Pushed image tag update to ${DRONE_COMMIT_BRANCH}"
+        
     when:
       event:
         - push        
