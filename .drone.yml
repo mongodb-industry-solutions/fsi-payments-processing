@@ -324,7 +324,7 @@ steps:
   - name: update-image-tag
     image: alpine/git:latest
     commands:
-      - apk add --no-cache yq
+      - apk add --no-cache yq curl
       - |
         set -euo pipefail
         trap 'rm -f /drone/src/.git-token' EXIT
