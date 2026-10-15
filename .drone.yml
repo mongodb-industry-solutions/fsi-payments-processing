@@ -403,17 +403,17 @@ steps:
  
         # 4. Squash-merge as the app. GitHub signs the squash commit,
         #    and the commit title keeps [CI SKIP].
-        # jq -n --arg t "$TITLE" '{merge_method:"squash", commit_title:$t}' > /tmp/merge.json
-        # STATUS=$(ghapi -o /tmp/merge-resp.json -w '%{http_code}' -X PUT "$API/pulls/$PR/merge" -d @/tmp/merge.json)
-        # if [ "$STATUS" != "200" ]; then
-        #   echo "❌ Merge blocked (HTTP $STATUS):"; cat /tmp/merge-resp.json
-        #   echo "Check the ruleset's required approvals and the app's bypass mode."
-        #   exit 1
-        # fi
-        # echo "✅ Merged PR #$PR into $BASE"
+        jq -n --arg t "$TITLE" '{merge_method:"squash", commit_title:$t}' > /tmp/merge.json
+        STATUS=$(ghapi -o /tmp/merge-resp.json -w '%{http_code}' -X PUT "$API/pulls/$PR/merge" -d @/tmp/merge.json)
+        if [ "$STATUS" != "200" ]; then
+          echo "❌ Merge blocked (HTTP $STATUS):"; cat /tmp/merge-resp.json
+          echo "Check the ruleset's required approvals and the app's bypass mode."
+          exit 1
+        fi
+        echo "✅ Merged PR #$PR into $BASE"
  
-        # # 5. Clean up the temporary branch
-        # ghapi -X DELETE "$API/git/refs/heads/$PR_BRANCH" > /dev/null || true
+        # 5. Clean up the temporary branch
+        ghapi -X DELETE "$API/git/refs/heads/$PR_BRANCH" > /dev/null || true
         echo "✅ Pushed image tag update to ${DRONE_COMMIT_BRANCH}"
     when:
       event:
