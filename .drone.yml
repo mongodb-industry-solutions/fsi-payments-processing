@@ -376,7 +376,7 @@ steps:
           exit 0
         fi
  
-        git commit -am "$TITLE"
+        git commit -am "$TITLE" $MANIFEST_FILE
         git push origin "$PR_BRANCH"
  
         # 2. Open the PR
