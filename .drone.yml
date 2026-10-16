@@ -205,7 +205,7 @@ steps:
         - push
         
   # Step 7: Apply QA Batch Job on Kanopy    
-  - name: kubectl-apply
+  - name: running-qa-test 
     image: alpine/k8s:1.31.5
     environment:
       STAGING_KUBE_TOKEN:
@@ -366,8 +366,8 @@ steps:
         git checkout -b "$PR_BRANCH"
  
         yq -i '.image.tag = strenv(NEW_TAG)' $MANIFEST_FILE
-        yq -i ".sidecarContainers[0].image = \"$REG/fsi-payments-agent:\" + strenv(NEW_TAG)" $MANIFEST_FILE
-        yq -i ".sidecarContainers[1].image = \"$REG/fsi-payments-converter:\" + strenv(NEW_TAG)" $MANIFEST_FILE
+        yq -i ".sidecarContainers[0].image = \"$REG/fsi-payments-converter:\" + strenv(NEW_TAG)" $MANIFEST_FILE
+        yq -i ".sidecarContainers[1].image = \"$REG/fsi-payments-agent:\" + strenv(NEW_TAG)" $MANIFEST_FILE
  
         if git diff --quiet; then
           echo "No changes — image tag already up to date"
