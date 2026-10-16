@@ -1,0 +1,100 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: agentic-payments-qatest
+  namespace: industrysolutions
+  labels:
+    app: agentic-payments-qatest
+    purpose: qatest
+spec:
+  backoffLimit: 0
+  ttlSecondsAfterFinished: 3600
+  template:
+    metadata:
+      labels:
+        sidecar.istio.io/inject: "true"
+        app: agentic-payments-qatest
+    spec:
+      serviceAccountName: kanopy-staging-cicd-irsa
+      restartPolicy: Never
+      volumes:
+        - name: reports
+          emptyDir: {}
+
+      # Native sidecar — runs alongside the main container,
+      # auto-terminated when the main container exits
+      initContainers:
+        - name: report-uploader
+          image: public.ecr.aws/aws-cli/aws-cli:latest
+          restartPolicy: Always        # ← THIS makes it a native sidecar
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              echo "Uploader waiting for report..."
+              # Wait for the test container to signal completion	
+              while [ ! -f /reports/.done ]; do
+                sleep 2
+              done
+
+              if [ -f /reports/results.json ]; then
+                echo "Uploading report.json to S3..."
+                aws s3 cp /reports/results.json "s3://ist-e2e-test-results/qa-test/agentic-payments/staging/__BUILD_NUMBER__/results.json" --region us-east-1
+                aws s3 cp /reports/index.html "s3://ist-e2e-test-results/qa-test/agentic-payments/staging/__BUILD_NUMBER__/index.html" --region us-east-1
+                echo "✅ Upload complete for the build __BUILD_NUMBER__"
+              else
+                echo "⚠️  No results.json found — nothing to upload"
+                ls /reports/
+              fi
+          env:
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: ist-qa-test-creds
+                  key: ist-qa-s3-access-key-id
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: ist-qa-test-creds
+                  key: ist-qa-s3-secret-key
+          volumeMounts:
+            - name: reports
+              mountPath: /reports
+
+      containers:
+        - name: qatest
+          image: 795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-qa-test:latest
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              # Run tests; capture exit code but don't die yet
+              set +e
+              # Single run; json + html reporters are configured in playwright.config.js
+              npx playwright test tests/
+              TEST_EXIT=$?
+
+              # Copy report into the shared volume
+              cp test-results/test-results.json /reports/results.json 2>/dev/null || echo "No results.json produced"
+              cp playwright-report/index.html /reports/ 2>/dev/null 
+              # Signal the uploader that we're done
+              touch /reports/.done
+
+              # Exit with the real test result so the Job reflects pass/fail
+              exit $TEST_EXIT
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "500m"
+            limits:
+              memory: "1.5Gi"
+              cpu: "1.5"
+          env:
+            - name: APP_NAME
+              value: "agentic-payments"
+            - name: ENV_NAME
+              value: "staging"
+            # Enables the CI profile in playwright.config.js (1 worker, no video/trace)
+            - name: CI
+              value: "true"
+          volumeMounts:
+            - name: reports
+              mountPath: /reports
