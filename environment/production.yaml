@@ -23,7 +23,7 @@ image:
 sidecarContainers:
   # Payment Converter V2 (port 8001)
   - name: converter
-    image: '795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-agent:prod-e5bf4eb-293'
+    image: 795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-agent:prod-e5bf4eb-293
     ports:
       - containerPort: 8001
         name: converter
@@ -65,7 +65,7 @@ sidecarContainers:
             key: SOLANA_NETWORK
   # Payment Agent (port 8002)
   - name: agent
-    image: '795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-converter:prod-e5bf4eb-293'
+    image: 795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-converter:prod-e5bf4eb-293
     ports:
       - containerPort: 8002
         name: agent
