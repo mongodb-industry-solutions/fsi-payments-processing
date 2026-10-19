@@ -18,12 +18,12 @@ serviceAccount:
     roleName: "kanopy-prod-cicd-irsa"
 image:
   repository: 795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-frontend
-  tag: prod-e5bf4eb-293
+  tag: prod-2f640fc-303
 # Sidecar containers configuration
 sidecarContainers:
   # Payment Converter V2 (port 8001)
   - name: converter
-    image: 795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-converter:prod-2371cbe-298
+    image: 795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-converter:prod-2f640fc-303
     ports:
       - containerPort: 8001
         name: converter
@@ -65,7 +65,7 @@ sidecarContainers:
             key: SOLANA_NETWORK
   # Payment Agent (port 8002)
   - name: agent
-    image: 795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-agent:prod-2371cbe-298
+    image: 795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/fsi-payments-agent:prod-2f640fc-303
     ports:
       - containerPort: 8002
         name: agent
